@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // API Configuration
-const rawBaseUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://nyurwa-backend.onrender.com').trim();
+const rawBaseUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:4000').trim();
 // Ensure protocol
 let baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl}`;
 // Clean trailing slashes and redundant /api/v1
