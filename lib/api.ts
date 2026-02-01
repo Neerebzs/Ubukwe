@@ -8,6 +8,12 @@ let baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl
 const API_BASE_URL = baseUrl.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 const API_VERSION = 'v1';
 
+// Debug logging
+console.log('API Configuration:');
+console.log('Raw Base URL:', rawBaseUrl);
+console.log('Processed Base URL:', API_BASE_URL);
+console.log('Full Login URL:', `${API_BASE_URL}/api/${API_VERSION}/auth/login`);
+
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {
@@ -136,6 +142,10 @@ export interface WeddingTask {
   assigned_to?: 'groom' | 'bride' | 'other';
   is_completed: boolean;
   status: 'pending' | 'in_progress' | 'completed';
+  priority?: 'low' | 'medium' | 'high';
+  start_date?: string;
+  end_date?: string;
+  amount?: number;
   created_at: string;
   updated_at?: string;
 }
@@ -168,15 +178,22 @@ export interface ProviderService {
 // Create Axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 seconds timeout
+  timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
+  // Add these to prevent connection issues
+  maxRedirects: 5,
+  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
 });
 
-// Request interceptor to add auth token
+// Single request interceptor to add auth token and logging
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add debugging
+    console.log(`Making ${config.method?.toUpperCase()} request to: ${config.baseURL}${config.url}`);
+    
     // Add auth token if available
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
@@ -187,6 +204,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -221,6 +239,36 @@ export const apiClient = {
     try {
       const response = await axiosInstance.request<any>(config);
 
+      // Check for error status codes that didn't throw due to validateStatus
+      if (response.status >= 400) {
+        const responseData = response.data;
+        let errorMessage = 'An error occurred';
+
+        if (responseData) {
+          if (typeof responseData === 'string') {
+            errorMessage = responseData;
+          } else if (responseData.detail) {
+            errorMessage = typeof responseData.detail === 'string'
+              ? responseData.detail
+              : JSON.stringify(responseData.detail);
+          } else if (responseData.message) {
+            errorMessage = responseData.message;
+          } else if (responseData.error) {
+            errorMessage = responseData.error;
+          } else if (responseData.errors) {
+            if (typeof responseData.errors === 'object') {
+              const firstErrorKey = Object.keys(responseData.errors)[0];
+              const firstErrorVal = responseData.errors[firstErrorKey];
+              errorMessage = Array.isArray(firstErrorVal) ? firstErrorVal[0] : firstErrorVal;
+            } else {
+              errorMessage = responseData.errors;
+            }
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
       // Handle flat responses vs wrapped responses
       const responseData = response.data;
       if (responseData && typeof responseData === 'object' && ('status' in responseData || 'data' in responseData)) {
@@ -235,7 +283,22 @@ export const apiClient = {
         statusCode: response.status
       };
     } catch (error: any) {
+      // If we already threw an error above, just re-throw it
+      if (error.message && !error.response) {
+        throw error;
+      }
+
       const responseData = error.response?.data;
+
+      // Handle timeout errors specifically
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        throw new Error('Request timeout. Please check your internet connection and try again.');
+      }
+
+      // Handle network errors
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
 
       // Try to extract a meaningful error message
       let errorMessage = 'An unexpected error occurred';

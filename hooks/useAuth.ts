@@ -45,6 +45,23 @@ export const useAuth = () => {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: authApi.login,
+    retry: (failureCount, error: any) => {
+      // Retry up to 3 times for timeout/network errors only
+      if (failureCount < 3) {
+        const isRetryableError = 
+          error.message?.includes('timeout') ||
+          error.message?.includes('Network error') ||
+          error.code === 'ECONNABORTED' ||
+          error.code === 'NETWORK_ERROR';
+        
+        if (isRetryableError) {
+          console.log(`Retrying login (attempt ${failureCount + 1}/3)...`);
+          return true;
+        }
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
     onSuccess: async (data) => {
       const { user, accessToken, refreshToken } = data.data;
 
@@ -87,7 +104,19 @@ export const useAuth = () => {
     },
     onError: (error: Error) => {
       console.error('Login error details:', error);
-      toast.error(error.message || 'Login failed');
+      
+      // Provide more specific error messages
+      let errorMessage = error.message || 'Login failed';
+      
+      if (error.message?.includes('timeout')) {
+        errorMessage = 'Login request timed out. Please check your internet connection and try again.';
+      } else if (error.message?.includes('Network error')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message?.includes('Wrong email or password')) {
+        errorMessage = 'Invalid email or password. Please try again.';
+      }
+      
+      toast.error(errorMessage);
     },
   });
 

@@ -31,20 +31,27 @@ export const authApi = {
 
   // Login user
   async login(data: LoginRequest): Promise<any> {
-    const response = await apiClient.post<AuthResponse>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      data
-    );
+    console.log('Starting login request to:', API_ENDPOINTS.AUTH.LOGIN);
+    
+    try {
+      const response = await apiClient.post<AuthResponse>(
+        API_ENDPOINTS.AUTH.LOGIN,
+        data
+      );
 
-    return {
-      status: 'success',
-      message: 'Login successful',
-      data: {
-        user: response.data?.user || (response as any).user,
-        accessToken: response.data?.access_token || (response as any).access_token,
-        refreshToken: response.data?.refresh_token || (response as any).refresh_token || response.data?.access_token || (response as any).access_token,
-      },
-    };
+      return {
+        status: 'success',
+        message: 'Login successful',
+        data: {
+          user: response.data?.user || (response as any).user,
+          accessToken: response.data?.access_token || (response as any).access_token,
+          refreshToken: response.data?.refresh_token || (response as any).refresh_token || response.data?.access_token || (response as any).access_token,
+        },
+      };
+    } catch (error: any) {
+      console.error('Login failed:', error.message);
+      throw error;
+    }
   },
 
   // Logout user

@@ -89,23 +89,6 @@ export default function CustomerDashboard() {
     spent: Number(currentWedding.spent)
   } : fallbackWedding;
 
-  const planningProgress = {
-    completed: 8,
-    total: 12,
-    percentage: 67,
-  };
-
-  const checklist = [
-    { id: 1, task: "Book venue", completed: true, category: "Venue" },
-    { id: 2, task: "Hire traditional dancers", completed: true, category: "Entertainment" },
-    { id: 3, task: "Select wedding MC", completed: true, category: "Entertainment" },
-    { id: 4, task: "Choose decorations", completed: false, category: "Decor" },
-    { id: 5, task: "Finalize catering menu", completed: false, category: "Food" },
-    { id: 6, task: "Book photographer", completed: true, category: "Photography" },
-    { id: 7, task: "Order wedding cake", completed: false, category: "Food" },
-    { id: 8, task: "Send invitations", completed: true, category: "Planning" },
-  ];
-
   const bookings = [
     {
       id: 1,
@@ -175,8 +158,6 @@ export default function CustomerDashboard() {
         return (
           <Overview
             weddingDetails={displayWedding}
-            planningProgress={planningProgress}
-            checklist={checklist}
           />
         );
 

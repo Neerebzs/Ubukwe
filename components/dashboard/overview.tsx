@@ -18,7 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS, Wedding, ProviderService } from "@/lib/api";
+import { apiClient, API_ENDPOINTS, Wedding, ProviderService, WeddingTask } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -30,24 +30,10 @@ interface OverviewProps {
     budget: number;
     spent: number;
   };
-  planningProgress: {
-    completed: number;
-    total: number;
-    percentage: number;
-  };
-  checklist: Array<{
-    id: number;
-    task: string;
-    category: string;
-    completed: boolean;
-  }>;
-
 }
 
 export function Overview({
   weddingDetails,
-  planningProgress,
-  checklist,
 }: OverviewProps) {
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -66,6 +52,29 @@ export function Overview({
     }
   });
 
+  // Fetch wedding tasks for progress calculation
+  const { data: tasks } = useQuery({
+    queryKey: ["wedding-tasks"],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(API_ENDPOINTS.WEDDING.TASKS);
+        const data = response.data;
+        if (Array.isArray(data)) {
+          return data;
+        } else if (data && Array.isArray(data.data)) {
+          return data.data;
+        } else if (data && typeof data === 'object' && data.tasks && Array.isArray(data.tasks)) {
+          return data.tasks;
+        }
+        return [];
+      } catch (err: any) {
+        if (err.message.includes("404")) return [];
+        throw err;
+      }
+    },
+    enabled: !!weddingResponse // Only fetch tasks if wedding is set up
+  });
+
   // Fetch recommended services
   const { data: recommendationsRes } = useQuery({
     queryKey: ["service-recommendations"],
@@ -77,6 +86,18 @@ export function Overview({
 
   const recommendedServices = recommendationsRes || [];
   const currentWedding = weddingResponse || null;
+  const tasksArray = tasks || [];
+
+  // Calculate real planning progress
+  const completedTasks = tasksArray.filter(task => task.is_completed).length;
+  const totalTasks = tasksArray.length;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const planningProgress = {
+    completed: completedTasks,
+    total: totalTasks,
+    percentage: progressPercentage
+  };
 
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
@@ -311,20 +332,43 @@ export function Overview({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {checklist
-              .filter((item) => !item.completed)
-              .slice(0, 4)
-              .map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-4 h-4 border-2 border-muted-foreground rounded"></div>
-                    <span className="text-sm">{item.task}</span>
+            {tasksArray.length > 0 ? (
+              tasksArray
+                .filter((task) => !task.is_completed)
+                .slice(0, 4)
+                .map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-4 h-4 border-2 border-muted-foreground rounded"></div>
+                      <span className="text-sm">{task.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {task.priority && (
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${
+                            task.priority === 'high' ? 'border-red-200 text-red-700' :
+                            task.priority === 'medium' ? 'border-yellow-200 text-yellow-700' :
+                            'border-green-200 text-green-700'
+                          }`}
+                        >
+                          {task.priority}
+                        </Badge>
+                      )}
+                      {task.assigned_to && (
+                        <Badge variant="outline" className="text-xs">
+                          {task.assigned_to === 'groom' ? 'Groom' : 
+                           task.assigned_to === 'bride' ? 'Bride' : 'Both'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {item.category}
-                  </Badge>
-                </div>
-              ))}
+                ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                {currentWedding ? "No pending tasks. Add some tasks to get started!" : "Set up your wedding details first to start planning."}
+              </div>
+            )}
           </CardContent>
         </Card>
 

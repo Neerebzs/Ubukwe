@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,8 @@ import {
     Loader2,
     AlertCircle,
     User,
-    Users
+    Users,
+    Calendar
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, WeddingTask } from "@/lib/api";
@@ -30,10 +32,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const TASK_CATEGORIES = [
-    "Venue", "Catering", "Photography", "Entertainment", "Decorations", 
-    "Flowers", "Music", "Transportation", "Invitations", "Attire", "Other"
-];
+
 
 const ASSIGNMENT_OPTIONS = [
     { value: "groom", label: "Groom", icon: User },
@@ -47,21 +46,55 @@ const STATUS_OPTIONS = [
     { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" }
 ];
 
+const PRIORITY_OPTIONS = [
+    { value: "low", label: "Low Priority", color: "bg-green-100 text-green-800" },
+    { value: "medium", label: "Medium Priority", color: "bg-yellow-100 text-yellow-800" },
+    { value: "high", label: "High Priority", color: "bg-red-100 text-red-800" }
+];
+
 export function WeddingTasks() {
+    const router = useRouter();
     const queryClient = useQueryClient();
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("");
     const [assignedTo, setAssignedTo] = useState<string>("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [priority, setPriority] = useState("");
+    const [amount, setAmount] = useState("");
     const [activeTab, setActiveTab] = useState("all");
+
+    // Check if wedding is set up first
+    const { data: weddingResponse, isLoading: isWeddingLoading } = useQuery({
+        queryKey: ["wedding-me"],
+        queryFn: async () => {
+            try {
+                const response = await apiClient.get(API_ENDPOINTS.WEDDING.ME);
+                return response.data;
+            } catch (err: any) {
+                if (err.message.includes("404")) return null;
+                throw err;
+            }
+        }
+    });
 
     const { data: tasks, isLoading, error } = useQuery({
         queryKey: ["wedding-tasks"],
         queryFn: async () => {
             const response = await apiClient.get<WeddingTask[]>(API_ENDPOINTS.WEDDING.TASKS);
-            return response.data;
-        }
+            // Ensure we always return an array
+            const data = response.data;
+            if (Array.isArray(data)) {
+                return data;
+            } else if (data && Array.isArray(data.data)) {
+                return data.data;
+            } else if (data && typeof data === 'object' && data.tasks && Array.isArray(data.tasks)) {
+                return data.tasks;
+            }
+            return [];
+        },
+        enabled: !!weddingResponse // Only fetch tasks if wedding is set up
     });
 
     const createMutation = useMutation({
@@ -97,8 +130,11 @@ export function WeddingTasks() {
         setIsAddDialogOpen(false);
         setTitle("");
         setDescription("");
-        setCategory("");
         setAssignedTo("");
+        setStartDate("");
+        setEndDate("");
+        setPriority("");
+        setAmount("");
     };
 
     const handleCreate = () => {
@@ -106,8 +142,11 @@ export function WeddingTasks() {
         createMutation.mutate({ 
             title, 
             description: description || null,
-            category: category || null,
-            assigned_to: assignedTo || null
+            assigned_to: assignedTo || null,
+            start_date: startDate || null,
+            end_date: endDate || null,
+            priority: priority || null,
+            amount: amount ? parseFloat(amount) : null
         });
     };
 
@@ -153,12 +192,71 @@ export function WeddingTasks() {
         );
     };
 
+    const getPriorityBadge = (priority?: string) => {
+        if (!priority) return null;
+        const priorityConfig = PRIORITY_OPTIONS.find(p => p.value === priority);
+        if (!priorityConfig) return null;
+        return (
+            <Badge className={`${priorityConfig.color} border-0 text-xs`}>
+                {priorityConfig.label}
+            </Badge>
+        );
+    };
+
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return null;
+        return new Date(dateString).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
     const filterTasks = (tasks: WeddingTask[]) => {
         if (activeTab === "all") return tasks;
         if (activeTab === "completed") return tasks.filter(t => t.is_completed);
         if (activeTab === "pending") return tasks.filter(t => !t.is_completed);
+        if (activeTab === "high") return tasks.filter(t => t.priority === "high");
+        if (activeTab === "medium") return tasks.filter(t => t.priority === "medium");
+        if (activeTab === "low") return tasks.filter(t => t.priority === "low");
         return tasks.filter(t => t.assigned_to === activeTab);
     };
+
+    if (isWeddingLoading) {
+        return (
+            <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Loading wedding details...</span>
+            </div>
+        );
+    }
+
+    // Show wedding setup prompt if no wedding is configured
+    if (!weddingResponse) {
+        return (
+            <Card>
+                <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+                    <CheckCircle className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Set Up Your Wedding First</h3>
+                    <p className="text-muted-foreground mb-6 max-w-md">
+                        Before you can start planning your wedding tasks, please set up your wedding details including the bride and groom names and wedding date.
+                    </p>
+                    <Button 
+                        onClick={() => {
+                            // Navigate to overview tab to set up wedding
+                            router.push('/customer/dashboard?tab=overview');
+                        }}
+                        className="mb-2"
+                    >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Set Up Wedding Details
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                        You'll be redirected to the dashboard where you can add your wedding information.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (isLoading) {
         return (
@@ -173,41 +271,79 @@ export function WeddingTasks() {
         const errorMessage = (error as any)?.message || "";
         const isWeddingNotFound = errorMessage.includes("Wedding details not found") || errorMessage.includes("404");
         
+        if (isWeddingNotFound) {
+            return (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+                        <CheckCircle className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                        <h3 className="text-xl font-semibold mb-2">Set Up Your Wedding First</h3>
+                        <p className="text-muted-foreground mb-6 max-w-md">
+                            Before you can start planning your wedding tasks, please set up your wedding details including the bride and groom names and wedding date.
+                        </p>
+                        <Button 
+                            onClick={() => {
+                                router.push('/customer/dashboard?tab=overview');
+                            }}
+                            className="mb-2"
+                        >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Set Up Wedding Details
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                            You'll be redirected to the dashboard where you can add your wedding information.
+                        </p>
+                    </CardContent>
+                </Card>
+            );
+        }
+        
         return (
             <Card>
                 <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                    {isWeddingNotFound ? (
-                        <>
-                            <CheckCircle className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">No Tasks Yet</h3>
-                            <p className="text-muted-foreground mb-6">Start planning your wedding by adding your first task</p>
-                            <Button onClick={() => setIsAddDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Your First Task
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                            <p className="text-destructive">Error loading tasks. Please try again.</p>
-                        </>
-                    )}
+                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Unable to Load Tasks</h3>
+                    <p className="text-muted-foreground mb-4">There was an error loading your wedding tasks.</p>
+                    <Button 
+                        variant="outline" 
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ["wedding-tasks"] })}
+                    >
+                        Try Again
+                    </Button>
                 </CardContent>
             </Card>
         );
     }
 
-    const completedCount = tasks?.filter(t => t.is_completed).length || 0;
-    const totalCount = tasks?.length || 0;
+    const tasksArray = tasks || [];
+    const completedCount = tasksArray.filter(t => t.is_completed).length;
+    const totalCount = tasksArray.length;
     const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-    const filteredTasks = tasks ? filterTasks(tasks) : [];
+    const filteredTasks = filterTasks(tasksArray);
+    
+    // Calculate budget totals
+    const totalBudget = tasksArray.reduce((sum, task) => sum + (task.amount || 0), 0);
+    const completedBudget = tasksArray.filter(t => t.is_completed).reduce((sum, task) => sum + (task.amount || 0), 0);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold">Wedding Checklist</h2>
-                    <p className="text-muted-foreground">Manage your path to the big day</p>
+                    <p className="text-muted-foreground">
+                        {weddingResponse?.couple_name ? 
+                            `Planning for ${weddingResponse.couple_name}` : 
+                            "Manage your path to the big day"
+                        }
+                    </p>
+                    {weddingResponse?.wedding_date && (
+                        <p className="text-sm text-primary font-medium mt-1">
+                            Wedding Date: {new Date(weddingResponse.wedding_date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </p>
+                    )}
                 </div>
                 <Button onClick={() => setIsAddDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -227,18 +363,41 @@ export function WeddingTasks() {
                             style={{ width: `${progress}%` }}
                         />
                     </div>
+                    {totalBudget > 0 && (
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                            <div className="text-sm">
+                                <span className="text-muted-foreground">Total Budget: </span>
+                                <span className="font-medium">RWF {totalBudget.toLocaleString()}</span>
+                            </div>
+                            <div className="text-sm">
+                                <span className="text-muted-foreground">Completed: </span>
+                                <span className="font-medium">RWF {completedBudget.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    )}
                 </CardHeader>
             </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="all">All ({totalCount})</TabsTrigger>
-                    <TabsTrigger value="pending">Pending ({tasks?.filter(t => !t.is_completed).length || 0})</TabsTrigger>
-                    <TabsTrigger value="completed">Completed ({completedCount})</TabsTrigger>
-                    <TabsTrigger value="groom">Groom ({tasks?.filter(t => t.assigned_to === 'groom').length || 0})</TabsTrigger>
-                    <TabsTrigger value="bride">Bride ({tasks?.filter(t => t.assigned_to === 'bride').length || 0})</TabsTrigger>
-                    <TabsTrigger value="other">Both/Other ({tasks?.filter(t => t.assigned_to === 'other').length || 0})</TabsTrigger>
-                </TabsList>
+                <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                        <TabsList className="grid grid-cols-3">
+                            <TabsTrigger value="all">All ({totalCount})</TabsTrigger>
+                            <TabsTrigger value="pending">Pending ({tasksArray.filter(t => !t.is_completed).length})</TabsTrigger>
+                            <TabsTrigger value="completed">Completed ({completedCount})</TabsTrigger>
+                        </TabsList>
+                        <TabsList className="grid grid-cols-3">
+                            <TabsTrigger value="groom">Groom ({tasksArray.filter(t => t.assigned_to === 'groom').length})</TabsTrigger>
+                            <TabsTrigger value="bride">Bride ({tasksArray.filter(t => t.assigned_to === 'bride').length})</TabsTrigger>
+                            <TabsTrigger value="other">Both/Other ({tasksArray.filter(t => t.assigned_to === 'other').length})</TabsTrigger>
+                        </TabsList>
+                        <TabsList className="grid grid-cols-3">
+                            <TabsTrigger value="high">High Priority ({tasksArray.filter(t => t.priority === 'high').length})</TabsTrigger>
+                            <TabsTrigger value="medium">Medium Priority ({tasksArray.filter(t => t.priority === 'medium').length})</TabsTrigger>
+                            <TabsTrigger value="low">Low Priority ({tasksArray.filter(t => t.priority === 'low').length})</TabsTrigger>
+                        </TabsList>
+                    </div>
+                </div>
 
                 <TabsContent value={activeTab} className="mt-6">
                     <Card>
@@ -262,17 +421,26 @@ export function WeddingTasks() {
                                                             {task.title}
                                                         </span>
                                                         {getStatusBadge(task.status)}
+                                                        {getPriorityBadge(task.priority)}
                                                     </div>
                                                     {task.description && (
                                                         <p className="text-xs text-muted-foreground mb-1">{task.description}</p>
                                                     )}
-                                                    <div className="flex items-center gap-3">
-                                                        {task.category && (
-                                                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                                                                {task.category}
-                                                            </span>
-                                                        )}
+                                                    <div className="flex items-center gap-3 flex-wrap">
                                                         {getAssignmentIcon(task.assigned_to)}
+                                                        {(task.start_date || task.end_date) && (
+                                                            <div className="flex items-center text-xs text-muted-foreground">
+                                                                <Calendar className="h-3 w-3 mr-1" />
+                                                                {task.start_date && formatDate(task.start_date)}
+                                                                {task.start_date && task.end_date && " - "}
+                                                                {task.end_date && formatDate(task.end_date)}
+                                                            </div>
+                                                        )}
+                                                        {task.amount && (
+                                                            <div className="flex items-center text-xs text-muted-foreground">
+                                                                <span className="font-medium">RWF {task.amount.toLocaleString()}</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -316,7 +484,7 @@ export function WeddingTasks() {
             </Tabs>
 
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Add New Task</DialogTitle>
                     </DialogHeader>
@@ -340,21 +508,8 @@ export function WeddingTasks() {
                                 rows={3}
                             />
                         </div>
-                        <div className="flex gap-4">
-                            <div className="grid gap-2 flex-1">
-                                <Label htmlFor="category">Category</Label>
-                                <Select value={category} onValueChange={setCategory}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {TASK_CATEGORIES.map((cat) => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2 flex-1">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
                                 <Label htmlFor="assigned">Assign To</Label>
                                 <Select value={assignedTo} onValueChange={setAssignedTo}>
                                     <SelectTrigger>
@@ -375,6 +530,56 @@ export function WeddingTasks() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="priority">Priority</Label>
+                                <Select value={priority} onValueChange={setPriority}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PRIORITY_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                <div className="flex items-center">
+                                                    <div className={`w-2 h-2 rounded-full mr-2 ${option.color.split(' ')[0]}`}></div>
+                                                    {option.label}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="start-date">Start Date</Label>
+                                <Input
+                                    id="start-date"
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="end-date">End Date</Label>
+                                <Input
+                                    id="end-date"
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="amount">Budget Amount (RWF)</Label>
+                            <Input
+                                id="amount"
+                                type="number"
+                                placeholder="e.g., 50000"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                min="0"
+                                step="100"
+                            />
                         </div>
                     </div>
                     <DialogFooter>
