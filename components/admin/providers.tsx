@@ -80,32 +80,25 @@ export function AdminProviders() {
       console.log("Fetching providers with statusFilter:", statusFilter);
       
       if (statusFilter === "pending") {
-        // Fetch pending providers (onboarding requests)
-        console.log("Calling getPending()");
-        const response = await apiClient.admin.providers.getPending();
-        const formattedProviders = response.data.map((item: any) => ({
-          provider: item.user,
-          verification: item.verification,
-          bookingsCount: 0
-        }));
-        setProviders(formattedProviders);
+        // Fetch pending onboarding applications
+        console.log("Calling onboarding.getAll('pending')");
+        const response = await apiClient.admin.onboarding.getAll('pending');
+        console.log("Onboarding response:", response.data);
+        setProviders(response.data.data || []);
       } else if (statusFilter === "all") {
-        // For "All" tab, don't pass status parameter
-        console.log("Calling getAll() without status");
-        const response = await apiClient.admin.providers.getAll();
-        const formattedProviders = response.data.map((provider: any) => ({
-          provider: provider,
-          verification: null, // Will be fetched individually if needed
-          bookingsCount: 0
-        }));
-        setProviders(formattedProviders);
+        // For "All" tab, get all onboarding applications
+        console.log("Calling onboarding.getAll()");
+        const response = await apiClient.admin.onboarding.getAll();
+        console.log("All onboarding response:", response.data);
+        setProviders(response.data.data || []);
       } else {
         // Fetch providers with specific status filter (active, suspended)
-        console.log("Calling getAll() with status:", statusFilter);
+        console.log("Calling providers.getAll() with status:", statusFilter);
         const response = await apiClient.admin.providers.getAll(statusFilter);
         const formattedProviders = response.data.map((provider: any) => ({
           provider: provider,
           verification: null, // Will be fetched individually if needed
+          onboarding: null,
           bookingsCount: 0
         }));
         setProviders(formattedProviders);
@@ -120,8 +113,8 @@ export function AdminProviders() {
 
   const fetchProviderDetails = async (id: string) => {
     try {
-      const response = await apiClient.admin.providers.getDetails(id);
-      setProviderDetail(response.data);
+      const response = await apiClient.admin.onboarding.getDetails(id);
+      setProviderDetail(response.data.data);
       setIsDetailsModalOpen(true);
     } catch (error) {
       toast.error("Failed to fetch provider details");
@@ -133,10 +126,10 @@ export function AdminProviders() {
     setIsProcessing(true);
     try {
       if (actionType === "approve") {
-        await apiClient.admin.providers.approve(selectedProviderId, adminNotes);
+        await apiClient.admin.onboarding.approve(selectedProviderId, adminNotes);
         toast.success("Provider application approved");
       } else if (actionType === "reject") {
-        await apiClient.admin.providers.reject(selectedProviderId, adminNotes);
+        await apiClient.admin.onboarding.reject(selectedProviderId, adminNotes);
         toast.success("Provider application rejected");
       } else if (actionType === "suspend") {
         await apiClient.admin.providers.suspend(selectedProviderId, adminNotes);
@@ -169,26 +162,28 @@ export function AdminProviders() {
     return "outline";
   };
 
-  const getStatusText = (provider: ProviderData, verification: VerificationData | null) => {
+  const getStatusText = (item: any) => {
     if (statusFilter === "pending") {
-      return verification?.status || "pending";
+      return item.onboarding?.status || "pending";
     }
-    return provider.is_verified ? "active" : "inactive";
+    return item.provider?.is_verified ? "active" : "inactive";
   };
 
-  const getProviderActions = (provider: ProviderData, verification: VerificationData | null) => {
+  const getProviderActions = (item: any) => {
+    const providerId = item.onboarding?.id || item.provider?.id;
+    
     if (statusFilter === "pending") {
       return (
         <>
-          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(provider.id)}>
+          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(providerId)}>
             <Eye className="w-4 h-4 mr-2" />
             Review Details
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => openActionModal(provider.id, "reject")}>
+          <Button variant="destructive" size="sm" onClick={() => openActionModal(providerId, "reject")}>
             <XCircle className="w-4 h-4 mr-2" />
             Reject
           </Button>
-          <Button size="sm" onClick={() => openActionModal(provider.id, "approve")}>
+          <Button size="sm" onClick={() => openActionModal(providerId, "approve")}>
             <CheckCircle className="w-4 h-4 mr-2" />
             Approve
           </Button>
@@ -197,11 +192,11 @@ export function AdminProviders() {
     } else if (statusFilter === "active") {
       return (
         <>
-          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(provider.id)}>
+          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(providerId)}>
             <Eye className="w-4 h-4 mr-2" />
             View Details
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => openActionModal(provider.id, "suspend")}>
+          <Button variant="destructive" size="sm" onClick={() => openActionModal(providerId, "suspend")}>
             <UserX className="w-4 h-4 mr-2" />
             Suspend
           </Button>
@@ -210,11 +205,11 @@ export function AdminProviders() {
     } else if (statusFilter === "suspended") {
       return (
         <>
-          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(provider.id)}>
+          <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(providerId)}>
             <Eye className="w-4 h-4 mr-2" />
             View Details
           </Button>
-          <Button size="sm" onClick={() => openActionModal(provider.id, "activate")}>
+          <Button size="sm" onClick={() => openActionModal(providerId, "activate")}>
             <UserCheck className="w-4 h-4 mr-2" />
             Activate
           </Button>
@@ -222,7 +217,7 @@ export function AdminProviders() {
       );
     }
     return (
-      <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(provider.id)}>
+      <Button variant="outline" size="sm" onClick={() => fetchProviderDetails(providerId)}>
         <Eye className="w-4 h-4 mr-2" />
         View Details
       </Button>
@@ -230,9 +225,17 @@ export function AdminProviders() {
   };
 
   const filteredProviders = providers.filter(
-    (p) =>
-      p.provider.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.provider.business_type?.toLowerCase().includes(searchTerm.toLowerCase())
+    (item) => {
+      const provider = item.user || item.provider;
+      const onboarding = item.onboarding;
+      
+      return (
+        provider?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider?.business_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        onboarding?.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        onboarding?.business_type?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
   );
 
   const getTabTitle = (status: string) => {
@@ -259,7 +262,7 @@ export function AdminProviders() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Provider Management</h2>
+          <h2 className="text-2xl font-bold">Onboarding Management</h2>
           <p className="text-muted-foreground">Manage service provider onboarding and accounts</p>
         </div>
         <div className="flex items-center gap-4">
@@ -317,71 +320,82 @@ export function AdminProviders() {
             />
           ) : (
             <div className="space-y-4">
-              {filteredProviders.map(({ provider, verification }) => (
-                <Card key={provider.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-xl">{provider.full_name || provider.username}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1 lowercase">
-                          Provider ID: {provider.id.split("-")[0].toUpperCase()} • 
-                          {statusFilter === "pending" ? " Applied: " : " Joined: "}
-                          {new Date(verification?.created_at || provider.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge 
-                        variant={getStatusBadgeVariant(getStatusText(provider, verification), provider.is_verified)} 
-                        className="capitalize"
-                      >
-                        {getStatusText(provider, verification)}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Service Category</p>
-                        <Badge variant="outline" className="mt-1 capitalize">
-                          {provider.business_type?.replace("_", " ") || "Not Specified"}
+              {filteredProviders.map((item) => {
+                const provider = item.user || item.provider;
+                const verification = item.verification;
+                const onboarding = item.onboarding;
+                const providerId = onboarding?.id || provider?.id;
+                
+                return (
+                  <Card key={providerId}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-xl">
+                            {onboarding?.business_name || provider?.full_name || provider?.username}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1 lowercase">
+                            Provider ID: {providerId?.split("-")[0].toUpperCase()} • 
+                            {statusFilter === "pending" ? " Applied: " : " Joined: "}
+                            {new Date(onboarding?.submitted_at || provider?.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant={getStatusBadgeVariant(getStatusText(item), provider?.is_verified)} 
+                          className="capitalize"
+                        >
+                          {getStatusText(item)}
                         </Badge>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Location</p>
-                        <p className="text-sm font-medium flex items-center mt-1">
-                          <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
-                          {provider.city ? `${provider.city}, ${provider.country}` : "Not Specified"}
-                        </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Service Category</p>
+                          <Badge variant="outline" className="mt-1 capitalize">
+                            {onboarding?.business_type?.replace("_", " ") || provider?.business_type?.replace("_", " ") || "Not Specified"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Location</p>
+                          <p className="text-sm font-medium flex items-center mt-1">
+                            <MapPin className="h-3 w-3 mr-1 text-muted-foreground" />
+                            {(onboarding?.city && onboarding?.country) ? `${onboarding.city}, ${onboarding.country}` : 
+                             (provider?.city && provider?.country) ? `${provider.city}, ${provider.country}` : "Not Specified"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Experience</p>
+                          <p className="text-sm font-medium flex items-center mt-1">
+                            <Briefcase className="h-3 w-3 mr-1 text-muted-foreground" />
+                            {(onboarding?.years_experience || provider?.years_experience) ? 
+                             `${onboarding?.years_experience || provider?.years_experience} years` : "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Verification Status</p>
+                          <p className={`text-sm font-medium flex items-center mt-1 ${
+                            provider?.is_verified ? "text-green-600" : 
+                            verification?.rdb_tin_number ? "text-amber-600" : "text-gray-600"
+                          }`}>
+                            {provider?.is_verified ? "Verified" : 
+                             verification?.rdb_tin_number ? "Documents Submitted" : "Pending Documents"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Experience</p>
-                        <p className="text-sm font-medium flex items-center mt-1">
-                          <Briefcase className="h-3 w-3 mr-1 text-muted-foreground" />
-                          {provider.years_experience ? `${provider.years_experience} years` : "N/A"}
-                        </p>
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="text-xs text-muted-foreground flex items-center">
+                          <Info className="h-3 w-3 mr-1" />
+                          {statusFilter === "pending" ? "Review provider's legal documents before approval" : "Manage provider account status"}
+                        </div>
+                        <div className="flex gap-2">
+                          {getProviderActions(item)}
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Verification Status</p>
-                        <p className={`text-sm font-medium flex items-center mt-1 ${
-                          provider.is_verified ? "text-green-600" : 
-                          verification?.rdb_tin_number ? "text-amber-600" : "text-gray-600"
-                        }`}>
-                          {provider.is_verified ? "Verified" : 
-                           verification?.rdb_tin_number ? "Documents Submitted" : "Pending Documents"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="text-xs text-muted-foreground flex items-center">
-                        <Info className="h-3 w-3 mr-1" />
-                        {statusFilter === "pending" ? "Review provider's legal documents before approval" : "Manage provider account status"}
-                      </div>
-                      <div className="flex gap-2">
-                        {getProviderActions(provider, verification)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -403,9 +417,15 @@ export function AdminProviders() {
                   <div>
                     <h4 className="text-sm font-bold text-muted-foreground uppercase">Basic Information</h4>
                     <div className="mt-2 space-y-1">
-                      <p className="text-lg font-semibold">{providerDetail.provider.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{providerDetail.provider.email}</p>
-                      <p className="text-sm">{providerDetail.provider.phone_number || "No phone provided"}</p>
+                      <p className="text-lg font-semibold">
+                        {providerDetail.onboarding?.business_name || providerDetail.provider?.full_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {providerDetail.onboarding?.email || providerDetail.provider?.email}
+                      </p>
+                      <p className="text-sm">
+                        {providerDetail.onboarding?.phone || providerDetail.provider?.phone_number || "No phone provided"}
+                      </p>
                     </div>
                   </div>
                   <div>
@@ -413,13 +433,19 @@ export function AdminProviders() {
                     <div className="mt-2 space-y-2">
                       <div className="flex items-center text-sm">
                         <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="capitalize">{providerDetail.provider.business_type?.replace("_", " ")}</span>
+                        <span className="capitalize">
+                          {(providerDetail.onboarding?.business_type || providerDetail.provider?.business_type)?.replace("_", " ")}
+                        </span>
                         <span className="mx-2 text-muted-foreground">•</span>
-                        <span>{providerDetail.provider.years_experience} Years Experience</span>
+                        <span>
+                          {providerDetail.onboarding?.years_experience || providerDetail.provider?.years_experience} Years Experience
+                        </span>
                       </div>
                       <div className="flex items-center text-sm">
                         <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{providerDetail.provider.city}, {providerDetail.provider.country}</span>
+                        <span>
+                          {providerDetail.onboarding?.city || providerDetail.provider?.city}, {providerDetail.onboarding?.country || providerDetail.provider?.country}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -430,15 +456,21 @@ export function AdminProviders() {
                     <div className="mt-2 p-3 bg-muted/50 rounded-lg space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Status:</span>
-                        <Badge variant="secondary" className="capitalize">{providerDetail.verification?.status || "No attempt"}</Badge>
+                        <Badge variant="secondary" className="capitalize">
+                          {providerDetail.onboarding?.status || providerDetail.verification?.status || "No attempt"}
+                        </Badge>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Registered Name:</span>
-                        <span className="font-medium">{providerDetail.verification?.rdb_company_name || "N/A"}</span>
+                        <span className="font-medium">
+                          {providerDetail.verification?.rdb_company_name || "N/A"}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">TIN Number:</span>
-                        <span className="font-medium font-mono">{providerDetail.verification?.rdb_tin_number || "N/A"}</span>
+                        <span className="font-medium font-mono">
+                          {providerDetail.verification?.rdb_tin_number || "N/A"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -446,7 +478,7 @@ export function AdminProviders() {
                     <h4 className="text-sm font-bold text-muted-foreground uppercase">Statistics</h4>
                     <div className="mt-2 grid grid-cols-2 gap-4">
                       <div className="p-3 border rounded-lg text-center">
-                        <p className="text-2xl font-bold">{providerDetail.bookingsCount}</p>
+                        <p className="text-2xl font-bold">{providerDetail.bookingsCount || 0}</p>
                         <p className="text-xs text-muted-foreground">Total Bookings</p>
                       </div>
                       <div className="p-3 border rounded-lg text-center">
@@ -461,10 +493,10 @@ export function AdminProviders() {
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>Close</Button>
-            <Button variant="destructive" onClick={() => openActionModal(providerDetail?.provider.id!, "reject")}>
+            <Button variant="destructive" onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "reject")}>
               Reject Application
             </Button>
-            <Button onClick={() => openActionModal(providerDetail?.provider.id!, "approve")}>
+            <Button onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "approve")}>
               Approve Provider
             </Button>
           </DialogFooter>

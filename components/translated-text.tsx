@@ -13,7 +13,7 @@ interface TranslatedTextProps {
 
 export function TranslatedText({ text, fallback, as: Component = 'span', className, ...props }: TranslatedTextProps) {
   const { t, language } = useTranslation();
-  const [translated, setTranslated] = useState(text);
+  const [translated, setTranslated] = useState(text); // Start with original text
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

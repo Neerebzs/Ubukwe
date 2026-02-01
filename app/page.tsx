@@ -11,6 +11,7 @@ import { Navbar } from "@/components/ui/navbar";
 import { Footer } from "@/components/ui/footer";
 import { HeroCarousel } from "@/components/ui/hero-carousel";
 import { TranslatedText } from "@/components/translated-text";
+import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
 
 export default function HomePage() {
   const isMobile = useIsMobile();
@@ -124,11 +125,11 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-hidden pt-20">
+    <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
       <Navbar />
 
       {/* Hero Section with Animated Background */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16 md:pt-20 px-4">
         <div className="absolute inset-0  bg-gradient-to-br from-teal-50/40 via-white to-blue-50/40" />
         
         {/* Animated Orbs */}
@@ -336,6 +337,9 @@ export default function HomePage() {
       </section>
 
       <Footer />
+
+      {/* Mobile Bottom Navigation - Only on mobile */}
+      <PublicBottomNav />
 
       <style jsx>{`
         @keyframes blob {

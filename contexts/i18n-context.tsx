@@ -13,15 +13,15 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children, defaultLanguage = 'en' }: { children: React.ReactNode; defaultLanguage?: string }) {
-  const [language, setLanguageState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('app_language') || defaultLanguage;
-    }
-    return defaultLanguage;
-  });
+  const [language, setLanguageState] = useState(defaultLanguage);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Load language from localStorage after hydration
+    const savedLanguage = localStorage.getItem('app_language');
+    if (savedLanguage && savedLanguage !== language) {
+      setLanguageState(savedLanguage);
+    }
     translationService.init(language);
     setIsInitialized(true);
   }, []);

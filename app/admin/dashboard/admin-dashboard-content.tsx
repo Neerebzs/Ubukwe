@@ -40,11 +40,15 @@ import { AdminTabsSidebar } from "@/components/ui/admin-tabs-sidebar";
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminUsers } from "@/components/admin/users";
 import { AdminProviders } from "@/components/admin/providers";
+import { AdminServices } from "@/components/admin/services";
 import { AdminBookingsMetrics } from "@/components/admin/bookings";
 import { AdminDisputes } from "@/components/admin/disputes";
 import { AdminAnalytics } from "@/components/admin/analytics";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardHeader } from "@/components/ui/dashboard-header"
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
+import { MobileAppBar } from "@/components/ui/mobile-app-bar"
+import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
 import { TranslatedText } from "@/components/translated-text";
 
 export function AdminDashboardContent() {
@@ -99,6 +103,8 @@ export function AdminDashboardContent() {
         return <AdminUsers />
       case "providers":
         return <AdminProviders />
+      case "services":
+        return <AdminServices />
       case "bookings":
         return <AdminBookingsMetrics />
       case "disputes":
@@ -112,6 +118,20 @@ export function AdminDashboardContent() {
 
   return (
     <div className="min-h-screen bg-[#f9fafc]">
+      {/* Mobile App Bar - Only on mobile */}
+      <MobileAppBar
+        title="Admin Dashboard"
+        subtitle="Platform Management"
+        onMenuClick={toggleMobileMenu}
+        user={user ? {
+          full_name: user.full_name || user.username,
+          email: user.email,
+          profile_image_url: user.profile_image_url
+        } : undefined}
+        onLogout={logout}
+        notificationCount={0}
+      />
+
       {/* Desktop Sidebar */}
       <AdminTabsSidebar
         activeTab={activeTab}
@@ -126,68 +146,50 @@ export function AdminDashboardContent() {
         onLogout={logout}
       />
 
-      {/* Mobile Sidebar Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={toggleMobileMenu} />
-          <div className="fixed left-0 top-0 h-full w-64 bg-card border-r shadow-lg overflow-y-auto">
-            <div className="p-4 h-full flex flex-col">
-              <div className="mb-4 flex items-center justify-between flex-shrink-0">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground mb-1"><TranslatedText text="Admin Dashboard" /></h2>
-                  <p className="text-xs text-muted-foreground"><TranslatedText text="Platform Management" /></p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMobileMenu}
-                  className="p-2 hover:bg-muted/50"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <AdminTabsSidebar
-                  activeTab={activeTab}
-                  onTabChange={(tab) => {
-                    handleTabChange(tab)
-                    toggleMobileMenu()
-                  }}
-                  isCollapsed={false}
-                  mobile={true}
-                  user={user ? {
-                    full_name: user.full_name || user.username,
-                    email: user.email,
-                    avatar: user.profile_image_url
-                  } : undefined}
-                  onLogout={logout}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Mobile Menu Drawer */}
+      <AdminMobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={toggleMobileMenu}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        user={user ? {
+          full_name: user.full_name || user.username,
+          email: user.email,
+          avatar: user.profile_image_url
+        } : undefined}
+        onLogout={logout}
+      />
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-        <DashboardHeader
-          user={{
-            full_name: user?.full_name || user?.username || "Admin",
-            role: "Administrator",
-            profile_image_url: user?.profile_image_url
-          }}
-          onLogout={logout}
-          onToggleSidebar={toggleSidebar}
-          onToggleMobileMenu={toggleMobileMenu}
-          title="Admin Dashboard"
-          subtitle="Platform Management"
-        />
+        {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
+        <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
+          <DashboardHeader
+            user={{
+              full_name: user?.full_name || user?.username || "Admin",
+              role: "Administrator",
+              profile_image_url: user?.profile_image_url
+            }}
+            onLogout={logout}
+            onToggleSidebar={toggleSidebar}
+            onToggleMobileMenu={toggleMobileMenu}
+            title="Admin Dashboard"
+            subtitle="Platform Management"
+          />
+        </div>
 
-        {/* Content Area */}
-        <main className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto" role="main">
+        {/* Content Area with mobile padding */}
+        <main className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto pb-20 md:pb-4" role="main">
           {renderContent()}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation - Only on mobile */}
+      <MobileBottomNav
+        userRole="admin"
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
     </div>
   )
 }

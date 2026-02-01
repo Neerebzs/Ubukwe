@@ -65,15 +65,19 @@ export function ProviderTabsSidebar({
     return state;
   }, []);
 
-  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') return initialExpanded;
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>(initialExpanded);
+
+  React.useEffect(() => {
+    // Load from localStorage after hydration
     try {
       const saved = window.localStorage.getItem('providerSidebarExpanded');
-      return saved ? JSON.parse(saved) : initialExpanded;
+      if (saved) {
+        setExpandedGroups(JSON.parse(saved));
+      }
     } catch {
-      return initialExpanded;
+      // Keep initial state
     }
-  });
+  }, []);
 
   const toggleGroup = (title: string) => {
     setExpandedGroups((prev) => ({ ...prev, [title]: !prev[title] }));

@@ -72,6 +72,27 @@ export default function ProviderOnboarding() {
     }
   }, [])
 
+  // Check if user already has an onboarding application
+  useEffect(() => {
+    const checkExistingApplication = async () => {
+      try {
+        const response = await apiClient.provider.getOnboardingStatus()
+        if (response.data && response.data.status) {
+          // User already has an application
+          toast.info(`You already have an onboarding application with status: ${response.data.status}`)
+          router.push("/provider/dashboard")
+        }
+      } catch (error: any) {
+        // If error is 404 or similar, it means no application exists, which is fine
+        if (!error.message?.includes("404") && !error.message?.includes("not found")) {
+          console.error("Error checking onboarding status:", error)
+        }
+      }
+    }
+
+    checkExistingApplication()
+  }, [])
+
   /* ---------------- CAMERA (FIXED) ---------------- */
   const startCamera = async () => {
     try {
@@ -224,7 +245,7 @@ export default function ProviderOnboarding() {
       setIsSubmitting(true)
       try {
         if (!documents.idDocument || !documents.selfiePhoto) {
-          throw new Error("Missing ID document or selfie photo.")
+          throw new Error("Missing ID document or selfie photo. Please upload both documents.")
         }
 
         const docResponse = await apiClient.provider.submitDocuments(
@@ -233,14 +254,37 @@ export default function ProviderOnboarding() {
         )
 
         if (!docResponse.data.face_match) {
-          throw new Error(docResponse.data.detail || "Face does not match NID. Please re-take your selfie.")
+          throw new Error(docResponse.data.detail || "Face does not match National ID. Please retake your selfie with better lighting and ensure your face is clearly visible.")
         }
 
         toast.success("Identity verified successfully!")
         setCurrentStep(5)
       } catch (error: any) {
         console.error("Verification failed:", error)
-        toast.error(error.message || "Identity verification failed. Please try again.")
+        
+        // Handle specific verification errors with actual API messages
+        let errorMessage = "Identity verification failed. Please try again."
+        
+        if (error.message) {
+          if (error.message.includes("face_match") || error.message.includes("Face does not match")) {
+            errorMessage = "Face verification failed. Please ensure good lighting and retake your selfie."
+          } else if (error.message.includes("NO_FACE_NID")) {
+            errorMessage = "No face detected in your ID document. Please upload a clear image of your National ID."
+          } else if (error.message.includes("NO_FACE_SELFIE")) {
+            errorMessage = "No face detected in your selfie. Please retake your selfie with better lighting."
+          } else if (error.message.includes("MULTIPLE_FACES")) {
+            errorMessage = "Multiple faces detected. Please ensure only one face is visible in the image."
+          } else if (error.message.includes("timeout")) {
+            errorMessage = "Verification timed out. Please check your internet connection and try again."
+          } else if (error.message.includes("413") || error.message.includes("too large")) {
+            errorMessage = "Image files are too large. Please use smaller images (max 10MB each)."
+          } else {
+            // Use the actual error message from the API
+            errorMessage = error.message
+          }
+        }
+        
+        toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
       }
@@ -261,9 +305,9 @@ export default function ProviderOnboarding() {
     }
     setIsSubmitting(true)
     try {
-      // 2. Submit Business Onboarding Information
+      // Validate required documents
       if (!documents.businessLicense) {
-        throw new Error("Missing business license (RDB file)")
+        throw new Error("Missing business license (RDB file). Please upload your RDB certificate.")
       }
 
       const onboardingData = {
@@ -279,13 +323,46 @@ export default function ProviderOnboarding() {
         country: formData.country,
       }
 
-      await apiClient.provider.submitOnboarding(onboardingData, documents.businessLicense)
+      console.log('Submitting onboarding data:', onboardingData)
+      console.log('RDB file:', documents.businessLicense)
 
-      toast.success("Onboarding data submitted successfully!")
+      const response = await apiClient.provider.submitOnboarding(onboardingData, documents.businessLicense)
+
+      toast.success("Onboarding application submitted successfully! You will be notified once it's reviewed.")
       router.push("/provider/dashboard")
     } catch (error: any) {
       console.error("Submission failed:", error)
-      toast.error(error.message || "Failed to submit onboarding data. Please try again.")
+      
+      // Extract the actual error message from the API response
+      let errorMessage = "Failed to submit onboarding data. Please try again."
+      
+      if (error.message) {
+        // Check for specific error messages from the API
+        if (error.message.includes("Onboarding application already exists")) {
+          errorMessage = "You have already submitted an onboarding application. Please check your dashboard for the status."
+        } else if (error.message.includes("User must be a service provider")) {
+          errorMessage = "Only service providers can submit onboarding applications. Please contact support if you believe this is an error."
+        } else if (error.message.includes("User not found")) {
+          errorMessage = "Your account could not be found. Please try logging in again."
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Request timed out. Please check your internet connection and try again."
+        } else if (error.message.includes("Network error")) {
+          errorMessage = "Network error. Please check your internet connection and try again."
+        } else if (error.message.includes("413") || error.message.includes("too large")) {
+          errorMessage = "File size too large. Please use a smaller file (max 10MB)."
+        } else if (error.message.includes("400") || error.message.includes("validation")) {
+          errorMessage = "Please check your information and try again. " + error.message
+        } else if (error.message.includes("401") || error.message.includes("unauthorized")) {
+          errorMessage = "Session expired. Please login again."
+        } else if (error.message.includes("403") || error.message.includes("forbidden")) {
+          errorMessage = "You don't have permission to perform this action."
+        } else {
+          // Use the actual error message from the API
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }

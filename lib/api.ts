@@ -56,6 +56,14 @@ export const API_ENDPOINTS = {
     ME: `/api/${API_VERSION}/wedding/me`,
     TASKS: `/api/${API_VERSION}/tasks`,
     TASK_STATS: `/api/${API_VERSION}/tasks/stats`,
+    BUDGET_CATEGORIES: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/budget-categories`,
+    CREATE_DEFAULT_CATEGORIES: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/budget-categories/create-default`,
+    REDISTRIBUTE_BUDGET: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/budget-categories/redistribute`,
+    BUDGET_STATISTICS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/budget-statistics`,
+    WEDDING_STATISTICS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/statistics`,
+    DASHBOARD_SUMMARY: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/dashboard-summary`,
+    CATEGORY_INSIGHTS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/category-insights`,
+    RECALCULATE_SPENDING: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/recalculate-spending`,
   },
   // Public Service endpoints
   SERVICES: {
@@ -136,6 +144,7 @@ export interface Wedding {
 export interface WeddingTask {
   id: string;
   wedding_id: string;
+  budget_category_id?: string;
   title: string;
   description?: string;
   category?: string;
@@ -143,11 +152,161 @@ export interface WeddingTask {
   is_completed: boolean;
   status: 'pending' | 'in_progress' | 'completed';
   priority?: 'low' | 'medium' | 'high';
+  amount?: number;
   start_date?: string;
   end_date?: string;
-  amount?: number;
   created_at: string;
   updated_at?: string;
+}
+
+export interface BudgetCategory {
+  id: string;
+  wedding_id: string;
+  category_id: string;
+  category_name: string;
+  allocated_amount: number;
+  spent_amount: number;
+  estimated_amount: number;
+  default_percentage: number;
+  variance: number;
+  usage_percentage: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface WeddingStatistics {
+  wedding_info: {
+    id: string;
+    couple_name: string;
+    wedding_date?: string;
+    guest_count: number;
+    venue?: string;
+    days_until_wedding?: number;
+    created_at: string;
+  };
+  task_statistics: {
+    total_tasks: number;
+    completed_tasks: number;
+    pending_tasks: number;
+    in_progress_tasks: number;
+    overall_progress: number;
+    priority_breakdown: {
+      high_priority: {
+        total: number;
+        completed: number;
+        pending: number;
+      };
+      medium_priority: number;
+      low_priority: number;
+    };
+    assignment_breakdown: {
+      bride: {
+        total: number;
+        completed: number;
+        completion_rate: number;
+      };
+      groom: {
+        total: number;
+        completed: number;
+        completion_rate: number;
+      };
+      shared: {
+        total: number;
+        completed: number;
+        completion_rate: number;
+      };
+      unassigned: number;
+    };
+  };
+  timeline_statistics: {
+    overdue_tasks: number;
+    due_this_week: number;
+    due_next_week: number;
+    overdue_details: Array<{
+      id: string;
+      title: string;
+      end_date?: string;
+      days_overdue: number;
+      priority?: string;
+      assigned_to?: string;
+    }>;
+    upcoming_tasks: Array<{
+      id: string;
+      title: string;
+      end_date?: string;
+      days_until_due: number;
+      priority?: string;
+      assigned_to?: string;
+    }>;
+  };
+  budget_statistics: {
+    total_budget: number;
+    total_spent: number;
+    remaining_budget: number;
+    budget_usage_percentage: number;
+    is_over_budget: boolean;
+    task_budget: {
+      total_allocated: number;
+      total_spent: number;
+      remaining: number;
+      usage_percentage: number;
+    };
+    category_statistics: {
+      total_allocated: number;
+      total_spent: number;
+      total_remaining: number;
+      usage_percentage: number;
+      categories_over_budget: number;
+      categories_completed: number;
+      highest_variance_category?: {
+        category_name: string;
+        variance: number;
+        allocated: number;
+        spent: number;
+      };
+      categories: BudgetCategory[];
+    };
+  };
+  category_progress: Array<{
+    category_id: string;
+    category_name: string;
+    total_tasks: number;
+    completed_tasks: number;
+    progress_percentage: number;
+    allocated_amount: number;
+    spent_amount: number;
+    budget_usage: number;
+  }>;
+  alerts: {
+    overdue_tasks: boolean;
+    budget_warning: boolean;
+    budget_exceeded: boolean;
+    high_priority_pending: boolean;
+    upcoming_deadlines: boolean;
+  };
+}
+
+export interface DashboardSummary {
+  wedding_date?: string;
+  days_until_wedding?: number;
+  couple_name: string;
+  guest_count: number;
+  progress_percentage: number;
+  budget_usage_percentage: number;
+  total_tasks: number;
+  completed_tasks: number;
+  high_priority_pending: number;
+  overdue_tasks: number;
+  due_this_week: number;
+  is_over_budget: boolean;
+  alerts: {
+    overdue_tasks: boolean;
+    budget_warning: boolean;
+    budget_exceeded: boolean;
+    high_priority_pending: boolean;
+    upcoming_deadlines: boolean;
+  };
 }
 
 // Service Types

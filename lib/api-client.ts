@@ -290,16 +290,39 @@ class ApiClient {
     },
     submitOnboarding: async (data: any, rdbFile: File) => {
       const formData = new FormData();
-      // Append fields from data object
+      
+      // Map frontend field names to backend field names
+      const fieldMapping = {
+        businessName: 'business_name',
+        businessType: 'business_type', 
+        yearsExperience: 'years_experience',
+        serviceCategories: 'service_categories',
+        description: 'business_description',
+        phone: 'phone',
+        email: 'email',
+        address: 'address',
+        city: 'city',
+        country: 'country'
+      };
+
+      // Append fields with correct backend names
       Object.keys(data).forEach(key => {
+        const backendKey = fieldMapping[key as keyof typeof fieldMapping] || key;
         if (Array.isArray(data[key])) {
-          formData.append(key, JSON.stringify(data[key]));
+          formData.append(backendKey, JSON.stringify(data[key]));
         } else {
-          formData.append(key, data[key]);
+          formData.append(backendKey, data[key]);
         }
       });
+      
       // Append file
       formData.append('rdb_file', rdbFile);
+
+      // Debug logging
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
 
       return axiosInstance.post<any>('/api/v1/provider/onboarding', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -515,22 +538,85 @@ class ApiClient {
         return axiosInstance.get<any[]>('/api/v1/admin/providers', { params });
       },
       getPending: async () => {
-        return axiosInstance.get<any[]>('/api/v1/admin/providers/pending');
+        return axiosInstance.get<any[]>('/api/v1/admin/onboarding?status=pending');
       },
       getDetails: async (id: string) => {
-        return axiosInstance.get<any>(`/api/v1/admin/providers/${id}`);
+        return axiosInstance.get<any>(`/api/v1/admin/onboarding/${id}`);
       },
       approve: async (id: string, notes?: string) => {
-        return axiosInstance.put<any>(`/api/v1/admin/providers/${id}/approve`, { notes });
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/approve`, { admin_notes: notes });
       },
       reject: async (id: string, reason: string) => {
-        return axiosInstance.put<any>(`/api/v1/admin/providers/${id}/reject`, { reason });
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/reject`, { rejection_reason: reason });
       },
       suspend: async (id: string, reason: string) => {
         return axiosInstance.put<any>(`/api/v1/admin/providers/${id}/suspend`, { reason });
       },
       activate: async (id: string) => {
         return axiosInstance.put<any>(`/api/v1/admin/providers/${id}/activate`);
+      },
+      requestRevision: async (id: string, notes: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/request-revision`, { admin_notes: notes });
+      },
+    },
+    onboarding: {
+      getAll: async (status?: string) => {
+        const params = status ? { status } : {};
+        return axiosInstance.get<any[]>('/api/v1/admin/onboarding', { params });
+      },
+      getStats: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/onboarding/stats');
+      },
+      getDetails: async (id: string) => {
+        return axiosInstance.get<any>(`/api/v1/admin/onboarding/${id}`);
+      },
+      approve: async (id: string, notes?: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/approve`, { admin_notes: notes });
+      },
+      reject: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/reject`, { rejection_reason: reason });
+      },
+      requestRevision: async (id: string, notes: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/request-revision`, { admin_notes: notes });
+      },
+    },
+    services: {
+      getAll: async (status?: string) => {
+        const params = status ? { status } : {};
+        return axiosInstance.get<any[]>('/api/v1/admin/services', { params });
+      },
+      getStats: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/services/stats');
+      },
+      getDetails: async (id: string) => {
+        return axiosInstance.get<any>(`/api/v1/admin/services/${id}`);
+      },
+      create: async (data: any) => {
+        return axiosInstance.post<any>('/api/v1/admin/services', data);
+      },
+      update: async (id: string, data: any) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}`, data);
+      },
+      delete: async (id: string) => {
+        return axiosInstance.delete<any>(`/api/v1/admin/services/${id}`);
+      },
+      approve: async (id: string, notes?: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/approve`, { admin_notes: notes });
+      },
+      reject: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/reject`, { rejection_reason: reason });
+      },
+      suspend: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/suspend`, { rejection_reason: reason });
+      },
+      enable: async (id: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/enable`);
+      },
+      toggleHomepageVisibility: async (id: string, visible: boolean) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/homepage-visibility?visible=${visible}`);
+      },
+      toggleFeatured: async (id: string, featured: boolean) => {
+        return axiosInstance.put<any>(`/api/v1/admin/services/${id}/featured?featured=${featured}`);
       },
     },
     bookings: {

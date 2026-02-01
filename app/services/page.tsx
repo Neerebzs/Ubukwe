@@ -10,6 +10,7 @@ import { Users, Music, Utensils, MapPin, Palette, Mic, Star, Search } from "luci
 import Link from "next/link"
 import { Navbar } from "@/components/ui/navbar"
 import { Footer } from "@/components/ui/footer"
+import { PublicBottomNav } from "@/components/ui/public-bottom-nav"
 import { ServiceSchema } from "@/components/schemas/service-schema"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useQuery } from "@tanstack/react-query"
@@ -164,7 +165,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eff4fa]">
+    <div className="min-h-screen bg-[#eff4fa] pb-16 md:pb-0">
       {/* Header */}
       <Navbar />
 
@@ -292,6 +293,9 @@ export default function ServicesPage() {
       ))}
 
       <Footer />
+      
+      {/* Mobile Bottom Navigation - Only on mobile */}
+      <PublicBottomNav />
     </div>
   )
 }

@@ -43,7 +43,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
       title: "Management",
       items: [
         { id: "bookings", label: "My Bookings", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "budget", label: "Budget Anlyo", icon: <DollarSign className="w-4 h-4" /> },
+        { id: "budget", label: "Budget", icon: <DollarSign className="w-4 h-4" /> },
         { id: "messages", label: "Messages", icon: <MessageCircle className="w-4 h-4" /> },
         { id: "quotes", label: "Quotes", icon: <FileText className="w-4 h-4" /> },
         { id: "contracts", label: "Contracts", icon: <FileText className="w-4 h-4" /> },

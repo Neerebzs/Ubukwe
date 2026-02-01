@@ -49,10 +49,18 @@ export function AdminUsers() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.admin.users.getAll({ search: searchTerm });
+      // Only include search parameter if it has a value
+      const params: any = {};
+      if (searchTerm && searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+      
+      const response = await apiClient.admin.users.getAll(params);
       // Backend returns { users: [], total, etc. }
+      console.log('Users API Response:', response.data);
       setUsers(response.data.users || []);
     } catch (error) {
+      console.error('Failed to fetch users:', error);
       toast.error("Failed to fetch users");
     } finally {
       setIsLoading(false);
@@ -69,8 +77,9 @@ export function AdminUsers() {
         toast.success("User activated successfully");
       }
       fetchUsers();
-    } catch (error) {
-      toast.error("Failed to update user status");
+    } catch (error: any) {
+      console.error('Failed to update user status:', error);
+      toast.error(error.message || "Failed to update user status");
     }
   };
 
@@ -82,8 +91,9 @@ export function AdminUsers() {
       toast.success("User updated successfully");
       setIsEditModalOpen(false);
       fetchUsers();
-    } catch (error) {
-      toast.error("Failed to update user");
+    } catch (error: any) {
+      console.error('Failed to update user:', error);
+      toast.error(error.message || "Failed to update user");
     } finally {
       setIsSubmitting(false);
     }

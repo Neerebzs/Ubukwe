@@ -30,13 +30,14 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
       title: "User Management",
       items: [
         { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
-        { id: "providers", label: "Providers", icon: <Briefcase className="w-4 h-4" /> },
+        { id: "providers", label: "Onboarding", icon: <Briefcase className="w-4 h-4" /> },
       ]
     },
     {
       title: "Platform",
       items: [
         { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "services", label: "Services", icon: <ShieldAlert className="w-4 h-4" /> },
         { id: "disputes", label: "Disputes", icon: <ShieldAlert className="w-4 h-4" /> },
         { id: "analytics", label: "Analytics", icon: <BarChart3 className="w-4 h-4" /> },
       ]
@@ -49,15 +50,19 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
     return state;
   }, []);
 
-  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') return initialExpanded;
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>(initialExpanded);
+
+  React.useEffect(() => {
+    // Load from localStorage after hydration
     try {
       const saved = window.localStorage.getItem('adminSidebarExpanded');
-      return saved ? JSON.parse(saved) : initialExpanded;
+      if (saved) {
+        setExpandedGroups(JSON.parse(saved));
+      }
     } catch {
-      return initialExpanded;
+      // Keep initial state
     }
-  });
+  }, []);
 
   const toggleGroup = (title: string) => {
     setExpandedGroups((prev) => ({ ...prev, [title]: !prev[title] }));

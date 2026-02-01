@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, CheckCircle, Star, Edit2, Save, X, Heart } from "lucide-react";
+import { Calendar, CheckCircle, Star, Edit2, Save, X, Heart, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,10 +30,12 @@ interface OverviewProps {
     budget: number;
     spent: number;
   };
+  onBudgetUpdate?: (newBudget: number) => void;
 }
 
 export function Overview({
   weddingDetails,
+  onBudgetUpdate,
 }: OverviewProps) {
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -102,6 +104,8 @@ export function Overview({
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
+  const [guestCount, setGuestCount] = useState("");
+  const [budget, setBudget] = useState("");
 
   const parseCoupleName = (coupleName?: string) => {
     if (!coupleName) return { bride: "", groom: "" };
@@ -117,6 +121,8 @@ export function Overview({
     setBrideName(bride);
     setGroomName(groom);
     setWeddingDate(displayWedding.weddingDate || "");
+    setGuestCount(displayWedding.guestCount?.toString() || "");
+    setBudget(displayWedding.budget?.toString() || "");
     setIsEditDialogOpen(true);
   };
 
@@ -132,6 +138,10 @@ export function Overview({
       queryClient.invalidateQueries({ queryKey: ["wedding-me"] });
       toast.success("Wedding details updated successfully");
       setIsEditDialogOpen(false);
+      // Notify parent component about budget update
+      if (budget && onBudgetUpdate) {
+        onBudgetUpdate(parseFloat(budget));
+      }
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to update wedding details");
@@ -140,13 +150,24 @@ export function Overview({
 
   const handleSave = () => {
     if (!brideName || !groomName || !weddingDate) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in all required fields");
       return;
     }
-    saveMutation.mutate({
-      couple_name: `${brideName} & ${groomName}`,
+    const updateData: any = {
+      bride_name: brideName,
+      groom_name: groomName,
       wedding_date: weddingDate
-    });
+    };
+    
+    if (guestCount) {
+      updateData.guest_count = parseInt(guestCount);
+    }
+    
+    if (budget) {
+      updateData.budget = budget;
+    }
+    
+    saveMutation.mutate(updateData);
   };
 
   if (isLoading) {
@@ -169,6 +190,12 @@ export function Overview({
     spent: currentWedding ? Number(currentWedding.spent) : (weddingDetails.spent || 0),
     venue: currentWedding?.venue || weddingDetails.venue || "Not set"
   };
+
+  // Calculate budget metrics
+  const budgetUsedPercentage = displayWedding.budget > 0 ? (displayWedding.spent / displayWedding.budget) * 100 : 0;
+  const remainingBudget = displayWedding.budget - displayWedding.spent;
+  const isOverBudget = displayWedding.spent > displayWedding.budget;
+  const budgetWarning = budgetUsedPercentage > 90;
 
   return (
     <div className="space-y-6">
@@ -229,6 +256,31 @@ export function Overview({
                       onChange={(e) => setWeddingDate(e.target.value)}
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="guest-count">Guest Count</Label>
+                      <Input
+                        id="guest-count"
+                        type="number"
+                        placeholder="e.g., 150"
+                        value={guestCount}
+                        onChange={(e) => setGuestCount(e.target.value)}
+                        min="1"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="budget">Total Budget (RWF)</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        placeholder="e.g., 5000000"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
+                        min="0"
+                        step="10000"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
@@ -271,6 +323,52 @@ export function Overview({
                   day: 'numeric'
                 }) : "Not set"}
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Wedding Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2" />
+            Wedding Statistics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-primary">
+                {displayWedding.budget > 0 ? `${budgetUsedPercentage.toFixed(0)}%` : "0%"}
+              </div>
+              <div className="text-sm text-muted-foreground">Budget Used</div>
+              {budgetWarning && (
+                <Badge variant="destructive" className="text-xs mt-1">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Alert
+                </Badge>
+              )}
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{planningProgress.percentage}%</div>
+              <div className="text-sm text-muted-foreground">Tasks Complete</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">
+                {tasksArray.filter(t => !t.is_completed && t.priority === 'high').length}
+              </div>
+              <div className="text-sm text-muted-foreground">High Priority</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">
+                {tasksArray.filter(t => {
+                  if (!t.end_date || t.is_completed) return false;
+                  const daysUntil = Math.ceil((new Date(t.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                  return daysUntil <= 7 && daysUntil >= 0;
+                }).length}
+              </div>
+              <div className="text-sm text-muted-foreground">Due This Week</div>
             </div>
           </div>
         </CardContent>

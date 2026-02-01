@@ -7,6 +7,9 @@ import { Menu, ChevronLeft, Home, Package, BookOpen, MessageSquare, FileText, Do
 import { ProviderTabsSidebar } from "@/components/ui/provider-tabs-sidebar"
 import { useAuth } from "@/hooks/useAuth"
 import { DashboardHeader } from "@/components/ui/dashboard-header"
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
+import { MobileAppBar } from "@/components/ui/mobile-app-bar"
+import { ProviderMobileMenuDrawer } from "@/components/ui/provider-mobile-menu-drawer"
 import { ProviderOverview } from "@/components/provider/overview"
 import { ProviderServices } from "@/components/provider/services"
 import { ProviderBookings } from "@/components/provider/bookings"
@@ -157,7 +160,22 @@ export function ProviderDashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafc] flex">
+    <div className="min-h-screen bg-[#f9fafc]">
+      {/* Mobile App Bar - Only on mobile */}
+      <MobileAppBar
+        title="Provider Dashboard"
+        subtitle="Manage your services"
+        onMenuClick={toggleMobileMenu}
+        user={user ? {
+          full_name: user.full_name || user.username,
+          email: user.email,
+          profile_image_url: user.profile_image_url
+        } : undefined}
+        onLogout={logout}
+        notificationCount={0}
+      />
+
+      {/* Desktop Sidebar */}
       <ProviderTabsSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -172,143 +190,41 @@ export function ProviderDashboardContent() {
         isVerified={user?.is_verified}
       />
 
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
-          <div className="fixed inset-0 bg-black/50" onClick={toggleMobileMenu} aria-hidden="true" />
-          <div className="fixed left-0 top-0 h-full w-64 bg-card border-r shadow-lg overflow-y-auto">
-            <div className="p-4 h-full flex flex-col">
-              <div className="mb-4 flex items-center justify-between flex-shrink-0">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground mb-1"><TranslatedText text="Provider Dashboard" /></h2>
-                  <p className="text-xs text-muted-foreground"><TranslatedText text="Manage your services" /></p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMobileMenu}
-                  className="p-2 hover:bg-muted/50"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-              </div>
+      {/* Mobile Menu Drawer */}
+      <ProviderMobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={toggleMobileMenu}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        user={user ? {
+          full_name: user.full_name || user.username,
+          email: user.email,
+          avatar: user.profile_image_url,
+          is_verified: user.is_verified
+        } : undefined}
+        onLogout={logout}
+      />
 
-              <nav className="flex-1 overflow-y-auto space-y-3 pt-2">
-                {[
-                  {
-                    title: "Overview",
-                    items: [
-                      { id: "overview", label: <TranslatedText text="Dashboard" />, icon: <Home className="w-4 h-4" /> },
-                      { id: "onboarding", label: <TranslatedText text="Onboarding" />, icon: <FileText className="w-4 h-4" /> },
-                    ]
-                  },
-                  {
-                    title: "Services",
-                    items: [
-                      { id: "services", label: <TranslatedText text="My Services" />, icon: <Package className="w-4 h-4" /> },
-                      { id: "bookings", label: <TranslatedText text="Bookings" />, icon: <BookOpen className="w-4 h-4" /> },
-                    ]
-                  },
-                  {
-                    title: "CRM",
-                    items: [
-                      { id: "inquiries", label: <TranslatedText text="Inquiries" />, icon: <MessageSquare className="w-4 h-4" /> },
-                      { id: "quotes", label: <TranslatedText text="Quotes" />, icon: <FileText className="w-4 h-4" /> },
-                      { id: "contracts", label: <TranslatedText text="Contracts" />, icon: <FileText className="w-4 h-4" /> },
-                    ]
-                  },
-                  {
-                    title: "Business",
-                    items: [
-                      { id: "earnings", label: <TranslatedText text="Earnings" />, icon: <DollarSign className="w-4 h-4" /> },
-                      { id: "profile", label: <TranslatedText text="Profile" />, icon: <User className="w-4 h-4" /> },
-                    ]
-                  }
-                ].map((group) => (
-                  <div key={group.title} className="space-y-1">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-1">
-                      {group.title}
-                    </h3>
-                    <div className="space-y-0.5">
-                      {group.items.map((tab) => {
-                        const isTabDisabled = !user?.is_verified && !['overview', 'onboarding'].includes(tab.id);
-                        return (
-                          <button
-                            key={tab.id}
-                            disabled={isTabDisabled}
-                            onClick={() => {
-                              if (!isTabDisabled) {
-                                handleTabChange(tab.id);
-                                toggleMobileMenu();
-                              }
-                            }}
-                            className={`relative w-full text-left text-sm px-3 py-2.5 rounded-md transition-all duration-200 flex items-center gap-3 ${activeTab === tab.id
-                              ? "bg-muted text-foreground shadow-sm"
-                              : isTabDisabled
-                                ? "opacity-50 cursor-not-allowed text-muted-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                              }`}
-                          >
-                            <span className={`absolute left-0 top-2 bottom-2 w-1 rounded-full ${activeTab === tab.id ? 'bg-primary' : 'bg-transparent'}`} />
-                            <span className="w-4 h-4 flex-shrink-0">{tab.icon}</span>
-                            <span className="font-medium truncate">{tab.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-
-              {user && (
-                <div className="flex-shrink-0 pt-4 border-t border-border/50 mt-4">
-                  <div className="mb-4 px-3">
-                    <div className="flex items-center p-3 rounded-lg bg-muted/30 min-w-0">
-                      <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-hidden">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
-                          {user.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || user.username[0].toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {user.full_name || user.username}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (logout) logout();
-                          toggleMobileMenu();
-                        }}
-                        className="ml-2 p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive transition-all duration-200 flex-shrink-0"
-                        title="Logout"
-                      >
-                        <LogOut className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
-        <DashboardHeader
-          user={{
-            full_name: user?.full_name || user?.username || "Provider",
-            role: "Service Provider",
-            profile_image_url: user?.profile_image_url
-          }}
-          onLogout={logout}
-          onToggleSidebar={toggleSidebar}
-          onToggleMobileMenu={toggleMobileMenu}
-          title="Provider Dashboard"
-          subtitle="Manage your services"
-        />
-        <main className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto" role="main">
+        {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
+        <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
+          <DashboardHeader
+            user={{
+              full_name: user?.full_name || user?.username || "Provider",
+              role: "Service Provider",
+              profile_image_url: user?.profile_image_url
+            }}
+            onLogout={logout}
+            onToggleSidebar={toggleSidebar}
+            onToggleMobileMenu={toggleMobileMenu}
+            title="Provider Dashboard"
+            subtitle="Manage your services"
+          />
+        </div>
+
+        {/* Content Area with mobile padding */}
+        <main className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto pb-20 md:pb-4" role="main">
           {!user?.is_verified && activeTab !== "onboarding" && activeTab !== "overview" ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 max-w-md mx-auto">
               <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -325,6 +241,13 @@ export function ProviderDashboardContent() {
           )}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation - Only on mobile */}
+      <MobileBottomNav
+        userRole="provider"
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
     </div>
   )
 }

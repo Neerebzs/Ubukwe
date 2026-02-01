@@ -49,54 +49,60 @@ export function HeroCarousel() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className="image-content w-full">
-        <img src="/ababyinyi.jpeg" alt="Hero Image" className="w-full h-auto rounded-2xl md:rounded-4xl" />
-      </div>
-    );
-  }
-
   return (
     <div className="image-content w-full">
-      <Swiper
-        modules={[Autoplay, EffectFade, Navigation, Pagination]}
-        effect="fade"
-        autoplay={{
-          delay: 4000,
-          disableOnInteraction: false,
-        }}
-        loop={true}
-        navigation={false}
-        pagination={{
-          clickable: true,
-          dynamicBullets: true,
-        }}
-        className="hero-swiper rounded-2xl md:rounded-4xl overflow-hidden shadow-2xl"
-        style={{ height: '300px', minHeight: '300px' }}
-      >
-        {heroImages.map((image, index) => (
-          <SwiperSlide key={index}>
-            <div className="relative w-full h-full">
-              <img 
-                src={image.src} 
-                alt={image.alt} 
-                className="w-full h-full object-cover rounded-4xl"
-                onError={(e) => {
-                  // Fallback to first image if others don't exist
-                  if (index > 0) {
-                    e.currentTarget.src = "/ababyinyi.jpeg";
-                  }
-                }}
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 md:p-6 rounded-b-2xl md:rounded-b-4xl">
-                <h3 className="text-white font-bold text-sm md:text-xl mb-1 md:mb-2">{image.title}</h3>
-                <p className="text-white/90 text-xs md:text-base">{image.description}</p>
+      {!mounted ? (
+        <div className="relative w-full h-[300px] min-h-[300px] rounded-2xl md:rounded-4xl overflow-hidden shadow-2xl">
+          <img 
+            src="/ababyinyi.jpeg" 
+            alt="Traditional Rwandan Wedding Dancers" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 md:p-6 rounded-b-2xl md:rounded-b-4xl">
+            <h3 className="text-white font-bold text-sm md:text-xl mb-1 md:mb-2">Traditional Dancers</h3>
+            <p className="text-white/90 text-xs md:text-base">Authentic cultural performances</p>
+          </div>
+        </div>
+      ) : (
+        <Swiper
+          modules={[Autoplay, EffectFade, Navigation, Pagination]}
+          effect="fade"
+          autoplay={{
+            delay: 4000,
+            disableOnInteraction: false,
+          }}
+          loop={true}
+          navigation={false}
+          pagination={{
+            clickable: true,
+            dynamicBullets: true,
+          }}
+          className="hero-swiper rounded-2xl md:rounded-4xl overflow-hidden shadow-2xl"
+          style={{ height: '300px', minHeight: '300px' }}
+        >
+          {heroImages.map((image, index) => (
+            <SwiperSlide key={index}>
+              <div className="relative w-full h-full">
+                <img 
+                  src={image.src} 
+                  alt={image.alt} 
+                  className="w-full h-full object-cover rounded-4xl"
+                  onError={(e) => {
+                    // Fallback to first image if others don't exist
+                    if (index > 0) {
+                      e.currentTarget.src = "/ababyinyi.jpeg";
+                    }
+                  }}
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 md:p-6 rounded-b-2xl md:rounded-b-4xl">
+                  <h3 className="text-white font-bold text-sm md:text-xl mb-1 md:mb-2">{image.title}</h3>
+                  <p className="text-white/90 text-xs md:text-base">{image.description}</p>
+                </div>
               </div>
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      )}
       
       <style jsx global>{`
         .hero-swiper .swiper-pagination-bullet {
