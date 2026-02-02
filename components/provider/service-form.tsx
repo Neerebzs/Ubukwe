@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Trash2, Save, X, MapPin, Star, Image as ImageIcon, Upload, Check, ChevronRight, ChevronLeft, CheckCircle, PlayCircle, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
-import { api } from "@/lib/api"
+import { apiClient } from "@/lib/api"
 
 interface ServicePackage {
   id: string
@@ -298,7 +298,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       const imageFiles = filesToUpload.filter(item => item.type === "image").map(item => item.file as File)
       if (imageFiles.length > 0) {
         console.log(`Uploading ${imageFiles.length} images to Cloudinary...`)
-        const response = await api.upload.gallery<any>(imageFiles, serviceId || "temp")
+        const response = await apiClient.upload.gallery<any>(imageFiles, serviceId || "temp")
         console.log("Gallery upload response:", response)
         
         if (response.data?.uploaded_files) {
@@ -317,7 +317,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       const videoFiles = filesToUpload.filter(item => item.type === "video").map(item => item.file as File)
       for (const videoFile of videoFiles) {
         console.log(`Uploading video: ${videoFile.name}`)
-        const response = await api.upload.general<any>(videoFile, "ubukwe/videos", "video")
+        const response = await apiClient.upload.general<any>(videoFile, "ubukwe/videos", "video")
         console.log("Video upload response:", response)
         
         if (response.data?.url) {
