@@ -41,6 +41,7 @@ import { AdminOverview } from "@/components/admin/overview";
 import { AdminUsers } from "@/components/admin/users";
 import { AdminProviders } from "@/components/admin/providers";
 import { AdminServices } from "@/components/admin/services";
+import { AdminProviderServices } from "@/components/admin/provider-services";
 import { AdminBookingsMetrics } from "@/components/admin/bookings";
 import { AdminDisputes } from "@/components/admin/disputes";
 import { AdminAnalytics } from "@/components/admin/analytics";
@@ -104,7 +105,22 @@ export function AdminDashboardContent() {
       case "providers":
         return <AdminProviders />
       case "services":
-        return <AdminServices />
+        return (
+          <div className="space-y-6">
+            <Tabs defaultValue="provider-services" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="provider-services">Provider Services</TabsTrigger>
+                <TabsTrigger value="service-categories">Service Categories</TabsTrigger>
+              </TabsList>
+              <TabsContent value="provider-services">
+                <AdminProviderServices />
+              </TabsContent>
+              <TabsContent value="service-categories">
+                <AdminServices />
+              </TabsContent>
+            </Tabs>
+          </div>
+        )
       case "bookings":
         return <AdminBookingsMetrics />
       case "disputes":
