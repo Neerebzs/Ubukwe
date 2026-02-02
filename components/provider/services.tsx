@@ -117,11 +117,22 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       category: formData.category,
       location: formData.location,
       description: formData.description,
+      specialties: formData.specialties,
+      phone: formData.phone,
+      email: formData.email,
       price_range_min: Number(formData.priceRangeMin),
       price_range_max: Number(formData.priceRangeMax),
       status: formData.status,
       packages: formData.packages,
-      gallery: formData.gallery?.map(g => g.url).filter(url => url && url.trim() !== ""),
+      gallery: formData.gallery?.map(g => ({
+        id: g.id,
+        type: g.type,
+        contentType: g.contentType || null,
+        url: g.url || "",
+        thumbnail: g.thumbnail,
+        title: g.title || "",
+        description: g.description || ""
+      })).filter(item => item.url && item.url.trim() !== ""),
     };
 
     try {

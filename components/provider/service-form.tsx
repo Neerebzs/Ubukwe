@@ -30,13 +30,13 @@ interface ServicePackage {
 interface GalleryItem {
   id: string
   type: "image" | "video" | "reel"
-  contentType?: "offer" | "event"
+  contentType: null | "offer" | "event"
   url: string
   thumbnail?: string
   file?: File
   preview?: string // For local preview
-  title?: string
-  description?: string
+  title: string
+  description: string
 }
 
 export interface ServiceFormData {
@@ -78,6 +78,8 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   const [currentFeature, setCurrentFeature] = useState<{ packageId: string; feature: string }>({ packageId: "", feature: "" })
   const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false)
   const [editingPackage, setEditingPackage] = useState<ServicePackage | null>(null)
+  const [editingGalleryItem, setEditingGalleryItem] = useState<GalleryItem | null>(null)
+  const [isGalleryDialogOpen, setIsGalleryDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [activeMediaTab, setActiveMediaTab] = useState<"image" | "video" | "reel">("image")
@@ -394,58 +396,86 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     }
   }
 
-  const uploadGalleryImages = async (serviceId?: string): Promise<string[]> => {
+  const uploadGalleryImages = async (serviceId?: string): Promise<GalleryItem[]> => {
     /**
-     * Upload gallery items to Cloudinary and return URLs
+     * Upload gallery items to Cloudinary and return updated items with URLs and thumbnails
      * Only uploads items that have files (not already uploaded)
      */
     const filesToUpload = formData.gallery.filter(item => item.file && !item.url)
     
     if (filesToUpload.length === 0) {
-      // Return already uploaded URLs
-      return formData.gallery.map(item => item.url).filter(url => url !== "")
+      // Return existing gallery items
+      return formData.gallery
     }
 
     try {
-      const uploadedUrls: string[] = []
+      const uploadResults: Array<{ url: string; thumbnail?: string }> = []
       
       // Upload image files
-      const imageFiles = filesToUpload.filter(item => item.type === "image").map(item => item.file as File)
-      if (imageFiles.length > 0) {
-        console.log(`Uploading ${imageFiles.length} images to Cloudinary...`)
-        const response = await apiClient.upload.gallery<any>(imageFiles, serviceId || "temp")
-        console.log("Gallery upload response:", response)
+      const imageFiles = filesToUpload.filter(item => item.type === "image")
+      for (const item of imageFiles) {
+        if (!item.file) continue
+        console.log(`Uploading image: ${item.file.name}`)
+        const response = await apiClient.upload.general<any>(item.file, "ubukwe/gallery", "image")
+        console.log("Image upload response:", response)
         
-        if (response.data?.uploaded_files) {
-          response.data.uploaded_files.forEach((file: any) => {
-            if (file.url) {
-              uploadedUrls.push(file.url)
-            }
+        if (response.data?.url) {
+          // Generate thumbnail URL from Cloudinary
+          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/c_thumb,w_200/')
+          uploadResults.push({ 
+            url: response.data.url,
+            thumbnail: thumbnailUrl
           })
-        } else if (response.data?.url) {
-          // Handle single file response
-          uploadedUrls.push(response.data.url)
         }
       }
 
-      // For videos, we'll upload them individually with general endpoint
-      const videoFiles = filesToUpload.filter(item => item.type === "video").map(item => item.file as File)
-      for (const videoFile of videoFiles) {
-        console.log(`Uploading video: ${videoFile.name}`)
-        const response = await apiClient.upload.general<any>(videoFile, "ubukwe/videos", "video")
+      // Upload reel files
+      const reelFiles = filesToUpload.filter(item => item.type === "reel")
+      for (const item of reelFiles) {
+        if (!item.file) continue
+        console.log(`Uploading reel: ${item.file.name}`)
+        const response = await apiClient.upload.general<any>(item.file, "ubukwe/reels", "video")
+        console.log("Reel upload response:", response)
+        
+        if (response.data?.url) {
+          // Generate thumbnail URL for video
+          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
+          uploadResults.push({ 
+            url: response.data.url,
+            thumbnail: thumbnailUrl
+          })
+        }
+      }
+
+      // Upload video files
+      const videoFiles = filesToUpload.filter(item => item.type === "video")
+      for (const item of videoFiles) {
+        if (!item.file) continue
+        console.log(`Uploading video: ${item.file.name}`)
+        const response = await apiClient.upload.general<any>(item.file, "ubukwe/videos", "video")
         console.log("Video upload response:", response)
         
         if (response.data?.url) {
-          uploadedUrls.push(response.data.url)
+          // Generate thumbnail URL for video
+          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
+          uploadResults.push({ 
+            url: response.data.url,
+            thumbnail: thumbnailUrl
+          })
         }
       }
 
-      console.log("All uploaded URLs:", uploadedUrls)
+      console.log("All upload results:", uploadResults)
 
-      // Update formData with uploaded URLs
+      // Update formData with uploaded URLs and thumbnails
       const updatedGallery = formData.gallery.map(item => {
-        if (item.file && !item.url && uploadedUrls.length > 0) {
-          return { ...item, url: uploadedUrls.shift() || "" }
+        if (item.file && !item.url && uploadResults.length > 0) {
+          const result = uploadResults.shift()
+          return { 
+            ...item, 
+            url: result?.url || "",
+            thumbnail: result?.thumbnail
+          }
         }
         return item
       })
@@ -455,7 +485,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         gallery: updatedGallery
       })
 
-      return updatedGallery.map(item => item.url).filter(url => url !== "")
+      return updatedGallery
     } catch (error: any) {
       console.error("Gallery upload error:", error)
       const errorMessage = error?.response?.data?.detail || error?.message || "Unknown error"
