@@ -65,8 +65,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const fetchServices = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.services.getAll();
-      const servicesArray = response.data?.data || [];
+      const response = await apiClient.providerServices.getAll();
+      // Backend returns list directly, not wrapped in { data: [...] }
+      const servicesArray = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       const mappedServices = servicesArray.map((s: any) => ({
         id: s.id,
         title: s.name,
@@ -125,10 +126,10 @@ export function ProviderServices({ services: initialServices }: ProviderServices
 
     try {
       if (editingService) {
-        await apiClient.services.update(editingService.id, servicePayload);
+        await apiClient.providerServices.update(editingService.id, servicePayload);
         toast.success("Service updated successfully!");
       } else {
-        await apiClient.services.create(servicePayload);
+        await apiClient.providerServices.create(servicePayload);
         toast.success("Service created successfully!");
       }
       fetchServices();
@@ -142,7 +143,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const handleDeleteService = async (serviceId: string) => {
     if (confirm("Are you sure you want to delete this service?")) {
       try {
-        await apiClient.services.delete(serviceId);
+        await apiClient.providerServices.delete(serviceId);
         toast.success("Service deleted successfully!");
         fetchServices();
       } catch (error: any) {

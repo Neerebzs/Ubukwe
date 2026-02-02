@@ -50,6 +50,15 @@ export const API_ENDPOINTS = {
     UPLOAD_DOCUMENTS: `/api/${API_VERSION}/provider/profile/upload-documents`,
     SERVICES: `/api/${API_VERSION}/provider/services/`,
   },
+  // File Upload endpoints
+  UPLOAD: {
+    PROFILE_IMAGE: `/api/${API_VERSION}/upload/profile-image`,
+    BUSINESS_LICENSE: `/api/${API_VERSION}/upload/business-license`,
+    NID: `/api/${API_VERSION}/upload/nid`,
+    GALLERY: `/api/${API_VERSION}/upload/gallery`,
+    GENERAL: `/api/${API_VERSION}/upload/general`,
+    DELETE_FILE: (public_id: string) => `/api/${API_VERSION}/upload/file/${public_id}`,
+  },
   // Customer/Wedding endpoints
   WEDDING: {
     BASE: `/api/${API_VERSION}/wedding`,
@@ -526,6 +535,61 @@ export const apiClient = {
     
     getById<T>(id: string): Promise<ApiResponse<T>> {
       return apiClient.get<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`);
+    }
+  },
+
+  // File Upload API methods
+  upload: {
+    profileImage<T>(file: File, userId: string): Promise<ApiResponse<T>> {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', userId);
+      return apiClient.post<T>(API_ENDPOINTS.UPLOAD.PROFILE_IMAGE, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+
+    businessLicense<T>(file: File, providerId: string): Promise<ApiResponse<T>> {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('provider_id', providerId);
+      return apiClient.post<T>(API_ENDPOINTS.UPLOAD.BUSINESS_LICENSE, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+
+    nid<T>(file: File, userId: string): Promise<ApiResponse<T>> {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', userId);
+      return apiClient.post<T>(API_ENDPOINTS.UPLOAD.NID, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+
+    gallery<T>(files: File[], serviceId: string): Promise<ApiResponse<T>> {
+      const formData = new FormData();
+      files.forEach(file => formData.append('files', file));
+      formData.append('service_id', serviceId);
+      return apiClient.post<T>(API_ENDPOINTS.UPLOAD.GALLERY, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+
+    general<T>(file: File, folder?: string, resourceType?: string): Promise<ApiResponse<T>> {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (folder) formData.append('folder', folder);
+      if (resourceType) formData.append('resource_type', resourceType);
+      return apiClient.post<T>(API_ENDPOINTS.UPLOAD.GENERAL, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+
+    deleteFile<T>(publicId: string, resourceType?: string): Promise<ApiResponse<T>> {
+      const url = API_ENDPOINTS.UPLOAD.DELETE_FILE(publicId);
+      const params = resourceType ? { resource_type: resourceType } : {};
+      return apiClient.delete<T>(url, { params });
     }
   },
 };
