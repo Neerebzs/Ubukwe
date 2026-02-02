@@ -279,7 +279,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     }
   }
 
-  const uploadGalleryImages = async (serviceId?: string): Promise<string[]> => {
+  const uploadGalleryImages = async (serviceId?: string): Promise<GalleryItem[]> => {
     /**
      * Upload gallery items to Cloudinary and return URLs
      * Only uploads items that have files (not already uploaded)
@@ -287,8 +287,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     const filesToUpload = formData.gallery.filter(item => item.file && !item.url)
     
     if (filesToUpload.length === 0) {
-      // Return already uploaded URLs
-      return formData.gallery.map(item => item.url).filter(url => url !== "")
+      return formData.gallery
     }
 
     try {
@@ -328,9 +327,10 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       console.log("All uploaded URLs:", uploadedUrls)
 
       // Update formData with uploaded URLs
+      const remainingUrls = [...uploadedUrls]
       const updatedGallery = formData.gallery.map(item => {
-        if (item.file && !item.url && uploadedUrls.length > 0) {
-          return { ...item, url: uploadedUrls.shift() || "" }
+        if (item.file && !item.url && remainingUrls.length > 0) {
+          return { ...item, url: remainingUrls.shift() || "" }
         }
         return item
       })
@@ -340,7 +340,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         gallery: updatedGallery
       })
 
-      return updatedGallery.map(item => item.url).filter(url => url !== "")
+      return updatedGallery
     } catch (error: any) {
       console.error("Gallery upload error:", error)
       const errorMessage = error?.response?.data?.detail || error?.message || "Unknown error"
@@ -359,15 +359,15 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
     try {
       // Step 1: Upload gallery images if there are any with files
-      const galleryUrls = await uploadGalleryImages()
+      const updatedGallery = await uploadGalleryImages()
       setUploadProgress(50)
 
       // Step 2: Create the final data with uploaded gallery URLs
       const finalData = {
         ...formData,
-        gallery: formData.gallery.map(item => ({ 
-          ...item, 
-          url: item.url || "" 
+        gallery: updatedGallery.map(item => ({
+          ...item,
+          url: item.url || ""
         })),
         status: status || formData.status
       }
