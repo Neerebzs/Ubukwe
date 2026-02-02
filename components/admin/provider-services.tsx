@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, XCircle, CheckCircle, Search, MapPin, DollarSign, Package, Star, Calendar } from "lucide-react";
+import { Eye, XCircle, CheckCircle, Search, MapPin, DollarSign, Package, Star, Calendar, MessageCircle, UserCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { apiClient } from "@/lib/api-client";
@@ -344,93 +344,112 @@ export function AdminProviderServices() {
         </TabsContent>
       </Tabs>
 
-      {/* Service Details Modal */}
+      {/* Service Details Modal - Interactive Design */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">{selectedService?.name}</DialogTitle>
-            <DialogDescription>
-              Review complete service details before approval
-            </DialogDescription>
-          </DialogHeader>
-
+        <DialogContent className="!max-w-[98vw] w-[98vw] max-h-[95vh] overflow-hidden p-0">
           {selectedService && (
-            <div className="py-4 space-y-6">
-              {/* Basic Info */}
-              <div>
-                <h3 className="font-semibold mb-3">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Category</p>
-                    <p className="font-medium">{selectedService.category}</p>
+            <div className="flex flex-col h-full max-h-[95vh]">
+              {/* Header */}
+              <div className="border-b p-6 pb-8">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <DialogTitle className="text-3xl font-bold mb-2">{selectedService.name}</DialogTitle>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {selectedService.location}
+                      </span>
+                      <span>•</span>
+                      <span>{selectedService.category}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(selectedService.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Location</p>
-                    <p className="font-medium">{selectedService.location}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Price Range</p>
-                    <p className="font-medium">
-                      {selectedService.price_range_min?.toLocaleString()} - {selectedService.price_range_max?.toLocaleString()} RWF
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Status</p>
-                    <Badge variant={getStatusBadgeVariant(selectedService.status)} className="capitalize">
-                      {selectedService.status}
-                    </Badge>
-                  </div>
+                  <Badge 
+                    variant={getStatusBadgeVariant(selectedService.status)} 
+                    className="capitalize text-base px-4 py-1"
+                  >
+                    {selectedService.status}
+                  </Badge>
+                </div>
+                
+                {/* Price Range */}
+                <div className="border rounded-lg p-4 inline-block">
+                  <p className="text-sm text-muted-foreground mb-1">Price Range</p>
+                  <p className="text-2xl font-bold">
+                    {selectedService.price_range_min?.toLocaleString()} - {selectedService.price_range_max?.toLocaleString()} RWF
+                  </p>
                 </div>
               </div>
 
-              <Separator />
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Description */}
+                <div className="rounded-xl p-6 border">
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
+                      1
+                    </div>
+                    Description
+                  </h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {selectedService.description}
+                  </p>
+                </div>
 
-              {/* Description */}
-              <div>
-                <h3 className="font-semibold mb-3">Description</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {selectedService.description}
-                </p>
-              </div>
-
-              {/* Specialties */}
-              {selectedService.specialties?.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-semibold mb-3">Specialties</h3>
+                {/* Specialties */}
+                {selectedService.specialties?.length > 0 && (
+                  <div className="rounded-xl p-6 border">
+                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
+                        2
+                      </div>
+                      Specialties ({selectedService.specialties.length})
+                    </h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedService.specialties.map((specialty, index) => (
-                        <Badge key={index} variant="secondary">
+                        <Badge key={index} variant="secondary" className="text-sm px-3 py-1">
+                          <Star className="w-3 h-3 mr-1" />
                           {specialty}
                         </Badge>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
+                )}
 
-              {/* Packages */}
-              {selectedService.packages?.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-semibold mb-3">Packages ({selectedService.packages.length})</h3>
-                    <div className="grid gap-3">
+                {/* Packages */}
+                {selectedService.packages?.length > 0 && (
+                  <div className="rounded-xl p-6 border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
+                        3
+                      </div>
+                      Packages ({selectedService.packages.length})
+                    </h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {selectedService.packages.map((pkg: any, index: number) => (
-                        <Card key={index}>
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-semibold">{pkg.name}</h4>
-                              <p className="text-lg font-bold">{pkg.price?.toLocaleString()} RWF</p>
+                        <Card key={index} className="hover:shadow-md transition-shadow">
+                          <CardContent className="p-5">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-bold text-lg">{pkg.name}</h4>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold">{pkg.price?.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">RWF</p>
+                              </div>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{pkg.description}</p>
-                            <p className="text-xs text-muted-foreground">Duration: {pkg.duration}</p>
+                            <p className="text-sm text-muted-foreground mb-3">{pkg.description}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 pb-3 border-b">
+                              <Package className="w-4 h-4" />
+                              <span>Duration: {pkg.duration}</span>
+                            </div>
                             {pkg.features?.length > 0 && (
-                              <ul className="mt-3 space-y-1">
+                              <ul className="space-y-2">
                                 {pkg.features.map((feature: string, idx: number) => (
-                                  <li key={idx} className="text-xs flex items-start gap-2">
-                                    <CheckCircle className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+                                  <li key={idx} className="text-sm flex items-start gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                                     <span>{feature}</span>
                                   </li>
                                 ))}
@@ -441,96 +460,188 @@ export function AdminProviderServices() {
                       ))}
                     </div>
                   </div>
-                </>
-              )}
+                )}
 
-              {/* Gallery */}
-              {selectedService.gallery?.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-semibold mb-3">Gallery ({selectedService.gallery.length} items)</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {selectedService.gallery.slice(0, 8).map((item: any, index: number) => (
-                        <div key={index} className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                          <Badge variant="outline">{item.type || "image"}</Badge>
-                        </div>
-                      ))}
+                {/* Gallery with Image Display */}
+                {selectedService.gallery?.length > 0 && (
+                  <div className="rounded-xl p-6 border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
+                        4
+                      </div>
+                      Gallery ({selectedService.gallery.length} items)
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {selectedService.gallery.map((item: any, index: number) => {
+                        console.log("Gallery item:", item);
+                        
+                        // Extract URL from different possible formats
+                        let imageUrl = null;
+                        let contentType = "image";
+                        
+                        if (typeof item === "string") {
+                          imageUrl = item;
+                        } else if (item && typeof item === "object") {
+                          imageUrl = item.url || item.image_url || item.imageUrl || item.file_url || item.fileUrl;
+                          contentType = item.content_type || item.contentType || item.type || "image";
+                        }
+                        
+                        console.log("Extracted URL:", imageUrl, "Type:", contentType);
+                        
+                        return (
+                          <div 
+                            key={index} 
+                            className="aspect-video rounded-lg overflow-hidden group relative border"
+                          >
+                            {imageUrl ? (
+                              <>
+                                <img
+                                  src={imageUrl}
+                                  alt={`Gallery ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    console.error("Image failed to load:", imageUrl);
+                                    e.currentTarget.style.display = "none";
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const fallback = parent.querySelector(".fallback-icon");
+                                      if (fallback) {
+                                        (fallback as HTMLElement).style.display = "flex";
+                                      }
+                                    }
+                                  }}
+                                  onLoad={() => {
+                                    console.log("Image loaded successfully:", imageUrl);
+                                  }}
+                                />
+                                <div className="fallback-icon hidden absolute inset-0 flex-col items-center justify-center">
+                                  <Star className="w-8 h-8 text-muted-foreground mb-2" />
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {contentType}
+                                  </Badge>
+                                </div>
+                                {/* Hover overlay */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Eye className="w-6 h-6 text-white" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center">
+                                <Star className="w-8 h-8 text-muted-foreground mb-2" />
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {contentType}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                </>
-              )}
+                )}
 
-              {/* Contact */}
-              {(selectedService.phone || selectedService.email) && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-semibold mb-3">Contact Information</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {selectedService.phone && (
-                        <div>
-                          <p className="text-muted-foreground">Phone</p>
-                          <p className="font-medium">{selectedService.phone}</p>
+                {/* Contact & Provider Info */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Contact */}
+                  {(selectedService.phone || selectedService.email) && (
+                    <div className="rounded-xl p-6 border">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full border flex items-center justify-center">
+                          <MessageCircle className="w-4 h-4" />
                         </div>
-                      )}
-                      {selectedService.email && (
-                        <div>
-                          <p className="text-muted-foreground">Email</p>
-                          <p className="font-medium">{selectedService.email}</p>
-                        </div>
-                      )}
+                        Contact Information
+                      </h3>
+                      <div className="space-y-3">
+                        {selectedService.phone && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg border">
+                            <div className="w-10 h-10 rounded-full border flex items-center justify-center">
+                              <span className="text-lg">📞</span>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Phone</p>
+                              <p className="font-medium">{selectedService.phone}</p>
+                            </div>
+                          </div>
+                        )}
+                        {selectedService.email && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg border">
+                            <div className="w-10 h-10 rounded-full border flex items-center justify-center">
+                              <span className="text-lg">✉️</span>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Email</p>
+                              <p className="font-medium text-sm">{selectedService.email}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  )}
 
-              {/* Provider Info */}
-              <Separator />
-              <div>
-                <h3 className="font-semibold mb-3">Provider Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Name</p>
-                    <p className="font-medium">{selectedService.provider?.full_name || "Unknown"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Email</p>
-                    <p className="font-medium">{selectedService.provider?.email || "N/A"}</p>
+                  {/* Provider */}
+                  <div className="rounded-xl p-6 border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full border flex items-center justify-center">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      Provider Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg border">
+                        <div className="w-10 h-10 rounded-full border flex items-center justify-center">
+                          <span className="text-lg">👤</span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Name</p>
+                          <p className="font-medium">{selectedService.provider?.full_name || "Unknown"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border">
+                        <div className="w-10 h-10 rounded-full border flex items-center justify-center">
+                          <span className="text-lg">📧</span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Email</p>
+                          <p className="font-medium text-sm">{selectedService.provider?.email || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Footer Actions */}
+              <div className="border-t p-4 flex items-center justify-end gap-3">
+                <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
+                  Close
+                </Button>
+                {selectedService?.status === "pending" && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        setIsDetailsModalOpen(false);
+                        openActionModal(selectedService, "reject");
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject Service
+                    </Button>
+                    <Button
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                      onClick={() => {
+                        setIsDetailsModalOpen(false);
+                        openActionModal(selectedService, "approve");
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve Service
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
-              Close
-            </Button>
-            {selectedService?.status === "pending" && (
-              <>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setIsDetailsModalOpen(false);
-                    openActionModal(selectedService, "reject");
-                  }}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  onClick={() => {
-                    setIsDetailsModalOpen(false);
-                    openActionModal(selectedService, "approve");
-                  }}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Approve
-                </Button>
-              </>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
