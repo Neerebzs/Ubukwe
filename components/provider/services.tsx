@@ -121,7 +121,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       price_range_max: Number(formData.priceRangeMax),
       status: formData.status,
       packages: formData.packages,
-      gallery: formData.gallery?.map(g => g.url),
+      gallery: formData.gallery?.map(g => g.url).filter(url => url && url.trim() !== ""),
     };
 
     try {

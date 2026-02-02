@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Save, X, MapPin, Star, Image as ImageIcon, Upload, Check, ChevronRight, ChevronLeft, CheckCircle, PlayCircle } from "lucide-react"
+import { Plus, Trash2, Save, X, MapPin, Star, Image as ImageIcon, Upload, Check, ChevronRight, ChevronLeft, CheckCircle, PlayCircle, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
+import { apiClient } from "@/lib/api"
 
 interface ServicePackage {
   id: string
@@ -71,6 +72,8 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   const [currentFeature, setCurrentFeature] = useState<{ packageId: string; feature: string }>({ packageId: "", feature: "" })
   const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false)
   const [editingPackage, setEditingPackage] = useState<ServicePackage | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const [formData, setFormData] = useState<ServiceFormData>({
     name: initialData?.name || "",
@@ -276,19 +279,116 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     }
   }
 
-  const handleSubmit = (status?: "draft" | "active") => {
+  const uploadGalleryImages = async (serviceId?: string): Promise<string[]> => {
+    /**
+     * Upload gallery items to Cloudinary and return URLs
+     * Only uploads items that have files (not already uploaded)
+     */
+    const filesToUpload = formData.gallery.filter(item => item.file && !item.url)
+    
+    if (filesToUpload.length === 0) {
+      // Return already uploaded URLs
+      return formData.gallery.map(item => item.url).filter(url => url !== "")
+    }
+
+    try {
+      const uploadedUrls: string[] = []
+      
+      // Upload image files
+      const imageFiles = filesToUpload.filter(item => item.type === "image").map(item => item.file as File)
+      if (imageFiles.length > 0) {
+        console.log(`Uploading ${imageFiles.length} images to Cloudinary...`)
+        const response = await apiClient.upload.gallery<any>(imageFiles, serviceId || "temp")
+        console.log("Gallery upload response:", response)
+        
+        if (response.data?.uploaded_files) {
+          response.data.uploaded_files.forEach((file: any) => {
+            if (file.url) {
+              uploadedUrls.push(file.url)
+            }
+          })
+        } else if (response.data?.url) {
+          // Handle single file response
+          uploadedUrls.push(response.data.url)
+        }
+      }
+
+      // For videos, we'll upload them individually with general endpoint
+      const videoFiles = filesToUpload.filter(item => item.type === "video").map(item => item.file as File)
+      for (const videoFile of videoFiles) {
+        console.log(`Uploading video: ${videoFile.name}`)
+        const response = await apiClient.upload.general<any>(videoFile, "ubukwe/videos", "video")
+        console.log("Video upload response:", response)
+        
+        if (response.data?.url) {
+          uploadedUrls.push(response.data.url)
+        }
+      }
+
+      console.log("All uploaded URLs:", uploadedUrls)
+
+      // Update formData with uploaded URLs
+      const updatedGallery = formData.gallery.map(item => {
+        if (item.file && !item.url && uploadedUrls.length > 0) {
+          return { ...item, url: uploadedUrls.shift() || "" }
+        }
+        return item
+      })
+
+      setFormData({
+        ...formData,
+        gallery: updatedGallery
+      })
+
+      return updatedGallery.map(item => item.url).filter(url => url !== "")
+    } catch (error: any) {
+      console.error("Gallery upload error:", error)
+      const errorMessage = error?.response?.data?.detail || error?.message || "Unknown error"
+      throw new Error(`Upload failed: ${errorMessage}`)
+    }
+  }
+
+  const handleSubmit = async (status?: "draft" | "active") => {
     if (!formData.name || !formData.category || !formData.location || !formData.description) {
       alert("Please fill in all required fields (Name, Category, Location, Description)")
       return
     }
 
-    const finalData = status ? { ...formData, status } : formData
+    setIsUploading(true)
+    setUploadProgress(0)
 
-    if (onSave) {
-      onSave(finalData)
-    } else {
-      console.log("Service Data:", finalData)
-      alert(`Service ${status === "active" ? "published" : "saved as draft"}! (Backend integration pending)`)
+    try {
+      // Step 1: Upload gallery images if there are any with files
+      const galleryUrls = await uploadGalleryImages()
+      setUploadProgress(50)
+
+      // Step 2: Create the final data with uploaded gallery URLs
+      const finalData = {
+        ...formData,
+        gallery: formData.gallery.map(item => ({ 
+          ...item, 
+          url: item.url || "" 
+        })),
+        status: status || formData.status
+      }
+
+      setUploadProgress(75)
+
+      // Step 3: Save the service with gallery URLs
+      if (onSave) {
+        onSave(finalData)
+      } else {
+        console.log("Service Data with uploaded gallery:", finalData)
+        alert(`Service ${status === "active" ? "published" : "saved as draft"}!`)
+      }
+
+      setUploadProgress(100)
+    } catch (error: any) {
+      console.error("Submit error:", error)
+      alert(error.message || "Failed to save service. Please try again.")
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -950,20 +1050,34 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
             </div>
 
             {currentStep < totalSteps ? (
-              <Button onClick={handleNext}>
+              <Button onClick={handleNext} disabled={isUploading}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => handleSubmit("draft")}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Draft
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleSubmit("draft")}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {isUploading ? "Uploading..." : "Save Draft"}
                 </Button>
-                <Button onClick={() => handleSubmit("active")}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Publish Service
+                <Button 
+                  onClick={() => handleSubmit("active")}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                  {isUploading ? "Publishing..." : "Publish Service"}
                 </Button>
+              </div>
+            )}
+            
+            {isUploading && (
+              <div className="mt-2 space-y-2">
+                <Progress value={uploadProgress} className="h-2" />
+                <p className="text-xs text-muted-foreground text-center">{uploadProgress}% Complete</p>
               </div>
             )}
           </div>
