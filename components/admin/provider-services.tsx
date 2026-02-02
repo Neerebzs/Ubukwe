@@ -36,7 +36,7 @@ interface ProviderService {
   packages: any[];
   phone?: string;
   email?: string;
-  status: "draft" | "active" | "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "suspended" | "on_hold";
   verified: boolean;
   created_at: string;
   updated_at?: string;
@@ -66,7 +66,7 @@ export function AdminProviderServices() {
   const fetchServices = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.admin.services.getAll(statusFilter);
+      const response = await apiClient.admin.providerServices.getAll(statusFilter);
       console.log("Admin services response:", response);
       setServices(response.data.data || response.data || []);
     } catch (error: any) {
@@ -79,7 +79,7 @@ export function AdminProviderServices() {
 
   const fetchServiceDetails = async (id: string) => {
     try {
-      const response = await apiClient.admin.services.getDetails(id);
+      const response = await apiClient.admin.providerServices.getDetails(id);
       setSelectedService(response.data.data || response.data);
       setIsDetailsModalOpen(true);
     } catch (error: any) {
@@ -92,14 +92,14 @@ export function AdminProviderServices() {
     setIsProcessing(true);
     try {
       if (actionType === "approve") {
-        await apiClient.admin.services.approve(selectedService.id, adminNotes);
+        await apiClient.admin.providerServices.approve(selectedService.id, adminNotes);
         toast.success("Service approved successfully");
       } else if (actionType === "reject") {
         if (!adminNotes.trim()) {
           toast.error("Please provide a reason for rejection");
           return;
         }
-        await apiClient.admin.services.reject(selectedService.id, adminNotes);
+        await apiClient.admin.providerServices.reject(selectedService.id, adminNotes);
         toast.success("Service rejected");
       }
       setIsActionModalOpen(false);
@@ -123,12 +123,12 @@ export function AdminProviderServices() {
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "approved":
-      case "active":
         return "default";
       case "pending":
-      case "draft":
+      case "on_hold":
         return "secondary";
       case "rejected":
+      case "suspended":
         return "destructive";
       default:
         return "outline";
@@ -150,8 +150,10 @@ export function AdminProviderServices() {
         return "Approved Services";
       case "rejected":
         return "Rejected";
-      case "active":
-        return "Active Services";
+      case "suspended":
+        return "Suspended";
+      case "on_hold":
+        return "On Hold";
       case "all":
         return "All Services";
       default:
@@ -183,7 +185,7 @@ export function AdminProviderServices() {
       </div>
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="pending">
             Pending
             {!isLoading && getTabCount("pending") > 0 && (
@@ -193,7 +195,8 @@ export function AdminProviderServices() {
             )}
           </TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="suspended">Suspended</TabsTrigger>
+          <TabsTrigger value="on_hold">On Hold</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
         </TabsList>

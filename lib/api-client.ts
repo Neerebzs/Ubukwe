@@ -619,6 +619,30 @@ class ApiClient {
         return axiosInstance.put<any>(`/api/v1/admin/services/${id}/featured?featured=${featured}`);
       },
     },
+    providerServices: {
+      getAll: async (status?: string) => {
+        const params = status ? { status } : {};
+        return axiosInstance.get<any[]>('/api/v1/admin/provider-services', { params });
+      },
+      getStats: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/provider-services/stats');
+      },
+      getDetails: async (id: string) => {
+        return axiosInstance.get<any>(`/api/v1/admin/provider-services/${id}`);
+      },
+      approve: async (id: string, notes?: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/provider-services/${id}/approve`, { admin_notes: notes });
+      },
+      reject: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/provider-services/${id}/reject`, { rejection_reason: reason });
+      },
+      suspend: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/provider-services/${id}/suspend`, { rejection_reason: reason });
+      },
+      enable: async (id: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/provider-services/${id}/enable`);
+      },
+    },
     bookings: {
       getAll: async (params?: { page?: number; limit?: number; status?: string; date_from?: string; date_to?: string }) => {
         return axiosInstance.get<any>('/api/v1/admin/bookings', { params });
