@@ -505,4 +505,27 @@ export const apiClient = {
   delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     return apiClient.request<T>({ ...config, method: 'DELETE', url });
   },
+
+  // Services API methods
+  services: {
+    create<T>(data: any): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.PROVIDER.SERVICES, data);
+    },
+    
+    update<T>(id: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`, data);
+    },
+    
+    delete<T>(id: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`);
+    },
+    
+    getAll<T>(): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.PROVIDER.SERVICES);
+    },
+    
+    getById<T>(id: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`);
+    }
+  },
 };
