@@ -32,7 +32,8 @@ export function ProviderTabsSidebar({
       title: "Overview",
       items: [
         { id: "overview", label: "Dashboard", icon: <Home className="w-4 h-4" /> },
-        { id: "onboarding", label: "Onboarding", icon: <FileText className="w-4 h-4" /> },
+        // Only show onboarding tab if user is not verified
+        ...(!isVerified ? [{ id: "onboarding", label: "Onboarding", icon: <FileText className="w-4 h-4" /> }] : []),
       ]
     },
     {

@@ -49,7 +49,8 @@ export function ProviderMobileMenuDrawer({
       title: "Overview",
       items: [
         { id: "overview", label: "Dashboard", icon: Home },
-        { id: "onboarding", label: "Onboarding", icon: FileText },
+        // Only show onboarding tab if user is not verified
+        ...(!user?.is_verified ? [{ id: "onboarding", label: "Onboarding", icon: FileText }] : []),
       ]
     },
     {

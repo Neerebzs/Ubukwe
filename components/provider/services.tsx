@@ -7,8 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Filter, Star, Eye, Edit, Trash2 } from "lucide-react";
 import { ServiceForm, ServiceFormData } from "./service-form";
+import { ServiceDetailView } from "./service-detail-view";
 
 interface Service {
   id: string; // UUID from backend
@@ -52,8 +54,11 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [viewingService, setViewingService] = useState<Service | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -66,27 +71,77 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     setIsLoading(true);
     try {
       const response = await apiClient.providerServices.getAll();
+      console.log("=== SERVICES API RESPONSE ===");
+      console.log("Raw response:", response);
+      
       // Backend returns list directly, not wrapped in { data: [...] }
       const servicesArray = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      const mappedServices = servicesArray.map((s: any) => ({
-        id: s.id,
-        title: s.name,
-        category: s.category,
-        location: s.location || "N/A",
-        priceRange: s.price_range_min && s.price_range_max
-          ? `${s.price_range_min.toLocaleString()} - ${s.price_range_max.toLocaleString()} RWF`
-          : "Contact for price",
-        bookings: s.bookings_count || 0,
-        rating: s.rating || 0,
-        status: s.status,
-        description: s.description,
-        priceRangeMin: s.price_range_min,
-        priceRangeMax: s.price_range_max,
-        packages: s.packages,
-        gallery: s.gallery?.map((url: string, idx: number) => ({ id: String(idx), type: 'image', url })),
-      }));
+      console.log("Services array:", servicesArray);
+      
+      const mappedServices = servicesArray.map((s: any) => {
+        console.log("=== MAPPING SERVICE ===");
+        console.log("Service name:", s.name);
+        console.log("Gallery data:", s.gallery);
+        console.log("Gallery type:", typeof s.gallery);
+        console.log("Is array:", Array.isArray(s.gallery));
+        
+        return {
+          id: s.id,
+          title: s.name,
+          category: s.category,
+          location: s.location || "N/A",
+          priceRange: s.price_range_min && s.price_range_max
+            ? `${s.price_range_min.toLocaleString()} - ${s.price_range_max.toLocaleString()} RWF`
+            : "Contact for price",
+          bookings: s.bookings_count || 0,
+          rating: s.rating || 0,
+          status: s.status,
+          description: s.description,
+          priceRangeMin: s.price_range_min,
+          priceRangeMax: s.price_range_max,
+          packages: s.packages,
+          specialties: s.specialties || [],
+          phone: s.phone,
+          email: s.email,
+          verified: s.verified || false,
+          // Handle gallery - can be array of objects or array of strings
+          gallery: Array.isArray(s.gallery) 
+            ? s.gallery.map((item: any, idx: number) => {
+                console.log("Gallery item:", item, "Type:", typeof item);
+                // If item is a string (URL), convert to gallery object
+                if (typeof item === 'string') {
+                  return {
+                    id: String(idx),
+                    type: 'image',
+                    contentType: null,
+                    url: item,
+                    thumbnail: item,
+                    title: '',
+                    description: ''
+                  };
+                }
+                // If item is already an object, use it
+                return {
+                  id: item.id || String(idx),
+                  type: item.type || 'image',
+                  contentType: item.contentType || item.content_type || null,
+                  url: item.url,
+                  thumbnail: item.thumbnail,
+                  title: item.title || '',
+                  description: item.description || ''
+                };
+              })
+            : [],
+        };
+      });
+      
+      console.log("Mapped services:", mappedServices);
+      console.log("First service gallery:", mappedServices[0]?.gallery);
+      console.log("===========================");
+      
       setServices(mappedServices);
     } catch (error) {
+      console.error("Fetch services error:", error);
       toast.error("Failed to fetch services");
     } finally {
       setIsLoading(false);
@@ -112,6 +167,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   };
 
   const handleSaveService = async (formData: ServiceFormData) => {
+    setIsSaving(true);
     const servicePayload = {
       name: formData.name,
       category: formData.category,
@@ -143,40 +199,52 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         await apiClient.providerServices.create(servicePayload);
         toast.success("Service created successfully!");
       }
-      fetchServices();
+      await fetchServices();
       setShowCreateForm(false);
       setEditingService(null);
     } catch (error: any) {
       toast.error(error.message || "Failed to save service");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDeleteService = async (serviceId: string) => {
     if (confirm("Are you sure you want to delete this service?")) {
+      setIsDeleting(serviceId);
       try {
         await apiClient.providerServices.delete(serviceId);
         toast.success("Service deleted successfully!");
-        fetchServices();
+        await fetchServices();
       } catch (error: any) {
         toast.error("Failed to delete service");
+      } finally {
+        setIsDeleting(null);
       }
     }
   };
 
   const handleViewService = (service: Service) => {
-    // In real app, this could show a preview or navigate to customer view
-    // For now, just show an alert with service details
-    const preview = {
-      name: service.title,
-      category: service.category,
-      location: service.location,
-      priceRange: service.priceRange,
-      status: service.status,
-      packages: service.packages?.length || 0,
-      galleryItems: service.gallery?.length || 0,
-    };
-    console.log("Service Preview:", preview);
-    alert(`Service: ${service.title}\nCategory: ${service.category}\nLocation: ${service.location}\nStatus: ${service.status}\nPackages: ${service.packages?.length || 0}\nGallery Items: ${service.gallery?.length || 0}`);
+    setViewingService(service);
+  };
+
+  const handleBackFromDetail = () => {
+    setViewingService(null);
+  };
+
+  const handleEditFromDetail = () => {
+    if (viewingService) {
+      setEditingService(viewingService);
+      setViewingService(null);
+      setShowCreateForm(true);
+    }
+  };
+
+  const handleDeleteFromDetail = async () => {
+    if (viewingService) {
+      await handleDeleteService(viewingService.id);
+      setViewingService(null);
+    }
   };
 
   const handleCancelForm = () => {
@@ -185,6 +253,35 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   };
 
   const categories = Array.from(new Set(services.map(s => s.category)));
+
+  // Show detail view
+  if (viewingService) {
+    return (
+      <ServiceDetailView
+        service={{
+          id: viewingService.id,
+          name: viewingService.title,
+          category: viewingService.category,
+          location: viewingService.location,
+          description: viewingService.description || "",
+          specialties: viewingService.specialties || [],
+          priceRangeMin: viewingService.priceRangeMin || 0,
+          priceRangeMax: viewingService.priceRangeMax || 0,
+          gallery: viewingService.gallery || [],
+          packages: viewingService.packages || [],
+          phone: viewingService.phone,
+          email: viewingService.email,
+          status: viewingService.status,
+          verified: viewingService.verified || false,
+          bookings: viewingService.bookings,
+          rating: viewingService.rating,
+        }}
+        onBack={handleBackFromDetail}
+        onEdit={handleEditFromDetail}
+        onDelete={handleDeleteFromDetail}
+      />
+    );
+  }
 
   if (showCreateForm) {
     return (
@@ -208,6 +305,10 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         onCancel={handleCancelForm}
       />
     );
+  }
+
+  if (isLoading) {
+    return <ServicesLoadingSkeleton />;
   }
 
   return (
@@ -342,8 +443,13 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                       size="sm"
                       onClick={() => handleDeleteService(service.id)}
                       className="text-destructive hover:text-destructive"
+                      disabled={isDeleting === service.id}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {isDeleting === service.id ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -351,6 +457,78 @@ export function ProviderServices({ services: initialServices }: ProviderServices
             </Card>
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// Alibaba-style Loading Skeleton
+function ServicesLoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <Skeleton className="h-10 w-48" />
+      </div>
+
+      {/* Filters Skeleton */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 w-full md:w-48" />
+            <Skeleton className="h-10 w-full md:w-48" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Services List Skeleton */}
+      <div className="grid gap-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 space-y-3">
+                  {/* Title and badges */}
+                  <div className="flex items-center space-x-3">
+                    <Skeleton className="h-6 w-64" />
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                  
+                  {/* Category and location */}
+                  <Skeleton className="h-4 w-48" />
+                  
+                  {/* Price and stats */}
+                  <div className="flex items-center space-x-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                  
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                </div>
+                
+                {/* Action buttons */}
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-9 w-20" />
+                  <Skeleton className="h-9 w-20" />
+                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-10" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

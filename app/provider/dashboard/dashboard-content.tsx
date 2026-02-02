@@ -138,6 +138,12 @@ export function ProviderDashboardContent() {
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
 
   const renderContent = () => {
+    // Redirect verified users away from onboarding tab
+    if (activeTab === "onboarding" && user?.is_verified) {
+      handleTabChange("overview");
+      return null;
+    }
+
     switch (activeTab) {
       case "overview": return <ProviderOverview providerStats={providerStats} recentBookings={recentBookings} />
       case "services": return <ProviderServices services={services} />
