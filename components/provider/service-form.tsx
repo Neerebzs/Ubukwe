@@ -529,7 +529,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       // Step 2: Create the final data with uploaded gallery URLs
       const finalData = {
         ...formData,
-        gallery: formData.gallery.map(item => ({ 
+        gallery: galleryUrls.map(item => ({ 
           id: item.id,
           type: item.type,
           contentType: item.contentType || null,
