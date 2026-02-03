@@ -20,12 +20,33 @@ import { apiClient, API_ENDPOINTS, ProviderService } from "@/lib/api"
 import { Loader2, AlertCircle } from "lucide-react"
 
 export default function ServiceDetailsPage({ params }: { params: { serviceId: string } }) {
+    // All hooks must be called before any conditional returns
+    const [activeTab, setActiveTab] = useState("home")
+    const [isFavorite, setIsFavorite] = useState(false)
+    
     const { data: serviceRes, isLoading, error } = useQuery({
         queryKey: ["service-detail", params.serviceId],
         queryFn: async () => {
-            const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
-            return response.data;
-        }
+            try {
+                console.log(`🔍 Fetching service: ${params.serviceId}`);
+                const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
+                console.log(`✅ Service response:`, response);
+                
+                // The response IS the data directly, not response.data
+                if (!response || !response.id) {
+                    console.log(`❌ No valid service data in response`);
+                    throw new Error('Service not found or not available');
+                }
+                
+                return response;
+            } catch (error: any) {
+                console.log(`❌ Service fetch error:`, error);
+                // If it's a 404 or other error, throw it so React Query can handle it
+                throw error;
+            }
+        },
+        retry: false, // Don't retry on 404s
+        refetchOnWindowFocus: false,
     });
 
     if (isLoading) {
@@ -49,11 +70,23 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                             <h2 className="text-xl font-bold mb-2">Service Not Found</h2>
                             <p className="text-muted-foreground mb-6">
-                                We couldn't find the service you're looking for. It might have been removed or the link is incorrect.
+                                {error ? 
+                                    "This service is not available or has been deactivated. Only approved and active services can be viewed." :
+                                    "We couldn't find the service you're looking for. It might have been removed or the link is incorrect."
+                                }
                             </p>
-                            <Link href="/services">
-                                <Button className="w-full">Browse All Services</Button>
-                            </Link>
+                            <div className="space-y-2">
+                                <Link href="/services">
+                                    <Button className="w-full">Browse All Services</Button>
+                                </Link>
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full"
+                                    onClick={() => window.location.reload()}
+                                >
+                                    Try Again
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -64,60 +97,91 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     const serviceData = serviceRes;
 
-    const [activeTab, setActiveTab] = useState("home")
-    const [isFavorite, setIsFavorite] = useState(false)
-
     // Helper to format packages
     const pkgArray = Array.isArray(serviceData.packages) ? serviceData.packages : [];
 
-    // Map backend to frontend structure
+    // Map backend to frontend structure with better data handling
     const service = {
         id: serviceData.id,
         title: serviceData.name,
-        provider: "Verified Provider", // Needs backend join
+        provider: "Verified Provider", // TODO: Join with provider data from backend
         category: serviceData.category,
         location: serviceData.location || "Rwanda",
         rating: serviceData.rating || 0,
-        verified: true,
+        verified: serviceData.status === "approved",
         experience: "Expert",
-        image: serviceData.gallery?.[0] || "/placeholder.svg",
-        coverImage: serviceData.gallery?.[0] || "/placeholder.svg",
-        description: serviceData.description || "Elegant wedding service provider.",
-        longDescription: serviceData.description || "A professional wedding service provider dedicated to making your special day unforgettable.",
-        specialties: [serviceData.category],
+        image: serviceData.gallery?.[0]?.url || serviceData.gallery?.[0] || "/placeholder.svg",
+        coverImage: serviceData.gallery?.[0]?.url || serviceData.gallery?.[0] || "/placeholder.svg",
+        description: serviceData.description || "Professional wedding service provider.",
+        longDescription: serviceData.description || "A professional wedding service provider dedicated to making your special day unforgettable with authentic Rwandan traditions and modern excellence.",
+        specialties: serviceData.specialties || [serviceData.category],
         features: [
             "Professional service delivery",
-            "High-quality equipment/materials",
+            "High-quality equipment/materials", 
             "Experienced team",
-            "Cultural expertise"
+            "Cultural expertise",
+            "On-time delivery",
+            "Post-event support"
         ],
-        packages: pkgArray.length > 0 ? pkgArray.map((p: any, i: number) => ({
-            id: p.id || `pkg-${i}`,
-            name: p.name || "Service Package",
-            price: p.price || 0,
-            duration: p.duration || "Event Duration",
-            description: p.description || "Full service package",
-            features: p.features || ["Comprehensive service", "Professional team"],
-            popular: p.popular || false
-        })) : [
-            {
-                id: "standard",
-                name: "Standard Package",
-                price: serviceData.price_range_min || 0,
-                duration: "Event Duration",
-                description: "Our most popular offering",
-                features: ["On-time delivery", "Professional crew", "Post-event support"],
-                popular: true
-            }
-        ],
+        packages: serviceData.packages && Array.isArray(serviceData.packages) && serviceData.packages.length > 0 
+            ? serviceData.packages.map((p: any, i: number) => ({
+                id: p.id || `pkg-${i}`,
+                name: p.name || `Package ${i + 1}`,
+                price: p.price || serviceData.price_range_min || 0,
+                duration: p.duration || "Event Duration",
+                description: p.description || "Comprehensive service package",
+                features: p.features || ["Professional service", "Quality guarantee", "Expert team"],
+                popular: p.popular || i === 0
+            }))
+            : [
+                {
+                    id: "basic",
+                    name: "Basic Package",
+                    price: serviceData.price_range_min || 50000,
+                    duration: "Event Duration",
+                    description: "Our essential service offering",
+                    features: ["Professional service", "Quality guarantee", "On-time delivery"],
+                    popular: false
+                },
+                {
+                    id: "standard",
+                    name: "Standard Package", 
+                    price: Math.round(((serviceData.price_range_min || 50000) + (serviceData.price_range_max || 150000)) / 2),
+                    duration: "Event Duration",
+                    description: "Our most popular offering",
+                    features: ["Professional service", "Quality guarantee", "Expert team", "Post-event support"],
+                    popular: true
+                },
+                {
+                    id: "premium",
+                    name: "Premium Package",
+                    price: serviceData.price_range_max || 150000,
+                    duration: "Event Duration", 
+                    description: "Our complete premium experience",
+                    features: ["Professional service", "Quality guarantee", "Expert team", "Post-event support", "Premium materials", "Extended coverage"],
+                    popular: false
+                }
+            ],
         gallery: {
-            photos: serviceData.gallery?.map((url, i) => ({
+            photos: serviceData.gallery?.map((item: any, i: number) => ({
                 id: i,
-                url,
-                caption: `Gallery image ${i + 1}`
-            })) || [],
-            videos: [],
-            reels: []
+                url: typeof item === 'string' ? item : item.url,
+                caption: typeof item === 'object' ? item.alt || `Gallery image ${i + 1}` : `Gallery image ${i + 1}`
+            })) || [
+                { id: 0, url: "/placeholder.svg", caption: "Service showcase" }
+            ],
+            videos: [] as Array<{
+                id: string;
+                title: string;
+                thumbnail: string;
+                duration: string;
+            }>,
+            reels: [] as Array<{
+                id: string;
+                title: string;
+                thumbnail: string;
+                views: string;
+            }>
         },
         events: [] as Array<{
             id: string;
@@ -131,15 +195,15 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             location?: string;
         }>,
         contact: {
-            phone: "+250 000 000 000",
-            email: "contact@provider.rw",
+            phone: serviceData.phone || "+250 000 000 000",
+            email: serviceData.email || "contact@provider.rw",
             website: "www.provider.rw"
         },
         stats: {
             eventsCompleted: serviceData.bookings_count || 0,
             yearsExperience: 5,
             teamSize: 10,
-            satisfactionRate: 95
+            satisfactionRate: Math.round(serviceData.rating * 20) || 95
         },
         reviews: {
             summary: {
@@ -163,6 +227,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     return (
         <div className="min-h-screen bg-[#eff4fa]">
             <Navbar />
+
+            {/* Back Button */}
+            <div className="container mx-auto px-4 pt-6 max-w-7xl">
+                <Link href="/services">
+                    <Button variant="ghost" className="mb-4">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Services
+                    </Button>
+                </Link>
+            </div>
 
             {/* Hero Section */}
             <div className="relative h-[400px] bg-gradient-to-r from-primary/20 to-primary/5">
@@ -191,7 +265,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-1">
                                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                        <span className="font-semibold">{service.rating}</span>
+                                        <span className="font-semibold">{service.rating.toFixed(1)}</span>
                                         <span className="text-gray-600">({service.reviews.summary.total} reviews)</span>
                                     </div>
                                     <div className="flex items-center gap-1 text-gray-600">
@@ -203,6 +277,12 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         {service.experience}
                                     </div>
                                 </div>
+                                {/* Debug info - only show in development */}
+                                {process.env.NODE_ENV === 'development' && (
+                                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                                        ✅ Service Status: {serviceData.status} | Active: {serviceData.is_active ? 'Yes' : 'No'}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="flex gap-2 mb-2">

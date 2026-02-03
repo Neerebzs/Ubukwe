@@ -62,10 +62,24 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
     fetchServices();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`);
+      const data = await response.json();
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      toast.error("Failed to load categories");
+    }
+  };
 
   const fetchServices = async () => {
     setIsLoading(true);
@@ -168,9 +182,20 @@ export function ProviderServices({ services: initialServices }: ProviderServices
 
   const handleSaveService = async (formData: ServiceFormData) => {
     setIsSaving(true);
+    
+    console.log("=== HANDLE SAVE SERVICE ===")
+    console.log("Received gallery count:", formData.gallery?.length || 0)
+    console.log("Gallery items:", formData.gallery?.map(g => ({
+      id: g.id,
+      type: g.type,
+      hasUrl: !!g.url,
+      url: g.url
+    })))
+    
     const servicePayload = {
       name: formData.name,
       category: formData.category,
+      category_id: formData.categoryId,  // Add category_id
       location: formData.location,
       description: formData.description,
       specialties: formData.specialties,
@@ -188,8 +213,12 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         thumbnail: g.thumbnail,
         title: g.title || "",
         description: g.description || ""
-      })).filter(item => item.url && item.url.trim() !== ""),
+      })).filter(item => item.url && item.url.trim() !== "") || [],
     };
+    
+    console.log("=== FINAL PAYLOAD ===")
+    console.log("Gallery count after filter:", servicePayload.gallery.length)
+    console.log("Gallery:", servicePayload.gallery)
 
     try {
       if (editingService) {
@@ -251,8 +280,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     setShowCreateForm(false);
     setEditingService(null);
   };
-
-  const categories = Array.from(new Set(services.map(s => s.category)));
 
   // Show detail view
   if (viewingService) {
@@ -355,7 +382,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

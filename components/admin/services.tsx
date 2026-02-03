@@ -53,8 +53,20 @@ interface ServiceData {
   };
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  is_active: boolean;
+  display_order: number;
+}
+
 export function AdminServices() {
   const [services, setServices] = useState<ServiceData[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -83,6 +95,7 @@ export function AdminServices() {
 
   useEffect(() => {
     fetchServices();
+    fetchCategories();
   }, [statusFilter]);
 
   const fetchServices = async () => {
@@ -95,6 +108,18 @@ export function AdminServices() {
       console.error("Error fetching services:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`);
+      const data = await response.json();
+      setCategories(data || []);
+    } catch (error) {
+      toast.error("Failed to fetch categories");
+      console.error("Error fetching categories:", error);
     }
   };
 
@@ -395,22 +420,24 @@ export function AdminServices() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="service_type">Service Type</Label>
+              <Label htmlFor="service_type">Service Category</Label>
               <Select
                 value={newService.service_type}
                 onValueChange={(value) => setNewService({ ...newService, service_type: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select service type" />
+                  <SelectValue placeholder="Select service category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dance">Dance</SelectItem>
-                  <SelectItem value="music">Music</SelectItem>
-                  <SelectItem value="decoration">Decoration</SelectItem>
-                  <SelectItem value="protocol">Protocol</SelectItem>
-                  <SelectItem value="catering">Catering</SelectItem>
-                  <SelectItem value="photography">Photography</SelectItem>
-                  <SelectItem value="venue">Venue</SelectItem>
+                  {categories.length === 0 ? (
+                    <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                  ) : (
+                    categories.map((category) => (
+                      <SelectItem key={category.id} value={category.slug}>
+                        {category.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>

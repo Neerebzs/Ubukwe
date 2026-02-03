@@ -50,7 +50,7 @@ import { DashboardHeader } from "@/components/ui/dashboard-header"
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
 import { MobileAppBar } from "@/components/ui/mobile-app-bar"
 import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
-import { TranslatedText } from "@/components/translated-text";
+import { CategoriesManagement } from "@/components/admin/categories";
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -108,15 +108,19 @@ export function AdminDashboardContent() {
         return (
           <div className="space-y-6">
             <Tabs defaultValue="provider-services" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
                 <TabsTrigger value="provider-services">Provider Services</TabsTrigger>
                 <TabsTrigger value="service-categories">Service Categories</TabsTrigger>
+                <TabsTrigger value="categories">Categories Management</TabsTrigger>
               </TabsList>
               <TabsContent value="provider-services">
                 <AdminProviderServices />
               </TabsContent>
               <TabsContent value="service-categories">
                 <AdminServices />
+              </TabsContent>
+              <TabsContent value="categories">
+                <CategoriesManagement />
               </TabsContent>
             </Tabs>
           </div>

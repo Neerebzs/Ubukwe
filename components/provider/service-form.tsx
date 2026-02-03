@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiClient } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
+import { MediaValidator, ValidationResult } from "@/lib/mediaValidator"
 
 interface ServicePackage {
   id: string
@@ -43,6 +44,7 @@ export interface ServiceFormData {
   // Basic Info
   name: string
   category: string
+  categoryId: string  // Add category ID
   location: string
   description: string
   specialties: string[]
@@ -92,7 +94,8 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
   const [formData, setFormData] = useState<ServiceFormData>({
     name: initialData?.name || "",
-    category: initialData?.category || "Entertainment",
+    category: initialData?.category || "",
+    categoryId: initialData?.categoryId || "",
     location: initialData?.location || "Kigali",
     description: initialData?.description || "",
     specialties: initialData?.specialties || [],
@@ -106,14 +109,35 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     verified: initialData?.verified || false,
   })
 
-  const categories = [
-    "Entertainment", "Venue", "Food", "Decor", "Photography",
-    "Transportation", "Beauty", "Music", "Other"
-  ]
+  const [categories, setCategories] = useState<Array<{id: string, name: string, slug: string}>>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
 
   const locations = [
     "Kigali", "Butare", "Gisenyi", "Musanze", "Huye", "Rwamagana", "Other"
   ]
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+        const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`)
+        const data = await response.json()
+        setCategories(data || [])
+      } catch (error) {
+        console.error('Failed to fetch categories:', error)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load categories. Please refresh the page."
+        })
+      } finally {
+        setIsLoadingCategories(false)
+      }
+    }
+    
+    fetchCategories()
+  }, [])
 
   const addSpecialty = () => {
     if (currentSpecialty.trim() && !formData.specialties.includes(currentSpecialty.trim())) {
@@ -146,44 +170,81 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     })
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video" | "reel", contentType?: "offer" | "event") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video" | "reel", contentType?: "offer" | "event") => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
     const newItems: GalleryItem[] = []
     let hasErrors = false
 
-    Array.from(files).forEach((file) => {
-      // Validate file type
-      if ((type === "image" || type === "reel") && !file.type.startsWith("image/") && !file.type.startsWith("video/")) {
-        toast({
-          variant: "destructive",
-          title: "Invalid File Type",
-          description: `${file.name} is not a valid ${type} file. Please upload images or videos only.`
-        })
-        hasErrors = true
-        return
-      }
-      if (type === "video" && !file.type.startsWith("video/")) {
-        toast({
-          variant: "destructive",
-          title: "Invalid File Type",
-          description: `${file.name} is not a valid video file. Please upload video files only.`
-        })
-        hasErrors = true
-        return
-      }
+    for (const file of Array.from(files)) {
+      // Pre-upload validation
+      let validationResult: ValidationResult;
+      
+      try {
+        if (type === "reel" || type === "video") {
+          validationResult = await MediaValidator.validateReel(file);
+        } else {
+          validationResult = await MediaValidator.validateImage(file);
+        }
 
-      // Validate file size (max 10MB for images, 50MB for videos/reels)
-      const maxSize = type === "image" ? 10 * 1024 * 1024 : 50 * 1024 * 1024
-      if (file.size > maxSize) {
+        // Check if validation passed
+        if (!validationResult.valid) {
+          // Show all errors
+          validationResult.errors.forEach(error => {
+            toast({
+              variant: "destructive",
+              title: "Upload Rejected",
+              description: error
+            });
+          });
+          hasErrors = true;
+          continue;
+        }
+
+        // Show warnings if any
+        if (validationResult.warnings && validationResult.warnings.length > 0) {
+          validationResult.warnings.forEach(warning => {
+            toast({
+              title: "Upload Warning",
+              description: warning,
+              variant: "default"
+            });
+          });
+        }
+
+        // Show validation success with metadata
+        if (validationResult.metadata) {
+          const meta = validationResult.metadata;
+          let successMessage = `✅ Validation passed`;
+          
+          if (type === "reel" || type === "video") {
+            successMessage += `\n📐 ${meta.width}×${meta.height} (${meta.aspectRatio})`;
+            if (meta.duration) {
+              successMessage += `\n⏱️ ${MediaValidator.formatDuration(meta.duration)}`;
+            }
+          } else {
+            successMessage += `\n📐 ${meta.width}×${meta.height}`;
+          }
+          
+          if (meta.fileSize) {
+            successMessage += `\n📦 ${MediaValidator.formatFileSize(meta.fileSize)}`;
+          }
+
+          toast({
+            title: "Media Validated",
+            description: successMessage,
+          });
+        }
+
+      } catch (error: any) {
         toast({
           variant: "destructive",
-          title: "File Too Large",
-          description: `${file.name} exceeds the maximum size of ${type === "image" ? "10MB" : "50MB"}. Please compress or choose a smaller file.`
-        })
-        hasErrors = true
-        return
+          title: "Validation Error",
+          description: error.message || "Failed to validate media file"
+        });
+        hasErrors = true;
+        continue;
       }
 
       const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined
@@ -200,7 +261,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       }
 
       newItems.push(newItem)
-    })
+    }
 
     if (newItems.length > 0) {
       setFormData({
@@ -324,7 +385,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         if (!formData.name?.trim()) {
           errors.name = "Service name is required"
         }
-        if (!formData.category) {
+        if (!formData.categoryId) {
           errors.category = "Category is required"
         }
         if (!formData.location) {
@@ -495,7 +556,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
   const handleSubmit = async (status?: "draft" | "active") => {
     // Final validation
-    if (!formData.name || !formData.category || !formData.location || !formData.description) {
+    if (!formData.name || !formData.categoryId || !formData.location || !formData.description) {
       toast({
         variant: "destructive",
         title: "Missing Required Fields",
@@ -517,6 +578,16 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     setUploadProgress(0)
 
     try {
+      console.log("=== BEFORE UPLOAD ===")
+      console.log("Gallery items count:", formData.gallery.length)
+      console.log("Gallery items:", formData.gallery.map(g => ({
+        id: g.id,
+        type: g.type,
+        hasFile: !!g.file,
+        hasUrl: !!g.url,
+        fileName: g.file?.name
+      })))
+      
       toast({
         title: "Uploading Service",
         description: "Please wait while we upload your service and media files..."
@@ -525,6 +596,15 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       // Step 1: Upload gallery images if there are any with files
       const galleryUrls = await uploadGalleryImages()
       setUploadProgress(50)
+
+      console.log("=== AFTER UPLOAD ===")
+      console.log("Gallery URLs count:", galleryUrls.length)
+      console.log("Gallery URLs:", galleryUrls.map(g => ({
+        id: g.id,
+        type: g.type,
+        hasUrl: !!g.url,
+        url: g.url
+      })))
 
       // Step 2: Create the final data with uploaded gallery URLs
       const finalData = {
@@ -689,13 +769,24 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="category">Category *</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <Select 
+                    value={formData.categoryId} 
+                    onValueChange={(categoryId) => {
+                      const selectedCategory = categories.find(cat => cat.id === categoryId)
+                      setFormData({ 
+                        ...formData, 
+                        categoryId: categoryId,
+                        category: selectedCategory?.name || ""
+                      })
+                    }}
+                    disabled={isLoadingCategories}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

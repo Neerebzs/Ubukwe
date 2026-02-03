@@ -21,10 +21,17 @@ export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
 
-  const { data: servicesResponse, isLoading } = useQuery({
-    queryKey: ["public-services"],
+  const { data: servicesResponse, isLoading, error } = useQuery({
+    queryKey: ["public-services", selectedCategory],
     queryFn: async () => {
-      const response = await apiClient.get<ProviderService[]>(API_ENDPOINTS.SERVICES.LIST);
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all") {
+        params.append("category", selectedCategory);
+      }
+      
+      const url = `${API_ENDPOINTS.SERVICES.SEARCH}${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await apiClient.get<ProviderService[]>(url);
       return response.data;
     }
   });
@@ -80,13 +87,12 @@ export default function ServicesPage() {
     const matchesSearch =
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || service.category === selectedCategory
-    return matchesSearch && matchesCategory
+    return matchesSearch
   })
 
   const getServicesForCategory = (categoryValue: string) => {
-    if (categoryValue === "all") return filteredServices
-    return filteredServices.filter(service => service.category === categoryValue)
+    // Since we're filtering by category on the backend, just return filtered services
+    return filteredServices
   }
 
   const ServiceCard = ({ service }: { service: ProviderService }) => {
@@ -176,6 +182,12 @@ export default function ServicesPage() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Discover authentic Rwandan wedding service providers who understand and honor your cultural traditions.
           </p>
+          {/* Debug info - only show in development */}
+          {process.env.NODE_ENV === 'development' && services.length > 0 && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+              ✅ Showing {services.length} approved and active services only
+            </div>
+          )}
         </div>
 
         {/* Search Bar */}
@@ -242,6 +254,21 @@ export default function ServicesPage() {
                     </Card>
                   ))}
                 </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <div className="text-red-500 mb-4">
+                    <span className="text-lg font-semibold">Error loading services</span>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Unable to load services. Please try again later.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
+                </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {getServicesForCategory(category.value).map((service) => (
@@ -251,10 +278,16 @@ export default function ServicesPage() {
               )}
 
               {/* Empty State */}
-              {getServicesForCategory(category.value).length === 0 && (
+              {!isLoading && !error && getServicesForCategory(category.value).length === 0 && (
                 <EmptyState
                   title="No services found"
-                  description={searchTerm ? "Try adjusting your search or browse other categories." : "No services available in this category yet."}
+                  description={
+                    searchTerm 
+                      ? "Try adjusting your search or browse other categories." 
+                      : category.value === "all"
+                        ? "No approved services are currently available."
+                        : `No approved services available in the ${category.label} category.`
+                  }
                   icon={<Search className="h-12 w-12 mx-auto text-muted-foreground" />}
                   action={
                     searchTerm ? (
