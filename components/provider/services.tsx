@@ -56,6 +56,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isToggling, setIsToggling] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [viewingService, setViewingService] = useState<Service | null>(null);
@@ -176,6 +177,35 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   };
 
   const handleEditService = (service: Service) => {
+    console.log("=== EDITING SERVICE ===");
+    console.log("Original service:", service);
+    console.log("Gallery data:", service.gallery);
+    
+    // Find the category ID from the categories list
+    const categoryData = categories.find(cat => cat.name === service.category);
+    console.log("Found category:", categoryData);
+    
+    const editData = {
+      name: service.title,
+      category: service.category,
+      categoryId: categoryData?.id || "", // Map category name to ID
+      location: service.location,
+      description: service.description || "",
+      specialties: service.specialties || [],
+      priceRangeMin: service.priceRangeMin?.toString() || "",
+      priceRangeMax: service.priceRangeMax?.toString() || "",
+      gallery: service.gallery || [],
+      packages: service.packages || [],
+      phone: service.phone || "",
+      email: service.email || "",
+      status: service.status,
+      verified: service.verified || false,
+    };
+    
+    console.log("Edit data prepared:", editData);
+    console.log("Edit gallery:", editData.gallery);
+    console.log("========================");
+    
     setEditingService(service);
     setShowCreateForm(true);
   };
@@ -184,12 +214,16 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     setIsSaving(true);
     
     console.log("=== HANDLE SAVE SERVICE ===")
+    console.log("Is editing:", !!editingService)
+    console.log("Editing service ID:", editingService?.id)
+    console.log("Form data:", formData)
     console.log("Received gallery count:", formData.gallery?.length || 0)
     console.log("Gallery items:", formData.gallery?.map(g => ({
       id: g.id,
       type: g.type,
       hasUrl: !!g.url,
-      url: g.url
+      url: g.url,
+      contentType: g.contentType
     })))
     
     const servicePayload = {
@@ -204,6 +238,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       price_range_min: Number(formData.priceRangeMin),
       price_range_max: Number(formData.priceRangeMax),
       status: formData.status,
+      verified: formData.verified,
       packages: formData.packages,
       gallery: formData.gallery?.map(g => ({
         id: g.id,
@@ -219,20 +254,29 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     console.log("=== FINAL PAYLOAD ===")
     console.log("Gallery count after filter:", servicePayload.gallery.length)
     console.log("Gallery:", servicePayload.gallery)
+    console.log("Payload:", servicePayload)
 
     try {
       if (editingService) {
+        console.log("Updating service with ID:", editingService.id)
         await apiClient.providerServices.update(editingService.id, servicePayload);
         toast.success("Service updated successfully!");
       } else {
+        console.log("Creating new service")
         await apiClient.providerServices.create(servicePayload);
         toast.success("Service created successfully!");
       }
+      
+      // Refresh the services list
       await fetchServices();
+      
+      // Close the form
       setShowCreateForm(false);
       setEditingService(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to save service");
+      console.error("Save service error:", error);
+      const errorMessage = error?.response?.data?.detail || error?.message || "Failed to save service";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -250,6 +294,42 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       } finally {
         setIsDeleting(null);
       }
+    }
+  };
+
+  const handleToggleServiceStatus = async (service: Service) => {
+    const newStatus = service.status === "active" ? "draft" : "active";
+    const actionText = newStatus === "active" ? "enable" : "disable";
+    
+    setIsToggling(service.id);
+    
+    try {
+      // Create a minimal payload for status update
+      const statusPayload = {
+        name: service.title,
+        category: service.category,
+        category_id: categories.find(cat => cat.name === service.category)?.id || "",
+        location: service.location,
+        description: service.description || "",
+        specialties: service.specialties || [],
+        phone: service.phone || "",
+        email: service.email || "",
+        price_range_min: service.priceRangeMin || 0,
+        price_range_max: service.priceRangeMax || 0,
+        status: newStatus,
+        verified: service.verified || false,
+        packages: service.packages || [],
+        gallery: service.gallery || [],
+      };
+
+      await apiClient.providerServices.update(service.id, statusPayload);
+      toast.success(`Service ${actionText}d successfully!`);
+      await fetchServices();
+    } catch (error: any) {
+      console.error(`Failed to ${actionText} service:`, error);
+      toast.error(`Failed to ${actionText} service`);
+    } finally {
+      setIsToggling(null);
     }
   };
 
@@ -311,23 +391,43 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   }
 
   if (showCreateForm) {
+    // Prepare initial data for edit mode
+    const initialData = editingService ? (() => {
+      console.log("=== PREPARING EDIT DATA ===");
+      console.log("Editing service:", editingService);
+      console.log("Categories available:", categories);
+      
+      // Find the category ID from the categories list
+      const categoryData = categories.find(cat => cat.name === editingService.category);
+      console.log("Found category for edit:", categoryData);
+      
+      const data = {
+        name: editingService.title,
+        category: editingService.category,
+        categoryId: categoryData?.id || "", // Map category name to ID
+        location: editingService.location,
+        description: editingService.description || "",
+        specialties: editingService.specialties || [],
+        priceRangeMin: editingService.priceRangeMin?.toString() || "",
+        priceRangeMax: editingService.priceRangeMax?.toString() || "",
+        gallery: editingService.gallery || [],
+        packages: editingService.packages || [],
+        phone: editingService.phone || "",
+        email: editingService.email || "",
+        status: editingService.status,
+        verified: editingService.verified || false,
+      };
+      
+      console.log("Final edit data:", data);
+      console.log("Edit gallery count:", data.gallery?.length);
+      console.log("============================");
+      
+      return data;
+    })() : undefined;
+
     return (
       <ServiceForm
-        initialData={editingService ? {
-          name: editingService.title,
-          category: editingService.category,
-          location: editingService.location,
-          description: editingService.description,
-          specialties: editingService.specialties,
-          priceRangeMin: editingService.priceRangeMin?.toString(),
-          priceRangeMax: editingService.priceRangeMax?.toString(),
-          gallery: editingService.gallery,
-          packages: editingService.packages,
-          phone: editingService.phone,
-          email: editingService.email,
-          status: editingService.status,
-          verified: editingService.verified,
-        } : undefined}
+        initialData={initialData}
         onSave={handleSaveService}
         onCancel={handleCancelForm}
       />
@@ -457,12 +557,28 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                       Edit
                     </Button>
                     {service.status === "active" ? (
-                      <Button variant="outline" size="sm" onClick={() => handleSaveService({ ...service, name: service.title, status: "draft" } as any)}>
-                        Disable
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleToggleServiceStatus(service)}
+                        disabled={isToggling === service.id}
+                      >
+                        {isToggling === service.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        ) : null}
+                        {isToggling === service.id ? "Disabling..." : "Disable"}
                       </Button>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={() => handleSaveService({ ...service, name: service.title, status: "active" } as any)}>
-                        Enable
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleToggleServiceStatus(service)}
+                        disabled={isToggling === service.id}
+                      >
+                        {isToggling === service.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        ) : null}
+                        {isToggling === service.id ? "Enabling..." : "Enable"}
                       </Button>
                     )}
                     <Button

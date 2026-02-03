@@ -84,6 +84,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   const [isGalleryDialogOpen, setIsGalleryDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]) // Track which files are being uploaded
   const [activeMediaTab, setActiveMediaTab] = useState<"image" | "video" | "reel">("image")
   const [activeContentTab, setActiveContentTab] = useState<"offer" | "event">("offer")
   const [galleryItemForm, setGalleryItemForm] = useState({
@@ -429,7 +430,18 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         }
         return true
         
-      case 3: // Gallery - Optional, skip validation
+      case 3: // Gallery - Require at least 2 photos
+        const photoCount = formData.gallery.filter(item => item.type === "image").length
+        if (photoCount < 2) {
+          toast({
+            variant: "destructive",
+            title: "Photos Required",
+            description: `Please add at least 2 photos to showcase your service. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}.`
+          })
+          return false
+        }
+        return true
+        
       case 4: // Contact - Optional, skip validation
       case 5: // Review - Final step
         return true
@@ -471,67 +483,170 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
     try {
       const uploadResults: Array<{ url: string; thumbnail?: string }> = []
+      setUploadingFiles([]) // Reset uploading files list
       
       // Upload image files
       const imageFiles = filesToUpload.filter(item => item.type === "image")
+      console.log(`Found ${imageFiles.length} image files to upload`)
       for (const item of imageFiles) {
         if (!item.file) continue
-        console.log(`Uploading image: ${item.file.name}`)
-        const response = await apiClient.upload.general<any>(item.file, "ubukwe/gallery", "image")
-        console.log("Image upload response:", response)
-        
-        if (response.data?.url) {
-          // Generate thumbnail URL from Cloudinary
-          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/c_thumb,w_200/')
-          uploadResults.push({ 
-            url: response.data.url,
-            thumbnail: thumbnailUrl
-          })
+        console.log(`Uploading image: ${item.file.name}, size: ${item.file.size} bytes`)
+        setUploadingFiles(prev => [...prev, item.file!.name])
+        try {
+          const response = await apiClient.upload.general<any>(item.file, "ubukwe/gallery", "image")
+          console.log("Image upload response:", response)
+          console.log("Response data:", response.data)
+          console.log("Response data type:", typeof response.data)
+          console.log("Response data keys:", response.data ? Object.keys(response.data) : 'no data')
+          
+          // The backend returns FileUploadResponse which has url at top level
+          // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
+          const imageUrl = response.data?.url;
+          
+          console.log("Extracted image URL:", imageUrl)
+          
+          if (imageUrl) {
+            // Generate thumbnail URL from Cloudinary
+            const thumbnailUrl = imageUrl.replace('/upload/', '/upload/c_thumb,w_200/')
+            uploadResults.push({ 
+              url: imageUrl,
+              thumbnail: thumbnailUrl
+            })
+            console.log(`✅ Image uploaded successfully: ${imageUrl}`)
+          } else {
+            console.error(`❌ Image upload failed - no URL found in response:`, response)
+            console.error("Full response structure:", JSON.stringify(response, null, 2))
+            throw new Error(`Failed to upload image: ${item.file.name} - No URL in response`)
+          }
+        } catch (error) {
+          console.error(`❌ Image upload error for ${item.file.name}:`, error)
+          throw error
+        } finally {
+          setUploadingFiles(prev => prev.filter(name => name !== item.file!.name))
         }
       }
 
       // Upload reel files
       const reelFiles = filesToUpload.filter(item => item.type === "reel")
+      console.log(`Found ${reelFiles.length} reel files to upload`)
       for (const item of reelFiles) {
         if (!item.file) continue
-        console.log(`Uploading reel: ${item.file.name}`)
-        const response = await apiClient.upload.general<any>(item.file, "ubukwe/reels", "video")
-        console.log("Reel upload response:", response)
-        
-        if (response.data?.url) {
-          // Generate thumbnail URL for video
-          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
-          uploadResults.push({ 
-            url: response.data.url,
-            thumbnail: thumbnailUrl
-          })
+        console.log(`Uploading reel: ${item.file.name}, size: ${item.file.size} bytes`)
+        setUploadingFiles(prev => [...prev, item.file!.name])
+        try {
+          const response = await apiClient.upload.general<any>(item.file, "ubukwe/reels", "video")
+          console.log("Reel upload response:", response)
+          console.log("Reel response data:", response.data)
+          
+          // The backend returns FileUploadResponse which has url at top level
+          // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
+          const reelUrl = response.data?.url;
+          
+          console.log("Extracted reel URL:", reelUrl)
+          
+          if (reelUrl) {
+            // Generate thumbnail URL for video
+            const thumbnailUrl = reelUrl.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
+            uploadResults.push({ 
+              url: reelUrl,
+              thumbnail: thumbnailUrl
+            })
+            console.log(`✅ Reel uploaded successfully: ${reelUrl}`)
+          } else {
+            console.error(`❌ Reel upload failed - no URL found in response:`, response)
+            console.error("Full reel response structure:", JSON.stringify(response, null, 2))
+            throw new Error(`Failed to upload reel: ${item.file.name} - No URL in response`)
+          }
+        } catch (error) {
+          console.error(`❌ Reel upload error for ${item.file.name}:`, error)
+          throw error
+        } finally {
+          setUploadingFiles(prev => prev.filter(name => name !== item.file!.name))
         }
       }
 
       // Upload video files
       const videoFiles = filesToUpload.filter(item => item.type === "video")
+      console.log(`Found ${videoFiles.length} video files to upload`)
       for (const item of videoFiles) {
         if (!item.file) continue
-        console.log(`Uploading video: ${item.file.name}`)
-        const response = await apiClient.upload.general<any>(item.file, "ubukwe/videos", "video")
-        console.log("Video upload response:", response)
-        
-        if (response.data?.url) {
-          // Generate thumbnail URL for video
-          const thumbnailUrl = response.data.url.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
-          uploadResults.push({ 
-            url: response.data.url,
-            thumbnail: thumbnailUrl
-          })
+        console.log(`Uploading video: ${item.file.name}, size: ${item.file.size} bytes`)
+        setUploadingFiles(prev => [...prev, item.file!.name])
+        try {
+          const response = await apiClient.upload.general<any>(item.file, "ubukwe/videos", "video")
+          console.log("Video upload response:", response)
+          console.log("Video response data:", response.data)
+          
+          // The backend returns FileUploadResponse which has url at top level
+          // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
+          const videoUrl = response.data?.url;
+          
+          console.log("Extracted video URL:", videoUrl)
+          
+          if (videoUrl) {
+            // Generate thumbnail URL for video
+            const thumbnailUrl = videoUrl.replace('/upload/', '/upload/so_0/').replace(/\.[^.]+$/, '.jpg')
+            uploadResults.push({ 
+              url: videoUrl,
+              thumbnail: thumbnailUrl
+            })
+            console.log(`✅ Video uploaded successfully: ${videoUrl}`)
+          } else {
+            console.error(`❌ Video upload failed - no URL found in response:`, response)
+            console.error("Full video response structure:", JSON.stringify(response, null, 2))
+            throw new Error(`Failed to upload video: ${item.file.name} - No URL in response`)
+          }
+        } catch (error) {
+          console.error(`❌ Video upload error for ${item.file.name}:`, error)
+          throw error
+        } finally {
+          setUploadingFiles(prev => prev.filter(name => name !== item.file!.name))
         }
       }
 
       console.log("All upload results:", uploadResults)
+      console.log(`Expected ${filesToUpload.length} uploads, got ${uploadResults.length} results`)
+
+      // Validate we got results for all files
+      if (uploadResults.length !== filesToUpload.length) {
+        throw new Error(`Upload mismatch: Expected ${filesToUpload.length} uploads but only got ${uploadResults.length} results`)
+      }
+
+      // Create a mapping of files to upload results
+      const uploadResultsMap = new Map()
+      let resultIndex = 0
+      
+      // Map image results
+      for (const item of imageFiles) {
+        if (item.file && resultIndex < uploadResults.length) {
+          uploadResultsMap.set(item.id, uploadResults[resultIndex])
+          resultIndex++
+        }
+      }
+      
+      // Map reel results
+      for (const item of reelFiles) {
+        if (item.file && resultIndex < uploadResults.length) {
+          uploadResultsMap.set(item.id, uploadResults[resultIndex])
+          resultIndex++
+        }
+      }
+      
+      // Map video results
+      for (const item of videoFiles) {
+        if (item.file && resultIndex < uploadResults.length) {
+          uploadResultsMap.set(item.id, uploadResults[resultIndex])
+          resultIndex++
+        }
+      }
+
+      console.log("Upload results mapping:", uploadResultsMap)
 
       // Update formData with uploaded URLs and thumbnails
       const updatedGallery = formData.gallery.map(item => {
-        if (item.file && !item.url && uploadResults.length > 0) {
-          const result = uploadResults.shift()
+        if (item.file && !item.url && uploadResultsMap.has(item.id)) {
+          const result = uploadResultsMap.get(item.id)
+          console.log(`Mapping result for item ${item.id}:`, result)
           return { 
             ...item, 
             url: result?.url || "",
@@ -540,6 +655,8 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         }
         return item
       })
+
+      console.log("Updated gallery after upload:", updatedGallery)
 
       setFormData({
         ...formData,
@@ -570,6 +687,27 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         variant: "destructive",
         title: "No Packages",
         description: "Please create at least one package before publishing."
+      })
+      return
+    }
+
+    // Validate gallery - require at least 2 photos
+    if (formData.gallery.length < 2) {
+      toast({
+        variant: "destructive",
+        title: "Gallery Required",
+        description: "Please add at least 2 photos to showcase your service."
+      })
+      return
+    }
+
+    // Count photos (images only, not videos/reels)
+    const photoCount = formData.gallery.filter(item => item.type === "image").length
+    if (photoCount < 2) {
+      toast({
+        variant: "destructive",
+        title: "Photos Required",
+        description: `Please add at least 2 photos. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}.`
       })
       return
     }
@@ -606,6 +744,17 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         url: g.url
       })))
 
+      // Validate gallery is not empty after upload
+      if (!galleryUrls || galleryUrls.length === 0) {
+        throw new Error("Gallery upload failed - no media items were uploaded. Please try again.")
+      }
+
+      // Validate we still have at least 2 photos after upload
+      const uploadedPhotoCount = galleryUrls.filter(item => item.type === "image").length
+      if (uploadedPhotoCount < 2) {
+        throw new Error(`Only ${uploadedPhotoCount} photo(s) were uploaded successfully. Please ensure at least 2 photos are uploaded.`)
+      }
+
       // Step 2: Create the final data with uploaded gallery URLs
       const finalData = {
         ...formData,
@@ -619,6 +768,17 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
           description: item.description || ""
         })),
         status: status || formData.status
+      }
+
+      // Final validation: Check payload gallery is not empty before sending to backend
+      if (!finalData.gallery || finalData.gallery.length === 0) {
+        throw new Error("Gallery data is empty in payload. Cannot submit service without media.")
+      }
+
+      // Final validation: Check payload has at least 2 photos
+      const finalPhotoCount = finalData.gallery.filter(i => i.type === "image").length
+      if (finalPhotoCount < 2) {
+        throw new Error(`Payload validation failed: Only ${finalPhotoCount} photo(s) in final data. At least 2 photos required.`)
       }
 
       setUploadProgress(75)
@@ -646,10 +806,18 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
       // Success toast
       toast({
-        title: status === "active" ? "Service Published!" : "Service Saved!",
+        title: status === "active" 
+          ? (initialData ? "Service Updated & Published!" : "Service Published!") 
+          : (initialData ? "Service Updated!" : "Service Saved!"),
         description: status === "active" 
-          ? "Your service is now live and visible to customers." 
-          : "Your service has been saved as a draft. You can publish it later."
+          ? (initialData 
+              ? "Your service changes are now live and visible to customers." 
+              : "Your service is now live and visible to customers."
+            )
+          : (initialData 
+              ? "Your service changes have been saved as a draft." 
+              : "Your service has been saved as a draft. You can publish it later."
+            )
       })
     } catch (error: any) {
       console.error("Submit error:", error)
@@ -677,13 +845,20 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{initialData ? "Edit Service" : "Create New Service"}</h2>
-          <p className="text-muted-foreground">Complete all steps to create a service that customers will see</p>
+          <h2 className="text-2xl font-bold">
+            {initialData ? "Edit Service" : "Create New Service"}
+          </h2>
+          <p className="text-muted-foreground">
+            {initialData 
+              ? "Update your service information and settings" 
+              : "Complete all steps to create a service that customers will see"
+            }
+          </p>
         </div>
         {onCancel && (
           <Button variant="outline" onClick={onCancel}>
             <X className="w-4 h-4 mr-2" />
-            Cancel
+            {initialData ? "Cancel Edit" : "Cancel"}
           </Button>
         )}
       </div>
@@ -1739,14 +1914,14 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                   disabled={isUploading}
                 >
                   {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  {isUploading ? "Uploading..." : "Save Draft"}
+                  {isUploading ? "Saving..." : initialData ? "Update as Draft" : "Save Draft"}
                 </Button>
                 <Button 
                   onClick={() => handleSubmit("active")}
                   disabled={isUploading}
                 >
                   {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {isUploading ? "Publishing..." : "Publish Service"}
+                  {isUploading ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update & Publish" : "Publish Service")}
                 </Button>
               </div>
             )}
@@ -1755,6 +1930,11 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               <div className="mt-2 space-y-2">
                 <Progress value={uploadProgress} className="h-2" />
                 <p className="text-xs text-muted-foreground text-center">{uploadProgress}% Complete</p>
+                {uploadingFiles.length > 0 && (
+                  <div className="text-xs text-muted-foreground text-center">
+                    <p>Uploading: {uploadingFiles.join(', ')}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
