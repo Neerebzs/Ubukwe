@@ -5,11 +5,11 @@
 
 :root {
   /* Updated to Rose Gold Elegance palette */
-  --background: #fffeff;
+  --background: #ffffff;
   --foreground: oklch(0.15 0.02 45);
-  --card: #fffeff;
+  --card: #ffffff;
   --card-foreground: oklch(0.15 0.02 45);
-  --popover: #fffeff;
+  --popover: #ffffff;
   --popover-foreground: oklch(0.15 0.02 45);
   --primary: oklch(0.55 0.12 200); /* Rose Gold - Elegant and romantic */
   --primary-foreground: oklch(0.98 0.01 85);

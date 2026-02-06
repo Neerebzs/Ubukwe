@@ -8,20 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Users, Music, Utensils, MapPin, Palette, Mic, Star, Search } from "lucide-react"
 import Link from "next/link"
-import { Navbar } from "@/components/ui/navbar"
-import { Footer } from "@/components/ui/footer"
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav"
 import { ServiceSchema } from "@/components/schemas/service-schema"
 import { EmptyState } from "@/components/ui/empty-state"
 import { useQuery } from "@tanstack/react-query"
-import { apiClient, API_ENDPOINTS, ProviderService } from "@/lib/api"
-import { Loader2 } from "lucide-react"
+import { apiClient, API_ENDPOINTS, ProviderService, ServiceCategory } from "@/lib/api"
+import { ServiceCard } from "@/components/ui/service-card"
 
 export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
 
-  const { data: servicesResponse, isLoading, error } = useQuery({
+  const { data: servicesResponse, isLoading: servicesLoading, error: servicesError } = useQuery({
     queryKey: ["public-services", selectedCategory],
     queryFn: async () => {
       // Build query parameters
@@ -29,14 +27,38 @@ export default function ServicesPage() {
       if (selectedCategory !== "all") {
         params.append("category", selectedCategory);
       }
-      
+
       const url = `${API_ENDPOINTS.SERVICES.SEARCH}${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await apiClient.get<ProviderService[]>(url);
       return response.data;
     }
   });
 
+  // Fetch categories from backend - moved up to be accessible
+  const { data: categoriesResponse } = useQuery({
+    queryKey: ["public-categories"],
+    queryFn: async () => {
+      const response = await apiClient.categories.getAll<ServiceCategory[]>();
+      return response.data;
+    }
+  });
+
+  const isLoading = servicesLoading;
+  const error = servicesError;
   const services = servicesResponse || [];
+
+  // Map backend categories to icons helper - accessible to whole page
+  const getCategoryIcon = (iconName: string | undefined, className: string = "h-4 w-4") => {
+    switch (iconName?.toLowerCase()) {
+      case "users": return <Users className={className} />;
+      case "music": return <Music className={className} />;
+      case "utensils": return <Utensils className={className} />;
+      case "map-pin": return <MapPin className={className} />;
+      case "mic": return <Mic className={className} />;
+      case "palette": return <Palette className={className} />;
+      default: return <Search className={className} />;
+    }
+  };
 
   const categoryGroups = [
     {
@@ -45,43 +67,13 @@ export default function ServicesPage() {
       icon: <Search className="h-4 w-4" />,
       description: "Browse all available wedding services"
     },
-    {
-      value: "traditional-troupe",
-      label: "Traditional Troupe",
-      icon: <Users className="h-4 w-4" />,
-      description: "Authentic cultural dancers and performers"
-    },
-    {
-      value: "music-band",
-      label: "Music & Entertainment",
-      icon: <Music className="h-4 w-4" />,
-      description: "Live bands, musicians, and DJs"
-    },
-    {
-      value: "catering",
-      label: "Catering",
-      icon: <Utensils className="h-4 w-4" />,
-      description: "Traditional and modern cuisine services"
-    },
-    {
-      value: "venue",
-      label: "Venue",
-      icon: <MapPin className="h-4 w-4" />,
-      description: "Beautiful event spaces and locations"
-    },
-    {
-      value: "mc",
-      label: "Master of Ceremonies",
-      icon: <Mic className="h-4 w-4" />,
-      description: "Professional event hosts and MCs"
-    },
-    {
-      value: "decoration",
-      label: "Decoration",
-      icon: <Palette className="h-4 w-4" />,
-      description: "Event decoration and styling services"
-    },
-  ]
+    ...(categoriesResponse?.map(cat => ({
+      value: cat.slug,
+      label: cat.name,
+      icon: getCategoryIcon(cat.icon),
+      description: cat.description || `Explore ${cat.name} services`
+    })) || [])
+  ];
 
   const filteredServices = services.filter((service) => {
     const matchesSearch =
@@ -95,126 +87,56 @@ export default function ServicesPage() {
     return filteredServices
   }
 
-  const ServiceCard = ({ service }: { service: ProviderService }) => {
-    // Map backend categories to icons
-    const getIcon = (category: string) => {
-      switch (category.toLowerCase()) {
-        case "dance":
-        case "traditional-troupe": return <Users className="h-6 w-6" />;
-        case "music":
-        case "music-band": return <Music className="h-6 w-6" />;
-        case "food":
-        case "catering": return <Utensils className="h-6 w-6" />;
-        case "venue": return <MapPin className="h-6 w-6" />;
-        case "mc": return <Mic className="h-6 w-6" />;
-        case "decor":
-        case "decoration": return <Palette className="h-6 w-6" />;
-        default: return <Star className="h-6 w-6" />;
-      }
-    };
-
-    return (
-      <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
-        <div className="aspect-video bg-muted/20 rounded-t-lg overflow-hidden relative">
-          <img
-            src={service.gallery?.[0] || "/placeholder.svg"}
-            alt={service.name}
-            className="w-full h-full object-cover"
-          />
-          <Badge variant="secondary" className="absolute top-2 right-2 backdrop-blur-md bg-white/70 shadow-sm border-none">
-            {service.location || "Rwanda"}
-          </Badge>
-        </div>
-        <CardHeader className="pb-3 flex-none">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center space-x-2 min-w-0">
-              <div className="text-primary flex-shrink-0">{getIcon(service.category)}</div>
-              <div className="min-w-0">
-                <CardTitle className="text-lg truncate">{service.name}</CardTitle>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                  {service.category}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 flex-1 flex flex-col">
-          <CardDescription className="mb-4 line-clamp-2 min-h-[2.5rem]">
-            {service.description || "Top rated wedding service in Rwanda."}
-          </CardDescription>
-
-          <div className="flex items-center justify-between mb-4 mt-auto">
-            <div className="flex items-center space-x-1">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium">{service.rating.toFixed(1)}</span>
-              <span className="text-sm text-muted-foreground">({service.bookings_count})</span>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-muted-foreground block">Price starts</span>
-              <span className="font-bold text-primary">
-                {service.price_range_min ? `${service.price_range_min.toLocaleString()} RWF` : "Contact"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Link href={`/services/${service.id}`} className="flex-1">
-              <Button variant="outline" className="w-full h-9">View Details</Button>
-            </Link>
-            <Link href={`/booking/${service.id}`} className="flex-1">
-              <Button className="w-full h-9 shadow-sm">Book</Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const getThumbnail = (service: ProviderService) => {
+    const firstItem = service.gallery?.[0];
+    if (!firstItem) return "/placeholder.svg";
+    if (typeof firstItem === "string") return firstItem;
+    return firstItem.url || "/placeholder.svg";
+  };
 
   return (
-    <div className="min-h-screen bg-[#eff4fa] pb-16 md:pb-0">
-      {/* Header */}
-      <Navbar />
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
+     
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-10 max-w-7xl">
         {/* Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">Browse Wedding Services</h1>
+        <div className="text-center mb-12">
+          <Badge variant="outline" className="mb-4 px-3 py-1 text-primary border-primary/20 bg-primary/5 font-bold tracking-widest uppercase text-[10px]">
+            The Journey Begins Here
+          </Badge>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">Browse Wedding Services</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Discover authentic Rwandan wedding service providers who understand and honor your cultural traditions.
           </p>
-          {/* Debug info - only show in development */}
-          {process.env.NODE_ENV === 'development' && services.length > 0 && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-              ✅ Showing {services.length} approved and active services only
-            </div>
-          )}
+       
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8 max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="mb-12 max-w-2xl mx-auto">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-primary" />
             <Input
               placeholder="Search services or providers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-14 text-base rounded-full shadow-sm hover:shadow-md transition-shadow border-muted focus-visible:ring-primary/20"
             />
           </div>
         </div>
 
         {/* Category Tabs */}
         <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-          <TabsList className="w-full flex flex-wrap h-auto justify-start gap-2 bg-transparent mb-8">
+          <TabsList className="w-full flex overflow-x-auto h-auto justify-start gap-3 bg-transparent mb-12 border-none scrollbar-hide">
             {categoryGroups.map((category) => (
               <TabsTrigger
                 key={category.value}
                 value={category.value}
-                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex items-center gap-2 h-11 px-5 rounded-full border border-border bg-white transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-primary data-[state=active]:shadow-md data-[state=active]:scale-105 flex-shrink-0"
               >
-                {category.icon}
-                <span className="hidden sm:inline">{category.label}</span>
-                <span className="sm:hidden">{category.label.split(' ')[0]}</span>
+                <div className="transition-transform duration-300">
+                  {category.icon}
+                </div>
+                <span className="hidden sm:inline whitespace-nowrap">{category.label}</span>
+                <span className="sm:hidden whitespace-nowrap">{category.label.split(' ')[0]}</span>
                 {category.value !== "all" && (
                   <Badge variant="secondary" className="ml-1 text-xs">
                     {getServicesForCategory(category.value).length}
@@ -262,18 +184,36 @@ export default function ServicesPage() {
                   <p className="text-muted-foreground mb-4">
                     Unable to load services. Please try again later.
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => window.location.reload()}
                   >
                     Retry
                   </Button>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {getServicesForCategory(category.value).map((service) => (
-                    <ServiceCard key={service.id} service={service} />
-                  ))}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {getServicesForCategory(category.value).map((service) => {
+                    // Find category name from category_id
+                    const categoryName = categoriesResponse?.find(
+                      (cat) => cat.id === service.category_id
+                    )?.name || service.category || "Service";
+                    
+                    return (
+                      <ServiceCard
+                        key={service.id}
+                        id={service.id}
+                        title={service.business_name || service.name}
+                        image={getThumbnail(service)}
+                        category={categoryName}
+                        location={service.location || "Rwanda"}
+                        provider={service.business_name || service.name}
+                        price={service.price_range_min ? `${service.price_range_min.toLocaleString()} RWF` : "Contact"}
+                        rating={service.rating}
+                        bookings={service.bookings_count}
+                      />
+                    );
+                  })}
                 </div>
               )}
 
@@ -282,8 +222,8 @@ export default function ServicesPage() {
                 <EmptyState
                   title="No services found"
                   description={
-                    searchTerm 
-                      ? "Try adjusting your search or browse other categories." 
+                    searchTerm
+                      ? "Try adjusting your search or browse other categories."
                       : category.value === "all"
                         ? "No approved services are currently available."
                         : `No approved services available in the ${category.label} category.`
@@ -313,20 +253,18 @@ export default function ServicesPage() {
           service={{
             id: service.id,
             title: service.name,
-            provider: "Verified Provider", // Backend doesn't return provider name directly in list yet
+            provider: service.business_name || "Verified Provider",
             description: service.description || "",
             price: service.price_range_min ? `From ${service.price_range_min} RWF` : "Contact",
             rating: service.rating,
             reviews: service.bookings_count,
             location: service.location || "Rwanda",
             category: service.category,
-            image: service.gallery?.[0] || "",
+            image: getThumbnail(service),
           }}
         />
       ))}
 
-      <Footer />
-      
       {/* Mobile Bottom Navigation - Only on mobile */}
       <PublicBottomNav />
     </div>

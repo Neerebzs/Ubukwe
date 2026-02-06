@@ -80,6 +80,10 @@ export const API_ENDPOINTS = {
     DETAILS: (id: string) => `/api/${API_VERSION}/provider/services/${id}`,
     SEARCH: `/api/${API_VERSION}/provider/services/search/all`,
   },
+  // Public endpoints
+  PUBLIC: {
+    CATEGORIES: `/api/${API_VERSION}/public/categories`,
+  },
   // Health check
   HEALTH: `/health`,
 };
@@ -321,10 +325,22 @@ export interface DashboardSummary {
 // Service Types
 export interface ServiceCategory {
   id: string;
-  service_name: string;
-  service_type: string;
+  name: string;
+  slug: string;
   description?: string;
+  icon?: string;
+  color?: string;
+  display_order: number;
   is_active: boolean;
+}
+
+export interface GalleryItem {
+  id: string;
+  url: string;
+  type: 'image' | 'video' | 'reel';
+  thumbnail?: string;
+  title?: string;
+  description?: string;
 }
 
 export interface ProviderService {
@@ -341,11 +357,15 @@ export interface ProviderService {
   price_range_min?: number;
   price_range_max?: number;
   packages?: any;
-  gallery?: any[];
+  gallery?: (GalleryItem | string)[];
   status: 'draft' | 'pending' | 'approved' | 'active' | 'rejected' | 'on_hold' | 'suspended';
   is_active?: boolean;
   rating: number;
   bookings_count: number;
+  business_name?: string;
+  address?: string;
+  city?: string;
+  country?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -368,7 +388,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Add debugging
     console.log(`Making ${config.method?.toUpperCase()} request to: ${config.baseURL}${config.url}`);
-    
+
     // Add auth token if available
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
@@ -527,19 +547,19 @@ export const apiClient = {
     create<T>(data: any): Promise<ApiResponse<T>> {
       return apiClient.post<T>(API_ENDPOINTS.PROVIDER.SERVICES, data);
     },
-    
+
     update<T>(id: string, data: any): Promise<ApiResponse<T>> {
       return apiClient.put<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`, data);
     },
-    
+
     delete<T>(id: string): Promise<ApiResponse<T>> {
       return apiClient.delete<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`);
     },
-    
+
     getAll<T>(): Promise<ApiResponse<T>> {
       return apiClient.get<T>(API_ENDPOINTS.PROVIDER.SERVICES);
     },
-    
+
     getById<T>(id: string): Promise<ApiResponse<T>> {
       return apiClient.get<T>(`${API_ENDPOINTS.PROVIDER.SERVICES}${id}/`);
     }
@@ -597,6 +617,13 @@ export const apiClient = {
       const url = API_ENDPOINTS.UPLOAD.DELETE_FILE(publicId);
       const params = resourceType ? { resource_type: resourceType } : {};
       return apiClient.delete<T>(url, { params });
+    }
+  },
+
+  // Public Categories API methods
+  categories: {
+    getAll<T>(): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.PUBLIC.CATEGORIES);
     }
   },
 };

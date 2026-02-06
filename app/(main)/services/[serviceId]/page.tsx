@@ -13,8 +13,6 @@ import {
     Play, Image as ImageIcon, Video, Sparkles, ThumbsUp, MessageSquare
 } from "lucide-react"
 import Link from "next/link"
-import { Navbar } from "@/components/ui/navbar"
-import { Footer } from "@/components/ui/footer"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient, API_ENDPOINTS, ProviderService } from "@/lib/api"
 import { Loader2, AlertCircle } from "lucide-react"
@@ -54,7 +52,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#eff4fa]">
+            <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground font-medium">Loading service details...</p>
@@ -65,10 +63,8 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     if (error || !serviceRes) {
         return (
-            <div className="min-h-screen flex flex-col bg-[#eff4fa]">
-                <Navbar />
-                <div className="flex-1 flex items-center justify-center">
-                    <Card className="max-w-md w-full mx-4">
+            <div className="flex-1 flex items-center justify-center">
+                <Card className="max-w-md w-full mx-4">
                         <CardContent className="p-8 text-center">
                             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                             <h2 className="text-xl font-bold mb-2">Service Not Found</h2>
@@ -93,8 +89,6 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         </CardContent>
                     </Card>
                 </div>
-                <Footer />
-            </div>
         );
     }
 
@@ -115,15 +109,15 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     // Map backend to frontend structure with better data handling
     const service = {
         id: serviceData.id,
-        title: serviceData.name,
+        title: serviceData.business_name || serviceData.name,
         provider: "Verified Provider", // TODO: Join with provider data from backend
         category: serviceData.category,
         location: serviceData.location || "Rwanda",
         rating: serviceData.rating || 0,
         verified: serviceData.status === "approved",
         experience: "Expert",
-        image: serviceData.gallery?.[0]?.url || serviceData.gallery?.[0] || "/placeholder.svg",
-        coverImage: serviceData.gallery?.[0]?.url || serviceData.gallery?.[0] || "/placeholder.svg",
+        image: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
+        coverImage: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
         description: serviceData.description || "Professional wedding service provider.",
         longDescription: serviceData.description || "A professional wedding service provider dedicated to making your special day unforgettable with authentic Rwandan traditions and modern excellence.",
         specialties: serviceData.specialties || [serviceData.category],
@@ -145,35 +139,15 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 features: p.features || ["Professional service", "Quality guarantee", "Expert team"],
                 popular: p.popular || i === 0
             }))
-            : [
-                {
-                    id: "basic",
-                    name: "Basic Package",
-                    price: serviceData.price_range_min || 50000,
-                    duration: "Event Duration",
-                    description: "Our essential service offering",
-                    features: ["Professional service", "Quality guarantee", "On-time delivery"],
-                    popular: false
-                },
-                {
-                    id: "standard",
-                    name: "Standard Package", 
-                    price: Math.round(((serviceData.price_range_min || 50000) + (serviceData.price_range_max || 150000)) / 2),
-                    duration: "Event Duration",
-                    description: "Our most popular offering",
-                    features: ["Professional service", "Quality guarantee", "Expert team", "Post-event support"],
-                    popular: true
-                },
-                {
-                    id: "premium",
-                    name: "Premium Package",
-                    price: serviceData.price_range_max || 150000,
-                    duration: "Event Duration", 
-                    description: "Our complete premium experience",
-                    features: ["Professional service", "Quality guarantee", "Expert team", "Post-event support", "Premium materials", "Extended coverage"],
-                    popular: false
-                }
-            ],
+            : [{
+                id: 'default-pkg',
+                name: 'Standard Package',
+                price: serviceData.price_range_min || 0,
+                duration: 'Event Duration',
+                description: 'Comprehensive service package',
+                features: ['Professional service', 'Quality guarantee', 'Expert team'],
+                popular: true
+            }],
         gallery: {
             photos: serviceData.gallery?.filter((item: any) => {
                 const type = typeof item === 'string' ? 'image' : item.type;
@@ -252,9 +226,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     };
 
     return (
-        <div className="min-h-screen bg-[#eff4fa]">
-            <Navbar />
-
+        <>
             {/* Back Button */}
             <div className="container mx-auto px-4 pt-6 max-w-7xl">
                 <Link href="/services">
@@ -266,9 +238,9 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             </div>
 
             {/* Hero Section */}
-            <div className="relative h-[400px] bg-gradient-to-r from-primary/20 to-primary/5">
+            <div className="relative h-[400px] mx-auto px-4 py-8 max-w-7xl ">
                 <div
-                    className="absolute inset-0 bg-cover bg-center opacity-30"
+                    className="absolute inset-0 bg-cover bg-center "
                     style={{ backgroundImage: `url(${service.coverImage})` }}
                 />
                 <div className="relative container mx-auto px-4 h-full flex items-end pb-8">
@@ -304,12 +276,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         {service.experience}
                                     </div>
                                 </div>
-                                {/* Debug info - only show in development */}
-                                {process.env.NODE_ENV === 'development' && (
-                                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
-                                        ✅ Service Status: {serviceData.status} | Active: {serviceData.is_active ? 'Yes' : 'No'}
-                                    </div>
-                                )}
+                              
                             </div>
                         </div>
                         <div className="flex gap-2 mb-2">
@@ -785,7 +752,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                     {/* Right Column - Sticky Sidebar */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-6 space-y-6">
+                        <div className="sticky top-24 space-y-6">
                             {/* Quick Booking */}
                             <Card>
                                 <CardHeader>
@@ -845,8 +812,6 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                     </div>
                 </div>
             </div>
-
-            <Footer />
-        </div>
+        </>
     )
 }

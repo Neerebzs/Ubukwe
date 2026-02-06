@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { Navbar } from "@/components/ui/navbar";
-import { Footer } from "@/components/ui/footer";
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
 import { Button } from "@/components/ui/button";
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#eff4fa] text-foreground pb-16 md:pb-0">
-      <Navbar />
 
       <main className="container mx-auto px-4 py-16 max-w-6xl">
         <section className="text-center mb-16">
@@ -71,8 +68,6 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
-
-      <Footer />
       
       {/* Mobile Bottom Navigation - Only on mobile */}
       <PublicBottomNav />
