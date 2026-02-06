@@ -253,7 +253,10 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       const newItem: GalleryItem = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         type,
-        contentType: contentType || activeContentTab,
+        // Set contentType based on which main tab we're on:
+        // - If contentType is explicitly passed (from promotional tab), use it
+        // - Otherwise, set to null (regular media content)
+        contentType: contentType || null,
         url: "", // Will be set after upload to server
         file,
         preview,

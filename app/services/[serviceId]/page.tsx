@@ -32,13 +32,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
                 console.log(`✅ Service response:`, response);
                 
-                // The response IS the data directly, not response.data
-                if (!response || !response.id) {
+                // The backend returns the service directly (not wrapped in ApiResponse)
+                // Cast to ProviderService since apiClient returns it directly for this endpoint
+                const serviceData = response as unknown as ProviderService;
+                
+                if (!serviceData || !serviceData.id) {
                     console.log(`❌ No valid service data in response`);
                     throw new Error('Service not found or not available');
                 }
                 
-                return response;
+                return serviceData;
             } catch (error: any) {
                 console.log(`❌ Service fetch error:`, error);
                 // If it's a 404 or other error, throw it so React Query can handle it
@@ -99,6 +102,15 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     // Helper to format packages
     const pkgArray = Array.isArray(serviceData.packages) ? serviceData.packages : [];
+
+    // Debug gallery items
+    console.log('📸 Gallery items:', serviceData.gallery);
+    if (Array.isArray(serviceData.gallery)) {
+        console.log('📸 Gallery item types:', serviceData.gallery.map((item: any) => ({
+            type: typeof item === 'string' ? 'string/image' : item.type,
+            url: typeof item === 'string' ? item : item.url
+        })));
+    }
 
     // Map backend to frontend structure with better data handling
     const service = {
@@ -163,25 +175,40 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 }
             ],
         gallery: {
-            photos: serviceData.gallery?.map((item: any, i: number) => ({
+            photos: serviceData.gallery?.filter((item: any) => {
+                const type = typeof item === 'string' ? 'image' : item.type;
+                return !type || type === 'image';
+            }).map((item: any, i: number) => ({
                 id: i,
                 url: typeof item === 'string' ? item : item.url,
-                caption: typeof item === 'object' ? item.alt || `Gallery image ${i + 1}` : `Gallery image ${i + 1}`
+                caption: typeof item === 'object' ? (item.title || item.description || `Gallery image ${i + 1}`) : `Gallery image ${i + 1}`
             })) || [
                 { id: 0, url: "/placeholder.svg", caption: "Service showcase" }
             ],
-            videos: [] as Array<{
-                id: string;
-                title: string;
-                thumbnail: string;
-                duration: string;
-            }>,
-            reels: [] as Array<{
-                id: string;
-                title: string;
-                thumbnail: string;
-                views: string;
-            }>
+            videos: serviceData.gallery?.filter((item: any) => {
+                const type = typeof item === 'string' ? null : item.type;
+                const isVideo = type === 'video';
+                if (isVideo) console.log('🎥 Found video:', item);
+                return isVideo;
+            }).map((item: any, i: number) => ({
+                id: item.id || `video-${i}`,
+                title: item.title || `Video ${i + 1}`,
+                url: item.url,
+                thumbnail: item.thumbnail || item.url,
+                description: item.description || ''
+            })) || [],
+            reels: serviceData.gallery?.filter((item: any) => {
+                const type = typeof item === 'string' ? null : item.type;
+                const isReel = type === 'reel';
+                if (isReel) console.log('🎬 Found reel:', item);
+                return isReel;
+            }).map((item: any, i: number) => ({
+                id: item.id || `reel-${i}`,
+                title: item.title || `Reel ${i + 1}`,
+                url: item.url,
+                thumbnail: item.thumbnail || item.url,
+                description: item.description || ''
+            })) || []
         },
         events: [] as Array<{
             id: string;
@@ -575,94 +602,117 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                             {/* Gallery Tab */}
                             <TabsContent value="gallery" className="space-y-6">
                                 {/* Photos */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <ImageIcon className="h-5 w-5" />
-                                            Photos
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {service.gallery.photos.map((photo) => (
-                                                <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer">
-                                                    <img
-                                                        src={photo.url}
-                                                        alt={photo.caption}
-                                                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                                                    />
-                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                                                        <p className="text-white text-sm">{photo.caption}</p>
+                                {service.gallery.photos.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <ImageIcon className="h-5 w-5" />
+                                                Photos ({service.gallery.photos.length})
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                {service.gallery.photos.map((photo) => (
+                                                    <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer">
+                                                        <img
+                                                            src={photo.url}
+                                                            alt={photo.caption}
+                                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                                            <p className="text-white text-sm">{photo.caption}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
 
                                 {/* Videos */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Video className="h-5 w-5" />
-                                            Videos
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid md:grid-cols-2 gap-4">
-                                            {service.gallery.videos.map((video) => (
-                                                <div key={video.id} className="relative aspect-video rounded-lg overflow-hidden group cursor-pointer bg-black">
-                                                    <img
-                                                        src={video.thumbnail}
-                                                        alt={video.title}
-                                                        className="w-full h-full object-cover opacity-70"
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                            <Play className="h-8 w-8 text-primary ml-1" />
-                                                        </div>
+                                {service.gallery.videos.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Video className="h-5 w-5" />
+                                                Videos ({service.gallery.videos.length})
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                {service.gallery.videos.map((video) => (
+                                                    <div key={video.id} className="relative aspect-video rounded-lg overflow-hidden bg-black">
+                                                        <video
+                                                            src={video.url}
+                                                            controls
+                                                            className="w-full h-full object-contain"
+                                                            poster={video.thumbnail}
+                                                        >
+                                                            Your browser does not support the video tag.
+                                                        </video>
+                                                        {video.title && (
+                                                            <div className="mt-2">
+                                                                <p className="text-sm font-medium">{video.title}</p>
+                                                                {video.description && (
+                                                                    <p className="text-xs text-gray-600">{video.description}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                                                        <p className="text-white font-medium">{video.title}</p>
-                                                        <p className="text-white/80 text-sm">{video.duration}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
 
                                 {/* Reels */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Sparkles className="h-5 w-5" />
-                                            Reels & Highlights
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {service.gallery.reels.map((reel) => (
-                                                <div key={reel.id} className="relative aspect-[9/16] rounded-lg overflow-hidden group cursor-pointer bg-black">
-                                                    <img
-                                                        src={reel.thumbnail}
-                                                        alt={reel.title}
-                                                        className="w-full h-full object-cover opacity-70"
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                            <Play className="h-6 w-6 text-primary ml-0.5" />
-                                                        </div>
+                                {service.gallery.reels.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Sparkles className="h-5 w-5" />
+                                                Reels & Highlights ({service.gallery.reels.length})
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {service.gallery.reels.map((reel) => (
+                                                    <div key={reel.id} className="relative aspect-[9/16] rounded-lg overflow-hidden bg-black">
+                                                        <video
+                                                            src={reel.url}
+                                                            controls
+                                                            className="w-full h-full object-contain"
+                                                            poster={reel.thumbnail}
+                                                        >
+                                                            Your browser does not support the video tag.
+                                                        </video>
+                                                        {reel.title && (
+                                                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent">
+                                                                <p className="text-white text-sm font-medium">{reel.title}</p>
+                                                                {reel.description && (
+                                                                    <p className="text-white/80 text-xs">{reel.description}</p>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                                                        <p className="text-white text-sm font-medium">{reel.title}</p>
-                                                        <p className="text-white/80 text-xs">{reel.views} views</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Empty State */}
+                                {service.gallery.photos.length === 0 && 
+                                 service.gallery.videos.length === 0 && 
+                                 service.gallery.reels.length === 0 && (
+                                    <Card>
+                                        <CardContent className="py-12 text-center">
+                                            <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            <h3 className="text-lg font-semibold mb-2">No Gallery Items</h3>
+                                            <p className="text-gray-600">This service hasn't added any photos, videos, or reels yet.</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </TabsContent>
 
                             {/* Events & Promotions Tab */}

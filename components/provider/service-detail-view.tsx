@@ -389,10 +389,18 @@ export function ServiceDetailView({
                   {reels.map((item) => (
                     <div 
                       key={item.id} 
-                      className="relative aspect-[9/16] bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg overflow-hidden group cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all"
-                      onClick={() => setSelectedGalleryItem(item)}
+                      className="relative aspect-[9/16] bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg overflow-hidden group"
                     >
-                      {item.thumbnail ? (
+                      {item.url ? (
+                        <video
+                          src={item.url}
+                          controls
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : item.thumbnail ? (
                         <img
                           src={item.thumbnail}
                           alt={item.title || "Reel thumbnail"}
@@ -403,10 +411,12 @@ export function ServiceDetailView({
                           <Film className="w-12 h-12 text-white opacity-75" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                        <PlayCircle className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
                       <Badge className="absolute top-2 left-2 bg-purple-600">Reel</Badge>
+                      {item.title && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                          <p className="text-white text-xs font-medium truncate">{item.title}</p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -428,10 +438,18 @@ export function ServiceDetailView({
                   {videos.map((item) => (
                     <div 
                       key={item.id} 
-                      className="relative aspect-video bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg overflow-hidden group cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
-                      onClick={() => setSelectedGalleryItem(item)}
+                      className="relative aspect-video bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg overflow-hidden group"
                     >
-                      {item.thumbnail ? (
+                      {item.url ? (
+                        <video
+                          src={item.url}
+                          controls
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : item.thumbnail ? (
                         <img
                           src={item.thumbnail}
                           alt={item.title || "Video thumbnail"}
@@ -442,10 +460,15 @@ export function ServiceDetailView({
                           <PlayCircle className="w-16 h-16 text-white opacity-75" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                        <PlayCircle className="w-16 h-16 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
                       <Badge className="absolute top-2 left-2 bg-blue-600">Video</Badge>
+                      {item.title && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                          <p className="text-white text-sm font-medium truncate">{item.title}</p>
+                          {item.description && (
+                            <p className="text-white/80 text-xs truncate mt-1">{item.description}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -485,6 +508,15 @@ export function ServiceDetailView({
                             alt={item.title || "Offer"}
                             className="w-full h-full object-cover"
                           />
+                        ) : item.url ? (
+                          <video
+                            src={item.url}
+                            controls
+                            className="w-full h-full object-cover"
+                            preload="metadata"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10">
                             {item.type === "reel" ? (
@@ -537,6 +569,15 @@ export function ServiceDetailView({
                             alt={item.title || "Event"}
                             className="w-full h-full object-cover"
                           />
+                        ) : item.url ? (
+                          <video
+                            src={item.url}
+                            controls
+                            className="w-full h-full object-cover"
+                            preload="metadata"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-purple-500/10">
                             {item.type === "reel" ? (

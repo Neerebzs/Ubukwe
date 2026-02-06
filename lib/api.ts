@@ -333,14 +333,21 @@ export interface ProviderService {
   name: string;
   description?: string;
   category: string;
+  category_id?: string;
   location?: string;
+  specialties?: string[];
+  phone?: string;
+  email?: string;
   price_range_min?: number;
   price_range_max?: number;
   packages?: any;
-  gallery?: string[];
-  status: 'draft' | 'active';
+  gallery?: any[];
+  status: 'draft' | 'pending' | 'approved' | 'active' | 'rejected' | 'on_hold' | 'suspended';
+  is_active?: boolean;
   rating: number;
   bookings_count: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Create Axios instance
