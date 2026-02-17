@@ -211,9 +211,14 @@ export function WeddingTasks() {
             }
         }
 
+        if (!budgetCategoryId) {
+            toast.warning("Please select a budget category.");
+            return;
+        }
+
         // Budget validation
         if (amount && budgetCategoryId) {
-            const selectedCategory = budgetCategories?.find(cat => cat.category_id === budgetCategoryId);
+            const selectedCategory = budgetCategories?.find(cat => cat.id === budgetCategoryId);
             const taskAmount = parseFloat(amount);
 
             if (selectedCategory && taskAmount > selectedCategory.allocated_amount) {
@@ -226,7 +231,7 @@ export function WeddingTasks() {
         const payload = {
             title,
             description: description || null,
-            budget_category_id: budgetCategoryId || null,
+            budget_category_id: budgetCategoryId,
             assigned_to: assignedTo || null,
             start_date: startDate || null,
             end_date: endDate || null,
@@ -299,7 +304,7 @@ export function WeddingTasks() {
 
     const getCategoryBadge = (categoryId?: string) => {
         if (!categoryId) return null;
-        const category = budgetCategories?.find(c => c.category_id === categoryId);
+        const category = budgetCategories?.find(c => c.id === categoryId);
         if (!category) return null;
 
         return (
@@ -723,7 +728,7 @@ export function WeddingTasks() {
                                                                     {displayTask.amount ? `RWF ${displayTask.amount.toLocaleString()}` : "Unallocated"}
                                                                 </p>
                                                                 <p className="text-xs text-muted-foreground truncate">
-                                                                    {budgetCategories?.find(c => c.category_id === displayTask.budget_category_id)?.category_name || "General Planning"}
+                                                                    {budgetCategories?.find(c => c.id === displayTask.budget_category_id)?.category_name || "General Planning"}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -784,7 +789,7 @@ export function WeddingTasks() {
                                                             <div className="h-2 w-full bg-white rounded-full overflow-hidden border">
                                                                 <div
                                                                     className={`h-full transition-all duration-1000 ${displayTask.status === 'completed' ? 'bg-green-500' :
-                                                                            displayTask.status === 'in_progress' ? 'bg-blue-500' : 'bg-gray-300'
+                                                                        displayTask.status === 'in_progress' ? 'bg-blue-500' : 'bg-gray-300'
                                                                         }`}
                                                                     style={{ width: displayTask.status === 'completed' ? '100%' : displayTask.status === 'in_progress' ? '50%' : '10%' }}
                                                                 />
@@ -881,7 +886,7 @@ export function WeddingTasks() {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {budgetCategories?.map((cat) => (
-                                                    <SelectItem key={cat.id} value={cat.category_id}>
+                                                    <SelectItem key={cat.id} value={cat.id}>
                                                         <div className="flex flex-col">
                                                             <span className="font-medium">{cat.category_name}</span>
                                                             <span className="text-[10px] text-muted-foreground italic">

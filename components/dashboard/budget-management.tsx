@@ -20,7 +20,10 @@ import {
     X,
     Calculator,
     PieChart,
-    Loader2
+    Loader2,
+    LayoutGrid,
+    FileText,
+    Wallet
 } from "lucide-react";
 import {
     Dialog,
@@ -197,11 +200,12 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
     const [isEditBudgetOpen, setIsEditBudgetOpen] = useState(false);
     const [newTotalBudget, setNewTotalBudget] = useState(totalBudget.toString());
     const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+    const getSlug = (name: string) => name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^\w]/g, '');
+
     const [newCategory, setNewCategory] = useState({
         name: "",
         description: "",
-        allocatedAmount: "",
-        categoryId: ""
+        allocatedAmount: ""
     });
 
     // Fetch wedding budget data
@@ -273,7 +277,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
             queryClient.invalidateQueries({ queryKey: ["budget-categories"] });
             toast.success("Custom category added successfully");
             setIsAddCategoryOpen(false);
-            setNewCategory({ name: "", description: "", allocatedAmount: "", categoryId: "" });
+            setNewCategory({ name: "", description: "", allocatedAmount: "" });
         },
         onError: (err: any) => {
             toast.error(err.message || "Failed to add category");
@@ -290,11 +294,11 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
     };
 
     const handleAddCustomCategory = () => {
-        if (!newCategory.name || !newCategory.categoryId) {
-            toast.error("Please enter category name and ID");
+        if (!newCategory.name) {
+            toast.error("Please enter a category name");
             return;
         }
-        
+
         const allocatedAmount = parseFloat(newCategory.allocatedAmount);
         if (isNaN(allocatedAmount) || allocatedAmount < 0) {
             toast.error("Please enter a valid allocated amount");
@@ -309,7 +313,6 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
         createCustomCategoryMutation.mutate({
             weddingId: weddingData.id,
             categoryData: {
-                category_id: newCategory.categoryId,
                 category_name: newCategory.name,
                 description: newCategory.description || "",
                 allocated_amount: allocatedAmount,
@@ -325,7 +328,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
     // Use actual budget categories data or initialize with default structure
     const actualBudgetCategories = budgetCategoriesData || [];
-    
+
     // If no budget categories exist and we have a budget, show option to create default categories
     const shouldShowCreateDefault = currentBudget > 0 && actualBudgetCategories.length === 0;
 
@@ -333,15 +336,15 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
     const categorySpending = actualBudgetCategories.length > 0 ? actualBudgetCategories : [];
 
     const generateTasksForCategory = (categoryId: string) => {
-        const category = BUDGET_CATEGORIES.find(c => c.id === categoryId);
-        if (!category) return;
+        const budgetCategory = BUDGET_CATEGORIES.find((c: any) => c.id === categoryId);
+        if (!budgetCategory) return;
 
         // Find the actual budget category data
-        const actualCategory = actualBudgetCategories.find(c => c.category_id === categoryId);
-        const taskBudget = actualCategory ? Math.round(actualCategory.allocated_amount / category.tasks.length) : 0;
+        const actualCategory = actualBudgetCategories.find((c: any) => getSlug(c.category_name) === categoryId);
+        const taskBudget = actualCategory ? Math.round(actualCategory.allocated_amount / budgetCategory.tasks.length) : 0;
 
         // This would create tasks automatically - for now we'll show a toast
-        toast.success(`Auto-generating ${category.tasks.length} tasks for ${category.name} with ${taskBudget.toLocaleString()} RWF each`);
+        toast.success(`Auto-generating ${budgetCategory.tasks.length} tasks for ${budgetCategory.name} with ${taskBudget.toLocaleString()} RWF each`);
     };
 
     return (
@@ -410,8 +413,8 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 {budgetUsedPercentage.toFixed(1)}% used
                             </span>
                         </div>
-                        <Progress 
-                            value={budgetUsedPercentage} 
+                        <Progress
+                            value={budgetUsedPercentage}
                             className={`h-3 ${budgetUsedPercentage > 90 ? 'bg-red-100' : budgetUsedPercentage > 75 ? 'bg-yellow-100' : 'bg-green-100'}`}
                         />
                         {budgetUsedPercentage > 90 && (
@@ -442,7 +445,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                     <div>
                                         <h3 className="font-semibold text-blue-800 mb-2">Create Budget Categories</h3>
                                         <p className="text-sm text-blue-600">
-                                            {currentBudget > 0 
+                                            {currentBudget > 0
                                                 ? "Set up professional budget categories based on international wedding planning standards."
                                                 : "Set your wedding budget first, then create budget categories to organize your spending."
                                             }
@@ -471,7 +474,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             </CardContent>
                         </Card>
                     )}
-                    
+
                     {/* Add Custom Category Button */}
                     {categorySpending.length > 0 && (
                         <div className="flex justify-end">
@@ -485,20 +488,20 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             </Button>
                         </div>
                     )}
-                    
+
                     <div className="grid gap-4">
-                        {categorySpending.map((category) => {
-                            const budgetCategory = BUDGET_CATEGORIES.find(c => c.id === category.category_id);
-                            const spentPercentage = category.allocated_amount > 0 
-                                ? (category.spent_amount / category.allocated_amount) * 100 
+                        {categorySpending.map((category: any) => {
+                            const budgetCategory = BUDGET_CATEGORIES.find((c: any) => c.id === getSlug(category.category_name));
+                            const spentPercentage = category.allocated_amount > 0
+                                ? (category.spent_amount / category.allocated_amount) * 100
                                 : 0;
                             const variance = category.spent_amount - category.allocated_amount;
-                            
+
                             // For task progress, we'll need to calculate from tasks data
-                            const categoryTasks = tasks?.filter(task => task.category === category.category_id) || [];
-                            const completedCategoryTasks = categoryTasks.filter(task => task.is_completed);
-                            const progressPercentage = categoryTasks.length > 0 
-                                ? (completedCategoryTasks.length / categoryTasks.length) * 100 
+                            const categoryTasks = tasks?.filter((task: any) => task.category === category.id) || [];
+                            const completedCategoryTasks = categoryTasks.filter((task: any) => task.is_completed);
+                            const progressPercentage = categoryTasks.length > 0
+                                ? (completedCategoryTasks.length / categoryTasks.length) * 100
                                 : 0;
 
                             return (
@@ -506,7 +509,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                     <CardContent className="p-6">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div 
+                                                <div
                                                     className={`w-4 h-4 rounded-full ${budgetCategory?.color || 'bg-gray-500'}`}
                                                 />
                                                 <div>
@@ -555,7 +558,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                 <span>{spentPercentage.toFixed(1)}%</span>
                                             </div>
                                             <Progress value={spentPercentage} className="h-2" />
-                                            
+
                                             <div className="flex items-center justify-between text-sm">
                                                 <span>Task Progress</span>
                                                 <span>{progressPercentage.toFixed(1)}%</span>
@@ -600,10 +603,10 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                     <div className="text-sm text-muted-foreground mb-4">
                                         Adjust budget allocations for each category. Changes will be saved automatically.
                                     </div>
-                                    {categorySpending.map((category) => {
-                                        const budgetCategory = BUDGET_CATEGORIES.find(c => c.id === category.category_id);
+                                    {categorySpending.map((category: any) => {
+                                        const budgetCategory = BUDGET_CATEGORIES.find((c: any) => c.id === getSlug(category.category_name));
                                         const percentage = currentBudget > 0 ? (category.allocated_amount / currentBudget) * 100 : 0;
-                                        
+
                                         return (
                                             <Card key={category.id} className="p-4">
                                                 <div className="flex items-center justify-between mb-3">
@@ -625,7 +628,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <Label htmlFor={`budget-${category.id}`} className="text-xs">
@@ -667,14 +670,13 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                         />
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="mt-3 pt-3 border-t">
                                                     <div className="flex items-center justify-between text-xs">
                                                         <span className="text-muted-foreground">
-                                                            Variance: 
-                                                            <span className={`ml-1 font-medium ${
-                                                                category.spent_amount > category.allocated_amount ? 'text-red-600' : 'text-green-600'
-                                                            }`}>
+                                                            Variance:
+                                                            <span className={`ml-1 font-medium ${category.spent_amount > category.allocated_amount ? 'text-red-600' : 'text-green-600'
+                                                                }`}>
                                                                 RWF {Math.abs(category.spent_amount - category.allocated_amount).toLocaleString()}
                                                                 {category.spent_amount > category.allocated_amount ? ' over' : ' under'}
                                                             </span>
@@ -685,7 +687,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                             className="h-6 px-2 text-xs"
                                                             onClick={() => {
                                                                 // Reset to default percentage
-                                                                const defaultCategory = BUDGET_CATEGORIES.find(c => c.id === category.category_id);
+                                                                const defaultCategory = BUDGET_CATEGORIES.find((c: any) => c.id === getSlug(category.category_name));
                                                                 if (defaultCategory) {
                                                                     const defaultAmount = (currentBudget * defaultCategory.defaultPercentage) / 100;
                                                                     console.log(`Reset category ${category.id} to default: ${defaultAmount}`);
@@ -699,7 +701,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             </Card>
                                         );
                                     })}
-                                    
+
                                     <div className="mt-6 p-4 bg-muted/50 rounded-lg">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -710,7 +712,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             </div>
                                             <div className="text-right">
                                                 <div className="text-lg font-bold">
-                                                    RWF {categorySpending.reduce((sum, cat) => sum + cat.allocated_amount, 0).toLocaleString()}
+                                                    RWF {categorySpending.reduce((sum: number, cat: any) => sum + cat.allocated_amount, 0).toLocaleString()}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">
                                                     of RWF {currentBudget.toLocaleString()} total budget
@@ -743,9 +745,9 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 <CardContent>
                                     <div className="space-y-4">
                                         {categorySpending
-                                            .sort((a, b) => b.spent_amount - a.spent_amount)
+                                            .sort((a: any, b: any) => b.spent_amount - a.spent_amount)
                                             .slice(0, 5)
-                                            .map((category) => (
+                                            .map((category: any) => (
                                                 <div key={category.id} className="flex items-center justify-between">
                                                     <span className="text-sm">{category.category_name}</span>
                                                     <span className="font-semibold">
@@ -767,13 +769,13 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 <CardContent>
                                     <div className="space-y-4">
                                         {categorySpending
-                                            .map(category => ({
+                                            .map((category: any) => ({
                                                 ...category,
                                                 variance: category.spent_amount - category.allocated_amount
                                             }))
-                                            .sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance))
+                                            .sort((a: any, b: any) => Math.abs(b.variance) - Math.abs(a.variance))
                                             .slice(0, 5)
-                                            .map((category) => (
+                                            .map((category: any) => (
                                                 <div key={category.id} className="flex items-center justify-between">
                                                     <span className="text-sm">{category.category_name}</span>
                                                     <div className="flex items-center">
@@ -814,14 +816,14 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 <div className="grid md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <h4 className="font-semibold">Projected Final Costs</h4>
-                                        {categorySpending.map((category) => {
+                                        {categorySpending.map((category: any) => {
                                             // Calculate task progress from actual tasks
-                                            const categoryTasks = tasks?.filter(task => task.category === category.category_id) || [];
-                                            const completedTasks = categoryTasks.filter(task => task.is_completed);
-                                            const progressPercentage = categoryTasks.length > 0 
-                                                ? (completedTasks.length / categoryTasks.length) * 100 
+                                            const categoryTasks = tasks?.filter((task: any) => task.category === category.id) || [];
+                                            const completedTasks = categoryTasks.filter((task: any) => task.is_completed);
+                                            const progressPercentage = categoryTasks.length > 0
+                                                ? (completedTasks.length / categoryTasks.length) * 100
                                                 : 0;
-                                            const projectedSpend = progressPercentage > 0 
+                                            const projectedSpend = progressPercentage > 0
                                                 ? (category.spent_amount / progressPercentage) * 100
                                                 : category.allocated_amount;
 
@@ -837,7 +839,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                     </div>
                                     <div className="space-y-4">
                                         <h4 className="font-semibold">Remaining Budget by Category</h4>
-                                        {categorySpending.map((category) => {
+                                        {categorySpending.map((category: any) => {
                                             const remaining = category.allocated_amount - category.spent_amount;
                                             return (
                                                 <div key={category.id} className="flex items-center justify-between text-sm">
@@ -883,7 +885,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 step="10000"
                             />
                             <p className="text-sm text-muted-foreground">
-                                {currentBudget > 0 
+                                {currentBudget > 0
                                     ? "Update your total wedding budget. This will affect category allocations."
                                     : "Set your total wedding budget. This will automatically distribute across wedding categories."
                                 }
@@ -905,78 +907,104 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
             {/* Add Custom Category Dialog */}
             <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Add Custom Budget Category</DialogTitle>
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+                    <DialogHeader className="p-6 bg-primary text-white">
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <Plus className="h-6 w-6" />
+                            Add Custom Budget Category
+                        </DialogTitle>
+                        <p className="text-primary-foreground/80 text-sm mt-1">
+                            Create a personalized spending category for your wedding.
+                        </p>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="category-id">Category ID</Label>
-                            <Input
-                                id="category-id"
-                                placeholder="e.g., custom_gifts"
-                                value={newCategory.categoryId}
-                                onChange={(e) => setNewCategory({ ...newCategory, categoryId: e.target.value })}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Unique identifier for this category (lowercase, no spaces)
-                            </p>
+
+                    <div className="p-6 space-y-6">
+                        <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="category-name" className="text-sm font-semibold flex items-center gap-2">
+                                    <LayoutGrid className="h-4 w-4 text-primary" />
+                                    Category Name
+                                </Label>
+                                <Input
+                                    id="category-name"
+                                    placeholder="e.g., Wedding Gifts"
+                                    value={newCategory.name}
+                                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                                    className="h-11 border-primary/10 focus:ring-primary/20"
+                                />
+                                <p className="text-[10px] text-muted-foreground italic">
+                                    Example: Honeymoon, Morning Dress, Traditional Accessories
+                                </p>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="category-description" className="text-sm font-semibold flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-primary" />
+                                    Description (Optional)
+                                </Label>
+                                <Input
+                                    id="category-description"
+                                    placeholder="e.g., Gifts for guests and wedding party"
+                                    value={newCategory.description}
+                                    onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                                    className="h-11 border-primary/10 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="allocated-amount" className="text-sm font-semibold flex items-center gap-2">
+                                    <Wallet className="h-4 w-4 text-primary" />
+                                    Allocated Amount (RWF)
+                                </Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">RWF</span>
+                                    <Input
+                                        id="allocated-amount"
+                                        type="number"
+                                        placeholder="0"
+                                        value={newCategory.allocatedAmount}
+                                        onChange={(e) => setNewCategory({ ...newCategory, allocatedAmount: e.target.value })}
+                                        min="0"
+                                        step="10000"
+                                        className="h-11 pl-14 border-primary/10 focus:ring-primary/20 font-semibold text-lg"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                    This amount will be reserved from your total wedding budget.
+                                </p>
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="category-name">Category Name</Label>
-                            <Input
-                                id="category-name"
-                                placeholder="e.g., Wedding Gifts"
-                                value={newCategory.name}
-                                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="category-description">Description (Optional)</Label>
-                            <Input
-                                id="category-description"
-                                placeholder="e.g., Gifts for guests and wedding party"
-                                value={newCategory.description}
-                                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="allocated-amount">Allocated Amount (RWF)</Label>
-                            <Input
-                                id="allocated-amount"
-                                type="number"
-                                placeholder="e.g., 500000"
-                                value={newCategory.allocatedAmount}
-                                onChange={(e) => setNewCategory({ ...newCategory, allocatedAmount: e.target.value })}
-                                min="0"
-                                step="10000"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Budget allocated for this category
+
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 flex gap-3 items-start">
+                            <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                            <p className="text-xs text-primary/80 leading-relaxed">
+                                <strong>Tip:</strong> Once created, you can link tasks to this category in the Planning tab to track detailed spending.
                             </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button 
-                            variant="outline" 
+
+                    <DialogFooter className="p-6 pt-0 flex gap-3 sm:gap-0">
+                        <Button
+                            variant="ghost"
                             onClick={() => {
                                 setIsAddCategoryOpen(false);
-                                setNewCategory({ name: "", description: "", allocatedAmount: "", categoryId: "" });
+                                setNewCategory({ name: "", description: "", allocatedAmount: "" });
                             }}
+                            className="flex-1 sm:flex-none"
                         >
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel
+                            Discard
                         </Button>
-                        <Button 
-                            onClick={handleAddCustomCategory} 
+                        <Button
+                            onClick={handleAddCustomCategory}
                             disabled={createCustomCategoryMutation.isPending}
+                            className="flex-1 sm:flex-none shadow-lg shadow-primary/20 px-8"
                         >
                             {createCustomCategoryMutation.isPending ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             ) : (
                                 <Plus className="h-4 w-4 mr-2" />
                             )}
-                            Add Category
+                            Create Category
                         </Button>
                     </DialogFooter>
                 </DialogContent>
