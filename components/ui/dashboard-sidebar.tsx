@@ -29,7 +29,9 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
     {
       title: "Planning",
       items: [
+        { id: "budget", label: "Budget", icon: <DollarSign className="w-4 h-4" /> },
         { id: "planning", label: "Planning & Timeline", icon: <CheckCircle className="w-4 h-4" /> },
+
         { id: "guests", label: "Guest Management", icon: <Users className="w-4 h-4" /> },
       ]
     },
@@ -43,7 +45,6 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
       title: "Management",
       items: [
         { id: "bookings", label: "My Bookings", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "budget", label: "Budget", icon: <DollarSign className="w-4 h-4" /> },
         { id: "messages", label: "Messages", icon: <MessageCircle className="w-4 h-4" /> },
         { id: "quotes", label: "Quotes", icon: <FileText className="w-4 h-4" /> },
         { id: "contracts", label: "Contracts", icon: <FileText className="w-4 h-4" /> },
@@ -128,11 +129,11 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
               <button
                 type="button"
                 onClick={() => toggleGroup(group.title)}
-                className="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-black uppercase tracking-wider hover:text-foreground"
                 aria-expanded={expandedGroups[group.title]}
               >
                 <span className="flex items-center gap-2">
-                  <span className="text-foreground/80">{groupIconByTitle[group.title] || null}</span>
+                  <span className="text-black">{groupIconByTitle[group.title] || null}</span>
                   {group.title}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${isClient && expandedGroups[group.title] ? '' : '-rotate-90'}`} />
@@ -149,8 +150,8 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
                     onClick={() => onTabChange(tab.id)}
                     className={`relative group w-full text-left text-sm px-3 py-2.5 rounded-md transition-all duration-200 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'
                       } ${isActive
-                        ? 'bg-muted text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:shadow-sm'
+                        ? 'bg-muted text-gray-900 shadow-sm'
+                        : 'text-gray-900 hover:text-foreground hover:bg-muted/50 hover:shadow-sm'
                       }`}
                     title={isCollapsed ? tab.label : undefined}
                   >

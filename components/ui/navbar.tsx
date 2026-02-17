@@ -4,7 +4,7 @@ import * as React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { MenuIcon, XIcon, Home, Briefcase, Info, LogIn, UserPlus, Calendar } from "lucide-react";
+import { MenuIcon, XIcon, Home, Briefcase, Info, LogIn, UserPlus, Calendar, Search } from "lucide-react";
 import { Button } from "./button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
@@ -30,6 +30,14 @@ export function Navbar() {
               Rwanda
             </Badge>
           </Link>
+          <div className="relative flex-1 max-w-sm mx-8 hidden lg:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search services..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+            />
+          </div>
 
           {/* Desktop Navigation */}
           {isMobile === false && (
@@ -64,8 +72,8 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           {isMobile === true && (
-            <button 
-              onClick={toggleMenu} 
+            <button
+              onClick={toggleMenu}
               className="text-teal-600 focus:outline-none p-2 hover:bg-teal-50 rounded-md transition-colors"
               aria-label="Toggle menu"
             >
@@ -79,11 +87,11 @@ export function Navbar() {
       {isMobile === true && menuOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm" 
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={toggleMenu}
           />
-          
+
           {/* Drawer */}
           <div className="fixed right-0 top-0 h-full w-72 bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="p-6 space-y-6">
@@ -95,7 +103,7 @@ export function Navbar() {
                   </div>
                   <span className="font-bold text-lg text-teal-600">Ubukwe</span>
                 </div>
-                <button 
+                <button
                   onClick={toggleMenu}
                   className="p-2 hover:bg-teal-50 rounded-md transition-colors text-teal-600"
                 >
@@ -105,32 +113,32 @@ export function Navbar() {
 
               {/* Navigation Links */}
               <nav className="space-y-2">
-                <a 
-                  href="/" 
+                <a
+                  href="/"
                   onClick={toggleMenu}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-teal-50 transition-colors text-gray-700 hover:text-teal-600"
                 >
                   <Home className="h-5 w-5" />
                   <span className="font-medium"><TranslatedText text="Home" /></span>
                 </a>
-                <a 
-                  href="/services" 
+                <a
+                  href="/services"
                   onClick={toggleMenu}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-teal-50 transition-colors text-gray-700 hover:text-teal-600"
                 >
                   <Briefcase className="h-5 w-5" />
                   <span className="font-medium"><TranslatedText text="Services" /></span>
                 </a>
-                <a 
-                  href="/events" 
+                <a
+                  href="/events"
                   onClick={toggleMenu}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-teal-50 transition-colors text-gray-700 hover:text-teal-600"
                 >
                   <Calendar className="h-5 w-5" />
                   <span className="font-medium"><TranslatedText text="Events" /></span>
                 </a>
-                <a 
-                  href="/about" 
+                <a
+                  href="/about"
                   onClick={toggleMenu}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-teal-50 transition-colors text-gray-700 hover:text-teal-600"
                 >
@@ -138,6 +146,16 @@ export function Navbar() {
                   <span className="font-medium"><TranslatedText text="About" /></span>
                 </a>
               </nav>
+
+              {/* Mobile Search */}
+              <div className="relative pt-4 px-2">
+                <Search className="absolute left-5 top-[calc(1rem+1.35rem)] -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search services..."
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-teal-100 rounded-xl text-sm focus:outline-none"
+                />
+              </div>
 
               {/* Language Switcher */}
               <div className="pt-4 border-t border-teal-200">

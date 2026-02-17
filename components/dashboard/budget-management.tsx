@@ -578,14 +578,6 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                     </Badge>
                                                 )}
                                             </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => generateTasksForCategory(category.category_id)}
-                                            >
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Generate Tasks
-                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>

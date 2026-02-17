@@ -55,6 +55,7 @@ export function MobileMenuDrawer({
       title: "Planning",
       items: [
         { id: "planning", label: "Planning & Timeline", icon: CheckCircle },
+        { id: "budget", label: "Budget", icon: DollarSign },
         { id: "guests", label: "Guest Management", icon: Users },
       ]
     },
@@ -70,7 +71,6 @@ export function MobileMenuDrawer({
       title: "Management",
       items: [
         { id: "bookings", label: "My Bookings", icon: BookOpen },
-        { id: "budget", label: "Budget", icon: DollarSign },
         { id: "messages", label: "Messages", icon: MessageCircle },
         { id: "quotes", label: "Quotes", icon: FileText },
         { id: "contracts", label: "Contracts", icon: FileText },
@@ -98,7 +98,7 @@ export function MobileMenuDrawer({
     <div className="fixed inset-0 z-50 md:hidden">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+
       {/* Drawer */}
       <div className="fixed left-0 top-0 h-full w-72 bg-card border-r shadow-lg overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
         {/* Header */}
@@ -125,7 +125,7 @@ export function MobileMenuDrawer({
         <nav className="flex-1 overflow-y-auto p-3 space-y-2">
           {menuSections.map((section) => {
             const isExpanded = expandedSections.includes(section.id);
-            
+
             return (
               <Collapsible
                 key={section.id}
@@ -144,12 +144,12 @@ export function MobileMenuDrawer({
                     )}
                   </div>
                 </CollapsibleTrigger>
-                
+
                 <CollapsibleContent className="space-y-1 mt-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
-                    
+
                     return (
                       <button
                         key={item.id}

@@ -25,8 +25,9 @@ import {
     Target
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS, WeddingTask } from "@/lib/api";
+import { apiClient, API_ENDPOINTS, WeddingTask, BudgetCategory } from "@/lib/api";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -76,6 +77,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("");
+    const [budgetCategoryId, setBudgetCategoryId] = useState("");
     const [assignedTo, setAssignedTo] = useState<string>("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
@@ -99,10 +101,10 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         }
     });
 
-    const { data: tasks, isLoading, error } = useQuery({
+    const { data: tasks, isLoading, error } = useQuery<WeddingTask[]>({
         queryKey: ["wedding-tasks"],
         queryFn: async () => {
-            const response = await apiClient.get<WeddingTask[]>(API_ENDPOINTS.WEDDING.TASKS);
+            const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.TASKS);
             const data = response.data;
             if (Array.isArray(data)) {
                 return data;
@@ -114,6 +116,17 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
             return [];
         },
         enabled: !!weddingResponse
+    });
+
+    // Fetch budget categories for dynamic selection
+    const { data: budgetCategories } = useQuery<BudgetCategory[]>({
+        queryKey: ["budget-categories", (weddingResponse as any)?.id],
+        queryFn: async () => {
+            if (!(weddingResponse as any)?.id) return [];
+            const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.BUDGET_CATEGORIES((weddingResponse as any).id));
+            return (response.data?.data || response.data || []) as BudgetCategory[];
+        },
+        enabled: !!(weddingResponse as any)?.id
     });
 
     const createMutation = useMutation({
@@ -152,24 +165,24 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
 
             const categoryBudget = Math.round((totalBudget * category.defaultPercentage) / 100);
             const taskBudget = Math.round(categoryBudget / category.tasks.length);
-            
+
             // Calculate timeline based on wedding date
             const weddingDateObj = weddingDate ? new Date(weddingDate) : new Date();
             const today = new Date();
             const daysUntilWedding = Math.ceil((weddingDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
+
             const tasksToCreate = category.tasks.map((taskTitle, index) => {
                 // Distribute tasks across timeline with venue/catering earlier, details later
-                const urgencyFactor = category.id === 'venue' ? 0.8 : 
-                                    category.id === 'catering' ? 0.7 :
-                                    category.id === 'photography' ? 0.6 :
-                                    category.id === 'attire' ? 0.4 :
-                                    0.3;
-                
+                const urgencyFactor = category.id === 'venue' ? 0.8 :
+                    category.id === 'catering' ? 0.7 :
+                        category.id === 'photography' ? 0.6 :
+                            category.id === 'attire' ? 0.4 :
+                                0.3;
+
                 const daysFromNow = Math.round(daysUntilWedding * urgencyFactor * (index + 1) / category.tasks.length);
                 const dueDate = new Date();
                 dueDate.setDate(today.getDate() + daysFromNow);
-                
+
                 return {
                     title: taskTitle,
                     description: `Auto-generated task for ${category.name} category`,
@@ -183,10 +196,10 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
             });
 
             // Create all tasks
-            const promises = tasksToCreate.map(task => 
+            const promises = tasksToCreate.map(task =>
                 apiClient.post(API_ENDPOINTS.WEDDING.TASKS, task)
             );
-            
+
             return Promise.all(promises);
         },
         onSuccess: (_, categoryId) => {
@@ -203,6 +216,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         setTitle("");
         setDescription("");
         setCategory("");
+        setBudgetCategoryId("");
         setAssignedTo("");
         setStartDate("");
         setEndDate("");
@@ -212,15 +226,38 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
 
     const handleCreate = () => {
         if (!title.trim()) return;
-        createMutation.mutate({ 
-            title, 
+
+        const taskAmount = amount ? parseFloat(amount) : null;
+
+        // Budget validation
+        if (budgetCategoryId && taskAmount !== null) {
+            const selectedCategory = (budgetCategories as BudgetCategory[])?.find(c => c.id === budgetCategoryId);
+            if (selectedCategory && taskAmount > selectedCategory.allocated_amount) {
+                const warningMessage = `Warning: Task amount (RWF ${taskAmount.toLocaleString()}) exceeds allocated budget for ${selectedCategory.category_name} (RWF ${selectedCategory.allocated_amount.toLocaleString()})`;
+                toast.warning(warningMessage);
+                console.warn(`[BUDGET_VIOLATION] ${warningMessage}`, {
+                    taskTitle: title,
+                    category: selectedCategory.category_name,
+                    allocated: selectedCategory.allocated_amount,
+                    requested: taskAmount
+                });
+                // We show the warning but allow creation as per common wedding planning flexibility, 
+                // but usually the user wants it blocked or clearly warned.
+                // Given the prompt "make sure that user can't enter amount which excide", I will block it.
+                return;
+            }
+        }
+
+        createMutation.mutate({
+            title,
             description: description || null,
             category: category || null,
+            budget_category_id: budgetCategoryId || null,
             assigned_to: assignedTo || null,
             start_date: startDate || null,
             end_date: endDate || null,
             priority: priority || null,
-            amount: amount ? parseFloat(amount) : null
+            amount: taskAmount
         });
     };
 
@@ -228,7 +265,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         const newStatus = task.is_completed ? "pending" : "completed";
         updateMutation.mutate({
             id: task.id,
-            data: { 
+            data: {
                 is_completed: !task.is_completed,
                 status: newStatus
             }
@@ -238,7 +275,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
     const handleStatusChange = (task: WeddingTask, newStatus: string) => {
         updateMutation.mutate({
             id: task.id,
-            data: { 
+            data: {
                 status: newStatus,
                 is_completed: newStatus === "completed"
             }
@@ -277,8 +314,25 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         );
     };
 
-    const getCategoryBadge = (categoryId?: string) => {
-        if (!categoryId) return null;
+    const getCategoryBadge = (categoryId?: string, budgetCatId?: string) => {
+        if (!categoryId && !budgetCatId) return null;
+
+        // Try to find in dynamic categories first
+        if (budgetCatId || categoryId) {
+            const dynamicCat = (budgetCategories as BudgetCategory[])?.find(c => c.id === budgetCatId || c.category_id === categoryId);
+            if (dynamicCat) {
+                // Find color mapping from hardcoded defaults if available, otherwise gray
+                const defaultCat = BUDGET_CATEGORIES.find(c => c.id === dynamicCat.category_id);
+                const colorClass = defaultCat?.color || "bg-gray-500";
+                return (
+                    <Badge variant="outline" className={`text-xs ${colorClass} text-white border-0`}>
+                        {dynamicCat.category_name}
+                    </Badge>
+                );
+            }
+        }
+
+        // Fallback to hardcoded defaults
         const category = BUDGET_CATEGORIES.find(c => c.id === categoryId);
         if (!category) return null;
         return (
@@ -315,8 +369,8 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                     return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
                 case "priority":
                     const priorityOrder = { high: 3, medium: 2, low: 1 };
-                    return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - 
-                           (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
+                    return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) -
+                        (priorityOrder[a.priority as keyof typeof priorityOrder] || 0);
                 case "amount":
                     return (b.amount || 0) - (a.amount || 0);
                 case "category":
@@ -338,7 +392,8 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         else if (activeTab === "overdue") {
             filtered = filtered.filter(t => {
                 if (!t.end_date || t.is_completed) return false;
-                return getDaysUntilDue(t.end_date)! < 0;
+                const days = getDaysUntilDue(t.end_date);
+                return days !== null && days < 0;
             });
         }
         else if (activeTab === "urgent") {
@@ -357,7 +412,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
 
         // Filter by category
         if (filterCategory !== "all") {
-            filtered = filtered.filter(t => t.category === filterCategory);
+            filtered = filtered.filter(t => t.category === filterCategory || t.budget_category_id === filterCategory);
         }
 
         return sortTasks(filtered);
@@ -395,27 +450,32 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
         );
     }
 
-    const tasksArray = tasks || [];
-    const completedCount = tasksArray.filter(t => t.is_completed).length;
+    const tasksArray = (tasks || []) as WeddingTask[];
+    const completedCount = tasksArray.filter((t: WeddingTask) => t.is_completed).length;
     const totalCount = tasksArray.length;
     const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-    const filteredTasks = filterTasks(tasksArray);
-    
-    // Calculate budget totals
-    const totalBudgetFromTasks = tasksArray.reduce((sum, task) => sum + (task.amount || 0), 0);
-    const completedBudget = tasksArray.filter(t => t.is_completed).reduce((sum, task) => sum + (task.amount || 0), 0);
-    
-    // Calculate urgency metrics
-    const overdueTasks = tasksArray.filter(t => {
+
+    // Calculate budget metrics
+    const weddingBudget = Number((weddingResponse as any)?.budget || 0);
+    const weddingSpent = Number((weddingResponse as any)?.spent || 0);
+    const budgetUsedPercentage = weddingBudget > 0 ? (weddingSpent / weddingBudget) * 100 : 0;
+
+    const totalBudgetFromTasks = tasksArray.reduce((sum: number, task: WeddingTask) => sum + (task.amount || 0), 0);
+    const completedBudget = tasksArray.filter((t: WeddingTask) => t.is_completed).reduce((sum: number, task: WeddingTask) => sum + (task.amount || 0), 0);
+
+    const overdueTasks = tasksArray.filter((t: WeddingTask) => {
         if (!t.end_date || t.is_completed) return false;
-        return getDaysUntilDue(t.end_date)! < 0;
+        const days = getDaysUntilDue(t.end_date);
+        return days !== null && days < 0;
     }).length;
-    
-    const urgentTasks = tasksArray.filter(t => {
+
+    const urgentTasks = tasksArray.filter((t: WeddingTask) => {
         if (!t.end_date || t.is_completed) return false;
         const days = getDaysUntilDue(t.end_date);
         return days !== null && days <= 7 && days >= 0;
     }).length;
+
+    const filteredTasks = filterTasks(tasksArray);
 
     return (
         <div className="space-y-6">
@@ -423,12 +483,12 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                 <div>
                     <h2 className="text-2xl font-bold">Professional Wedding Planning</h2>
                     <p className="text-muted-foreground">
-                        Budget-driven task management for {weddingResponse?.couple_name || "your wedding"}
+                        Budget-driven task management for {(weddingResponse as any)?.couple_name || "your wedding"}
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => setIsAutoGenerateOpen(true)}
                         disabled={totalBudget === 0}
                     >
@@ -437,7 +497,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                     </Button>
                     <Button onClick={() => setIsAddDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Custom Task
+                        Add New Task
                     </Button>
                 </div>
             </div>
@@ -498,11 +558,19 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Categories</SelectItem>
-                            {BUDGET_CATEGORIES.map(category => (
-                                <SelectItem key={category.id} value={category.id}>
-                                    {category.name}
-                                </SelectItem>
-                            ))}
+                            {budgetCategories && (budgetCategories as BudgetCategory[]).length > 0 ? (
+                                (budgetCategories as BudgetCategory[]).map(cat => (
+                                    <SelectItem key={cat.id} value={cat.category_id}>
+                                        {cat.category_name}
+                                    </SelectItem>
+                                ))
+                            ) : (
+                                BUDGET_CATEGORIES.map(category => (
+                                    <SelectItem key={category.id} value={category.id}>
+                                        {category.name}
+                                    </SelectItem>
+                                ))
+                            )}
                         </SelectContent>
                     </Select>
                 </div>
@@ -556,10 +624,9 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                         return (
                                             <div
                                                 key={task.id}
-                                                className={`flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group border-b last:border-0 ${
-                                                    isOverdue ? 'bg-red-50 border-l-4 border-l-red-500' :
+                                                className={`flex items-center justify-between p-4 hover:bg-muted/50 transition-colors group border-b last:border-0 ${isOverdue ? 'bg-red-50 border-l-4 border-l-red-500' :
                                                     isUrgent ? 'bg-yellow-50 border-l-4 border-l-yellow-500' : ''
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex items-center space-x-3 flex-1">
                                                     <Checkbox
@@ -574,7 +641,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                                             </span>
                                                             {getStatusBadge(task.status)}
                                                             {getPriorityBadge(task.priority)}
-                                                            {getCategoryBadge(task.category)}
+                                                            {getCategoryBadge(task.category, task.budget_category_id)}
                                                             {isOverdue && (
                                                                 <Badge variant="destructive" className="text-xs">
                                                                     <AlertTriangle className="h-3 w-3 mr-1" />
@@ -601,9 +668,9 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                                                     {task.end_date && formatDate(task.end_date)}
                                                                     {daysUntilDue !== null && (
                                                                         <span className={`ml-2 ${isOverdue ? 'text-red-600' : isUrgent ? 'text-yellow-600' : ''}`}>
-                                                                            ({daysUntilDue > 0 ? `${daysUntilDue} days left` : 
-                                                                              daysUntilDue === 0 ? 'Due today' : 
-                                                                              `${Math.abs(daysUntilDue)} days overdue`})
+                                                                            ({daysUntilDue > 0 ? `${daysUntilDue} days left` :
+                                                                                daysUntilDue === 0 ? 'Due today' :
+                                                                                    `${Math.abs(daysUntilDue)} days overdue`})
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -669,45 +736,90 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                             Select a budget category to automatically generate professional wedding planning tasks with timeline and budget allocation.
                         </p>
                         <div className="grid gap-3">
-                            {BUDGET_CATEGORIES.map(category => {
-                                const categoryBudget = Math.round((totalBudget * category.defaultPercentage) / 100);
-                                const existingTasks = tasksArray.filter(task => task.category === category.id).length;
-                                
-                                return (
-                                    <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                                        <div className="flex items-center space-x-3">
-                                            <div className={`w-4 h-4 rounded-full ${category.color}`} />
-                                            <div>
-                                                <div className="font-medium">{category.name}</div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    {category.tasks.length} tasks • RWF {categoryBudget.toLocaleString()} budget
+                            {budgetCategories && (budgetCategories as BudgetCategory[]).length > 0 ? (
+                                (budgetCategories as BudgetCategory[]).map(category => {
+                                    // Find icon/color from defaults
+                                    const defaultCat = BUDGET_CATEGORIES.find(c => c.id === category.category_id);
+                                    const colorClass = defaultCat?.color || "bg-gray-500";
+                                    const tasksCount = defaultCat?.tasks.length || 0;
+                                    const existingTasks = tasksArray.filter(task => task.budget_category_id === category.id || task.category === category.category_id).length;
+
+                                    return (
+                                        <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={`w-4 h-4 rounded-full ${colorClass}`} />
+                                                <div>
+                                                    <div className="font-medium">{category.category_name}</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {tasksCount} tasks • RWF {category.allocated_amount.toLocaleString()} budget
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {existingTasks > 0 && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    {existingTasks} existing
-                                                </Badge>
-                                            )}
-                                            <Button
-                                                size="sm"
-                                                onClick={() => autoGenerateMutation.mutate(category.id)}
-                                                disabled={autoGenerateMutation.isPending}
-                                            >
-                                                {autoGenerateMutation.isPending ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <Zap className="h-4 w-4 mr-2" />
-                                                        Generate
-                                                    </>
+                                            <div className="flex items-center gap-2">
+                                                {existingTasks > 0 && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {existingTasks} existing
+                                                    </Badge>
                                                 )}
-                                            </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => autoGenerateMutation.mutate(category.category_id)}
+                                                    disabled={autoGenerateMutation.isPending}
+                                                >
+                                                    {autoGenerateMutation.isPending ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Zap className="h-4 w-4 mr-2" />
+                                                            Generate
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                BUDGET_CATEGORIES.map(category => {
+                                    const categoryBudget = Math.round((totalBudget * category.defaultPercentage) / 100);
+                                    const existingTasks = tasksArray.filter(task => task.category === category.id).length;
+
+                                    return (
+                                        <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                                            <div className="flex items-center space-x-3">
+                                                <div className={`w-4 h-4 rounded-full ${category.color}`} />
+                                                <div>
+                                                    <div className="font-medium">{category.name}</div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {category.tasks.length} tasks • RWF {categoryBudget.toLocaleString()} budget
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {existingTasks > 0 && (
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {existingTasks} existing
+                                                    </Badge>
+                                                )}
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => autoGenerateMutation.mutate(category.id)}
+                                                    disabled={autoGenerateMutation.isPending}
+                                                >
+                                                    {autoGenerateMutation.isPending ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Zap className="h-4 w-4 mr-2" />
+                                                            Generate
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </DialogContent>
@@ -717,7 +829,7 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Add Custom Task</DialogTitle>
+                        <DialogTitle>Add New Task</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
@@ -730,6 +842,46 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                             />
                         </div>
                         <div className="grid gap-2">
+                            <Label htmlFor="category">Budget Category</Label>
+                            <Select
+                                value={budgetCategoryId}
+                                onValueChange={(val) => {
+                                    setBudgetCategoryId(val);
+                                    const cat = (budgetCategories as BudgetCategory[])?.find(c => c.id === val);
+                                    if (cat) setCategory(cat.category_id);
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {budgetCategories && (budgetCategories as BudgetCategory[]).length > 0 ? (
+                                        (budgetCategories as BudgetCategory[]).map(cat => {
+                                            const defaultCat = BUDGET_CATEGORIES.find(c => c.id === cat.category_id);
+                                            const colorClass = defaultCat?.color || "bg-gray-500";
+                                            return (
+                                                <SelectItem key={cat.id} value={cat.id}>
+                                                    <div className="flex items-center">
+                                                        <div className={`w-3 h-3 rounded-full mr-2 ${colorClass}`} />
+                                                        {cat.category_name} (RWF {cat.allocated_amount.toLocaleString()})
+                                                    </div>
+                                                </SelectItem>
+                                            );
+                                        })
+                                    ) : (
+                                        BUDGET_CATEGORIES.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                <div className="flex items-center">
+                                                    <div className={`w-3 h-3 rounded-full mr-2 ${cat.color}`} />
+                                                    {cat.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="description">Description</Label>
                             <Textarea
                                 id="description"
@@ -740,24 +892,6 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="category">Budget Category</Label>
-                                <Select value={category} onValueChange={setCategory}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {BUDGET_CATEGORIES.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id}>
-                                                <div className="flex items-center">
-                                                    <div className={`w-3 h-3 rounded-full mr-2 ${cat.color}`} />
-                                                    {cat.name}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="assigned">Assign To</Label>
                                 <Select value={assignedTo} onValueChange={setAssignedTo}>
@@ -779,8 +913,6 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                     </SelectContent>
                                 </Select>
                             </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="priority">Priority</Label>
                                 <Select value={priority} onValueChange={setPriority}>
@@ -799,6 +931,8 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label htmlFor="amount">Budget Amount (RWF)</Label>
                                 <Input
@@ -811,17 +945,6 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                     step="100"
                                 />
                             </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="start-date">Start Date</Label>
-                                <Input
-                                    id="start-date"
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                />
-                            </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="end-date">Due Date</Label>
                                 <Input
@@ -831,6 +954,15 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
                                     onChange={(e) => setEndDate(e.target.value)}
                                 />
                             </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="start-date">Start Date (Optional)</Label>
+                            <Input
+                                id="start-date"
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
                         </div>
                     </div>
                     <DialogFooter>

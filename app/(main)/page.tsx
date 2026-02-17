@@ -172,120 +172,77 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
       {/* Pinterest-Style Hero Section with Masonry Grid */}
-<section className="relative w-full overflow-x-hidden min-h-[90vh] md:min-h-screen flex items-center pt-20 bg-gradient-to-br from-teal-50 via-white to-purple-50">
-  
-  {/* Floating Background (disabled on mobile) */}
-  <div className="hidden lg:block absolute top-20 left-10 w-96 h-96 bg-teal-300/20 rounded-full blur-3xl animate-float" />
-  <div className="hidden lg:block absolute top-40 right-10 w-80 h-80 bg-purple-300/20 rounded-full blur-3xl animate-float-delayed" />
-  <div className="hidden lg:block absolute bottom-20 left-1/3 w-72 h-72 bg-amber-300/20 rounded-full blur-3xl animate-float-slow" />
+      <section className="relative w-full overflow-x-hidden min-h-[60vh] md:min-h-[70vh] flex items-center pt-14 bg-white">
 
-  {/* Content Wrapper */}
-  <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-5 md:px-6">
-    
-    <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        {/* Floating Background removed */}
 
-      {/* ================= LEFT CONTENT ================= */}
-      <div className="space-y-6 md:space-y-8 order-2 lg:order-1 w-full min-w-0">
+        {/* Content Wrapper */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-5 md:px-6">
 
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur rounded-full border border-teal-200 shadow">
-          <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
-          <span className="text-xs font-semibold text-gray-700">
-            <TranslatedText text="Rwanda's #1 Wedding Platform" />
-          </span>
-          <Sparkles className="h-4 w-4 text-teal-500" />
-        </div>
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-        {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
-          <span className="bg-gradient-to-r from-teal-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-            <TranslatedText text="Discover Your" />
-          </span>
-          <br />
-          <span className="text-gray-900">
-            <TranslatedText text="Dream Wedding" />
-          </span>
-          <br />
-          <span className="bg-gradient-to-r from-amber-500 to-teal-500 bg-clip-text text-transparent">
-            <TranslatedText text="Experience" />
-          </span>
-        </h1>
+            {/* ================= LEFT CONTENT ================= */}
+            <div className="space-y-6 md:space-y-8 order-2 lg:order-1 w-full min-w-0">
 
-        <p className="text-base md:text-lg text-gray-600 max-w-xl">
-          <TranslatedText text="Connect with Rwanda's finest wedding providers. From traditional dancers to modern venues — everything you need." />
-        </p>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur rounded-full border border-teal-200 shadow">
+                <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                <span className="text-xs font-semibold text-gray-700">
+                  <TranslatedText text="Rwanda's #1 Wedding Platform" />
+                </span>
+                <Sparkles className="h-4 w-4 text-teal-500" />
+              </div>
 
-        {/* Search */}
-        <div className="relative w-full max-w-full overflow-hidden rounded-2xl bg-white border shadow">
-          <div className="flex flex-col sm:flex-row">
-            <div className="flex items-center px-4 py-3 flex-1 min-w-0">
-              <Search className="h-5 w-5 text-gray-400 mr-3 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search services..."
-                className="w-full min-w-0 outline-none text-sm"
-              />
+              {/* Heading */}
+              <h1 className="text-4xl sm:text-3xl md:text-3xl lg:text-3xl font-black leading-tight">
+                <span className="text-black">
+                  <TranslatedText text="Discover Your" />
+                </span>
+
+                <span className="text-black">
+                  <TranslatedText text="Dream Wedding" />
+                </span>
+                <br />
+                <span className="text-black">
+                  <TranslatedText text="Experience" />
+                </span>
+              </h1>
+
+              <p className="text-base md:text-lg text-gray-600 max-w-xl">
+                <TranslatedText text="Connect with Rwanda's finest wedding providers. From traditional dancers to modern venues — everything you need." />
+              </p>
+
+
+
+
+
+
+
             </div>
-            <Button className="m-2 sm:m-3 bg-teal-500 text-white font-bold rounded-xl">
-              <TranslatedText text="Search" />
-            </Button>
+
+            {/* ================= RIGHT MASONRY ================= */}
+            <div className="relative order-1 lg:order-2 w-full min-w-0">
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+
+                {/* Tall Card */}
+                <div className="row-span-2 rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/grom.jpg" className="w-full h-full object-cover" />
+                </div>
+
+                <div className="aspect-video rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/beautiful-garden-wedding-venue-rwanda.jpg" className="w-full h-full object-cover" />
+                </div>
+
+                <div className="aspect-video rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/rwandan-traditional-food-buffet.jpg" className="w-full h-full object-cover" />
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </div>
-
-        {/* Tags */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1">
-          {["Traditional Dance", "Venues", "Catering", "Photography"].map((tag) => (
-            <button
-              key={tag}
-              className="flex-shrink-0 px-4 py-2 bg-white border rounded-full text-xs font-semibold whitespace-nowrap"
-            >
-              <TranslatedText text={tag} />
-            </button>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Link href="/services" className="w-full sm:w-auto">
-            <Button className="w-full bg-teal-500 text-white font-bold rounded-2xl px-8 py-5">
-              <Zap className="mr-2 h-5 w-5" />
-              <TranslatedText text="Explore Services" />
-            </Button>
-          </Link>
-
-          <Link href="/auth/signup" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full rounded-2xl px-8 py-5">
-              <Play className="mr-2 h-5 w-5" />
-              <TranslatedText text="Watch Demo" />
-            </Button>
-          </Link>
-        </div>
-
-      </div>
-
-      {/* ================= RIGHT MASONRY ================= */}
-      <div className="relative order-1 lg:order-2 w-full min-w-0">
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
-
-          {/* Tall Card */}
-          <div className="row-span-2 rounded-2xl overflow-hidden shadow-lg">
-            <img src="/grom.jpg" className="w-full h-full object-cover" />
-          </div>
-
-          <div className="aspect-square rounded-2xl overflow-hidden shadow-lg">
-            <img src="/beautiful-garden-wedding-venue-rwanda.jpg" className="w-full h-full object-cover" />
-          </div>
-
-          <div className="aspect-square rounded-2xl overflow-hidden shadow-lg">
-            <img src="/rwandan-traditional-food-buffet.jpg" className="w-full h-full object-cover" />
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
+      </section>
 
 
       {/* Full-Width Promotional Carousel - Offers, Promotions & Events */}
@@ -303,12 +260,12 @@ export default function HomePage() {
                   {/* Card */}
                   <div className="group relative h-[350px] md:h-[400px] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02]">
                     {/* Full Background Image */}
-                    <img 
-                      src={promo.image} 
+                    <img
+                      src={promo.image}
                       alt={promo.title}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
-                    
+
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
 
@@ -403,7 +360,7 @@ export default function HomePage() {
       </section>
 
       {/* Services Section with Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-teal-50">
+      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-gray-50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-white text-teal-600 px-4 py-2">
@@ -492,7 +449,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials with Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-teal-50">
+      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-gray-50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-white text-teal-600 px-4 py-2">
@@ -581,47 +538,7 @@ export default function HomePage() {
           scrollbar-width: none;
         }
 
-        @keyframes float {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -30px) scale(1.05);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.95);
-          }
-        }
 
-        @keyframes float-delayed {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(-30px, 30px) scale(1.05);
-          }
-          66% {
-            transform: translate(20px, -20px) scale(0.95);
-          }
-        }
-
-        @keyframes float-slow {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          50% {
-            transform: translate(15px, -15px) scale(1.02);
-          }
-        }
-
-        @keyframes gradient {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
 
         @keyframes scroll {
           0% {
@@ -637,22 +554,6 @@ export default function HomePage() {
           }
         }
 
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-
-        .animate-float-delayed {
-          animation: float-delayed 10s ease-in-out infinite;
-        }
-
-        .animate-float-slow {
-          animation: float-slow 12s ease-in-out infinite;
-        }
-
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
 
         .animate-scroll {
           animation: scroll 2s ease-in-out infinite;
