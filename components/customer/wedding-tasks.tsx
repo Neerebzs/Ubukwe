@@ -189,7 +189,16 @@ export function WeddingTasks() {
         : undefined;
 
     const handleCreate = () => {
-        if (!title.trim()) return;
+        if (!title.trim()) {
+            toast.error("Task title is required.");
+            return;
+        }
+
+        // Budget category validation - MUST be selected
+        if (!budgetCategoryId || budgetCategoryId.trim() === "") {
+            toast.error("Please select a budget category before creating the task.");
+            return;
+        }
 
         // Date validation
         if (startDate && startDate < today) {
@@ -211,11 +220,6 @@ export function WeddingTasks() {
             }
         }
 
-        if (!budgetCategoryId) {
-            toast.warning("Please select a budget category.");
-            return;
-        }
-
         // Budget validation
         if (amount && budgetCategoryId) {
             const selectedCategory = budgetCategories?.find(cat => cat.id === budgetCategoryId);
@@ -231,7 +235,7 @@ export function WeddingTasks() {
         const payload = {
             title,
             description: description || null,
-            budget_category_id: budgetCategoryId,
+            budget_category_id: budgetCategoryId, // Always included since it's validated above
             assigned_to: assignedTo || null,
             start_date: startDate || null,
             end_date: endDate || null,
@@ -875,7 +879,7 @@ export function WeddingTasks() {
                                     <div className="grid gap-2">
                                         <Label htmlFor="category" className="flex items-center gap-2 font-semibold text-primary">
                                             <LayoutGrid className="h-4 w-4" />
-                                            Budget Category
+                                            Budget Category <span className="text-destructive">*</span>
                                         </Label>
                                         <Select
                                             value={budgetCategoryId}

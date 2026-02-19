@@ -322,12 +322,20 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
     };
 
     const currentBudget = weddingData?.budget ? parseFloat(weddingData.budget) : totalBudget;
-    const currentSpent = weddingData?.spent ? parseFloat(weddingData.spent) : 0;
-    const remainingBudget = currentBudget - currentSpent;
-    const budgetUsedPercentage = currentBudget > 0 ? (currentSpent / currentBudget) * 100 : 0;
-
+    
     // Use actual budget categories data or initialize with default structure
     const actualBudgetCategories = budgetCategoriesData || [];
+    
+    // Calculate total spent from all completed tasks across all categories
+    const totalSpentFromTasks = actualBudgetCategories.reduce((total: number, category: any) => {
+        const completedTasks = (category.tasks || []).filter((task: any) => task.is_completed);
+        const categorySpent = completedTasks.reduce((sum: number, task: any) => sum + (task.amount || 0), 0);
+        return total + categorySpent;
+    }, 0);
+    
+    const currentSpent = totalSpentFromTasks;
+    const remainingBudget = currentBudget - currentSpent;
+    const budgetUsedPercentage = currentBudget > 0 ? (currentSpent / currentBudget) * 100 : 0;
 
     // If no budget categories exist and we have a budget, show option to create default categories
     const shouldShowCreateDefault = currentBudget > 0 && actualBudgetCategories.length === 0;
@@ -492,17 +500,30 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                     <div className="grid gap-4">
                         {categorySpending.map((category: any) => {
                             const budgetCategory = BUDGET_CATEGORIES.find((c: any) => c.id === getSlug(category.category_name));
-                            const spentPercentage = category.allocated_amount > 0
-                                ? (category.spent_amount / category.allocated_amount) * 100
-                                : 0;
-                            const variance = category.spent_amount - category.allocated_amount;
-
-                            // For task progress, we'll need to calculate from tasks data
-                            const categoryTasks = tasks?.filter((task: any) => task.category === category.id) || [];
+                            
+                            // Get tasks from the category data (now included from backend)
+                            const categoryTasks = category.tasks || [];
                             const completedCategoryTasks = categoryTasks.filter((task: any) => task.is_completed);
                             const progressPercentage = categoryTasks.length > 0
                                 ? (completedCategoryTasks.length / categoryTasks.length) * 100
                                 : 0;
+
+                            // Calculate spent amount from completed tasks
+                            const calculatedSpentAmount = completedCategoryTasks.reduce(
+                                (sum: number, task: any) => sum + (task.amount || 0), 
+                                0
+                            );
+                            
+                            // Use calculated spent amount (from completed tasks)
+                            const spentAmount = calculatedSpentAmount;
+                            const spentPercentage = category.allocated_amount > 0
+                                ? (spentAmount / category.allocated_amount) * 100
+                                : 0;
+                            const variance = spentAmount - category.allocated_amount;
+
+                            // Calculate total task amounts (all tasks, not just completed)
+                            const totalTaskAmount = categoryTasks.reduce((sum: number, task: any) => sum + (task.amount || 0), 0);
+                            const remainingCategoryBudget = category.allocated_amount - totalTaskAmount;
 
                             return (
                                 <Card key={category.id} className="hover:shadow-md transition-shadow">
@@ -532,9 +553,11 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                         <div className="grid md:grid-cols-3 gap-4 mb-4">
                                             <div className="text-center p-3 bg-muted/50 rounded-lg">
                                                 <div className="text-lg font-semibold text-red-600">
-                                                    RWF {category.spent_amount.toLocaleString()}
+                                                    RWF {spentAmount.toLocaleString()}
                                                 </div>
-                                                <div className="text-xs text-muted-foreground">Spent</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Spent ({completedCategoryTasks.length} completed)
+                                                </div>
                                             </div>
                                             <div className="text-center p-3 bg-muted/50 rounded-lg">
                                                 <div className={`text-lg font-semibold ${variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -554,7 +577,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-sm">
-                                                <span>Budget Usage</span>
+                                                <span>Budget Usage (Spent)</span>
                                                 <span>{spentPercentage.toFixed(1)}%</span>
                                             </div>
                                             <Progress value={spentPercentage} className="h-2" />
@@ -566,12 +589,88 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             <Progress value={progressPercentage} className="h-2" />
                                         </div>
 
+                                        {/* Tasks List */}
+                                        {categoryTasks.length > 0 && (
+                                            <div className="mt-4 pt-4 border-t">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h4 className="text-sm font-semibold flex items-center">
+                                                        <FileText className="h-4 w-4 mr-1.5" />
+                                                        Tasks ({categoryTasks.length})
+                                                    </h4>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Available: RWF {remainingCategoryBudget.toLocaleString()}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                    {categoryTasks.map((task: any) => (
+                                                        <div
+                                                            key={task.id}
+                                                            className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm hover:bg-muted/50 transition-colors"
+                                                        >
+                                                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${task.is_completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                <span className={`truncate ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                                                                    {task.title}
+                                                                </span>
+                                                                {task.priority === 'high' && (
+                                                                    <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4">
+                                                                        High
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center space-x-2 flex-shrink-0">
+                                                                {task.amount > 0 && (
+                                                                    <span className={`font-semibold text-xs ${task.is_completed ? 'text-red-600' : ''}`}>
+                                                                        RWF {task.amount.toLocaleString()}
+                                                                    </span>
+                                                                )}
+                                                                {task.is_completed && (
+                                                                    <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t space-y-1">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-muted-foreground">Total Task Budget:</span>
+                                                        <span className={`font-semibold ${totalTaskAmount > category.allocated_amount ? 'text-red-600' : 'text-green-600'}`}>
+                                                            RWF {totalTaskAmount.toLocaleString()}
+                                                            {totalTaskAmount > category.allocated_amount && (
+                                                                <span className="ml-1 text-red-600">
+                                                                    (Exceeds by {(totalTaskAmount - category.allocated_amount).toLocaleString()})
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-muted-foreground">Spent (Completed):</span>
+                                                        <span className="font-semibold text-red-600">
+                                                            RWF {spentAmount.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-muted-foreground">Remaining:</span>
+                                                        <span className={`font-semibold ${(category.allocated_amount - spentAmount) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                            RWF {(category.allocated_amount - spentAmount).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="flex items-center justify-between mt-4">
                                             <div className="flex items-center space-x-2">
                                                 {variance > category.allocated_amount * 0.1 && (
                                                     <Badge variant="destructive" className="text-xs">
                                                         <AlertTriangle className="h-3 w-3 mr-1" />
                                                         Over Budget
+                                                    </Badge>
+                                                )}
+                                                {totalTaskAmount > category.allocated_amount && (
+                                                    <Badge variant="destructive" className="text-xs">
+                                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                                        Tasks Exceed Budget
                                                     </Badge>
                                                 )}
                                                 {progressPercentage === 100 && (
