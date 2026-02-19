@@ -151,7 +151,9 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         gallery: {
             photos: serviceData.gallery?.filter((item: any) => {
                 const type = typeof item === 'string' ? 'image' : item.type;
-                return !type || type === 'image';
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                // Only show images with contentType === null in gallery tab
+                return (!type || type === 'image') && contentType === null;
             }).map((item: any, i: number) => ({
                 id: i,
                 url: typeof item === 'string' ? item : item.url,
@@ -161,7 +163,9 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             ],
             videos: serviceData.gallery?.filter((item: any) => {
                 const type = typeof item === 'string' ? null : item.type;
-                const isVideo = type === 'video';
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                // Only show videos with contentType === null in gallery tab
+                const isVideo = type === 'video' && contentType === null;
                 if (isVideo) console.log('🎥 Found video:', item);
                 return isVideo;
             }).map((item: any, i: number) => ({
@@ -173,7 +177,9 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             })) || [],
             reels: serviceData.gallery?.filter((item: any) => {
                 const type = typeof item === 'string' ? null : item.type;
-                const isReel = type === 'reel';
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                // Only show reels with contentType === null in gallery tab
+                const isReel = type === 'reel' && contentType === null;
                 if (isReel) console.log('🎬 Found reel:', item);
                 return isReel;
             }).map((item: any, i: number) => ({
@@ -194,7 +200,34 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             validUntil?: string;
             date?: string;
             location?: string;
+            mediaUrl?: string;
+            mediaThumbnail?: string;
+            mediaType?: 'image' | 'video' | 'reel';
         }>,
+        promotionalMedia: {
+            offers: serviceData.gallery?.filter((item: any) => {
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                return contentType === 'offer';
+            }).map((item: any, i: number) => ({
+                id: item.id || `offer-${i}`,
+                type: item.type || 'image',
+                title: item.title || `Offer ${i + 1}`,
+                url: item.url,
+                thumbnail: item.thumbnail || item.url,
+                description: item.description || ''
+            })) || [],
+            events: serviceData.gallery?.filter((item: any) => {
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                return contentType === 'event';
+            }).map((item: any, i: number) => ({
+                id: item.id || `event-${i}`,
+                type: item.type || 'image',
+                title: item.title || `Event ${i + 1}`,
+                url: item.url,
+                thumbnail: item.thumbnail || item.url,
+                description: item.description || ''
+            })) || []
+        },
         contact: {
             phone: serviceData.phone || "+250 000 000 000",
             email: serviceData.email || "contact@provider.rw",
@@ -684,68 +717,146 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                             {/* Events & Promotions Tab */}
                             <TabsContent value="events" className="space-y-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Current Promotions & Events</CardTitle>
-                                        <CardDescription>Don't miss out on our special offers and upcoming events</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            {service.events.map((event) => (
-                                                <Card key={event.id} className="border-l-4 border-l-primary">
-                                                    <CardContent className="pt-6">
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <h4 className="font-semibold text-lg">{event.title}</h4>
-                                                                    {event.badge && (
-                                                                        <Badge variant="secondary" className="bg-primary/10 text-primary">
-                                                                            {event.badge}
-                                                                        </Badge>
-                                                                    )}
-                                                                    {event.discount && (
-                                                                        <Badge variant="default" className="bg-green-600">
-                                                                            {event.discount}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                                <p className="text-gray-600 mb-3">{event.description}</p>
-                                                                <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                                    {event.validUntil && (
-                                                                        <div className="flex items-center gap-1">
-                                                                            <Calendar className="h-4 w-4" />
-                                                                            Valid until {new Date(event.validUntil).toLocaleDateString()}
-                                                                        </div>
-                                                                    )}
-                                                                    {event.date && (
-                                                                        <div className="flex items-center gap-1">
-                                                                            <Calendar className="h-4 w-4" />
-                                                                            {new Date(event.date).toLocaleDateString()}
-                                                                        </div>
-                                                                    )}
-                                                                    {event.location && (
-                                                                        <div className="flex items-center gap-1">
-                                                                            <MapPin className="h-4 w-4" />
-                                                                            {event.location}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                {/* Offers Section */}
+                                {service.promotionalMedia.offers.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Tag className="h-5 w-5" />
+                                                Special Offers ({service.promotionalMedia.offers.length})
+                                            </CardTitle>
+                                            <CardDescription>Check out our current promotions and special deals</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                {service.promotionalMedia.offers.map((offer) => (
+                                                    <Card key={offer.id} className="border-l-4 border-l-green-500 overflow-hidden">
+                                                        <div className="relative aspect-video bg-black">
+                                                            {offer.type === 'image' ? (
+                                                                <img
+                                                                    src={offer.url}
+                                                                    alt={offer.title}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : offer.type === 'video' ? (
+                                                                <video
+                                                                    src={offer.url}
+                                                                    controls
+                                                                    className="w-full h-full object-contain"
+                                                                    poster={offer.thumbnail}
+                                                                >
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            ) : offer.type === 'reel' ? (
+                                                                <video
+                                                                    src={offer.url}
+                                                                    controls
+                                                                    className="w-full h-full object-contain"
+                                                                    poster={offer.thumbnail}
+                                                                >
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            ) : null}
+                                                            <div className="absolute top-2 right-2">
+                                                                <Badge variant="default" className="bg-green-600">
+                                                                    Special Offer
+                                                                </Badge>
                                                             </div>
-                                                            {event.type === "promotion" && (
-                                                                <Link href={`/booking/${service.id}`}>
-                                                                    <Button>
-                                                                        <Tag className="h-4 w-4 mr-2" />
-                                                                        Claim Offer
-                                                                    </Button>
-                                                                </Link>
-                                                            )}
                                                         </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                        <CardContent className="pt-4">
+                                                            <h4 className="font-semibold text-lg mb-2">{offer.title}</h4>
+                                                            {offer.description && (
+                                                                <p className="text-gray-600 text-sm mb-3">{offer.description}</p>
+                                                            )}
+                                                            <Link href={`/booking/${service.id}`}>
+                                                                <Button className="w-full">
+                                                                    <Tag className="h-4 w-4 mr-2" />
+                                                                    Claim Offer
+                                                                </Button>
+                                                            </Link>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Events Section */}
+                                {service.promotionalMedia.events.length > 0 && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Calendar className="h-5 w-5" />
+                                                Upcoming Events ({service.promotionalMedia.events.length})
+                                            </CardTitle>
+                                            <CardDescription>Join us at our upcoming events and showcases</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="grid md:grid-cols-2 gap-4">
+                                                {service.promotionalMedia.events.map((event) => (
+                                                    <Card key={event.id} className="border-l-4 border-l-primary overflow-hidden">
+                                                        <div className="relative aspect-video bg-black">
+                                                            {event.type === 'image' ? (
+                                                                <img
+                                                                    src={event.url}
+                                                                    alt={event.title}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : event.type === 'video' ? (
+                                                                <video
+                                                                    src={event.url}
+                                                                    controls
+                                                                    className="w-full h-full object-contain"
+                                                                    poster={event.thumbnail}
+                                                                >
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            ) : event.type === 'reel' ? (
+                                                                <video
+                                                                    src={event.url}
+                                                                    controls
+                                                                    className="w-full h-full object-contain"
+                                                                    poster={event.thumbnail}
+                                                                >
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            ) : null}
+                                                            <div className="absolute top-2 right-2">
+                                                                <Badge variant="default" className="bg-primary">
+                                                                    Event
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                        <CardContent className="pt-4">
+                                                            <h4 className="font-semibold text-lg mb-2">{event.title}</h4>
+                                                            {event.description && (
+                                                                <p className="text-gray-600 text-sm mb-3">{event.description}</p>
+                                                            )}
+                                                            <Button variant="outline" className="w-full">
+                                                                <Calendar className="h-4 w-4 mr-2" />
+                                                                Learn More
+                                                            </Button>
+                                                        </CardContent>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Empty State */}
+                                {service.promotionalMedia.offers.length === 0 && 
+                                 service.promotionalMedia.events.length === 0 && (
+                                    <Card>
+                                        <CardContent className="py-12 text-center">
+                                            <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            <h3 className="text-lg font-semibold mb-2">No Events or Offers</h3>
+                                            <p className="text-gray-600">This service doesn't have any active promotions or events at the moment.</p>
+                                            <p className="text-gray-600 mt-2">Check back later for special offers and upcoming events!</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </TabsContent>
                         </Tabs>
                     </div>

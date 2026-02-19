@@ -127,11 +127,11 @@ export function ProviderTabsSidebar({
               <button
                 type="button"
                 onClick={() => toggleGroup(group.title)}
-                className="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+                className="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-black uppercase tracking-wider hover:text-foreground"
                 aria-expanded={expandedGroups[group.title]}
               >
                 <span className="flex items-center gap-2">
-                  <span className="text-foreground/80">{groupIconByTitle[group.title] || null}</span>
+                  <span className="text-black">{groupIconByTitle[group.title] || null}</span>
                   {group.title}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${expandedGroups[group.title] ? '' : '-rotate-90'}`} />
@@ -151,10 +151,10 @@ export function ProviderTabsSidebar({
                     disabled={isTabDisabled}
                     className={`relative group w-full text-left text-sm px-3 py-2.5 rounded-md transition-all duration-200 flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'
                       } ${isActive
-                        ? 'bg-muted text-foreground shadow-sm'
+                        ? 'bg-muted text-gray-900 shadow-sm'
                         : isTabDisabled
-                          ? 'opacity-50 cursor-not-allowed text-muted-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:shadow-sm'
+                          ? 'opacity-50 cursor-not-allowed text-gray-900'
+                          : 'text-gray-900 hover:text-gray-900 hover:bg-muted/50 hover:shadow-sm'
                       }`}
                     title={isTabDisabled ? "Verify your account to access this tab" : isCollapsed ? tab.label : undefined}
                   >
