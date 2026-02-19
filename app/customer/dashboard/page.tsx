@@ -92,36 +92,6 @@ export default function CustomerDashboard() {
     spent: Number(currentWedding.spent)
   } : fallbackWedding;
 
-  const bookings = [
-    {
-      id: 1,
-      provider: "Intore Cultural Group",
-      service: "Traditional Dancers",
-      date: "2024-06-15",
-      status: "confirmed",
-      amount: 120000,
-      rating: 4.9,
-    },
-    {
-      id: 2,
-      provider: "Emmanuel MC Services",
-      service: "Wedding MC",
-      date: "2024-06-15",
-      status: "confirmed",
-      amount: 80000,
-      rating: 4.8,
-    },
-    {
-      id: 3,
-      provider: "Kigali Serena Hotel",
-      service: "Wedding Venue",
-      date: "2024-06-15",
-      status: "confirmed",
-      amount: 800000,
-      rating: 4.7,
-    },
-  ];
-
   const recommendedServices = [
     {
       id: 1,
@@ -174,7 +144,7 @@ export default function CustomerDashboard() {
         return <GuestManagement />;
 
       case "bookings":
-        return <Bookings bookings={bookings} />;
+        return <Bookings />;
 
       case "budget":
         return <BudgetManagement totalBudget={displayWedding.budget} onBudgetUpdate={(newBudget) => {

@@ -16,12 +16,42 @@ import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient, API_ENDPOINTS, ProviderService } from "@/lib/api"
 import { Loader2, AlertCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "sonner"
 
 export default function ServiceDetailsPage({ params }: { params: { serviceId: string } }) {
     // All hooks must be called before any conditional returns
     const [activeTab, setActiveTab] = useState("home")
     const [isFavorite, setIsFavorite] = useState(false)
-    
+    const [selectedPackage, setSelectedPackage] = useState<any>(null)
+    const router = useRouter()
+    const { isAuthenticated } = useAuth()
+
+    // Auth check handler
+    const handleBookingClick = (e: React.MouseEvent, targetUrl: string) => {
+        if (!isAuthenticated) {
+            e.preventDefault();
+            toast.info("Authentication Required", {
+                description: "Please login to book this service.",
+                action: {
+                    label: "Login",
+                    onClick: () => router.push("/auth/signin"),
+                },
+            });
+            return;
+        }
+
+        if (!selectedPackage && targetUrl.includes('/booking/')) {
+            toast.error("Package Required", {
+                description: "Please select a package before proceeding to booking."
+            });
+            return;
+        }
+
+        router.push(targetUrl);
+    };
+
     const { data: serviceRes, isLoading, error } = useQuery({
         queryKey: ["service-detail", params.serviceId],
         queryFn: async () => {
@@ -29,16 +59,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 console.log(`🔍 Fetching service: ${params.serviceId}`);
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
                 console.log(`✅ Service response:`, response);
-                
+
                 // The backend returns the service directly (not wrapped in ApiResponse)
                 // Cast to ProviderService since apiClient returns it directly for this endpoint
                 const serviceData = response as unknown as ProviderService;
-                
+
                 if (!serviceData || !serviceData.id) {
                     console.log(`❌ No valid service data in response`);
                     throw new Error('Service not found or not available');
                 }
-                
+
                 return serviceData;
             } catch (error: any) {
                 console.log(`❌ Service fetch error:`, error);
@@ -65,30 +95,30 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         return (
             <div className="flex-1 flex items-center justify-center">
                 <Card className="max-w-md w-full mx-4">
-                        <CardContent className="p-8 text-center">
-                            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-                            <h2 className="text-xl font-bold mb-2">Service Not Found</h2>
-                            <p className="text-muted-foreground mb-6">
-                                {error ? 
-                                    "This service is not available or has been deactivated. Only approved and active services can be viewed." :
-                                    "We couldn't find the service you're looking for. It might have been removed or the link is incorrect."
-                                }
-                            </p>
-                            <div className="space-y-2">
-                                <Link href="/services">
-                                    <Button className="w-full">Browse All Services</Button>
-                                </Link>
-                                <Button 
-                                    variant="outline" 
-                                    className="w-full"
-                                    onClick={() => window.location.reload()}
-                                >
-                                    Try Again
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                    <CardContent className="p-8 text-center">
+                        <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                        <h2 className="text-xl font-bold mb-2">Service Not Found</h2>
+                        <p className="text-muted-foreground mb-6">
+                            {error ?
+                                "This service is not available or has been deactivated. Only approved and active services can be viewed." :
+                                "We couldn't find the service you're looking for. It might have been removed or the link is incorrect."
+                            }
+                        </p>
+                        <div className="space-y-2">
+                            <Link href="/services">
+                                <Button className="w-full">Browse All Services</Button>
+                            </Link>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => window.location.reload()}
+                            >
+                                Try Again
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         );
     }
 
@@ -123,13 +153,13 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         specialties: serviceData.specialties || [serviceData.category],
         features: [
             "Professional service delivery",
-            "High-quality equipment/materials", 
+            "High-quality equipment/materials",
             "Experienced team",
             "Cultural expertise",
             "On-time delivery",
             "Post-event support"
         ],
-        packages: serviceData.packages && Array.isArray(serviceData.packages) && serviceData.packages.length > 0 
+        packages: serviceData.packages && Array.isArray(serviceData.packages) && serviceData.packages.length > 0
             ? serviceData.packages.map((p: any, i: number) => ({
                 id: p.id || `pkg-${i}`,
                 name: p.name || `Package ${i + 1}`,
@@ -159,8 +189,8 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 url: typeof item === 'string' ? item : item.url,
                 caption: typeof item === 'object' ? (item.title || item.description || `Gallery image ${i + 1}`) : `Gallery image ${i + 1}`
             })) || [
-                { id: 0, url: "/placeholder.svg", caption: "Service showcase" }
-            ],
+                    { id: 0, url: "/placeholder.svg", caption: "Service showcase" }
+                ],
             videos: serviceData.gallery?.filter((item: any) => {
                 const type = typeof item === 'string' ? null : item.type;
                 const contentType = typeof item === 'object' ? item.contentType : null;
@@ -309,7 +339,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         {service.experience}
                                     </div>
                                 </div>
-                              
+
                             </div>
                         </div>
                         <div className="flex gap-2 mb-2">
@@ -394,7 +424,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                     </CardHeader>
                                     <CardContent>
                                         <div className="grid md:grid-cols-3 gap-4">
-                                            {service.packages.map((pkg) => (
+                                            {service.packages.map((pkg, index) => (
                                                 <Card key={pkg.id} className={`relative ${pkg.popular ? 'border-primary border-2' : ''}`}>
                                                     {pkg.popular && (
                                                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -424,11 +454,22 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                                                 </li>
                                                             ))}
                                                         </ul>
-                                                        <Link href={`/booking/${service.id}`}>
-                                                            <Button className="w-full" variant={pkg.popular ? "default" : "outline"}>
-                                                                Select Package
-                                                            </Button>
-                                                        </Link>
+                                                        <Button
+                                                            className="w-full"
+                                                            variant={selectedPackage?.id === (pkg.id || index) ? "default" : "outline"}
+                                                            onClick={() => {
+                                                                if (selectedPackage?.id === (pkg.id || index)) {
+                                                                    setSelectedPackage(null);
+                                                                } else {
+                                                                    setSelectedPackage({ ...pkg, id: pkg.id || index });
+                                                                    toast.success(`${pkg.name} selected`, {
+                                                                        description: "You can now proceed to book."
+                                                                    });
+                                                                }
+                                                            }}
+                                                        >
+                                                            {selectedPackage?.id === (pkg.id || index) ? "Selected" : "Select Package"}
+                                                        </Button>
                                                     </CardContent>
                                                 </Card>
                                             ))}
@@ -702,17 +743,17 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 )}
 
                                 {/* Empty State */}
-                                {service.gallery.photos.length === 0 && 
-                                 service.gallery.videos.length === 0 && 
-                                 service.gallery.reels.length === 0 && (
-                                    <Card>
-                                        <CardContent className="py-12 text-center">
-                                            <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                            <h3 className="text-lg font-semibold mb-2">No Gallery Items</h3>
-                                            <p className="text-gray-600">This service hasn't added any photos, videos, or reels yet.</p>
-                                        </CardContent>
-                                    </Card>
-                                )}
+                                {service.gallery.photos.length === 0 &&
+                                    service.gallery.videos.length === 0 &&
+                                    service.gallery.reels.length === 0 && (
+                                        <Card>
+                                            <CardContent className="py-12 text-center">
+                                                <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No Gallery Items</h3>
+                                                <p className="text-gray-600">This service hasn't added any photos, videos, or reels yet.</p>
+                                            </CardContent>
+                                        </Card>
+                                    )}
                             </TabsContent>
 
                             {/* Events & Promotions Tab */}
@@ -768,12 +809,13 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                                             {offer.description && (
                                                                 <p className="text-gray-600 text-sm mb-3">{offer.description}</p>
                                                             )}
-                                                            <Link href={`/booking/${service.id}`}>
-                                                                <Button className="w-full">
-                                                                    <Tag className="h-4 w-4 mr-2" />
-                                                                    Claim Offer
-                                                                </Button>
-                                                            </Link>
+                                                            <Button
+                                                                className="w-full"
+                                                                onClick={(e) => handleBookingClick(e, `/booking/${service.id}`)}
+                                                            >
+                                                                <Tag className="h-4 w-4 mr-2" />
+                                                                Claim Offer
+                                                            </Button>
                                                         </CardContent>
                                                     </Card>
                                                 ))}
@@ -846,17 +888,17 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 )}
 
                                 {/* Empty State */}
-                                {service.promotionalMedia.offers.length === 0 && 
-                                 service.promotionalMedia.events.length === 0 && (
-                                    <Card>
-                                        <CardContent className="py-12 text-center">
-                                            <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                            <h3 className="text-lg font-semibold mb-2">No Events or Offers</h3>
-                                            <p className="text-gray-600">This service doesn't have any active promotions or events at the moment.</p>
-                                            <p className="text-gray-600 mt-2">Check back later for special offers and upcoming events!</p>
-                                        </CardContent>
-                                    </Card>
-                                )}
+                                {service.promotionalMedia.offers.length === 0 &&
+                                    service.promotionalMedia.events.length === 0 && (
+                                        <Card>
+                                            <CardContent className="py-12 text-center">
+                                                <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                                <h3 className="text-lg font-semibold mb-2">No Events or Offers</h3>
+                                                <p className="text-gray-600">This service doesn't have any active promotions or events at the moment.</p>
+                                                <p className="text-gray-600 mt-2">Check back later for special offers and upcoming events!</p>
+                                            </CardContent>
+                                        </Card>
+                                    )}
                             </TabsContent>
                         </Tabs>
                     </div>
@@ -876,11 +918,21 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                             {service.packages[0].price.toLocaleString()} RWF
                                         </div>
                                     </div>
-                                    <Link href={`/booking/${service.id}`}>
-                                        <Button className="w-full" size="lg">
+                                    <div className="space-y-2">
+                                        <Button
+                                            className="w-full"
+                                            size="lg"
+                                            disabled={!selectedPackage}
+                                            onClick={(e) => handleBookingClick(e, `/booking/${service.id}?packageId=${selectedPackage.id}&packageName=${encodeURIComponent(selectedPackage.name)}`)}
+                                        >
                                             Book Now
                                         </Button>
-                                    </Link>
+                                        {!selectedPackage && (
+                                            <p className="text-xs text-center text-amber-600 font-medium">
+                                                Please select a package first
+                                            </p>
+                                        )}
+                                    </div>
                                     <Button variant="outline" className="w-full">
                                         Request Quote
                                     </Button>

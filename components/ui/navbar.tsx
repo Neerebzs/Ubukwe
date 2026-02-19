@@ -4,14 +4,16 @@ import * as React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { MenuIcon, XIcon, Home, Briefcase, Info, LogIn, UserPlus, Calendar, Search } from "lucide-react";
+import { MenuIcon, XIcon, Home, Briefcase, Info, LogIn, UserPlus, Calendar, Search, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "./button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -58,14 +60,40 @@ export function Navbar() {
               </nav>
               <div className="flex items-center space-x-3 ml-4">
                 <LanguageSwitcher />
-                <Link href="/auth/signin">
-                  <Button variant="ghost" size="sm" className="text-gray-900 hover:text-teal-600 hover:bg-teal-50">
-                    <TranslatedText text="Sign In" />
-                  </Button>
-                </Link>
-                <Link href="/auth/signup">
-                  <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white shadow-lg"><TranslatedText text="Get Started" /></Button>
-                </Link>
+                {!isAuthenticated ? (
+                  <>
+                    <Link href="/auth/signin">
+                      <Button variant="ghost" size="sm" className="text-gray-900 hover:text-teal-600 hover:bg-teal-50">
+                        <TranslatedText text="Sign In" />
+                      </Button>
+                    </Link>
+                    <Link href="/auth/signup">
+                      <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white shadow-lg"><TranslatedText text="Get Started" /></Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href={
+                      user?.role === 'admin' ? '/admin/dashboard' :
+                        user?.role === 'service_provider' ? '/provider/dashboard' :
+                          '/customer/dashboard'
+                    }>
+                      <Button variant="ghost" size="sm" className="text-gray-900 hover:text-teal-600 hover:bg-teal-50">
+                        <LayoutDashboard className="h-4 w-4 mr-2" />
+                        <TranslatedText text="Dashboard" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => logout()}
+                      className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      <TranslatedText text="Logout" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -167,18 +195,51 @@ export function Navbar() {
 
               {/* Auth Buttons */}
               <div className="space-y-3 pt-4 border-t border-teal-200">
-                <Link href="/auth/signin" onClick={toggleMenu} className="block">
-                  <Button variant="outline" className="w-full justify-start border-teal-200 text-gray-700 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-400" size="lg">
-                    <LogIn className="h-5 w-5 mr-3" />
-                    <TranslatedText text="Sign In" />
-                  </Button>
-                </Link>
-                <Link href="/auth/signup" onClick={toggleMenu} className="block">
-                  <Button className="w-full justify-start bg-teal-500 hover:bg-teal-600 text-white" size="lg">
-                    <UserPlus className="h-5 w-5 mr-3" />
-                    <TranslatedText text="Get Started" />
-                  </Button>
-                </Link>
+                {!isAuthenticated ? (
+                  <>
+                    <Link href="/auth/signin" onClick={toggleMenu} className="block">
+                      <Button variant="outline" className="w-full justify-start border-teal-200 text-gray-700 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-400" size="lg">
+                        <LogIn className="h-5 w-5 mr-3" />
+                        <TranslatedText text="Sign In" />
+                      </Button>
+                    </Link>
+                    <Link href="/auth/signup" onClick={toggleMenu} className="block">
+                      <Button className="w-full justify-start bg-teal-500 hover:bg-teal-600 text-white" size="lg">
+                        <UserPlus className="h-5 w-5 mr-3" />
+                        <TranslatedText text="Get Started" />
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={
+                        user?.role === 'admin' ? '/admin/dashboard' :
+                          user?.role === 'service_provider' ? '/provider/dashboard' :
+                            '/customer/dashboard'
+                      }
+                      onClick={toggleMenu}
+                      className="block"
+                    >
+                      <Button variant="outline" className="w-full justify-start border-teal-200 text-gray-700 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-400" size="lg">
+                        <LayoutDashboard className="h-5 w-5 mr-3" />
+                        <TranslatedText text="Dashboard" />
+                      </Button>
+                    </Link>
+                    <Button
+                      onClick={() => {
+                        logout();
+                        toggleMenu();
+                      }}
+                      variant="ghost"
+                      className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+                      size="lg"
+                    >
+                      <LogOut className="h-5 w-5 mr-3" />
+                      <TranslatedText text="Logout" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

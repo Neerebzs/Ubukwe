@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useState, useMemo, useEffect } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,12 +15,30 @@ import {
   ArrowLeft, Phone, Mail, Heart, Calendar as CalendarIcon,
   ChevronRight, Loader2, Info
 } from "lucide-react"
-import { apiClient, ProviderService } from "@/lib/api"
+import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function BookingPage({ params }: { params: { serviceId: string } }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
+
+  const packageId = searchParams.get('packageId')
+  const packageName = searchParams.get('packageName')
+
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      toast.error('Authentication required', {
+        description: 'Please login to access the booking page.'
+      });
+      router.push('/auth/signin');
+    }
+  }, [isAuthenticated, isAuthLoading, router]);
+
   const [currentStep, setCurrentStep] = useState(1)
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
@@ -45,19 +64,69 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     queryFn: async () => {
       try {
         console.log(`🔍 BookingPage: Fetching service ${params.serviceId}`);
-        // Use the same endpoint as ServiceDetailsPage which is known to work
-        const response = await apiClient.get<ProviderService>(`/api/v1/provider/services/${params.serviceId}`);
-        console.log(`✅ BookingPage: API Response:`, response);
-
-        // Handle both wrapped and unwrapped response
-        if (response && (response as any).data) {
-          return (response as any).data as ProviderService;
-        }
-        return response as unknown as ProviderService;
+        const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
+        return (response as any).data || response;
       } catch (err) {
         console.error(`❌ BookingPage: Fetch error:`, err);
         throw err;
       }
+    }
+  })
+
+  // Fetch user's wedding details
+  const { data: wedding, isLoading: isWeddingLoading } = useQuery({
+    queryKey: ["wedding-me"],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
+        return (response as any).data || response;
+      } catch (err: any) {
+        if (err.message?.includes("404")) return null;
+        throw err;
+      }
+    },
+    enabled: isAuthenticated
+  })
+
+  // Auto-fill effects
+  useEffect(() => {
+    if (user) {
+      setBookingData(prev => ({
+        ...prev,
+        contactName: prev.contactName || user.full_name || user.username || "",
+        contactEmail: prev.contactEmail || user.email || "",
+        contactPhone: prev.contactPhone || user.phone_number || "",
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (wedding && wedding.wedding_date) {
+      setBookingData(prev => ({
+        ...prev,
+        date: prev.date || new Date(wedding.wedding_date)
+      }));
+    }
+  }, [wedding]);
+
+  // Create booking mutation
+  const createBookingMutation = useMutation({
+    mutationFn: async (bookingPayload: any) => {
+      const response = await apiClient.post('/api/v1/bookings/bookings', bookingPayload);
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log('✅ Booking created:', data);
+      toast.success('Booking request sent successfully!');
+      setCurrentStep(4); // Go to confirmation
+      // Navigate to customer dashboard bookings tab after 3 seconds
+      setTimeout(() => {
+        router.push('/customer/dashboard?tab=bookings');
+      }, 3000);
+    },
+    onError: (error: any) => {
+      console.error('❌ Booking error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to create booking request');
     }
   })
 
@@ -80,9 +149,31 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   }
 
   const handleBookingSubmit = () => {
-    // In real app, this would process the booking and payment
-    console.log("Booking submitted:", bookingData)
-    setCurrentStep(4) // Go to confirmation
+    if (!service || !bookingData.date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Prepare booking payload
+    const bookingPayload = {
+      service_id: params.serviceId,
+      wedding_id: wedding?.id || null,
+      booking_date: bookingData.date.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      package_id: packageId || null,
+      package_name: packageName || null,
+      booking_amount: pricing.basePrice,
+      total_amount: pricing.total,
+      deposit_amount: pricing.platformFee,
+      customer_name: bookingData.contactName,
+      customer_email: bookingData.contactEmail,
+      customer_phone: bookingData.contactPhone,
+      event_location: bookingData.location,
+      guest_count: bookingData.guestCount ? parseInt(bookingData.guestCount) : null,
+      special_requests: bookingData.specialRequests || null
+    };
+
+    console.log('📤 Sending booking request:', bookingPayload);
+    createBookingMutation.mutate(bookingPayload);
   }
 
   const availableTimeslots = ["09:00", "11:00", "13:00", "15:00", "17:00"]
@@ -95,6 +186,15 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     const total = basePrice + platformFee + vat
     return { basePrice, platformFee, vat, total }
   }, [service])
+
+  if (isAuthLoading || (isAuthLoading && !user)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f9fafc]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground animate-pulse">Authenticating...</p>
+      </div>
+    )
+  }
 
   if (isServiceLoading) {
     return (
@@ -313,8 +413,19 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   <Button variant="outline" onClick={handlePrevStep} className="h-12 px-8">
                     Back
                   </Button>
-                  <Button onClick={handleBookingSubmit} className="flex-1 h-12 text-lg font-bold shadow-md shadow-primary/20" disabled={!bookingData.contactName || !bookingData.contactEmail || !bookingData.contactPhone}>
-                    Send Booking Request
+                  <Button
+                    onClick={handleBookingSubmit}
+                    className="flex-1 h-12 text-lg font-bold shadow-md shadow-primary/20"
+                    disabled={!bookingData.contactName || !bookingData.contactEmail || !bookingData.contactPhone || createBookingMutation.isPending}
+                  >
+                    {createBookingMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending Request...
+                      </>
+                    ) : (
+                      'Send Booking Request'
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -510,8 +621,12 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               </div>
 
               <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                <Button className="h-12">View My Bookings</Button>
-                <Button variant="outline" className="h-12" onClick={() => window.location.href = "/"}>Back to Home</Button>
+                <Button className="h-12" onClick={() => router.push('/customer/dashboard?tab=bookings')}>
+                  View My Bookings
+                </Button>
+                <Button variant="outline" className="h-12" onClick={() => router.push('/')}>
+                  Back to Home
+                </Button>
               </div>
             </Card>
           )}
