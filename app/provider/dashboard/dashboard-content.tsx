@@ -212,7 +212,7 @@ export function ProviderDashboardContent() {
       />
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
         {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
         <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
           <DashboardHeader
