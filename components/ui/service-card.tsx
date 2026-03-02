@@ -17,21 +17,21 @@ interface ServiceCardProps {
   bookings: number;
 }
 
-export function ServiceCard({ 
-  id, 
-  title, 
-  image, 
-  category, 
-  location, 
-  provider, 
-  price, 
-  rating, 
-  bookings 
+export function ServiceCard({
+  id,
+  title,
+  image,
+  category,
+  location,
+  provider,
+  price,
+  rating,
+  bookings
 }: ServiceCardProps) {
   return (
     <Link href={`/services/${id}`}>
       <Card className="group overflow-hidden border-0 bg-zinc-900 hover:bg-zinc-800 transition-all duration-300">
-        <div className="relative aspect-[3/4] overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden">
           <img
             src={image}
             alt={title}

@@ -147,7 +147,7 @@ export function ProviderDashboardContent() {
     switch (activeTab) {
       case "overview": return <ProviderOverview providerStats={providerStats} recentBookings={recentBookings} />
       case "services": return <ProviderServices services={services} />
-      case "bookings": return <ProviderBookings bookings={recentBookings as any} />
+      case "bookings": return <ProviderBookings />
       case "inquiries": return (
         <InquiryManagement
           onSendQuote={(inqId, custId) => {

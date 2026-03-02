@@ -42,7 +42,8 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   const [currentStep, setCurrentStep] = useState(1)
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
-    time: "",
+    startTime: "",
+    endTime: "",
     location: "",
     guestCount: "",
     specialRequests: "",

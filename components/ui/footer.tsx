@@ -1,52 +1,113 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from "lucide-react";
+import { TranslatedText } from "@/components/translated-text";
 
 export function Footer() {
   return (
-    <footer className="py-12 px-4 bg-gray-50 ">
-      <div className="container mx-auto max-w-6xl">
-        <div className="grid md:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="h-6 w-6 rounded-full bg-teal-500"></div>
-              <span className="font-bold text-black">Ubukwe</span>
-            </div>
-            <p className="text-sm text-gray-600">
-              Connecting Rwandan couples with authentic wedding service providers to celebrate love and cultural
-              heritage.
+    <footer className="bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10 px-4">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+          {/* Brand Section */}
+          <div className="space-y-6">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-lg">V</span>
+              </div>
+              <span className="text-2xl font-serif italic text-slate-900 font-medium">VowNest</span>
+            </Link>
+            <p className="text-slate-600 leading-relaxed font-outfit font-light">
+              <TranslatedText text="Connecting Rwandan couples with authentic wedding service providers to celebrate love and cultural heritage with elegance and ease." />
             </p>
+            <div className="flex items-center gap-4 pt-2">
+              <a href="#" className="p-2.5 rounded-full bg-white border border-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-300 shadow-sm">
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a href="#" className="p-2.5 rounded-full bg-white border border-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-300 shadow-sm">
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a href="#" className="p-2.5 rounded-full bg-white border border-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-300 shadow-sm">
+                <Twitter className="h-5 w-5" />
+              </a>
+            </div>
           </div>
+
+          {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-3 text-black">Services</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Traditional Dancers</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Master of Ceremonies</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Decorations</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Catering</li>
+            <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Services</h4>
+            <ul className="space-y-4 font-outfit font-light">
+              {["Traditional Dancers", "Master of Ceremonies", "Decorations", "Catering"].map((item) => (
+                <li key={item}>
+                  <Link href="/services" className="text-slate-600 hover:text-primary transition-colors flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                    <TranslatedText text={item} />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Support */}
           <div>
-            <h4 className="font-semibold mb-3 text-black">For Providers</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Join Platform</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Provider Dashboard</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Manage Bookings</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Payment System</li>
+            <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Support</h4>
+            <ul className="space-y-4 font-outfit font-light">
+              {["Help Center", "Contact Us", "Cultural Guidelines", "Terms of Service"].map((item) => (
+                <li key={item}>
+                  <Link href="#" className="text-slate-600 hover:text-primary transition-colors flex items-center gap-2 group">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                    <TranslatedText text={item} />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
+
+          {/* Contact Information */}
           <div>
-            <h4 className="font-semibold mb-3 text-black">Support</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Help Center</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Contact Us</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Cultural Guidelines</li>
-              <li className="hover:text-teal-600 transition-colors cursor-pointer">Terms of Service</li>
+            <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Contact Details</h4>
+            <ul className="space-y-5 font-outfit font-light">
+              <li className="flex items-start gap-4">
+                <div className="p-2.5 rounded-xl bg-primary/5 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div className="text-slate-600">
+                  <p className="font-medium text-slate-900">Kigali, Rwanda</p>
+                  <p className="text-sm opacity-80">KN 2 Rd, Nyarugenge</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="p-2.5 rounded-xl bg-primary/5 text-primary">
+                  <Phone className="h-5 w-5" />
+                </div>
+                <div className="text-slate-600">
+                  <p className="font-medium text-slate-900">+250 788 000 000</p>
+                  <p className="text-sm opacity-80">Mon - Fri, 9am - 6pm</p>
+                </div>
+              </li>
+              <li className="flex items-start gap-4">
+                <div className="p-2.5 rounded-xl bg-primary/5 text-primary">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div className="text-slate-600">
+                  <p className="font-medium text-slate-900">support@vownest.rw</p>
+                  <p className="text-sm opacity-80">Online 24/7</p>
+                </div>
+              </li>
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
-          <p>&copy; 2024 Ubukwe. Celebrating Rwandan wedding traditions with pride.</p>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-primary/10 pt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <p className="text-slate-500 font-outfit font-light text-sm">
+            &copy; {new Date().getFullYear()} VowNest. <TranslatedText text="Celebrating Rwandan wedding traditions with pride." />
+          </p>
+          <div className="flex items-center gap-8 text-sm text-slate-400 font-outfit font-light">
+            <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-primary transition-colors">Cookies Setting</Link>
+          </div>
         </div>
       </div>
     </footer>
