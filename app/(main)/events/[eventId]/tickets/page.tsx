@@ -23,7 +23,7 @@ export default function EventTicketingPage() {
     location: "View →",
     organizer: "KIGALI SHADES NIGHT",
     organizerLogo: "/placeholder-org.jpg",
-    image: "/Intore new.jpeg",
+    image: "/grom.jpg",
     performances: 5,
     ticketTypes: [
       {
