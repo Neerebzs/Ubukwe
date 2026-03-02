@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
-  Calendar, MapPin, Search, Music, Palette, UtensilsCrossed, 
+  Calendar, MapPin, Search, Music, Palette, UtensilsCrossed,
   Dumbbell, Mic2, Film, MoreHorizontal, Bookmark
 } from "lucide-react"
 import Link from "next/link"
@@ -88,104 +88,94 @@ export default function EventsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white text-black pb-16 md:pb-0">
-    
+    <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
+      {/* Hero Section */}
+      <div className="container mx-auto px-6 py-12 md:py-20">
+        <div className="max-w-4xl space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="h-[1px] w-12 bg-[#608d64]/30" />
+            <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">
+              <TranslatedText text="The Collective Calendar" />
+            </span>
+          </div>
+          <h1 className="font-serif italic text-6xl md:text-8xl text-slate-900 leading-[0.9] tracking-tight">
+            Curated <span className="text-slate-400 not-italic font-light">Gatherings.</span>
+          </h1>
+          <p className="font-sans text-slate-500 text-lg md:text-xl max-w-2xl leading-relaxed font-light mt-8">
+            <TranslatedText text="Discover exclusive events, workshops, and traditional showcases curated to inspire your wedding journey in Rwanda." />
+          </p>
+        </div>
+      </div>
 
-      {/* Categories */}
-      <div className=" backdrop-blur">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+      {/* Categories & Filter Bar */}
+      <div className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-y border-slate-100/50">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
               {categories.map((category) => (
                 <Button
                   key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "ghost"}
-                  size="sm"
+                  variant="ghost"
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`rounded-full flex-shrink-0 ${
-                    selectedCategory === category.id 
-                      ? "bg-zinc-800 text-white" 
-                      : "text-gray-400 hover:text-white hover:bg-zinc-800"
-                  }`}
+                  className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${selectedCategory === category.id
+                      ? "bg-[#608d64] text-white shadow-lg shadow-[#608d64]/20"
+                      : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                    }`}
                 >
-                  {category.icon}
-                  <span className="ml-2">{category.name}</span>
+                  {category.icon && <span className="mr-3 scale-110">{category.icon}</span>}
+                  <span>{category.name}</span>
                 </Button>
               ))}
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="text-gray-400 hover:text-white hover:bg-zinc-800 rounded-full flex-shrink-0"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Date
-            </Button>
+
+            <div className="flex items-center gap-6 md:border-l md:border-slate-100 md:pl-8">
+              <div className="flex items-center gap-8">
+                {["happening-now", "today", "tomorrow", "weekend"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`text-[10px] font-black uppercase tracking-[0.3em] transition-all relative py-2 whitespace-nowrap ${activeTab === tab
+                        ? "text-slate-900"
+                        : "text-slate-300 hover:text-slate-500"
+                      }`}
+                  >
+                    <TranslatedText text={tab.replace('-', ' ')} />
+                    {activeTab === tab && (
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#608d64] animate-in slide-in-from-left duration-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 transition-all flex-shrink-0"
+              >
+                <Calendar className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Time Tabs */}
-      <div className="">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => setActiveTab("happening-now")}
-              className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "happening-now"
-                  ? "border-white text-white"
-                  : "border-transparent text-gray-400 hover:text-white"
-              }`}
-            >
-              <TranslatedText text="Happening Now" />
-            </button>
-            <button
-              onClick={() => setActiveTab("today")}
-              className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "today"
-                  ? "border-white text-white"
-                  : "border-transparent text-gray-400 hover:text-white"
-              }`}
-            >
-              <TranslatedText text="Today" />
-            </button>
-            <button
-              onClick={() => setActiveTab("tomorrow")}
-              className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "tomorrow"
-                  ? "border-white text-white"
-                  : "border-transparent text-gray-400 hover:text-white"
-              }`}
-            >
-              <TranslatedText text="Tomorrow" />
-            </button>
-            <button
-              onClick={() => setActiveTab("weekend")}
-              className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "weekend"
-                  ? "border-white text-white"
-                  : "border-transparent text-gray-400 hover:text-white"
-              }`}
-            >
-              <TranslatedText text="Weekend" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Active Events Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <h2 className="text-xl font-semibold text-black">
-              <TranslatedText text="Active Events" />
-            </h2>
+      {/* Content Section */}
+      <div className="container mx-auto px-6 py-16">
+        <div className="space-y-12">
+          {/* Section Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-2 w-2 bg-[#608d64] rounded-full animate-pulse" />
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.3em]">
+                <TranslatedText text={`${activeTab.replace('-', ' ')} Collection`} />
+              </h2>
+            </div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {allEvents.length} Gatherings Found
+            </div>
           </div>
 
           {/* Grid Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {activeTab === "happening-now" && allEvents.slice(0, 4).map((event) => (
               <EventCard
                 key={event.id}
@@ -239,6 +229,14 @@ export default function EventsPage() {
               />
             ))}
           </div>
+
+          {/* Empty State Mockup */}
+          {allEvents.length === 0 && (
+            <div className="py-24 text-center space-y-4">
+              <p className="font-serif italic text-3xl text-slate-300">Quiet for a moment.</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adjust your passage filters</p>
+            </div>
+          )}
         </div>
       </div>
 

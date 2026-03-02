@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Filter, Star, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Star, Eye, Edit, Trash2, MapPin, Calendar, TrendingUp, MoreVertical, ExternalLink, Package } from "lucide-react";
 import { ServiceForm, ServiceFormData } from "./service-form";
 import { ServiceDetailView } from "./service-detail-view";
+import { cn } from "@/lib/utils";
 
 interface Service {
   id: string; // UUID from backend
@@ -39,8 +41,12 @@ interface Service {
   }>;
   gallery?: Array<{
     id: string;
-    type: "image" | "video";
+    type: "image" | "video" | "reel";
     url: string;
+    thumbnail?: string;
+    contentType?: null | "offer" | "event";
+    title?: string;
+    description?: string;
   }>;
   phone?: string;
   email?: string;
@@ -63,7 +69,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
+  const [categories, setCategories] = useState<Array<{ id: string, name: string }>>([]);
 
   useEffect(() => {
     fetchServices();
@@ -88,18 +94,19 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       const response = await apiClient.providerServices.getAll();
       console.log("=== SERVICES API RESPONSE ===");
       console.log("Raw response:", response);
-      
+
       // Backend returns list directly, not wrapped in { data: [...] }
-      const servicesArray = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const responseData = response.data as any;
+      const servicesArray = Array.isArray(responseData) ? responseData : (responseData?.data || []);
       console.log("Services array:", servicesArray);
-      
+
       const mappedServices = servicesArray.map((s: any) => {
         console.log("=== MAPPING SERVICE ===");
         console.log("Service name:", s.name);
         console.log("Gallery data:", s.gallery);
         console.log("Gallery type:", typeof s.gallery);
         console.log("Is array:", Array.isArray(s.gallery));
-        
+
         return {
           id: s.id,
           title: s.name,
@@ -120,40 +127,40 @@ export function ProviderServices({ services: initialServices }: ProviderServices
           email: s.email,
           verified: s.verified || false,
           // Handle gallery - can be array of objects or array of strings
-          gallery: Array.isArray(s.gallery) 
+          gallery: Array.isArray(s.gallery)
             ? s.gallery.map((item: any, idx: number) => {
-                console.log("Gallery item:", item, "Type:", typeof item);
-                // If item is a string (URL), convert to gallery object
-                if (typeof item === 'string') {
-                  return {
-                    id: String(idx),
-                    type: 'image',
-                    contentType: null,
-                    url: item,
-                    thumbnail: item,
-                    title: '',
-                    description: ''
-                  };
-                }
-                // If item is already an object, use it
+              console.log("Gallery item:", item, "Type:", typeof item);
+              // If item is a string (URL), convert to gallery object
+              if (typeof item === 'string') {
                 return {
-                  id: item.id || String(idx),
-                  type: item.type || 'image',
-                  contentType: item.contentType || item.content_type || null,
-                  url: item.url,
-                  thumbnail: item.thumbnail,
-                  title: item.title || '',
-                  description: item.description || ''
+                  id: String(idx),
+                  type: 'image',
+                  contentType: null,
+                  url: item,
+                  thumbnail: item,
+                  title: '',
+                  description: ''
                 };
-              })
+              }
+              // If item is already an object, use it
+              return {
+                id: item.id || String(idx),
+                type: item.type || 'image',
+                contentType: item.contentType || item.content_type || null,
+                url: item.url,
+                thumbnail: item.thumbnail,
+                title: item.title || '',
+                description: item.description || ''
+              };
+            })
             : [],
         };
       });
-      
+
       console.log("Mapped services:", mappedServices);
       console.log("First service gallery:", mappedServices[0]?.gallery);
       console.log("===========================");
-      
+
       setServices(mappedServices);
     } catch (error) {
       console.error("Fetch services error:", error);
@@ -180,11 +187,11 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     console.log("=== EDITING SERVICE ===");
     console.log("Original service:", service);
     console.log("Gallery data:", service.gallery);
-    
+
     // Find the category ID from the categories list
     const categoryData = categories.find(cat => cat.name === service.category);
     console.log("Found category:", categoryData);
-    
+
     const editData = {
       name: service.title,
       category: service.category,
@@ -194,25 +201,33 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       specialties: service.specialties || [],
       priceRangeMin: service.priceRangeMin?.toString() || "",
       priceRangeMax: service.priceRangeMax?.toString() || "",
-      gallery: service.gallery || [],
+      gallery: (service.gallery || []).map(g => ({
+        id: g.id,
+        type: g.type as "image" | "video" | "reel",
+        contentType: g.contentType || null,
+        url: g.url,
+        thumbnail: g.thumbnail,
+        title: g.title || "",
+        description: g.description || ""
+      })) as any,
       packages: service.packages || [],
       phone: service.phone || "",
       email: service.email || "",
       status: service.status,
       verified: service.verified || false,
     };
-    
+
     console.log("Edit data prepared:", editData);
     console.log("Edit gallery:", editData.gallery);
     console.log("========================");
-    
+
     setEditingService(service);
     setShowCreateForm(true);
   };
 
   const handleSaveService = async (formData: ServiceFormData) => {
     setIsSaving(true);
-    
+
     console.log("=== HANDLE SAVE SERVICE ===")
     console.log("Is editing:", !!editingService)
     console.log("Editing service ID:", editingService?.id)
@@ -225,7 +240,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       url: g.url,
       contentType: g.contentType
     })))
-    
+
     const servicePayload = {
       name: formData.name,
       category: formData.category,
@@ -250,7 +265,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         description: g.description || ""
       })).filter(item => item.url && item.url.trim() !== "") || [],
     };
-    
+
     console.log("=== FINAL PAYLOAD ===")
     console.log("Gallery count after filter:", servicePayload.gallery.length)
     console.log("Gallery:", servicePayload.gallery)
@@ -266,10 +281,10 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         await apiClient.providerServices.create(servicePayload);
         toast.success("Service created successfully!");
       }
-      
+
       // Refresh the services list
       await fetchServices();
-      
+
       // Close the form
       setShowCreateForm(false);
       setEditingService(null);
@@ -300,9 +315,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const handleToggleServiceStatus = async (service: Service) => {
     const newStatus = service.status === "active" ? "draft" : "active";
     const actionText = newStatus === "active" ? "enable" : "disable";
-    
+
     setIsToggling(service.id);
-    
+
     try {
       // Create a minimal payload for status update
       const statusPayload = {
@@ -396,11 +411,11 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       console.log("=== PREPARING EDIT DATA ===");
       console.log("Editing service:", editingService);
       console.log("Categories available:", categories);
-      
+
       // Find the category ID from the categories list
       const categoryData = categories.find(cat => cat.name === editingService.category);
       console.log("Found category for edit:", categoryData);
-      
+
       const data = {
         name: editingService.title,
         category: editingService.category,
@@ -410,18 +425,26 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         specialties: editingService.specialties || [],
         priceRangeMin: editingService.priceRangeMin?.toString() || "",
         priceRangeMax: editingService.priceRangeMax?.toString() || "",
-        gallery: editingService.gallery || [],
+        gallery: (editingService.gallery || []).map(g => ({
+          id: g.id,
+          type: g.type as "image" | "video" | "reel",
+          contentType: g.contentType || null,
+          url: g.url,
+          thumbnail: g.thumbnail,
+          title: g.title || "",
+          description: g.description || ""
+        })) as any,
         packages: editingService.packages || [],
         phone: editingService.phone || "",
         email: editingService.email || "",
         status: editingService.status,
         verified: editingService.verified || false,
       };
-      
+
       console.log("Final edit data:", data);
       console.log("Edit gallery count:", data.gallery?.length);
       console.log("============================");
-      
+
       return data;
     })() : undefined;
 
@@ -442,50 +465,52 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">My Services</h2>
-          <p className="text-muted-foreground">Manage your services that customers can browse and book</p>
+          <h2 className="text-3xl font-bold tracking-tight">My Services</h2>
+          <p className="text-muted-foreground mt-1">Manage and optimize your wedding service listings</p>
         </div>
-        <Button onClick={handleCreateService}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreateService} size="lg" className="shadow-sm">
+          <Plus className="h-5 w-5 mr-2" />
           Create New Service
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="border-none shadow-sm bg-muted/30">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search services..."
+                placeholder="Search services by title or category..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-background border-none shadow-sm"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-40 bg-background border-none shadow-sm">
+                  <Filter className="w-4 h-4 mr-2 opacity-50" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full md:w-48 bg-background border-none shadow-sm">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -493,107 +518,170 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       {/* Services List */}
       <div className="grid gap-4">
         {filteredServices.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
+          <Card className="border-dashed border-2 bg-transparent">
+            <CardContent className="text-center py-20">
+              <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">No services found</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                 {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
-                  ? "No services match your filters"
-                  : "You haven't created any services yet"}
+                  ? "We couldn't find any services matching your current filters. Try adjusting them or clear filters."
+                  : "You haven't added any services yet. Start by creating your first listing."}
               </p>
-              {!searchTerm && statusFilter === "all" && categoryFilter === "all" && (
-                <Button onClick={handleCreateService}>
-                  <Plus className="h-4 w-4 mr-2" />
+              {!searchTerm && statusFilter === "all" && categoryFilter === "all" ? (
+                <Button onClick={handleCreateService} size="lg">
+                  <Plus className="h-5 w-5 mr-2" />
                   Create Your First Service
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setCategoryFilter("all"); }}>
+                  Clear all filters
                 </Button>
               )}
             </CardContent>
           </Card>
         ) : (
           filteredServices.map((service) => (
-            <Card key={service.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold">{service.title}</h3>
-                      <Badge variant={service.status === "active" ? "default" : "secondary"}>
-                        {service.status}
-                      </Badge>
-                      {service.verified && (
-                        <Badge variant="outline" className="text-xs">Verified</Badge>
-                      )}
-                    </div>
-                    <p className="text-muted-foreground mb-2">
-                      {service.category} • {service.location}
-                    </p>
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="font-medium">{service.priceRange}</span>
-                      <span className="text-muted-foreground">{service.bookings} bookings</span>
-                      {service.rating > 0 && (
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 mr-1 fill-current" />
-                          <span>{service.rating}</span>
-                        </div>
-                      )}
-                      {service.packages && service.packages.length > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          {service.packages.length} package{service.packages.length > 1 ? "s" : ""}
-                        </Badge>
-                      )}
-                    </div>
-                    {service.description && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {service.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleViewService(service)}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleEditService(service)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    {service.status === "active" ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleToggleServiceStatus(service)}
-                        disabled={isToggling === service.id}
-                      >
-                        {isToggling === service.id ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        ) : null}
-                        {isToggling === service.id ? "Disabling..." : "Disable"}
-                      </Button>
+            <Card key={service.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-card">
+              <CardContent className="p-0">
+                <div className="flex flex-col md:flex-row h-full">
+                  {/* Service Thumbnail */}
+                  <div className="relative w-full md:w-64 h-48 md:h-auto bg-muted overflow-hidden">
+                    {service.gallery && service.gallery.length > 0 ? (
+                      <Image
+                        src={service.gallery[0].url}
+                        alt={service.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleToggleServiceStatus(service)}
-                        disabled={isToggling === service.id}
-                      >
-                        {isToggling === service.id ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        ) : null}
-                        {isToggling === service.id ? "Enabling..." : "Enable"}
-                      </Button>
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-12 w-12 text-muted-foreground/30" />
+                      </div>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteService(service.id)}
-                      className="text-destructive hover:text-destructive"
-                      disabled={isDeleting === service.id}
-                    >
-                      {isDeleting === service.id ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
+                    <Badge
+                      className={cn(
+                        "absolute top-3 left-3 shadow-sm",
+                        service.status === "active" ? "bg-teal-500 hover:bg-teal-600" : "bg-slate-500 hover:bg-slate-600"
                       )}
-                    </Button>
+                    >
+                      {service.status.toUpperCase()}
+                    </Badge>
+                  </div>
+
+                  {/* Service Info */}
+                  <div className="flex-1 p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-bold text-teal-600 uppercase tracking-wider mb-1">
+                            {service.category}
+                          </p>
+                          <h3 className="text-xl font-bold group-hover:text-teal-700 transition-colors uppercase">
+                            {service.title}
+                            {service.verified && (
+                              <Badge variant="secondary" className="ml-2 text-[10px] h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-tighter">
+                                Verified
+                              </Badge>
+                            )}
+                          </h3>
+                        </div>
+                        {service.rating > 0 && (
+                          <div className="flex items-center bg-yellow-50 px-2 py-1 rounded text-yellow-700 text-sm font-bold border border-yellow-100">
+                            <Star className="h-3.5 w-3.5 mr-1 fill-current" />
+                            {service.rating}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-muted-foreground mb-4">
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-1 text-slate-400" />
+                          {service.location}
+                        </div>
+                        <div className="flex items-center">
+                          <TrendingUp className="h-4 w-4 mr-1 text-slate-400" />
+                          {service.bookings} Bookings
+                        </div>
+                        {service.packages && service.packages.length > 0 && (
+                          <div className="flex items-center">
+                            <Package className="h-4 w-4 mr-1 text-slate-400" />
+                            {service.packages.length} Packages
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                        {service.description || "No description provided for this service."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                      <div className="text-lg font-bold text-slate-900">
+                        {service.priceRange}
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex -space-x-1 mr-2 invisible sm:visible">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-teal-600"
+                            onClick={() => handleViewService(service)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-teal-600"
+                            onClick={() => handleEditService(service)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-destructive"
+                            onClick={() => handleDeleteService(service.id)}
+                            disabled={isDeleting === service.id}
+                          >
+                            {isDeleting === service.id ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+
+                        <Button
+                          variant={service.status === "active" ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleServiceStatus(service)}
+                          disabled={isToggling === service.id}
+                          className={cn(
+                            "flex-1 sm:flex-none font-semibold",
+                            service.status === "active"
+                              ? "border-slate-200 text-slate-600 hover:bg-slate-50"
+                              : "bg-teal-600 hover:bg-teal-700 text-white"
+                          )}
+                        >
+                          {isToggling === service.id ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                          ) : null}
+                          {isToggling === service.id ? "Processing..." : service.status === "active" ? "Disable Service" : "Enable Service"}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-9 px-3 text-slate-400 hover:text-slate-900 sm:hidden"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -642,10 +730,10 @@ function ServicesLoadingSkeleton() {
                     <Skeleton className="h-5 w-16" />
                     <Skeleton className="h-5 w-20" />
                   </div>
-                  
+
                   {/* Category and location */}
                   <Skeleton className="h-4 w-48" />
-                  
+
                   {/* Price and stats */}
                   <div className="flex items-center space-x-4">
                     <Skeleton className="h-4 w-32" />
@@ -653,14 +741,14 @@ function ServicesLoadingSkeleton() {
                     <Skeleton className="h-4 w-20" />
                     <Skeleton className="h-5 w-24" />
                   </div>
-                  
+
                   {/* Description */}
                   <div className="space-y-2">
                     <Skeleton className="h-3 w-full" />
                     <Skeleton className="h-3 w-3/4" />
                   </div>
                 </div>
-                
+
                 {/* Action buttons */}
                 <div className="flex items-center space-x-2">
                   <Skeleton className="h-9 w-20" />

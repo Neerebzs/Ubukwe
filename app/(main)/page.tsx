@@ -7,6 +7,7 @@ import Link from "next/link"
 import React, { useState, useRef, useEffect } from "react";
 import { TranslatedText } from "@/components/translated-text";
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
+import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HomePage() {
@@ -117,63 +118,40 @@ export default function HomePage() {
       icon: <Users className="h-8 w-8" />,
       title: "Traditional Dancers",
       description: "Authentic Rwandan wedding dancers performing Intore and other cultural dances",
-      color: "from-purple-500 to-pink-500",
+      color: "bg-purple-50 text-purple-600",
     },
     {
       icon: <Mic className="h-8 w-8" />,
       title: "Master of Ceremonies",
       description: "Experienced MCs who understand Rwandan wedding traditions and customs",
-      color: "from-blue-500 to-cyan-500",
+      color: "bg-blue-50 text-blue-600",
     },
     {
       icon: <Palette className="h-8 w-8" />,
       title: "Decoration Services",
       description: "Beautiful traditional and modern decorations for your special day",
-      color: "from-orange-500 to-red-500",
+      color: "bg-orange-50 text-orange-600",
     },
     {
       icon: <Utensils className="h-8 w-8" />,
       title: "Catering & Food",
       description: "Authentic Rwandan cuisine and international dishes for your celebration",
-      color: "from-green-500 to-emerald-500",
+      color: "bg-emerald-50 text-emerald-600",
     },
     {
       icon: <MapPin className="h-8 w-8" />,
       title: "Venue Booking",
       description: "Perfect venues for traditional and modern Rwandan wedding celebrations",
-      color: "from-indigo-500 to-purple-500",
+      color: "bg-indigo-50 text-indigo-600",
     },
     {
       icon: <Music className="h-8 w-8" />,
       title: "Cultural Music",
       description: "Traditional Rwandan musicians and modern entertainment options",
-      color: "from-teal-500 to-pink-500",
+      color: "bg-rose-50 text-rose-600",
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Marie & Jean",
-      role: "Newlyweds",
-      text: "Ubukwe made our wedding planning effortless. The providers were professional and understood our cultural vision perfectly.",
-      rating: 5,
-      image: "👰",
-    },
-    {
-      name: "Amina & David",
-      role: "Newlyweds",
-      text: "From traditional dancers to catering, everything was coordinated seamlessly. Our guests couldn't stop talking about the celebration!",
-      rating: 5,
-      image: "💒",
-    },
-    {
-      name: "Grace & Peter",
-      role: "Newlyweds",
-      text: "The platform's transparency and quality assurance gave us peace of mind. Highly recommended for any Rwandan wedding!",
-      rating: 5,
-      image: "💍",
-    },
-  ];
 
   const faqs = [
     {
@@ -203,215 +181,193 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
-      {/* Pinterest-Style Hero Section with Masonry Grid */}
-      <section className="relative w-full overflow-hidden min-h-[85vh] flex items-center pt-24 bg-[#fffefe]">
-        {/* Background Decorative Blobs */}
-        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[60%] bg-[#f4f7f4] rounded-full blur-3xl opacity-60" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[50%] bg-[#fff5f5] rounded-full blur-3xl opacity-60" />
+      {/* Editorial Hero Section */}
+      <section className="relative w-full overflow-hidden min-h-[90vh] flex items-center pt-20 bg-white">
+        {/* Subtle Decorative Elements */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
 
-        {/* Content Wrapper */}
-        <div className="relative z-10 container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-6 space-y-10 animate-in fade-in slide-in-from-left duration-1000">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-[1px] w-12 bg-primary/30" />
+                  <span className="text-primary font-outfit font-bold tracking-[0.3em] uppercase text-[10px]">
+                    <TranslatedText text="Est. 2024 • Kigali, Rwanda" />
+                  </span>
+                </div>
 
-            {/* ================= LEFT CONTENT ================= */}
-            <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
-              <div className="space-y-4">
-                <span className="text-primary font-outfit font-medium tracking-[0.2em] uppercase text-xs block">
-                  <TranslatedText text="Master Wedding" />
-                </span>
-
-                <h1 className="font-serif italic text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.1] font-light">
-                  Making Your <br />
-                  <span className="relative">
-                    Dream
-                    <div className="absolute -right-4 top-4 w-3 h-3 bg-red-500 rounded-full" />
-                  </span> Long <br />
-                  Lasting.
+                <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl text-slate-900 leading-[0.9] tracking-tight">
+                  <span className="block font-light">Crafting</span>
+                  <span className="block italic font-medium ml-4 md:ml-12 text-primary">Moments</span>
+                  <span className="block font-light text-slate-400">That Last.</span>
                 </h1>
 
-                <p className="font-outfit text-slate-500 text-lg max-w-md leading-relaxed font-light">
-                  <TranslatedText text="Best wishes to your big day of life. Congratulation to your wedding time. We are happy to see you here. We must want that your dreamy wedding will made with us." />
+                <p className="font-outfit text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-light">
+                  <TranslatedText text="Experience the art of Rwandan wedding planning. We connect you with the finest providers to create a celebration that honors tradition and embraces elegance." />
                 </p>
               </div>
 
-
-            </div>
-
-            {/* ================= RIGHT VISUALS ================= */}
-            <div className="relative h-[500px] w-full animate-in fade-in slide-in-from-right duration-1000 delay-200">
-              {/* Main Photo Blob (Large Oval) */}
-              <div className="absolute left-[10%] top-0 w-[60%] h-[90%] z-20 overflow-hidden mask-arch shadow-2xl hover:scale-[1.02] transition-transform duration-700">
-                <img
-                  src="/grom.jpg"
-                  className="w-full h-full object-cover"
-                  alt="Wedding Groom"
-                />
-              </div>
-
-              {/* Decorative Arch with Line Art (Sage Green) */}
-              <div className="absolute left-[50%] bottom-[5%] w-[45%] h-[65%] z-30 bg-[#7d8c70] mask-arch flex items-center justify-center p-8 shadow-xl animate-float">
-                <svg viewBox="0 0 100 100" className="w-full h-full text-white/90 opacity-80" fill="none" stroke="currentColor" strokeWidth="1">
-                  <path d="M50 20 C30 20, 20 40, 20 60 L20 80 L80 80 L80 60 C80 40, 70 20, 50 20 Z" />
-                  <circle cx="40" cy="35" r="5" />
-                  <circle cx="60" cy="35" r="5" />
-                  <path d="M35 80 L35 70 C35 65, 45 60, 50 60 C55 60, 65 65, 65 70 L65 80" />
-                </svg>
-                {/* Fallback Couple Icon if SVG is too simple */}
-                <Users className="absolute text-white/20 w-32 h-32" />
-              </div>
-
-              {/* Secondary Photo Blob (Small Circle) */}
-              <div className="absolute right-0 top-[10%] w-[40%] h-[40%] z-10 overflow-hidden rounded-full border-[10px] border-white shadow-lg">
-                <img
-                  src="/beautiful-garden-wedding-venue-rwanda.jpg"
-                  className="w-full h-full object-cover"
-                  alt="Wedding Venue"
-                />
-              </div>
-
-              {/* Decorative Flowers */}
-              <div className="absolute -right-8 bottom-12 w-32 h-32 z-40 opacity-90 animate-pulse transition-all duration-1000">
-                <img src="/flower-corner.png" className="w-full h-full object-contain" alt="Flowers" style={{ filter: 'hue-rotate(320deg) brightness(1.1)' }} />
+              <div className="flex flex-wrap items-center gap-6">
+                <Link href="/services">
+                  <Button size="lg" className="h-16 px-10 rounded-full bg-[#608d64] hover:bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+                    <TranslatedText text="Start Planning" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <div className="flex -space-x-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden bg-slate-100">
+                      <img src={`/grom.jpg`} className="w-full h-full object-cover grayscale" alt="Client" />
+                    </div>
+                  ))}
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-bold text-xs">
+                    +2k
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-slate-400 font-outfit uppercase tracking-widest">
+                  <TranslatedText text="Trusted by 2,000+ couples" />
+                </p>
               </div>
             </div>
 
+            {/* Right Visual Column */}
+            <div className="lg:col-span-6 relative h-[600px] hidden lg:block">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {/* Main Arch Image */}
+                <div className="relative w-[380px] h-[540px] z-20 group">
+                  <div className="absolute inset-0 border-[1px] border-slate-200 rounded-[200px] -m-4 group-hover:m-0 transition-all duration-700" />
+                  <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white">
+                    <img
+                      src="/grom.jpg"
+                      className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
+                      alt="Rwandan Wedding"
+                    />
+                  </div>
+                  {/* Floating badge */}
+                  <div className="absolute -right-12 top-20 bg-white p-6 rounded-3xl shadow-2xl animate-float z-30 border border-slate-50">
+                    <Heart className="w-8 h-8 text-rose-500 fill-rose-500 mb-2" />
+                    <p className="font-serif italic text-xl text-slate-900">Beautiful</p>
+                  </div>
+                </div>
+
+                {/* Secondary Circular Image */}
+                <div className="absolute left-[-40px] bottom-10 w-48 h-48 z-30 rounded-full overflow-hidden border-8 border-white shadow-xl hover:scale-110 transition-transform duration-500 cursor-pointer">
+                  <img
+                    src="/beautiful-garden-wedding-venue-rwanda.jpg"
+                    className="w-full h-full object-cover"
+                    alt="Venue"
+                  />
+                </div>
+
+                {/* Text Accent */}
+                <div className="absolute right-0 bottom-20 z-10 opacity-5 select-none pointer-events-none">
+                  <span className="font-serif text-[180px] leading-none text-slate-900">Hub</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
 
-      {/* Full-Width Promotional Carousel - Offers, Promotions & Events */}
+      {/* Modernized Full-Width Promotional Carousel */}
       <section
-        className="py-8 md:py-12 px-0 relative bg-white overflow-hidden group/carousel"
+        className="py-16 md:py-24 px-0 relative bg-slate-50/50 overflow-hidden group/carousel"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-full max-w-7xl mx-auto">
-          {/* Carousel Container */}
-          <div className="relative">
-            {/* Navigation Buttons - Appear on Hover */}
-            <div className="absolute inset-y-0 left-0 flex items-center z-30 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 pointer-events-none">
-              <button
-                onClick={() => scroll("left")}
-                className="ml-4 p-3 rounded-full bg-white/90 shadow-xl border border-primary/10 text-primary hover:bg-primary hover:text-white transition-all pointer-events-auto"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="absolute inset-y-0 right-0 flex items-center z-30 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300 pointer-events-none">
-              <button
-                onClick={() => scroll("right")}
-                className="mr-4 p-3 rounded-full bg-white/90 shadow-xl border border-primary/10 text-primary hover:bg-primary hover:text-white transition-all pointer-events-auto"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Carousel Wrapper */}
-            <div
-              ref={carouselRef}
-              className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-4 md:px-6 scroll-smooth"
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+              <TranslatedText text="Limited Exclusives" />
+            </h2>
+            <p className="text-slate-500 font-medium text-lg">
+              <TranslatedText text="Hand-picked deals and upcoming events just for you." />
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => scroll("left")}
+              className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
             >
-              {promotions.map((promo) => (
-                <div
-                  key={promo.id}
-                  className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[calc(33.33%-16px)] snap-center"
-                >
-                  {/* Card */}
-                  <div className="group relative h-[380px] md:h-[420px] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.01]">
-                    {/* Full Background Image */}
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              onClick={() => scroll("right")}
+              className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <div className="w-full max-w-7xl mx-auto">
+          {/* Carousel Wrapper */}
+          <div
+            ref={carouselRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-4 md:px-6 scroll-smooth"
+          >
+            {promotions.map((promo) => (
+              <div
+                key={promo.id}
+                className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
+              >
+                {/* Modern Card (No Gradients) */}
+                <div className="group relative h-[500px] rounded-[32px] overflow-hidden bg-white border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500">
+                  {/* Image Holder */}
+                  <div className="h-[240px] w-full overflow-hidden">
                     <img
                       src={promo.image}
                       alt={promo.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
+                  </div>
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                  {/* Badges */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none shadow-sm py-1.5 px-4 rounded-full font-bold text-[10px] uppercase tracking-wider">
+                      {promo.badge}
+                    </Badge>
+                  </div>
 
-                    {/* Top Badges */}
-                    <div className="absolute top-3 md:top-4 left-3 md:left-4 right-3 md:right-4 flex items-start justify-between z-10">
-                      {/* Type Badge */}
-                      <div className="px-3 md:px-4 py-1.5 md:py-2 bg-transparent rounded-full shadow-lg backdrop-blur-sm border border-white/20">
-                        <span className="text-white font-bold text-[10px] md:text-xs uppercase tracking-wide">
-                          <TranslatedText text={promo.badge} />
-                        </span>
-                      </div>
+                  <div className="absolute top-4 right-4 bg-[#608d64] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                    <div className="text-center leading-none">
+                      <p className="text-lg font-black">{promo.discount.split(' ')[0]}</p>
+                      <p className="text-[8px] font-bold uppercase tracking-tighter">{promo.discount.split(' ')[1]}</p>
+                    </div>
+                  </div>
 
-                      {/* Discount Badge */}
-                      <div className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:rotate-12 transition-transform duration-300">
-                        <div className="text-center">
-                          <div className="text-base md:text-lg font-black text-primary leading-tight">
-                            {promo.discount.split(' ')[0]}
-                          </div>
-                          <div className="text-[9px] md:text-[10px] font-bold text-gray-600 leading-tight">
-                            {promo.discount.split(' ')[1] || ''}
-                          </div>
-                        </div>
-                      </div>
+                  {/* Content */}
+                  <div className="p-8 space-y-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#608d64]/10 group-hover:text-[#608d64] transition-colors duration-300">
+                      {promo.icon}
                     </div>
 
-                    {/* Bottom Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-7 z-10">
-                      {/* Icon */}
-                      <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-lg md:rounded-xl flex items-center justify-center shadow-lg mb-3 md:mb-5 group-hover:scale-110 transition-transform duration-300">
-                        <div className="text-white scale-90 md:scale-100">
-                          {promo.icon}
-                        </div>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-xl md:text-2xl font-bold text-white mb-2 md:mb-3 drop-shadow-lg line-clamp-1 font-serif italic">
+                    <div>
+                      <h3 className="text-2xl font-extrabold text-slate-900 mb-2 leading-tight">
                         <TranslatedText text={promo.title} />
                       </h3>
-
-                      {/* Description */}
-                      <p className="text-white/90 text-sm md:text-base mb-3 md:mb-4 drop-shadow-md line-clamp-2 font-outfit font-light leading-relaxed">
+                      <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed">
                         <TranslatedText text={promo.description} />
                       </p>
-
-                      {/* Valid Until */}
-                      <div className="flex items-center gap-2 text-xs text-white/80 mb-4 md:mb-5">
-                        <Clock className="h-3.5 w-3.5" />
-                        <span className="font-outfit">
-                          <TranslatedText text="Valid until" /> {promo.validUntil}
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Claim Button - Absolute Positioned */}
-                    <button className="absolute bottom-5 md:bottom-7 right-5 md:right-7 px-5 md:px-7 py-2.5 md:py-3.5 bg-white text-primary font-bold text-sm md:text-base rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-110 flex items-center gap-2 z-20 group/btn font-outfit">
-                      <TranslatedText text="Claim" />
-                      <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                    </button>
+                    <div className="pt-4 flex items-center justify-between border-t border-slate-50">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                        <Clock className="w-4 h-4" />
+                        <span>Until {promo.validUntil}</span>
+                      </div>
+                      <Link href="/services">
+                        <Button variant="ghost" className="text-[#608d64] font-bold hover:bg-[#608d64]/10 rounded-xl group/btn p-0">
+                          <TranslatedText text="Explore" />
+                          <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Scroll Indicators */}
-            <div className="flex justify-center gap-2.5 mt-6 md:mt-8">
-              {promotions.map((_, index) => (
-                <div
-                  key={index}
-                  className="w-2.5 h-2.5 rounded-full bg-primary/20 hover:bg-primary transition-colors cursor-pointer"
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section with Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-white">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <div key={index} className="group relative">
-                <div className="relative bg-secondary rounded-2xl p-8 text-center transition-all duration-300 group-hover:translate-y-[-4px]">
-                  <div className="text-primary mb-4 flex justify-center group-hover:scale-110 transition-transform">{stat.icon}</div>
-                  <div className="text-4xl font-black text-primary mb-2">{stat.number}</div>
-                  <div className="text-gray-600 font-medium"><TranslatedText text={stat.label} /></div>
                 </div>
               </div>
             ))}
@@ -419,88 +375,112 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section with Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-gray-50">
+      {/* Modernized Stats Section */}
+      <section className="py-20 md:py-28 px-4 md:px-6 relative bg-white border-y border-slate-50">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-white text-primary px-4 py-2">
-              <Sparkles className="h-4 w-4 mr-2" />
-              <TranslatedText text="Our Services" />
-            </Badge>
-            <h2 className="text-5xl font-black mb-4 text-black">
-              <TranslatedText text="Premium Wedding Services" />
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto"><TranslatedText text="Everything you need for your perfect celebration" /></p>
-          </div>
-
-          <div className="relative">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service, index) => (
-                <div
-                  key={index}
-                  className="group cursor-pointer"
-                >
-                  <div className="relative rounded-2xl transition-all duration-300">
-                    <div className="relative bg-white rounded-2xl p-8 h-full space-y-4 transition-all duration-300">
-                      <div className="w-16 h-16 rounded-2xl bg-gray-300 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300">
-                        {service.icon}
-                      </div>
-                      <h3 className="text-2xl font-bold text-gray-900"><TranslatedText text={service.title} /></h3>
-                      <p className="text-gray-600 leading-relaxed"><TranslatedText text={service.description} /></p>
-                      <Link href="/services">
-                        <Button className="w-full bg-primary hover:bg-primary/80 text-white font-bold transition-all">
-                          <TranslatedText text="Explore" />
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <div key={index} className="group text-center space-y-4">
+                <div className="w-16 h-16 mx-auto bg-slate-50 text-[#608d64] rounded-2xl flex items-center justify-center group-hover:bg-[#608d64] group-hover:text-white transition-all duration-300">
+                  {stat.icon}
+                </div>
+                <div>
+                  <div className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-1">{stat.number}</div>
+                  <div className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] font-outfit">
+                    <TranslatedText text={stat.label} />
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works - Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-white">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-secondary text-primary px-4 py-2">
-              <Zap className="h-4 w-4 mr-2" />
-              <TranslatedText text="Simple Process" />
-            </Badge>
-            <h2 className="text-5xl font-black mb-4 text-primary">
-              <TranslatedText text="How It Works" />
-            </h2>
-            <p className="text-xl text-gray-600"><TranslatedText text="Three simple steps to your dream wedding" /></p>
+      {/* Modernized Services Section */}
+      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-slate-50/30">
+        <div className="container mx-auto max-w-7xl">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
+            <div className="max-w-2xl space-y-4">
+              <div className="flex items-center gap-2 text-[#608d64]">
+                <Sparkles className="h-5 w-5" />
+                <span className="font-outfit font-bold tracking-widest uppercase text-xs">
+                  <TranslatedText text="Categories" />
+                </span>
+              </div>
+              <h2 className="text-5xl md:text-6xl font-black text-slate-900 leading-tight">
+                <TranslatedText text="Everything for Your Celebration" />
+              </h2>
+            </div>
+            <p className="text-lg text-slate-500 max-w-md font-medium leading-relaxed">
+              <TranslatedText text="Explore our curated directory of luxury wedding providers. Each service is hand-vetted to ensure the highest standards of excellence." />
+            </p>
           </div>
 
-          <div className="space-y-8">
-            {[
-              { step: "1", title: "Browse & Discover", desc: "Explore verified providers and services tailored to your needs", icon: <Search className="h-6 w-6" /> },
-              { step: "2", title: "Connect & Plan", desc: "Contact providers and discuss your vision with experts", icon: <Heart className="h-6 w-6" /> },
-              { step: "3", title: "Celebrate & Enjoy", desc: "Relax and enjoy your perfect wedding day", icon: <Sparkles className="h-6 w-6" /> },
-            ].map((item, index) => (
-              <div key={index} className="flex gap-8 items-start group">
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <div className="relative w-20 h-20 rounded-full bg-primary flex items-center justify-center text-2xl font-black text-white group-hover:scale-110 transition-transform">
-                      {item.step}
-                    </div>
-                  </div>
-                  {index < 2 && (
-                    <div className="w-1 h-24 bg-primary mt-4 rounded-full" />
-                  )}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service, index) => (
+              <div
+                key={index}
+                className="group p-10 bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-[#608d64]/30 transition-all duration-500 flex flex-col items-center text-center space-y-6"
+              >
+                <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6", service.color)}>
+                  {service.icon}
                 </div>
-                <div className="pt-4 flex-1 bg-secondary rounded-2xl p-6 transition-all duration-300">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary">
-                      {item.icon}
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900"><TranslatedText text={item.title} /></h3>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                    <TranslatedText text={service.title} />
+                  </h3>
+                  <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                    <TranslatedText text={service.description} />
+                  </p>
+                </div>
+                <div className="pt-4 w-full">
+                  <Link href="/services">
+                    <Button variant="outline" className="w-full h-14 rounded-2xl border-slate-200 font-bold hover:bg-slate-900 hover:text-white transition-all">
+                      <TranslatedText text="Explore Providers" />
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Modernized How It Works Section */}
+      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-20 space-y-4">
+            <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight">
+              <TranslatedText text="Simple Three-Step Planning" />
+            </h2>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
+              <TranslatedText text="We've streamlined the journey from your engagement to your dream wedding day." />
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-[60px] left-[15%] right-[15%] h-[2px] bg-slate-100 z-0" />
+
+            {[
+              { step: "01", title: "Discover", desc: "Browse hand-vetted portfolios and secure your favorites.", icon: <Search className="h-6 w-6" /> },
+              { step: "02", title: "Collaborate", desc: "Connect directly with providers to discuss your vision.", icon: <Users className="h-6 w-6" /> },
+              { step: "03", title: "Celebrate", desc: "Enjoy your perfect moment with everything in place.", icon: <Sparkles className="h-6 w-6" /> },
+            ].map((item, index) => (
+              <div key={index} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-24 h-24 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center mb-8 shadow-sm group-hover:border-[#608d64] group-hover:shadow-xl transition-all duration-500">
+                  <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-xl font-black">
+                    {item.step}
                   </div>
-                  <p className="text-gray-600 text-lg"><TranslatedText text={item.desc} /></p>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">
+                    <TranslatedText text={item.title} />
+                  </h3>
+                  <p className="text-slate-500 font-medium leading-relaxed">
+                    <TranslatedText text={item.desc} />
+                  </p>
                 </div>
               </div>
             ))}
@@ -588,34 +568,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FAQ Section with Rose Theme */}
-      <section className="py-12 md:py-20 px-4 md:px-6 relative bg-white">
+      {/* Modernized FAQ Section */}
+      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white border-t border-slate-50">
         <div className="container mx-auto max-w-3xl">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-secondary text-primary px-4 py-2">
-              <Shield className="h-4 w-4 mr-2" />
-              <TranslatedText text="Help Center" />
-            </Badge>
-            <h2 className="text-5xl font-black mb-4 text-primary">
-              <TranslatedText text="Frequently Asked Questions" />
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-5xl font-black text-slate-900 tracking-tight">
+              <TranslatedText text="Common Questions" />
             </h2>
-            <p className="text-xl text-gray-600"><TranslatedText text="Everything you need to know" /></p>
+            <p className="text-lg text-slate-500 font-medium">
+              <TranslatedText text="Everything you need to know about planning with Ubukwe Hub." />
+            </p>
           </div>
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="group">
+              <div key={index} className="group border border-slate-100 rounded-[32px] overflow-hidden bg-slate-50/30 transition-all duration-300">
                 <button
                   onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                  className="w-full px-6 py-5 bg-primary/10 rounded-2xl flex items-center justify-between transition-all duration-300"
+                  className="w-full px-8 py-7 flex items-center justify-between text-left group-hover:bg-white transition-all duration-300"
                 >
-                  <span className="font-bold text-gray-900 text-left text-lg"><TranslatedText text={faq.question} /></span>
-                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ml-4">
-                    <ChevronDown className={`h-5 w-5 text-white transition-transform duration-300 ${expandedFaq === index ? 'rotate-180' : ''}`} />
+                  <span className="font-bold text-slate-900 text-xl tracking-tight">
+                    <TranslatedText text={faq.question} />
+                  </span>
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300", expandedFaq === index ? "bg-slate-900 text-white rotate-180" : "bg-white text-slate-400 border border-slate-100 shadow-sm")}>
+                    <ChevronDown className="h-5 w-5" />
                   </div>
                 </button>
                 {expandedFaq === index && (
-                  <div className="px-6 py-5 bg-white rounded-b-2xl text-gray-700 leading-relaxed">
+                  <div className="px-8 pb-8 pt-2 bg-white text-slate-500 text-lg font-medium leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
                     <TranslatedText text={faq.answer} />
                   </div>
                 )}

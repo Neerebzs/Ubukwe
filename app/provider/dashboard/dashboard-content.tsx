@@ -145,7 +145,7 @@ export function ProviderDashboardContent() {
     }
 
     switch (activeTab) {
-      case "overview": return <ProviderOverview providerStats={providerStats} recentBookings={recentBookings} />
+      case "overview": return <ProviderOverview />
       case "services": return <ProviderServices services={services} />
       case "bookings": return <ProviderBookings />
       case "inquiries": return (

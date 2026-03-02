@@ -8,6 +8,10 @@ import { AlertCircle, CheckCircle, Eye, MessageCircle, Clock, DollarSign, CheckC
 import { toast } from "sonner";
 import Image from "next/image";
 import { apiClient } from "@/lib/api";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
+import { List, Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface BookingData {
   id: string;
@@ -21,6 +25,7 @@ interface BookingData {
   service_description?: string;
   service_image?: string;
   booking_date: string;
+  preferred_time?: string;
   status: "pending" | "in_progress" | "confirmed" | "completed" | "cancelled" | "rejected";
   booking_amount: number;
   total_amount: number;
@@ -49,11 +54,32 @@ export function ProviderBookings() {
   const [stats, setStats] = useState<BookingStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  const bookingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    bookings.forEach((booking) => {
+      const date = booking.booking_date; // Backend returns YYYY-MM-DD
+      counts[date] = (counts[date] || 0) + 1;
+    });
+    return counts;
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    if (!selectedDate) return bookings;
+    // Format selected date to YYYY-MM-DD in local timezone
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    return bookings.filter((b) => b.booking_date === dateStr);
+  }, [bookings, selectedDate]);
 
   const fetchBookings = async () => {
     try {
       console.log("Fetching provider bookings...");
-      const response = await apiClient.get("/api/v1/bookings/provider/bookings");
+      const response = await apiClient.get<BookingData[]>("/api/v1/bookings/provider/bookings");
       console.log("Bookings response:", response);
       setBookings(response.data || []);
     } catch (error) {
@@ -65,7 +91,7 @@ export function ProviderBookings() {
   const fetchStats = async () => {
     try {
       console.log("Fetching provider statistics...");
-      const response = await apiClient.get("/api/v1/bookings/provider/bookings/statistics/summary");
+      const response = await apiClient.get<BookingStats>("/api/v1/bookings/provider/bookings/statistics/summary");
       console.log("Stats response:", response);
       setStats(response.data || null);
     } catch (error) {
@@ -149,6 +175,26 @@ export function ProviderBookings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Booking Requests</h2>
+        <div className="flex items-center bg-muted p-1 rounded-lg">
+          <Button
+            variant={viewMode === "list" ? "default" : "ghost"}
+            size="sm"
+            className="h-8 px-3"
+            onClick={() => setViewMode("list")}
+          >
+            <List className="h-4 w-4 mr-2" />
+            List
+          </Button>
+          <Button
+            variant={viewMode === "calendar" ? "default" : "ghost"}
+            size="sm"
+            className="h-8 px-3"
+            onClick={() => setViewMode("calendar")}
+          >
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Calendar
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -212,137 +258,241 @@ export function ProviderBookings() {
         </div>
       )}
 
-      {/* Bookings List */}
-      {bookings.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No bookings yet</h3>
-            <p className="text-muted-foreground">Booking requests will appear here</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <Card key={booking.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* Service Image */}
-                  {booking.service_image && (
-                    <div className="relative w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={booking.service_image}
-                        alt={booking.service_name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-
-                  {/* Booking Details */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold">{booking.customer_name}</h3>
-                          {getStatusBadge(booking.status)}
-                          {booking.provider_confirmed && (
-                            <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
-                              Provider Confirmed
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{booking.service_name}</p>
-                        {booking.package_name && (
-                          <p className="text-sm text-muted-foreground">Package: {booking.package_name}</p>
+      {/* Conditional View */}
+      {viewMode === "calendar" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-1 h-fit">
+            <CardContent className="p-4 flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border-0 w-full"
+                components={{
+                  DayButton: (props) => {
+                    // Format date to YYYY-MM-DD in local timezone
+                    const date = props.day.date;
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${month}-${day}`;
+                    const count = bookingCounts[dateStr] || 0;
+                    return (
+                      <CalendarDayButton {...props} className={cn(props.className, "relative")}>
+                        {props.day.date.getDate()}
+                        {count > 0 && (
+                          <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[9px] text-white font-bold shadow-sm ring-1 ring-white">
+                            {count}
+                          </span>
                         )}
-                      </div>
-                    </div>
+                      </CalendarDayButton>
+                    );
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Wedding Date</p>
-                        <p className="font-medium">{new Date(booking.booking_date).toLocaleDateString()}</p>
-                      </div>
-                      {booking.event_location && (
-                        <div>
-                          <p className="text-muted-foreground">Location</p>
-                          <p className="font-medium">{booking.event_location}</p>
-                        </div>
-                      )}
-                      {booking.guest_count && (
-                        <div>
-                          <p className="text-muted-foreground">Guest Count</p>
-                          <p className="font-medium">{booking.guest_count}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-muted-foreground">Amount</p>
-                        <p className="font-medium text-lg">{booking.total_amount.toLocaleString()} RWF</p>
-                      </div>
-                    </div>
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">
+                {selectedDate
+                  ? `Bookings for ${selectedDate.toLocaleDateString()}`
+                  : "All Upcoming Bookings"}
+              </h3>
+              {selectedDate && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
+                  Clear selection
+                </Button>
+              )}
+            </div>
 
-                    {/* Contact Info for confirmed bookings */}
-                    {(booking.status === "in_progress" || booking.status === "confirmed" || booking.status === "completed") && (
-                      <div className="mt-3 p-3 bg-muted rounded-lg">
-                        <p className="text-sm font-medium mb-1">Customer Contact</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                          <p className="text-muted-foreground">Email: {booking.customer_email}</p>
-                          <p className="text-muted-foreground">Phone: {booking.customer_phone}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {booking.special_requests && (
-                      <div className="mt-3">
-                        <p className="text-sm font-medium">Special Requests</p>
-                        <p className="text-sm text-muted-foreground">{booking.special_requests}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex md:flex-col gap-2 flex-shrink-0">
-                    {booking.status === "pending" && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleReject(booking.id)}
-                          disabled={actionLoading === booking.id}
-                        >
-                          <AlertCircle className="h-4 w-4 mr-2" />
-                          Decline
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleConfirm(booking.id)}
-                          disabled={actionLoading === booking.id}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Accept
-                        </Button>
-                      </>
-                    )}
-                    {(booking.status === "in_progress" || booking.status === "confirmed") && (
-                      <Button variant="outline" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Contact
-                      </Button>
-                    )}
-                    {booking.status === "completed" && (
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Details
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+            {(selectedDate ? filteredBookings : bookings).length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center text-muted-foreground">
+                  No bookings found for this day.
+                </CardContent>
+              </Card>
+            ) : (
+              (selectedDate ? filteredBookings : bookings).map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  handleConfirm={handleConfirm}
+                  handleReject={handleReject}
+                  actionLoading={actionLoading}
+                  getStatusBadge={getStatusBadge}
+                />
+              ))
+            )}
+          </div>
         </div>
+      ) : (
+        /* Bookings List */
+        bookings.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No bookings yet</h3>
+              <p className="text-muted-foreground">Booking requests will appear here</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                handleConfirm={handleConfirm}
+                handleReject={handleReject}
+                actionLoading={actionLoading}
+                getStatusBadge={getStatusBadge}
+              />
+            ))}
+          </div>
+        )
       )}
     </div>
+  );
+}
+
+function BookingCard({
+  booking,
+  handleConfirm,
+  handleReject,
+  actionLoading,
+  getStatusBadge
+}: {
+  booking: BookingData;
+  handleConfirm: (id: string) => Promise<void>;
+  handleReject: (id: string) => Promise<void>;
+  actionLoading: string | null;
+  getStatusBadge: (status: string) => JSX.Element;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Service Image */}
+          {booking.service_image && (
+            <div className="relative w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
+              <Image
+                src={booking.service_image}
+                alt={booking.service_name}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+
+          {/* Booking Details */}
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold">{booking.customer_name}</h3>
+                  {getStatusBadge(booking.status)}
+                  {booking.provider_confirmed && (
+                    <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                      Provider Confirmed
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">{booking.service_name}</p>
+                {booking.package_name && (
+                  <p className="text-sm text-muted-foreground">Package: {booking.package_name}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">Wedding Date</p>
+                <p className="font-medium">
+                  {new Date(booking.booking_date + 'T00:00:00').toLocaleDateString()}
+                </p>
+              </div>
+              {booking.preferred_time && (
+                <div>
+                  <p className="text-muted-foreground">Preferred Time</p>
+                  <p className="font-medium">{booking.preferred_time}</p>
+                </div>
+              )}
+              {booking.event_location && (
+                <div>
+                  <p className="text-muted-foreground">Location</p>
+                  <p className="font-medium">{booking.event_location}</p>
+                </div>
+              )}
+              {booking.guest_count && (
+                <div>
+                  <p className="text-muted-foreground">Guest Count</p>
+                  <p className="font-medium">{booking.guest_count}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-muted-foreground">Amount</p>
+                <p className="font-medium text-lg">{booking.total_amount.toLocaleString()} RWF</p>
+              </div>
+            </div>
+
+            {/* Contact Info for confirmed bookings */}
+            {(booking.status === "in_progress" || booking.status === "confirmed" || booking.status === "completed") && (
+              <div className="mt-3 p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium mb-1">Customer Contact</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <p className="text-muted-foreground">Email: {booking.customer_email}</p>
+                  <p className="text-muted-foreground">Phone: {booking.customer_phone}</p>
+                </div>
+              </div>
+            )}
+
+            {booking.special_requests && (
+              <div className="mt-3">
+                <p className="text-sm font-medium">Special Requests</p>
+                <p className="text-sm text-muted-foreground">{booking.special_requests}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex md:flex-col gap-2 flex-shrink-0">
+            {booking.status === "pending" && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReject(booking.id)}
+                  disabled={actionLoading === booking.id}
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Decline
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleConfirm(booking.id)}
+                  disabled={actionLoading === booking.id}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Accept
+                </Button>
+              </>
+            )}
+            {(booking.status === "in_progress" || booking.status === "confirmed") && (
+              <Button variant="outline" size="sm">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Contact
+              </Button>
+            )}
+            {booking.status === "completed" && (
+              <Button variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                Details
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

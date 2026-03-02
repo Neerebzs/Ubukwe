@@ -42,8 +42,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   const [currentStep, setCurrentStep] = useState(1)
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
-    startTime: "",
-    endTime: "",
+    time: "",
     location: "",
     guestCount: "",
     specialRequests: "",
@@ -160,6 +159,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       service_id: params.serviceId,
       wedding_id: wedding?.id || null,
       booking_date: bookingData.date.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      preferred_time: bookingData.time || null, // Include preferred time
       package_id: packageId || null,
       package_name: packageName || null,
       booking_amount: pricing.basePrice,

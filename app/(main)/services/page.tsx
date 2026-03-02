@@ -98,40 +98,47 @@ export default function ServicesPage() {
         <main className="flex-1 pb-16 md:pb-8">
           <div className="container mx-auto px-4 py-8">
             {/* Page Header */}
-            <div className="mb-10">
-              <Badge variant="outline" className="mb-3 px-3 py-1 text-primary border-primary/20 bg-primary/5 font-bold tracking-widest uppercase text-[10px]">
-                The Journey Begins Here
-              </Badge>
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-                <div className="max-w-xl">
-                  <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight text-slate-900 leading-tight">
-                    Browse Wedding Services
+            <div className="mb-12 space-y-8">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                <div className="space-y-6 animate-in fade-in slide-in-from-left duration-1000">
+                  <div className="flex items-center gap-3">
+                    <div className="h-[1px] w-12 bg-primary/30" />
+                    <span className="text-primary font-outfit font-bold tracking-[0.3em] uppercase text-[10px]">
+                      Our Curation
+                    </span>
+                  </div>
+                  <h1 className="font-serif text-5xl md:text-7xl text-slate-900 leading-[0.9] tracking-tight">
+                    <span className="block font-light">Explore</span>
+                    <span className="block italic font-medium ml-4 md:ml-8 text-primary">Services</span>
                   </h1>
-
+                  <p className="font-outfit text-slate-500 text-lg max-w-lg leading-relaxed font-light">
+                    Find the perfect partners for your special day. From traditional ceremonies to modern celebrations, we've curated the best of Rwanda.
+                  </p>
                 </div>
-                <div className="w-full lg:w-auto flex gap-4">
+
+                <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-right duration-1000">
                   <div className="relative group flex-1 lg:w-80">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5 transition-colors group-focus-within:text-primary" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5 transition-colors group-focus-within:text-primary" />
                     <Input
-                      placeholder="Search services..."
+                      placeholder="Search providers..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-12 h-12 bg-white rounded-xl shadow-sm border-slate-200 focus-visible:ring-primary/20"
+                      className="pl-12 h-14 bg-white rounded-2xl shadow-sm border-slate-100 focus-visible:ring-primary/20 text-slate-600 font-medium"
                     />
                   </div>
 
                   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
-                      <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold gap-2">
-                        <Filter className="h-5 w-5" />
+                      <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-100 bg-white hover:bg-slate-50 text-slate-700 font-bold gap-3 shadow-sm">
+                        <SlidersHorizontal className="h-5 w-5 text-primary" />
                         Categories
                       </Button>
                     </SheetTrigger>
                     <SheetContent side="right" className="w-[340px] sm:w-[400px] p-0 border-l-slate-100">
-                      <SheetHeader className="p-6 border-b border-slate-50">
-                        <SheetTitle className="text-2xl font-bold text-slate-900">Browse Categories</SheetTitle>
+                      <SheetHeader className="p-8 border-b border-slate-50">
+                        <SheetTitle className="text-3xl font-serif italic text-slate-900">Categories</SheetTitle>
                       </SheetHeader>
-                      <div className="p-4 h-[calc(100vh-80px)] overflow-y-auto">
+                      <div className="p-6 h-[calc(100vh-100px)] overflow-y-auto scrollbar-hide">
                         <CategorySidebar
                           categories={categories}
                           selectedCategory={selectedCategory}
@@ -140,7 +147,7 @@ export default function ServicesPage() {
                             setIsSheetOpen(false)
                             window.scrollTo({ top: 0, behavior: 'smooth' })
                           }}
-                          className="border-0 shadow-none"
+                          className="border-0 shadow-none bg-transparent"
                         />
                       </div>
                     </SheetContent>
@@ -151,21 +158,23 @@ export default function ServicesPage() {
 
             {/* Category Banner (only for non-'all') */}
             {selectedCategory !== "all" && currentCategory && (
-              <div className="mb-8 p-10 bg-white rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03] transition-transform duration-700 group-hover:scale-110">
-                  {getCategoryIcon(categoriesResponse?.find(c => c.slug === selectedCategory)?.icon, "w-48 h-48")}
+              <div className="mb-12 p-12 bg-white rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.02] transition-transform duration-1000 group-hover:scale-110">
+                  {getCategoryIcon(categoriesResponse?.find(c => c.slug === selectedCategory)?.icon, "w-64 h-64")}
                 </div>
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 bg-primary/10 rounded-xl text-primary">
+                <div className="relative z-10 space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 shadow-sm">
                       {currentCategory.icon}
                     </div>
-                    <Badge variant="secondary" className="font-semibold px-3 py-1">
-                      {filteredServices.length} Results
+                    <Badge variant="secondary" className="bg-slate-900 text-white font-bold px-4 py-1.5 rounded-full border-none">
+                      {filteredServices.length} {filteredServices.length === 1 ? 'Service' : 'Services'}
                     </Badge>
                   </div>
-                  <h2 className="text-4xl font-bold mb-3 text-slate-900">{currentCategory.label}</h2>
-                  <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">{currentCategory.description}</p>
+                  <div className="space-y-2">
+                    <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900">{currentCategory.label}</h2>
+                    <p className="text-slate-500 text-lg max-w-2xl font-medium leading-relaxed">{currentCategory.description}</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -186,18 +195,25 @@ export default function ServicesPage() {
               </div>
             )}
 
-            {/* Services Grid */}
+            {/* Results Skeleton */}
             {isLoading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="h-[380px] animate-pulse border-slate-100 shadow-none rounded-2xl overflow-hidden">
-                    <div className="aspect-[4/3] bg-slate-50" />
-                    <div className="p-6 space-y-4">
-                      <div className="h-6 bg-slate-50 rounded-lg w-3/4" />
-                      <div className="h-4 bg-slate-50 rounded-lg w-1/2" />
-                      <div className="h-24 bg-slate-50 rounded-lg" />
+                  <div key={i} className="h-[450px] bg-white border border-slate-50 rounded-[32px] overflow-hidden p-6 space-y-6 animate-pulse">
+                    <div className="aspect-[4/3] bg-slate-50 rounded-2xl" />
+                    <div className="space-y-4">
+                      <div className="h-4 bg-slate-50 rounded-full w-1/4" />
+                      <div className="h-8 bg-slate-50 rounded-full w-3/4" />
+                      <div className="h-[1px] bg-slate-50 w-full mt-4" />
+                      <div className="flex justify-between items-center">
+                        <div className="h-10 w-10 bg-slate-50 rounded-full" />
+                        <div className="space-y-2">
+                          <div className="h-3 bg-slate-50 rounded-full w-12" />
+                          <div className="h-3 bg-slate-50 rounded-full w-20" />
+                        </div>
+                      </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             ) : error ? (

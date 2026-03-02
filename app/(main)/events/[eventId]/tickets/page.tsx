@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus } from "lucide-react";
+import { TranslatedText } from "@/components/translated-text";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus } from "lucide-react";
 
 export default function EventTicketingPage() {
   const params = useParams();
@@ -63,205 +64,195 @@ export default function EventTicketingPage() {
   const totalTickets = Object.values(tickets).reduce((sum, count) => sum + count, 0);
 
   return (
-   <div className="min-h-screen bg-white flex items-center justify-center mx-4">
-  {/* Main Container */}
-  <div className="flex flex-col md:flex-row">
-        {/* Left Side - Event Image & Info */}
-        <div className="relative py-6 flex flex-col md:w-[500px] lg:w-[600px] md:min-h-screen md:sticky md:top-0 bg-white">
-            {/* Back Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 left-0 h-10 w-10 rounded-full bg-black/10 hover:bg-black/20 text-teal-600 z-10"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-
-            {/* Event Image */}
-            <div className="mb-6 mt-16 h-[400px]">
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover rounded-lg shadow-2xl"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-center gap-4 mb-6">
+    <div className="min-h-screen bg-white">
+      {/* Editorial Header */}
+      <div className="pt-24 pb-12 border-b border-slate-100">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="space-y-4">
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-600"
+                className="group -ml-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 transition-all"
+                onClick={() => router.back()}
               >
-                <Heart className="h-5 w-5" />
+                <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                Back to Calendar
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-600"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-600"
-              >
-                <ExternalLink className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Performance Badge */}
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <Badge variant="secondary" className="bg-teal-50 text-teal-700 border-0">
-                🎭 {event.performances} performance
-              </Badge>
-            </div>
-
-            {/* Organizer Info */}
-            <Card className="bg-gray-50 border-gray-200">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <span className="text-lg font-bold text-teal-700">KS</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500">Organizer</p>
-                    <p className="font-semibold text-gray-900">{event.organizer}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 border-gray-300 hover:bg-gray-100 text-gray-700">
-                    Visit Profile
-                  </Button>
-                  <Button size="sm" className="flex-1 bg-teal-600 hover:bg-teal-700 text-white">
-                    Follow
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Side - Event Details & Tickets */}
-          <div className="py-6 pl-4 flex-1 overflow-y-auto max-w-2xl">
-            {/* Event Title & Info */}
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold mb-6 text-gray-900">{event.title}</h1>
-              
-              <div className="space-y-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="h-5 w-5 text-teal-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{event.date}</p>
-                    <p className="text-sm text-gray-600">{event.time}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-5 w-5 text-teal-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{event.venue}</p>
-                    <button className="text-sm text-teal-600 hover:underline flex items-center gap-1">
-                      {event.location}
-                    </button>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
+                <div className="h-[1px] w-12 bg-[#608d64]/30" />
+                <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Ticketing Sanctuary</span>
               </div>
-
-             
-            </div>
-
-            {/* Ticket Selection */}
-            <div className="mb-8 bg-gray-50">
-               <h1 className="w-full bg-gray-100  rounded-md h-12 text-base p-4 font-semibold mb-6 text-black">
-                Get Tickets
+              <h1 className="font-serif italic text-5xl md:text-7xl text-slate-900 leading-tight">
+                {event.title}
               </h1>
-             <div className="m-2">
-               <h2 className="text-xl font-bold mb-2 text-gray-900">Choose your ticket type to continue</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Questions about tickets?{" "}
-                <button className="text-teal-600 hover:underline">Contact the organizer.</button>
-              </p>
+            </div>
 
-              <div className="space-y-3">
-                {event.ticketTypes.map((type) => (
-                  <Card key={type.id} className="bg-white border-gray-200 hover:border-teal-300 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="font-bold text-lg text-gray-900">{type.name}</h3>
-                            {type.soldOut && (
-                              <Badge variant="destructive" className="bg-red-600 text-white">
-                                SOLD OUT
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">{type.price.toLocaleString()} RWF</p>
-                          <button className="text-xs text-teal-600 hover:underline">
-                            {type.description}
-                          </button>
-                        </div>
-
-                        {!type.soldOut && (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700"
-                              onClick={() => updateTicketCount(type.id, -1)}
-                              disabled={!tickets[type.id]}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <div className="w-12 text-center font-bold text-lg text-gray-900">
-                              {tickets[type.id] || 0}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-teal-600 hover:bg-teal-700 text-white"
-                              onClick={() => updateTicketCount(type.id, 1)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <Button 
-                className="w-full mt-6 bg-gray-200 hover:bg-gray-300 h-12 text-base font-semibold text-gray-700"
-                disabled={totalTickets === 0}
-              >
-                Continue
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" className="rounded-full border-slate-200 text-slate-400 hover:text-[#608d64] transition-all">
+                <Heart className="h-4 w-4" />
               </Button>
-             </div>
-            </div>
-
-            {/* About Section */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">About</h2>
-              <p className="text-gray-700 leading-relaxed">{event.description}</p>
-            </div>
-
-            {/* Location Section */}
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">Location</h2>
-              <div className="bg-white rounded-lg h-64 flex items-center justify-center border border-gray-200">
-                <p className="text-gray-500">Map placeholder</p>
-              </div>
+              <Button variant="outline" size="icon" className="rounded-full border-slate-200 text-slate-400 hover:text-[#608d64] transition-all">
+                <Share2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      <main className="container mx-auto px-6 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          {/* Left Side: Visual & Story */}
+          <div className="lg:col-span-12 xl:col-span-5 space-y-12">
+            <div className="relative aspect-[4/5] rounded-[40px] overflow-hidden shadow-2xl border-8 border-[#fdfcf9]">
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-8 left-8">
+                <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
+                  {event.performances} Performances
+                </Badge>
+              </div>
+            </div>
+
+            <div className="space-y-8 p-12 bg-[#fdfcf9] rounded-[40px] border border-slate-100">
+              <h3 className="font-serif italic text-3xl text-slate-900">About the Gathering</h3>
+              <p className="text-slate-500 font-light leading-relaxed text-lg">
+                {event.description}
+              </p>
+            </div>
+
+            {/* Organizer Card */}
+            <div className="p-8 rounded-[40px] border border-slate-100 flex items-center justify-between group hover:border-[#608d64]/20 transition-all">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-3xl bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-serif italic text-2xl">
+                  {event.organizer.charAt(0)}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Presented By</p>
+                  <p className="font-serif italic text-2xl text-slate-900">{event.organizer}</p>
+                </div>
+              </div>
+              <Button variant="ghost" className="h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#608d64] hover:bg-[#608d64]/5">
+                View Profile
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side: Ticketing */}
+          <div className="lg:col-span-12 xl:col-span-7 space-y-16">
+            {/* Essential Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="p-10 rounded-[40px] bg-slate-50 border border-slate-100 space-y-6">
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-[#608d64] shadow-sm">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Temporal Detail</p>
+                  <p className="font-serif italic text-2xl text-slate-900 leading-tight">{event.date}</p>
+                  <p className="text-slate-400 font-light">{event.time}</p>
+                </div>
+              </div>
+
+              <div className="p-10 rounded-[40px] bg-slate-50 border border-slate-100 space-y-6">
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-[#608d64] shadow-sm">
+                  <MapPin className="h-6 w-6" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">The Sanctuary</p>
+                  <p className="font-serif italic text-2xl text-slate-900 leading-tight">{event.venue}</p>
+                  <button className="text-[10px] font-black text-[#608d64] uppercase tracking-widest hover:underline mt-2 flex items-center gap-2">
+                    Open Coordinates <ExternalLink className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Ticket Passage Selection */}
+            <div className="space-y-8">
+              <div className="flex items-center justify-between pb-8 border-b border-slate-100">
+                <h2 className="font-serif italic text-4xl text-slate-900 text-center md:text-left">Secure Passage</h2>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Selection Window Open
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {event.ticketTypes.map((type) => (
+                  <div
+                    key={type.id}
+                    className={`p-8 rounded-[40px] border transition-all duration-500 group ${type.soldOut
+                      ? "opacity-50 grayscale bg-slate-50 border-slate-100"
+                      : "bg-white border-slate-100 hover:border-[#608d64]/30 hover:shadow-2xl hover:shadow-[#608d64]/5"
+                      }`}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-4">
+                          <h3 className="font-serif italic text-2xl text-slate-900">{type.name}</h3>
+                          {type.soldOut && (
+                            <Badge variant="destructive" className="bg-slate-200 text-slate-500 border-none rounded-full px-4 text-[8px] font-black tracking-widest">
+                              EXPIRED
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-slate-400 font-light text-sm italic">
+                          Passage grants exclusive access to the {type.name.toLowerCase()} sanctuary and related honors.
+                        </p>
+                        <div className="text-xl font-light text-[#608d64] tracking-tight">
+                          {type.price.toLocaleString()} <span className="text-[10px] font-black uppercase tracking-widest ml-1">RWF</span>
+                        </div>
+                      </div>
+
+                      {!type.soldOut && (
+                        <div className="flex items-center gap-6 bg-slate-50 px-6 py-4 rounded-3xl border border-slate-100 group-hover:bg-white group-hover:border-[#608d64]/20 transition-all">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 rounded-full border border-slate-200 text-slate-400 hover:text-[#608d64] hover:bg-white transition-all"
+                            onClick={() => updateTicketCount(type.id, -1)}
+                            disabled={!tickets[type.id]}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <div className="w-10 text-center font-serif italic text-3xl text-slate-900">
+                            {tickets[type.id] || 0}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 rounded-full bg-slate-900 text-white hover:bg-[#608d64] transition-all"
+                            onClick={() => updateTicketCount(type.id, 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-12">
+                <Button
+                  className={`w-full h-20 rounded-full text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl ${totalTickets > 0
+                    ? "bg-[#608d64] text-white shadow-[#608d64]/20 hover:bg-slate-900 hover:shadow-black/20"
+                    : "bg-slate-100 text-slate-300 pointer-events-none"
+                    }`}
+                  disabled={totalTickets === 0}
+                >
+                  <TranslatedText text="Continue to Sanctuary" />
+                  <ArrowRight className="ml-4 h-6 w-6" />
+                </Button>
+                <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8">
+                  Security Provided by Ubukwe Collective • Encrypted Process
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
