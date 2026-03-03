@@ -137,7 +137,7 @@ export function AdminDashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafc]">
+    <div className="min-h-screen bg-gray-100">
       {/* Mobile App Bar - Only on mobile */}
       <MobileAppBar
         title="Admin Dashboard"

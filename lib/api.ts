@@ -84,6 +84,13 @@ export const API_ENDPOINTS = {
   PUBLIC: {
     CATEGORIES: `/api/${API_VERSION}/public/categories`,
   },
+  // Notifications endpoints
+  NOTIFICATIONS: {
+    LIST: `/api/${API_VERSION}/notifications`,
+    UNREAD_COUNT: `/api/${API_VERSION}/notifications/unread-count`,
+    MARK_AS_READ: (id: string) => `/api/${API_VERSION}/notifications/${id}/read`,
+    MARK_ALL_AS_READ: `/api/${API_VERSION}/notifications/mark-all-read`,
+  },
   // Health check
   HEALTH: `/health`,
 };

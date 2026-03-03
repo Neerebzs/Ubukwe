@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface DashboardHeaderProps {
   user: {
@@ -133,13 +134,7 @@ export function DashboardHeader({
           </DropdownMenu>
 
           {/* Notifications - Redesigned */}
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-50 text-slate-400 group relative" title="Notifications">
-            <Bell className="h-5 w-5 group-hover:text-[#608d64] transition-colors" />
-            <span className="absolute top-2.5 right-2.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#608d64] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#608d64]"></span>
-            </span>
-          </Button>
+          <NotificationBell />
 
           <div className="h-6 w-[1px] bg-slate-100 hidden sm:block mx-1" />
 

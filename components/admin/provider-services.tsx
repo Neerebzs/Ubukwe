@@ -1,27 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, XCircle, CheckCircle, Search, MapPin, DollarSign, Package, Star, Calendar, MessageCircle, UserCheck } from "lucide-react";
+import { Eye, XCircle, CheckCircle, Search, MapPin, Package, Star, Calendar, MessageCircle, UserCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { EmptyState } from "@/components/ui/empty-state";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { StatCard } from "./stat-card";
 
 interface ProviderService {
   id: string;
@@ -67,11 +62,10 @@ export function AdminProviderServices() {
     setIsLoading(true);
     try {
       const response = await apiClient.admin.providerServices.getAll(statusFilter);
-      console.log("Admin services response:", response);
-      setServices(response.data.data || response.data || []);
+      const data = response.data?.data || response.data || [];
+      setServices(Array.isArray(data) ? data : []);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch services");
-      console.error("Error fetching services:", error);
     } finally {
       setIsLoading(false);
     }
@@ -120,21 +114,6 @@ export function AdminProviderServices() {
     setIsActionModalOpen(true);
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "default";
-      case "pending":
-      case "on_hold":
-        return "secondary";
-      case "rejected":
-      case "suspended":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   const filteredServices = services.filter(
     (service) =>
       service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -142,198 +121,168 @@ export function AdminProviderServices() {
       service.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getTabTitle = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Pending Approval";
-      case "approved":
-        return "Approved Services";
-      case "rejected":
-        return "Rejected";
-      case "suspended":
-        return "Suspended";
-      case "on_hold":
-        return "On Hold";
-      case "all":
-        return "All Services";
-      default:
-        return "All Services";
-    }
-  };
-
-  const getTabCount = (status: string) => {
-    if (status === "all") return services.length;
-    return services.filter((s) => s.status === status).length;
+  const stats = {
+    total: services.length,
+    pending: services.filter(s => s.status === "pending").length,
+    approved: services.filter(s => s.status === "approved").length,
+    rejected: services.filter(s => s.status === "rejected").length
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Provider Services</h2>
-          <p className="text-muted-foreground">Review and approve provider service submissions</p>
+    <div className="space-y-10 animate-in fade-in duration-700 pb-10">
+      {/* Editorial Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-serif italic text-slate-900 tracking-tight">Artisanal Submissions</h1>
+          <div className="flex items-center gap-2">
+            <div className="h-[1px] w-8 bg-[#608d64]/60" />
+            <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Curating the Platform Offerings</p>
+          </div>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-slate-600 group-focus-within:text-[#608d64] transition-colors" />
+          </div>
           <Input
-            placeholder="Search services..."
+            placeholder="Search submissions..."
+            className="pl-12 pr-4 h-14 w-full md:w-[320px] bg-white border-slate-100 rounded-2xl focus-visible:ring-1 focus-visible:ring-[#608d64] focus-visible:border-[#608d64] shadow-none transition-all duration-300 placeholder:text-slate-500 placeholder:font-light"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-[250px]"
           />
         </div>
       </div>
 
+      {/* Directory Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <StatCard label="Total Dossiers" value={stats.total} />
+        <StatCard label="Pending Review" value={stats.pending} color="text-amber-600" />
+        <StatCard label="Authorized" value={stats.approved} color="text-[#608d64]" />
+        <StatCard label="Rejected" value={stats.rejected} color="text-rose-600" />
+      </div>
+
       <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="pending">
-            Pending
-            {!isLoading && getTabCount("pending") > 0 && (
-              <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
-                {getTabCount("pending")}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="suspended">Suspended</TabsTrigger>
-          <TabsTrigger value="on_hold">On Hold</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
+        <TabsList className="flex items-center gap-1 bg-white border border-slate-100 p-1.5 rounded-[1.8rem] h-auto w-fit mb-8 shadow-sm">
+          {[
+            { id: "pending", label: "Awaiting Review" },
+            { id: "approved", label: "Authorized" },
+            { id: "suspended", label: "Archived" },
+            { id: "on_hold", label: "Deferred" },
+            { id: "rejected", label: "Declined" },
+            { id: "all", label: "Complete Logs" }
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 ${statusFilter === tab.id
+                ? "bg-slate-900 text-white shadow-xl translate-y-[-1px]"
+                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+            >
+              {tab.label}
+              {tab.id === "pending" && stats.pending > 0 && (
+                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[8px] font-black border ${statusFilter === "pending" ? "bg-white/20 border-white/40 text-white" : "bg-rose-50 border-rose-100 text-rose-500"}`}>
+                  {stats.pending}
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value={statusFilter} className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold">{getTabTitle(statusFilter)}</h3>
-            <p className="text-sm text-muted-foreground">
-              {statusFilter === "pending"
-                ? "Review and approve new service submissions from providers"
-                : `Manage ${statusFilter} provider services`}
-            </p>
-          </div>
-
+        <TabsContent value={statusFilter} className="mt-0 focus-visible:outline-none">
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-6 w-64" />
-                        <Skeleton className="h-4 w-96" />
-                      </div>
-                      <Skeleton className="h-6 w-20" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-20 w-full mb-4" />
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-48" />
-                      <div className="flex gap-2">
-                        <Skeleton className="h-9 w-24" />
-                        <Skeleton className="h-9 w-24" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex flex-col items-center justify-center py-32 space-y-4">
+              <div className="w-8 h-8 border-2 border-[#608d64]/20 border-t-[#608d64] rounded-full animate-spin" />
+              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Retrieving Portfolios</p>
             </div>
           ) : filteredServices.length === 0 ? (
-            <EmptyState
-              title={`No ${statusFilter === "all" ? "" : statusFilter} services found`}
-              description="No services match your search criteria."
-              icon={<Search className="h-12 w-12 mx-auto text-muted-foreground" />}
-            />
+            <div className="text-center py-32 rounded-[3rem] border border-dashed border-slate-200 bg-slate-50/50">
+              <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+              <h3 className="text-xl font-serif italic text-slate-600">Catalogue subset is currently clear</h3>
+              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-2 px-10">No {statusFilter} entries match your refinement filters</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-6">
               {filteredServices.map((service) => (
-                <Card key={service.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-xl">{service.name}</CardTitle>
-                          <Badge variant={getStatusBadgeVariant(service.status)} className="capitalize">
-                            {service.status}
-                          </Badge>
-                          {service.verified && (
-                            <Badge variant="outline" className="text-xs">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Verified
+                <Card key={service.id} className="border-slate-100 bg-white shadow-none rounded-[2.5rem] overflow-hidden hover:border-[#608d64]/20 transition-all duration-500 group">
+                  <CardContent className="p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                      {/* Service Identity Area */}
+                      <div className="flex items-center gap-6">
+                        <div className="relative">
+                          <div className="h-20 w-20 rounded-[1.5rem] bg-slate-50 border-2 border-slate-50 flex items-center justify-center group-hover:border-[#608d64]/10 transition-colors overflow-hidden">
+                            {service.gallery?.[0] ? (
+                              <img src={typeof service.gallery[0] === 'string' ? service.gallery[0] : (service.gallery[0].url || service.gallery[0].image_url)} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <Star className="w-8 h-8 text-[#608d64]/40" />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight group-hover:text-[#608d64] transition-colors duration-500 leading-tight">
+                            {service.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <Badge variant="outline" className="bg-[#608d64]/5 border-[#608d64]/20 text-[#608d64] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-none">
+                              {service.category}
                             </Badge>
+                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3" />
+                              {service.location}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Editorial Metadata */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:flex lg:items-center gap-8 lg:gap-14">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Valuation</p>
+                          <p className="text-sm font-medium text-slate-900 font-serif italic">
+                            {service.price_range_min?.toLocaleString()} RWF+
+                          </p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Originator</p>
+                          <p className="text-sm font-medium text-slate-600 truncate max-w-[120px]">
+                            {service.provider?.full_name || "Unknown"}
+                          </p>
+                        </div>
+
+                        {/* Refined Actions */}
+                        <div className="col-span-2 md:col-span-1 flex items-center gap-2 lg:ml-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchServiceDetails(service.id)}
+                            className="h-11 px-5 rounded-2xl border-slate-100 hover:border-[#608d64] hover:bg-[#608d64]/5 text-slate-600 hover:text-[#608d64] transition-all duration-300 flex items-center gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="text-[11px] font-bold uppercase tracking-wider">Inspect</span>
+                          </Button>
+                          {service.status === "pending" && (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => openActionModal(service, "approve")}
+                                className="h-11 px-5 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white shadow-lg shadow-[#608d64]/10 transition-all duration-300 flex items-center gap-2 border-none"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider">Authorize</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openActionModal(service, "reject")}
+                                className="h-11 w-11 p-0 rounded-2xl border-rose-50 text-rose-500 hover:bg-rose-50 transition-all duration-300 flex items-center justify-center outline-none"
+                              >
+                                <XCircle className="h-5 w-5" />
+                              </Button>
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {service.location}
-                          </span>
-                          <span>•</span>
-                          <span>{service.category}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4" />
-                            {service.price_range_min?.toLocaleString()} - {service.price_range_max?.toLocaleString()} RWF
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {service.description}
-                    </p>
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                      {service.packages?.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Package className="w-3 h-3" />
-                          {service.packages.length} package{service.packages.length > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {service.gallery?.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Star className="w-3 h-3" />
-                          {service.gallery.length} media item{service.gallery.length > 1 ? "s" : ""}
-                        </span>
-                      )}
-                      {service.specialties?.length > 0 && (
-                        <span>{service.specialties.length} specialt{service.specialties.length > 1 ? "ies" : "y"}</span>
-                      )}
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs text-muted-foreground">
-                        <p>
-                          Provider: <span className="font-medium">{service.provider?.full_name || "Unknown"}</span>
-                        </p>
-                        <p className="flex items-center gap-1 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          Submitted: {new Date(service.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => fetchServiceDetails(service.id)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </Button>
-                        {service.status === "pending" && (
-                          <>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => openActionModal(service, "reject")}
-                            >
-                              <XCircle className="w-4 h-4 mr-2" />
-                              Reject
-                            </Button>
-                            <Button size="sm" onClick={() => openActionModal(service, "approve")}>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              Approve
-                            </Button>
-                          </>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -344,348 +293,187 @@ export function AdminProviderServices() {
         </TabsContent>
       </Tabs>
 
-      {/* Service Details Modal - Interactive Design */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="!max-w-[98vw] w-[98vw] max-h-[95vh] overflow-hidden p-0">
-          {selectedService && (
-            <div className="flex flex-col h-full max-h-[95vh]">
-              {/* Header */}
-              <div className="border-b p-6 pb-8">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <DialogTitle className="text-3xl font-bold mb-2">{selectedService.name}</DialogTitle>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {selectedService.location}
-                      </span>
-                      <span>•</span>
-                      <span>{selectedService.category}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(selectedService.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge 
-                    variant={getStatusBadgeVariant(selectedService.status)} 
-                    className="capitalize text-base px-4 py-1"
-                  >
-                    {selectedService.status}
-                  </Badge>
-                </div>
-                
-                {/* Price Range */}
-                <div className="border rounded-lg p-4 inline-block">
-                  <p className="text-sm text-muted-foreground mb-1">Price Range</p>
-                  <p className="text-2xl font-bold">
-                    {selectedService.price_range_min?.toLocaleString()} - {selectedService.price_range_max?.toLocaleString()} RWF
-                  </p>
-                </div>
-              </div>
+      {/* Action Modal - Minimalist Sanctuary */}
+      <Dialog open={isActionModalOpen} onOpenChange={setIsActionModalOpen}>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl bg-white">
+          <div className="p-8 space-y-6 text-slate-900">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-serif italic text-slate-900 capitalize leading-tight">
+                {actionType} Submission
+              </h2>
+              <div className="h-[1px] w-12 bg-[#608d64]/60" />
+              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                Finalizing the Artisanal Record
+              </p>
+            </div>
 
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Description */}
-                <div className="rounded-xl p-6 border">
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
-                      1
-                    </div>
-                    Description
-                  </h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {selectedService.description}
-                  </p>
-                </div>
-
-                {/* Specialties */}
-                {selectedService.specialties?.length > 0 && (
-                  <div className="rounded-xl p-6 border">
-                    <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
-                        2
-                      </div>
-                      Specialties ({selectedService.specialties.length})
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedService.specialties.map((specialty, index) => (
-                        <Badge key={index} variant="secondary" className="text-sm px-3 py-1">
-                          <Star className="w-3 h-3 mr-1" />
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Packages */}
-                {selectedService.packages?.length > 0 && (
-                  <div className="rounded-xl p-6 border">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
-                        3
-                      </div>
-                      Packages ({selectedService.packages.length})
-                    </h3>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {selectedService.packages.map((pkg: any, index: number) => (
-                        <Card key={index} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-5">
-                            <div className="flex items-start justify-between mb-3">
-                              <h4 className="font-bold text-lg">{pkg.name}</h4>
-                              <div className="text-right">
-                                <p className="text-2xl font-bold">{pkg.price?.toLocaleString()}</p>
-                                <p className="text-xs text-muted-foreground">RWF</p>
-                              </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">{pkg.description}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 pb-3 border-b">
-                              <Package className="w-4 h-4" />
-                              <span>Duration: {pkg.duration}</span>
-                            </div>
-                            {pkg.features?.length > 0 && (
-                              <ul className="space-y-2">
-                                {pkg.features.map((feature: string, idx: number) => (
-                                  <li key={idx} className="text-sm flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Gallery with Image Display */}
-                {selectedService.gallery?.length > 0 && (
-                  <div className="rounded-xl p-6 border">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold">
-                        4
-                      </div>
-                      Gallery ({selectedService.gallery.length} items)
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {selectedService.gallery.map((item: any, index: number) => {
-                        console.log("Gallery item:", item);
-                        
-                        // Extract URL from different possible formats
-                        let imageUrl = null;
-                        let contentType = "image";
-                        
-                        if (typeof item === "string") {
-                          imageUrl = item;
-                        } else if (item && typeof item === "object") {
-                          imageUrl = item.url || item.image_url || item.imageUrl || item.file_url || item.fileUrl;
-                          contentType = item.content_type || item.contentType || item.type || "image";
-                        }
-                        
-                        console.log("Extracted URL:", imageUrl, "Type:", contentType);
-                        
-                        return (
-                          <div 
-                            key={index} 
-                            className="aspect-video rounded-lg overflow-hidden group relative border"
-                          >
-                            {imageUrl ? (
-                              <>
-                                <img
-                                  src={imageUrl}
-                                  alt={`Gallery ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    console.error("Image failed to load:", imageUrl);
-                                    e.currentTarget.style.display = "none";
-                                    const parent = e.currentTarget.parentElement;
-                                    if (parent) {
-                                      const fallback = parent.querySelector(".fallback-icon");
-                                      if (fallback) {
-                                        (fallback as HTMLElement).style.display = "flex";
-                                      }
-                                    }
-                                  }}
-                                  onLoad={() => {
-                                    console.log("Image loaded successfully:", imageUrl);
-                                  }}
-                                />
-                                <div className="fallback-icon hidden absolute inset-0 flex-col items-center justify-center">
-                                  <Star className="w-8 h-8 text-muted-foreground mb-2" />
-                                  <Badge variant="outline" className="text-xs capitalize">
-                                    {contentType}
-                                  </Badge>
-                                </div>
-                                {/* Hover overlay */}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <Eye className="w-6 h-6 text-white" />
-                                </div>
-                              </>
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center">
-                                <Star className="w-8 h-8 text-muted-foreground mb-2" />
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {contentType}
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact & Provider Info */}
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Contact */}
-                  {(selectedService.phone || selectedService.email) && (
-                    <div className="rounded-xl p-6 border">
-                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full border flex items-center justify-center">
-                          <MessageCircle className="w-4 h-4" />
-                        </div>
-                        Contact Information
-                      </h3>
-                      <div className="space-y-3">
-                        {selectedService.phone && (
-                          <div className="flex items-center gap-3 p-3 rounded-lg border">
-                            <div className="w-10 h-10 rounded-full border flex items-center justify-center">
-                              <span className="text-lg">📞</span>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Phone</p>
-                              <p className="font-medium">{selectedService.phone}</p>
-                            </div>
-                          </div>
-                        )}
-                        {selectedService.email && (
-                          <div className="flex items-center gap-3 p-3 rounded-lg border">
-                            <div className="w-10 h-10 rounded-full border flex items-center justify-center">
-                              <span className="text-lg">✉️</span>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Email</p>
-                              <p className="font-medium text-sm">{selectedService.email}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Provider */}
-                  <div className="rounded-xl p-6 border">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full border flex items-center justify-center">
-                        <UserCheck className="w-4 h-4" />
-                      </div>
-                      Provider Information
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3 rounded-lg border">
-                        <div className="w-10 h-10 rounded-full border flex items-center justify-center">
-                          <span className="text-lg">👤</span>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Name</p>
-                          <p className="font-medium">{selectedService.provider?.full_name || "Unknown"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border">
-                        <div className="w-10 h-10 rounded-full border flex items-center justify-center">
-                          <span className="text-lg">📧</span>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Email</p>
-                          <p className="font-medium text-sm">{selectedService.provider?.email || "N/A"}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Actions */}
-              <div className="border-t p-4 flex items-center justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
-                  Close
-                </Button>
-                {selectedService?.status === "pending" && (
-                  <>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        setIsDetailsModalOpen(false);
-                        openActionModal(selectedService, "reject");
-                      }}
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Reject Service
-                    </Button>
-                    <Button
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                      onClick={() => {
-                        setIsDetailsModalOpen(false);
-                        openActionModal(selectedService, "approve");
-                      }}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Approve Service
-                    </Button>
-                  </>
-                )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Administrative Narrative</Label>
+                <Textarea
+                  placeholder={actionType === "approve" ? "Optional: Add an approval note..." : "Reason for rejection (Required)..."}
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  className="min-h-[120px] rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#608d64] focus-visible:border-[#608d64] resize-none p-4 placeholder:text-slate-400"
+                />
               </div>
             </div>
-          )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsActionModalOpen(false)}
+                className="flex-1 h-12 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
+              >
+                Retreat
+              </Button>
+              <Button
+                onClick={handleAction}
+                disabled={isProcessing || (actionType === "reject" && !adminNotes.trim())}
+                className={`flex-1 h-12 rounded-2xl font-bold uppercase text-[10px] tracking-widest shadow-lg transition-all ${actionType === "approve"
+                  ? "bg-[#608d64] hover:bg-[#4a6e4d] text-white shadow-[#608d64]/20"
+                  : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20"
+                  }`}
+              >
+                {isProcessing ? "Processing..." : `Confirm ${actionType}`}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Action Confirmation Modal */}
-      <Dialog open={isActionModalOpen} onOpenChange={setIsActionModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="capitalize">{actionType} Service</DialogTitle>
-            <DialogDescription>
-              {actionType === "approve"
-                ? "This will approve the service and make it available on the platform."
-                : "This will reject the service. Please provide a reason."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes">
-                {actionType === "reject" ? "Rejection Reason (Required)" : "Notes (Optional)"}
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder={
-                  actionType === "reject"
-                    ? "Please provide a clear reason for rejection..."
-                    : "Optional notes for the provider..."
-                }
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                className="min-h-[120px]"
-              />
+      {/* Details Modal - Artisanal Dossier */}
+      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-none rounded-[3rem] shadow-2xl bg-slate-50/50 backdrop-blur-xl max-h-[90vh]">
+          {selectedService && (
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="relative h-[300px] shrink-0">
+                {selectedService.gallery?.[0] ? (
+                  <img
+                    src={typeof selectedService.gallery[0] === 'string' ? selectedService.gallery[0] : (selectedService.gallery[0].url || selectedService.gallery[0].image_url)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                    <Package className="w-16 h-16 text-slate-200" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+                <div className="absolute bottom-8 left-8 right-8">
+                  <div className="flex items-end justify-between gap-6">
+                    <div className="space-y-2">
+                      <Badge className="bg-[#608d64] text-white hover:bg-[#608d64] border-none px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                        {selectedService.category}
+                      </Badge>
+                      <h2 className="text-4xl font-serif italic text-white leading-tight">
+                        {selectedService.name}
+                      </h2>
+                    </div>
+                    {selectedService.status === "pending" && (
+                      <div className="flex gap-3 mb-1">
+                        <Button
+                          size="sm"
+                          onClick={() => openActionModal(selectedService!, "approve")}
+                          className="h-11 px-6 rounded-2xl bg-white text-slate-900 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all"
+                        >
+                          Authorize Submission
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                  <div className="md:col-span-2 space-y-10">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-px w-8 bg-[#608d64]/40" />
+                        <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Narrative</h3>
+                      </div>
+                      <p className="text-slate-600 leading-relaxed font-light text-lg">
+                        {selectedService.description}
+                      </p>
+                    </div>
+
+                    {selectedService.specialties?.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-px w-8 bg-[#608d64]/40" />
+                          <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Artisanal Specialties</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedService.specialties.map((s, i) => (
+                            <Badge key={i} variant="outline" className="border-slate-200 text-slate-600 font-light px-4 py-1.5 rounded-full text-xs">
+                              {s}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedService.packages?.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-px w-8 bg-[#608d64]/40" />
+                          <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Investment Packages</h3>
+                        </div>
+                        <div className="grid gap-4">
+                          {selectedService.packages.map((pkg: any, idx: number) => (
+                            <div key={idx} className="bg-white border border-slate-100 rounded-[2rem] p-6 flex items-center justify-between group hover:border-[#608d64]/20 transition-all">
+                              <div className="space-y-1">
+                                <h4 className="font-serif italic text-lg text-slate-900">{pkg.name}</h4>
+                                <p className="text-xs text-slate-600 font-light">{pkg.duration}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xl font-serif italic text-[#608d64]">{pkg.price?.toLocaleString()} RWF</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 space-y-6 shadow-sm">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Originator</p>
+                        <div className="flex items-center gap-3 pt-2">
+                          <div className="h-10 w-10 rounded-full bg-[#608d64]/10 flex items-center justify-center">
+                            <UserCircle2 className="w-6 h-6 text-[#608d64]" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-slate-900">{selectedService.provider?.full_name}</p>
+                            <p className="text-[10px] text-slate-600 font-light">{selectedService.provider?.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator className="bg-slate-50" />
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Location</span>
+                          <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {selectedService.location}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Submitted</span>
+                          <span className="text-xs font-medium text-slate-600">
+                            {new Date(selectedService.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsActionModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant={actionType === "approve" ? "default" : "destructive"}
-              onClick={handleAction}
-              disabled={isProcessing || (actionType === "reject" && !adminNotes.trim())}
-            >
-              {isProcessing ? "Processing..." : `Confirm ${actionType}`}
-            </Button>
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

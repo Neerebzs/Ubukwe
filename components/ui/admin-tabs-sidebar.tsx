@@ -122,9 +122,14 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
                 className="w-full px-4 flex items-center justify-between group transition-all"
                 aria-expanded={expandedGroups[group.title]}
               >
-                <span className="text-[10px] font-black text-slate-500 group-hover:text-[#608d64] uppercase tracking-[0.4em] transition-colors">
-                  {group.title}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#608d64] transition-colors`}>
+                    {groupIconByTitle[group.title]}
+                  </span>
+                  <span className="text-[10px] font-black text-slate-500 group-hover:text-[#608d64] uppercase tracking-[0.4em] transition-colors">
+                    {group.title}
+                  </span>
+                </div>
                 <ChevronDown className={`w-3 h-3 text-slate-600 transition-transform duration-500 ${expandedGroups[group.title] ? '' : '-rotate-90'}`} />
               </button>
             )}

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 interface MobileAppBarProps {
   title: string;
@@ -76,17 +77,7 @@ export function MobileAppBar({
         {/* Right Section */}
         <div className="flex items-center space-x-2">
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative p-2">
-            <Bell className="h-5 w-5" />
-            {notificationCount > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              >
-                {notificationCount > 9 ? "9+" : notificationCount}
-              </Badge>
-            )}
-          </Button>
+          <NotificationBell variant="mobile" />
 
           {/* User Menu */}
           {user && (

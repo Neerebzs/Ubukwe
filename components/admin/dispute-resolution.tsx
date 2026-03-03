@@ -26,6 +26,8 @@ interface Dispute {
   bookingAmount: number
 }
 
+import { StatCard } from "./stat-card"
+
 export function AdminDisputeResolution() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -87,27 +89,29 @@ export function AdminDisputeResolution() {
   })
 
   const getPriorityBadge = (priority: string) => {
-    const config: Record<string, { variant: any; label: string }> = {
-      high: { variant: "destructive", label: "High" },
-      medium: { variant: "secondary", label: "Medium" },
-      low: { variant: "outline", label: "Low" },
+    const config: Record<string, { className: string; label: string }> = {
+      high: { className: "bg-red-50 text-red-700 border-red-100", label: "Urgent Priority" },
+      medium: { className: "bg-amber-50 text-amber-700 border-amber-100", label: "Standard Priority" },
+      low: { className: "bg-slate-50 text-slate-700 border-slate-100", label: "Low Priority" },
     }
     const c = config[priority] || config.medium
-    return <Badge variant={c.variant}>{c.label}</Badge>
+    return (
+      <Badge variant="outline" className={`rounded-full px-4 py-1 uppercase tracking-[0.1em] text-[10px] font-bold ${c.className}`}>
+        {c.label}
+      </Badge>
+    )
   }
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: any; label: string; icon: any }> = {
-      pending: { variant: "outline", label: "Pending", icon: Clock },
-      investigating: { variant: "secondary", label: "Investigating", icon: AlertCircle },
-      resolved: { variant: "default", label: "Resolved", icon: CheckCircle },
-      rejected: { variant: "destructive", label: "Rejected", icon: XCircle },
+    const config: Record<string, { className: string; label: string }> = {
+      pending: { className: "bg-[#608d64]/10 text-[#608d64] border-[#608d64]/20", label: "Awaiting Review" },
+      investigating: { className: "bg-blue-50 text-blue-700 border-blue-100", label: "Under Analysis" },
+      resolved: { className: "bg-emerald-50 text-emerald-700 border-emerald-100", label: "Resolved" },
+      rejected: { className: "bg-rose-50 text-rose-700 border-rose-100", label: "Dismissed" },
     }
     const c = config[status] || config.pending
-    const Icon = c.icon
     return (
-      <Badge variant={c.variant}>
-        <Icon className="w-3 h-3 mr-1" />
+      <Badge variant="outline" className={`rounded-full px-4 py-1 uppercase tracking-[0.1em] text-[10px] font-bold ${c.className}`}>
         {c.label}
       </Badge>
     )
@@ -122,151 +126,147 @@ export function AdminDisputeResolution() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-12 pb-12">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold">Dispute Resolution</h2>
-          <p className="text-muted-foreground">Review and resolve customer-provider disputes</p>
+          <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 tracking-tight">Resolution Sanctuary</h2>
+          <p className="text-slate-700 mt-2 uppercase tracking-[0.2em] text-xs font-medium">Platform Harmony & Dispute Governance</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-[#608d64] transition-colors w-4 h-4" />
             <Input
-              placeholder="Search disputes..."
+              placeholder="SEARCH RESOLUTIONS..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 w-[200px]"
+              className="pl-12 w-[280px] rounded-full border-slate-200 focus:border-[#608d64] focus:ring-[#608d64]/10 bg-white/50 backdrop-blur-sm uppercase tracking-widest text-[10px] h-12 transition-all shadow-sm"
             />
           </div>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats - Platform Intel */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total Disputes</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground">Pending Review</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">{stats.investigating}</div>
-            <p className="text-xs text-muted-foreground">Under Investigation</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
-            <p className="text-xs text-muted-foreground">Resolved</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-red-600">{stats.highPriority}</div>
-            <p className="text-xs text-muted-foreground">High Priority</p>
-          </CardContent>
-        </Card>
+        <StatCard label="Active Disputes" value={stats.total} />
+        <StatCard label="Awaiting Review" value={stats.pending} />
+        <StatCard label="Under Analysis" value={stats.investigating} />
+        <StatCard label="Harmony Restored" value={stats.resolved} />
+        <StatCard label="Critical Priority" value={stats.highPriority} />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="investigating">Investigating</SelectItem>
-            <SelectItem value="resolved">Resolved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center gap-4 pt-4">
+        <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-600">Refine Registry:</div>
+        <div className="flex bg-white rounded-full p-1 border border-slate-100 shadow-sm">
+          {["all", "pending", "investigating", "resolved"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all ${statusFilter === status
+                ? "bg-[#608d64] text-white shadow-md shadow-[#608d64]/20"
+                : "text-slate-700 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+            >
+              {status === "all" ? "Whole Registry" : status}
+            </button>
+          ))}
+        </div>
+
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[180px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Priority" />
+          <SelectTrigger className="w-[200px] rounded-full border-slate-100 bg-white uppercase tracking-widest text-[10px] h-11 shadow-sm">
+            <Filter className="w-3 h-3 mr-2 text-slate-600" />
+            <SelectValue placeholder="PRIORITY" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+          <SelectContent className="rounded-2xl border-slate-100">
+            <SelectItem value="all" className="uppercase tracking-widest text-[10px]">ALL PRIORITIES</SelectItem>
+            <SelectItem value="high" className="uppercase tracking-widest text-[10px]">CRITICAL</SelectItem>
+            <SelectItem value="medium" className="uppercase tracking-widest text-[10px]">STANDARD</SelectItem>
+            <SelectItem value="low" className="uppercase tracking-widest text-[10px]">LOW</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Disputes List */}
+      {/* Disputes Registry */}
       {filteredDisputes.length === 0 ? (
         <EmptyState
-          title="No disputes found"
-          description="Try adjusting your filters or check back later."
-          icon={<AlertCircle className="h-12 w-12 mx-auto text-muted-foreground" />}
+          title="Registry Clear"
+          description="The resolution sanctuary reflects perfect platform harmony."
+          icon={<CheckCircle className="h-16 w-16 mx-auto text-[#608d64]/20" />}
         />
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-8">
           {filteredDisputes.map((dispute) => (
-            <Card key={dispute.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <CardTitle className="text-lg">{dispute.issue}</CardTitle>
+            <Card key={dispute.id} className="rounded-[2.5rem] border-slate-100 shadow-sm hover:shadow-xl transition-all duration-700 overflow-hidden bg-white group border-l-0 border-r-0 md:border-l md:border-r">
+              <CardHeader className="p-10 pb-6">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold tracking-widest">
+                        {dispute.id}
+                      </span>
                       {getPriorityBadge(dispute.priority)}
                       {getStatusBadge(dispute.status)}
                     </div>
-                    <CardDescription>
-                      Dispute ID: {dispute.id} | Booking: {dispute.bookingId} | Service: {dispute.serviceName}
-                    </CardDescription>
+                    <h3 className="text-3xl font-serif italic text-slate-900 leading-tight pr-12">
+                      “{dispute.issue}”
+                    </h3>
+                  </div>
+                  <div className="flex flex-col items-end text-right">
+                    <div className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600 mb-1">Filing Date</div>
+                    <div className="text-sm font-medium text-slate-900">{new Date(dispute.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Customer</p>
-                    <p className="font-medium">{dispute.customer}</p>
+              <CardContent className="p-10 pt-0">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 py-8 border-t border-slate-50">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600">Customer Identity</p>
+                    <p className="text-lg font-serif italic text-[#608d64]">{dispute.customer}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Provider</p>
-                    <p className="font-medium">{dispute.provider}</p>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600">Provider Entity</p>
+                    <p className="text-lg font-serif italic text-slate-900">{dispute.provider}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Booking Amount</p>
-                    <p className="font-medium">{dispute.bookingAmount.toLocaleString()} RWF</p>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600">Economic Volume</p>
+                    <p className="text-lg font-medium text-slate-900">{dispute.bookingAmount.toLocaleString()} RWF</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Requested Resolution</p>
-                    <Badge variant="outline" className="mt-1">
-                      {dispute.requestedResolution === "partial-refund" && "Partial Refund"}
-                      {dispute.requestedResolution === "full-refund" && "Full Refund"}
-                      {dispute.requestedResolution === "re-service" && "Re-service"}
-                    </Badge>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600">Proposed Finality</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 rounded-full bg-[#608d64]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        {dispute.requestedResolution.replace(/-/g, ' ')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    Filed: {new Date(dispute.createdAt).toLocaleDateString()} • Deadline:{" "}
-                    {new Date(dispute.deadline).toLocaleDateString()}
+
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-50">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full">
+                      <Clock className="w-3 h-3 text-slate-600" />
+                      <span className="text-[10px] uppercase tracking-widest font-black text-slate-500">
+                        Deadline: {new Date(dispute.deadline).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full">
+                      <DollarSign className="w-3 h-3 text-slate-600" />
+                      <span className="text-[10px] uppercase tracking-widest font-black text-slate-700">
+                        Booking: {dispute.bookingId}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                    <Button variant="ghost" className="flex-1 md:flex-none h-12 rounded-full text-[10px] uppercase tracking-[0.2em] font-black text-slate-700 hover:text-slate-900 hover:bg-slate-50" asChild>
                       <Link href={`/admin/disputes/resolve/${dispute.id}`}>
                         <Eye className="w-4 h-4 mr-2" />
-                        View & Resolve
+                        Enter Resolver
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button className="flex-1 md:flex-none h-12 px-8 rounded-full bg-slate-900 text-white text-[10px] uppercase tracking-[0.2em] font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
                       <MessageSquare className="w-4 h-4 mr-2" />
-                      Contact Parties
+                      Open Dialogue
                     </Button>
                   </div>
                 </div>
