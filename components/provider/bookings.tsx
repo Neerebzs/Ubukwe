@@ -164,7 +164,7 @@ export function ProviderBookings() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-600 mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading bookings...</p>
         </div>
       </div>
@@ -231,8 +231,8 @@ export function ProviderBookings() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-teal-100 rounded-lg">
-                  <CheckCircle2 className="h-6 w-6 text-teal-600" />
+                <div className="p-3 bg-sage-100 rounded-lg">
+                  <CheckCircle2 className="h-6 w-6 text-sage-600" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Confirmed</p>
@@ -281,7 +281,7 @@ export function ProviderBookings() {
                       <CalendarDayButton {...props} className={cn(props.className, "relative")}>
                         {props.day.date.getDate()}
                         {count > 0 && (
-                          <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[9px] text-white font-bold shadow-sm ring-1 ring-white">
+                          <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-sage-600 text-[9px] text-white font-bold shadow-sm ring-1 ring-white">
                             {count}
                           </span>
                         )}
@@ -393,7 +393,7 @@ function BookingCard({
                   <h3 className="text-lg font-semibold">{booking.customer_name}</h3>
                   {getStatusBadge(booking.status)}
                   {booking.provider_confirmed && (
-                    <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                    <Badge variant="outline" className="bg-sage-50 text-sage-700 border-sage-200">
                       Provider Confirmed
                     </Badge>
                   )}

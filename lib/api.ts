@@ -387,8 +387,20 @@ const axiosInstance: AxiosInstance = axios.create({
   },
   // Add these to prevent connection issues
   maxRedirects: 5,
-  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
 });
+
+// Refresh token state
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+const subscribeTokenRefresh = (cb: (token: string) => void) => {
+  refreshSubscribers.push(cb);
+};
+
+const onTokenRefreshed = (token: string) => {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+};
 
 // Single request interceptor to add auth token and logging
 axiosInstance.interceptors.request.use(
@@ -411,24 +423,77 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling and silent refresh
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     // Handle the case where the backend returns 203 as a "success" (Axios doesn't throw)
     if (response.status === 203) {
-      const errorMessage = response.data?.detail || response.data?.message || 'Authentication failed';
-      return Promise.reject(new Error(errorMessage));
+      return Promise.reject(response);
     }
     return response;
   },
   async (error) => {
+    const { config, response } = error;
+    const originalRequest = config;
+
     // Treat 203 or 401 as an auth error
-    if (error.response?.status === 203 || error.response?.status === 401) {
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/signin')) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/auth/signin';
+    if ((response?.status === 203 || response?.status === 401) && !originalRequest._retry) {
+      if (typeof window !== 'undefined') {
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        // If no refresh token, or already on signin page, just redirect
+        if (!refreshToken || window.location.pathname.includes('/auth/signin')) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          if (!window.location.pathname.includes('/auth/signin')) {
+            window.location.href = '/auth/signin';
+          }
+          return Promise.reject(error);
+        }
+
+        if (isRefreshing) {
+          return new Promise((resolve) => {
+            subscribeTokenRefresh((token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(axiosInstance(originalRequest));
+            });
+          });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          console.log('Attempting to refresh token...');
+          const refreshRes = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH_TOKEN}`, {
+            refresh_token: refreshToken
+          });
+
+          if (refreshRes.status === 200 || refreshRes.status === 201) {
+            const { access_token, refresh_token: newRefreshToken } = refreshRes.data.data || refreshRes.data;
+
+            localStorage.setItem('accessToken', access_token);
+            if (newRefreshToken) {
+              localStorage.setItem('refreshToken', newRefreshToken);
+            }
+
+            console.log('Token refreshed successfully');
+            onTokenRefreshed(access_token);
+            isRefreshing = false;
+
+            originalRequest.headers.Authorization = `Bearer ${access_token}`;
+            return axiosInstance(originalRequest);
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          isRefreshing = false;
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          window.location.href = '/auth/signin';
+          return Promise.reject(refreshError);
+        }
       }
     }
     return Promise.reject(error);

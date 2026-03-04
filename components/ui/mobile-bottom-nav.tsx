@@ -41,10 +41,10 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
     { id: "analytics", label: "Analytics", icon: DollarSign, path: "/admin/dashboard?tab=analytics" },
   ];
 
-  const navItems = 
+  const navItems =
     userRole === "provider" ? providerNavItems :
-    userRole === "admin" ? adminNavItems :
-    customerNavItems;
+      userRole === "admin" ? adminNavItems :
+        customerNavItems;
 
   const handleNavClick = (item: typeof navItems[0]) => {
     if (onTabChange) {
@@ -55,25 +55,36 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden safe-area-bottom">
-      <div className="grid grid-cols-5 h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#fdfcfb]/80 backdrop-blur-xl border-t border-slate-100 md:hidden safe-area-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+      <div className="grid grid-cols-5 h-20">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab ? activeTab === item.id : pathname.includes(item.id);
-          
+
           return (
             <button
               key={item.id}
               onClick={() => handleNavClick(item)}
               className={cn(
-                "flex flex-col items-center justify-center space-y-1 transition-colors",
+                "flex flex-col items-center justify-center space-y-1.5 transition-all duration-500 relative",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-[#668c65]"
+                  : "text-slate-800 hover:text-slate-900"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "fill-primary/20")} />
-              <span className="text-xs font-medium">{item.label}</span>
+              <div className={cn(
+                "p-2 rounded-xl transition-all duration-500",
+                isActive ? "bg-[#668c65]/10 shadow-[0_0_15px_-3px_rgba(102,140,101,0.3)]" : ""
+              )}>
+                <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
+              </div>
+              <span className={cn(
+                "text-[8px] font-black uppercase tracking-[0.2em]",
+                isActive ? "opacity-100" : "opacity-60"
+              )}>{item.label}</span>
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-[#668c65] rounded-full" />
+              )}
             </button>
           );
         })}

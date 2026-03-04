@@ -2,7 +2,19 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, ChevronRight, Home, Package, BookOpen, MessageSquare, FileText, DollarSign, User, LogOut } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronDown,
+  ChevronRight,
+  Home,
+  Package,
+  BookOpen,
+  MessageSquare,
+  FileText,
+  DollarSign,
+  User,
+  LogOut
+} from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
 import {
@@ -33,7 +45,7 @@ export function ProviderMobileMenuDrawer({
   user,
   onLogout,
 }: ProviderMobileMenuDrawerProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["overview", "services"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["overview", "services", "crm", "business"]);
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) =>
@@ -47,15 +59,16 @@ export function ProviderMobileMenuDrawer({
     {
       id: "overview",
       title: "Overview",
+      icon: <Home className="w-4 h-4" />,
       items: [
         { id: "overview", label: "Dashboard", icon: Home },
-        // Only show onboarding tab if user is not verified
         ...(!user?.is_verified ? [{ id: "onboarding", label: "Onboarding", icon: FileText }] : []),
       ]
     },
     {
       id: "services",
       title: "Services",
+      icon: <Package className="w-4 h-4" />,
       items: [
         { id: "services", label: "My Services", icon: Package },
         { id: "bookings", label: "Bookings", icon: BookOpen },
@@ -64,6 +77,7 @@ export function ProviderMobileMenuDrawer({
     {
       id: "crm",
       title: "CRM",
+      icon: <MessageSquare className="w-4 h-4" />,
       items: [
         { id: "inquiries", label: "Inquiries", icon: MessageSquare },
         { id: "quotes", label: "Quotes", icon: FileText },
@@ -73,6 +87,7 @@ export function ProviderMobileMenuDrawer({
     {
       id: "business",
       title: "Business",
+      icon: <DollarSign className="w-4 h-4" />,
       items: [
         { id: "earnings", label: "Earnings", icon: DollarSign },
         { id: "profile", label: "Profile", icon: User },
@@ -91,108 +106,108 @@ export function ProviderMobileMenuDrawer({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-[100] md:hidden">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+      <div
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-500"
+        onClick={onClose}
+      />
+
       {/* Drawer */}
-      <div className="fixed left-0 top-0 h-full w-72 bg-card border-r shadow-lg overflow-hidden flex flex-col animate-in slide-in-from-left duration-300">
-        {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-foreground">
-              <TranslatedText text="Provider Dashboard" />
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              <TranslatedText text="Manage your services" />
-            </p>
+      <div className="fixed left-0 top-0 h-full w-[85%] max-w-sm bg-[#0d182b] shadow-[20px_0_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col animate-in slide-in-from-left duration-700 ease-out">
+        {/* Editorial Header */}
+        <div className="p-8 pb-10 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+          <div className="space-y-1">
+            <h2 className="font-serif italic text-3xl text-slate-50 tracking-tight">Provider</h2>
+            <div className="flex items-center gap-2">
+              <div className="h-[1px] w-4 bg-[#668c65]/50" />
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em]">Business Sanctuary</p>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="p-2 hover:bg-muted/50"
+            className="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Navigation Groups */}
+        <nav className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
           {menuSections.map((section) => {
             const isExpanded = expandedSections.includes(section.id);
-            
+
             return (
-              <Collapsible
-                key={section.id}
-                open={isExpanded}
-                onOpenChange={() => toggleSection(section.id)}
-              >
-                <CollapsibleTrigger className="w-full">
-                  <div className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted/50 transition-colors">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <div key={section.id} className="space-y-4">
+                <button
+                  onClick={() => toggleSection(section.id)}
+                  className="w-full flex items-center justify-between group transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#668c65] transition-colors">
+                      {section.icon}
+                    </span>
+                    <span className="text-[10px] font-black text-slate-500 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
                       {section.title}
                     </span>
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
                   </div>
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent className="space-y-1 mt-1">
-                  {section.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    const isTabDisabled = !user?.is_verified && !['overview', 'onboarding'].includes(item.id);
-                    
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleTabClick(item.id)}
-                        disabled={isTabDisabled}
-                        className={cn(
-                          "relative w-full text-left text-sm px-3 py-2.5 rounded-md transition-all duration-200 flex items-center gap-3",
-                          isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : isTabDisabled
-                            ? "opacity-50 cursor-not-allowed text-muted-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        {isActive && (
-                          <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-primary" />
-                        )}
-                        <Icon className={cn("w-4 h-4 flex-shrink-0 ml-1", isActive && "text-primary")} />
-                        <span className="truncate">
-                          <TranslatedText text={item.label} />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </CollapsibleContent>
-              </Collapsible>
+                  <ChevronDown className={cn("h-3 w-3 text-slate-600 transition-transform duration-500", !isExpanded && "-rotate-90")} />
+                </button>
+
+                {isExpanded && (
+                  <div className="space-y-2">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      const isTabDisabled = !user?.is_verified && !['overview', 'onboarding'].includes(item.id);
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleTabClick(item.id)}
+                          disabled={isTabDisabled}
+                          className={cn(
+                            "relative w-full text-left text-sm px-4 py-3 rounded-2xl transition-all duration-500 flex items-center gap-4",
+                            isActive
+                              ? "bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10"
+                              : isTabDisabled
+                                ? "opacity-20 cursor-not-allowed text-slate-500"
+                                : "text-slate-400 hover:text-white hover:bg-white/5"
+                          )}
+                        >
+                          <Icon className={cn("h-5 w-5 flex-shrink-0 transition-colors duration-500", isActive ? "text-[#668c65]" : "group-hover:text-white")} />
+                          <span className={cn("font-medium tracking-tight", isActive ? "font-bold" : "font-light")}>
+                            <TranslatedText text={item.label} />
+                          </span>
+                          {isActive && (
+                            <div className="ml-auto w-1 h-1 rounded-full bg-[#668c65] shadow-[0_0_8px_#668c65]" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
 
         {/* User Profile Footer */}
         {user && (
-          <div className="flex-shrink-0 p-4 border-t">
-            <div className="flex items-center p-3 rounded-lg bg-muted/30">
-              <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-hidden">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
-                  {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.full_name || "Provider"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {user.email}
-                  </p>
-                </div>
+          <div className="p-8 bg-black/20 border-t border-white/5 space-y-4">
+            <div className="p-4 rounded-3xl bg-white/5 border border-white/5 shadow-2xl flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#668c65]/20 flex items-center justify-center text-sm font-black text-[#668c65] flex-shrink-0 border border-[#668c65]/10">
+                {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <p className="text-sm font-bold text-white truncate">
+                  {user.full_name || "Provider"}
+                </p>
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate">
+                  Artisan Collective
+                </p>
               </div>
               {onLogout && (
                 <button
@@ -200,7 +215,7 @@ export function ProviderMobileMenuDrawer({
                     onLogout();
                     onClose();
                   }}
-                  className="ml-2 p-2 rounded-md hover:bg-destructive/10 hover:text-destructive transition-all duration-200 flex-shrink-0"
+                  className="p-2 rounded-xl text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />

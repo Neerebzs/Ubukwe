@@ -6,20 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  MessageCircle, 
-  Search, 
-  Send, 
-  Paperclip, 
-  Smile, 
-  Phone, 
+import {
+  MessageCircle,
+  Search,
+  Send,
+  Paperclip,
+  Smile,
+  Phone,
   Mail,
   Clock,
   CheckCircle,
   Star,
   MoreVertical,
   Filter,
-  Archive
+  Archive,
+  ShieldCheck
 } from "lucide-react";
 import { useState } from "react";
 
@@ -166,12 +167,12 @@ export function MessagesHub() {
 
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.vendorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         conv.vendorRole.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === "all" || 
+      conv.vendorRole.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = filterStatus === "all" ||
       (filterStatus === "unread" && conv.unreadCount > 0) ||
       (filterStatus === "online" && conv.isOnline);
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -186,7 +187,7 @@ export function MessagesHub() {
         hour: "numeric",
         minute: "2-digit",
       });
-      
+
       const newMsg: Message = {
         id: `${Date.now()}`,
         sender: "You",
@@ -197,7 +198,6 @@ export function MessagesHub() {
         type: 'text'
       };
 
-      // Update conversations with new message
       setConversations(prev => prev.map(conv => {
         if (conv.id === currentConversation.id) {
           return {
@@ -209,121 +209,99 @@ export function MessagesHub() {
         }
         return conv;
       }));
-
-      // In a real app, this would send the message to the backend API
-      // which would then update the inquiry and notify the provider
-      console.log("Sending message to inquiry:", currentConversation.inquiryId, newMessage);
       setNewMessage("");
     }
   };
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(word => word[0]).join('').toUpperCase();
+    return name.split(' ').map(word => word[0]).slice(0, 2).join('').toUpperCase();
   };
 
   return (
-    <div className="h-[calc(100vh-200px)] flex">
-      {/* Conversations List */}
-      <div className="w-1/3 border-r bg-card">
-        <div className="p-4 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Messages</h2>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <Archive className="w-4 h-4" />
-              </Button>
+    <div className="h-[calc(100vh-200px)] flex gap-6 p-2">
+      {/* Conversations List Container */}
+      <div className="w-1/3 flex flex-col bg-white rounded-[2.5rem] shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-slate-50 overflow-hidden">
+        <div className="p-8 pb-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-serif italic text-slate-800">Inbound Dialogues</h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-1">Provider Communications</p>
             </div>
           </div>
-          
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
+          <div className="relative mb-6">
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-300" />
             <Input
               placeholder="Search conversations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-12 rounded-2xl bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-sage-500/20 text-sm font-medium"
             />
           </div>
 
-          <div className="flex space-x-2">
-            <Button
-              variant={filterStatus === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("all")}
-            >
-              All
-            </Button>
-            <Button
-              variant={filterStatus === "unread" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("unread")}
-            >
-              Unread
-            </Button>
-            <Button
-              variant={filterStatus === "online" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("online")}
-            >
-              Online
-            </Button>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {["all", "unread", "online"].map((status) => (
+              <Button
+                key={status}
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilterStatus(status)}
+                className={`h-9 px-5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${filterStatus === status
+                  ? "bg-sage-600 text-white shadow-lg shadow-sage-600/20"
+                  : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+              >
+                {status}
+              </Button>
+            ))}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-2">
           {filteredConversations.map((conversation) => (
             <div
               key={conversation.id}
-              className={`p-4 border-b cursor-pointer hover:bg-muted/50 ${
-                selectedConversation === conversation.id ? "bg-muted" : ""
-              }`}
+              className={`p-5 rounded-[2rem] cursor-pointer transition-all duration-300 group ${selectedConversation === conversation.id
+                ? "bg-sage-600 text-white shadow-2xl shadow-sage-900/20 relative z-10 scale-[1.02]"
+                : "hover:bg-slate-50 text-slate-600"
+                }`}
               onClick={() => setSelectedConversation(conversation.id)}
             >
-              <div className="flex items-start space-x-3">
-                <div className="relative">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={conversation.vendorAvatar} />
-                    <AvatarFallback>{getInitials(conversation.vendorName)}</AvatarFallback>
+              <div className="flex items-start gap-4">
+                <div className="relative shrink-0">
+                  <Avatar className={`w-12 h-12 rounded-2xl border-2 ${selectedConversation === conversation.id ? "border-slate-700" : "border-white shadow-sm"}`}>
+                    <AvatarImage src={conversation.vendorAvatar} className="object-cover" />
+                    <AvatarFallback className={selectedConversation === conversation.id ? "bg-slate-700 text-white" : "bg-sage-50 text-sage-700 font-bold"}>
+                      {getInitials(conversation.vendorName)}
+                    </AvatarFallback>
                   </Avatar>
                   {conversation.isOnline && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-sage-500 rounded-full border-2 border-white shadow-sm ring-2 ring-sage-500/20 transform animate-pulse"></div>
                   )}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-medium truncate">{conversation.vendorName}</h3>
-                    <span className="text-xs text-muted-foreground">{conversation.lastMessageTime}</span>
+                    <h3 className={`font-bold text-sm truncate ${selectedConversation === conversation.id ? "text-white" : "text-slate-800"}`}>
+                      {conversation.vendorName}
+                    </h3>
+                    <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedConversation === conversation.id ? "text-slate-400" : "text-slate-400"}`}>
+                      {conversation.lastMessageTime}
+                    </span>
                   </div>
-                  
-                  <div className="flex items-center space-x-2 mb-1">
-                    <Badge variant="secondary" className="text-xs">
+
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`text-[9px] font-bold uppercase tracking-widest opacity-60`}>
                       {conversation.vendorRole}
-                    </Badge>
-                    {conversation.status && (
-                      <Badge 
-                        variant={
-                          conversation.status === "booked" ? "default" :
-                          conversation.status === "quoted" ? "outline" :
-                          conversation.status === "responded" ? "secondary" :
-                          conversation.status === "declined" ? "destructive" : "default"
-                        }
-                        className="text-xs"
-                      >
-                        {conversation.status}
-                      </Badge>
-                    )}
+                    </span>
                     {conversation.unreadCount > 0 && (
-                      <Badge variant="default" className="text-xs">
+                      <div className="w-5 h-5 bg-sage-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg shadow-sage-500/40">
                         {conversation.unreadCount}
-                      </Badge>
+                      </div>
                     )}
                   </div>
-                  
-                  <p className="text-sm text-muted-foreground truncate">
+
+                  <p className={`text-xs truncate leading-relaxed ${selectedConversation === conversation.id ? "text-slate-300" : "text-slate-500"}`}>
                     {conversation.lastMessage}
                   </p>
                 </div>
@@ -333,147 +311,151 @@ export function MessagesHub() {
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      {/* Chat Area Container */}
+      <div className="flex-1 flex flex-col bg-white rounded-[2.5rem] shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-slate-50 overflow-hidden">
         {currentConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="p-4 border-b bg-card">
+            {/* Chat Header - Higher Visual Hierarchy */}
+            <div className="p-8 border-b border-slate-50 bg-[#f8fafc]/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={currentConversation.vendorAvatar} />
-                    <AvatarFallback>{getInitials(currentConversation.vendorName)}</AvatarFallback>
+                <div className="flex items-center gap-5">
+                  <Avatar className="w-14 h-14 rounded-2xl shadow-xl border-2 border-white">
+                    <AvatarImage src={currentConversation.vendorAvatar} className="object-cover" />
+                    <AvatarFallback className="bg-sage-600 text-white font-serif italic text-xl">
+                      {getInitials(currentConversation.vendorName)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold">{currentConversation.vendorName}</h3>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="text-xs">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-xl font-serif italic text-slate-800">{currentConversation.vendorName}</h3>
+                      <Badge className="bg-sage-50 text-sage-700 border-none px-3 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest">
                         {currentConversation.vendorRole}
                       </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
                       {currentConversation.isOnline ? (
-                        <div className="flex items-center space-x-1 text-xs text-green-600">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>Online</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 bg-sage-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.6)]"></div>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sage-600">Active Presence</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Offline</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Offline Status</span>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
+
+                <div className="flex items-center gap-3">
                   {currentConversation.inquiryId && (
-                    <Badge variant="outline" className="text-xs mr-2">
-                      Inquiry #{currentConversation.inquiryId}
-                    </Badge>
+                    <div className="hidden lg:flex flex-col items-end mr-4">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Contextual Reference</span>
+                      <span className="text-xs font-serif italic text-slate-600">Inquiry #{currentConversation.inquiryId.toUpperCase()}</span>
+                    </div>
                   )}
-                  <Button variant="outline" size="sm" title="Call">
-                    <Phone className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" title="Email">
-                    <Mail className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" title="View Vendor Profile">
-                    <Star className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" title="More Options">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2 p-1.5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                    {[Phone, Mail, Star, MoreVertical].map((Icon, idx) => (
+                      <Button key={idx} variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:bg-white hover:text-sage-600 hover:shadow-sm rounded-xl transition-all">
+                        <Icon className="w-4 h-4" />
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {currentConversation.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === "You" ? "justify-end" : "justify-start"}`}
-                >
-                  <div className={`max-w-[70%] ${message.sender === "You" ? "order-2" : "order-1"}`}>
-                    {message.sender !== "You" && (
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs">
-                            {getInitials(message.sender)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{message.sender}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {message.senderRole}
-                        </Badge>
+            {/* Messages - Boutique Bubbles */}
+            <div className="flex-1 overflow-y-auto p-8 lg:p-10 space-y-10 scrollbar-thin scrollbar-thumb-slate-100">
+              {currentConversation.messages.map((message, idx) => {
+                const isYou = message.sender === "You";
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex flex-col ${isYou ? "items-end text-right" : "items-start text-left"}`}
+                  >
+                    {!isYou && (
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{message.sender}</span>
+                        <div className="w-1 h-1 rounded-full bg-slate-200" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-sage-600/60">{message.senderRole}</span>
                       </div>
                     )}
-                    
+
                     <div
-                      className={`p-3 rounded-lg ${
-                        message.sender === "You"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
+                      className={`relative group max-w-[85%] lg:max-w-[70%] p-5 shadow-sm transition-all duration-300 ${isYou
+                        ? "bg-sage-600 text-white rounded-[2rem] rounded-tr-none shadow-xl shadow-sage-900/10"
+                        : "bg-slate-50 text-slate-700 rounded-[2rem] rounded-tl-none border border-slate-100"
+                        }`}
                     >
-                      <p className="text-sm">{message.content}</p>
-                    </div>
-                    
-                    <div className={`flex items-center space-x-2 mt-1 ${
-                      message.sender === "You" ? "justify-end" : "justify-start"
-                    }`}>
-                      <span className="text-xs text-muted-foreground">
-                        {message.timestamp}
-                      </span>
-                      {message.sender === "You" && (
-                        <div className="flex items-center space-x-1">
-                          {message.isRead ? (
-                            <CheckCircle className="w-3 h-3 text-blue-500" />
-                          ) : (
-                            <Clock className="w-3 h-3 text-muted-foreground" />
-                          )}
-                        </div>
-                      )}
+                      <p className="text-[13px] leading-relaxed font-medium">{message.content}</p>
+
+                      <div className={`absolute -bottom-6 flex items-center gap-3 whitespace-nowrap ${isYou ? "right-2" : "left-2"}`}>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                          {message.timestamp}
+                        </span>
+                        {isYou && (
+                          <div className="flex items-center gap-1 opacity-40">
+                            {message.isRead ? (
+                              <ShieldCheck className="w-3 h-3 text-sage-400" />
+                            ) : (
+                              <Clock className="w-3 h-3 text-slate-400" />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Message Input */}
-            <div className="p-4 border-t bg-card">
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  <Paperclip className="w-4 h-4" />
+            {/* Message Input - Precision Design */}
+            <div className="p-8 border-t border-slate-50">
+              <div className="relative group max-w-4xl mx-auto flex items-end gap-3 p-2 pl-4 bg-slate-50 hover:bg-white rounded-3xl border border-transparent hover:border-slate-100 transition-all focus-within:bg-white focus-within:border-sage-500/30 focus-within:shadow-2xl focus-within:shadow-sage-500/5">
+                <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-400 hover:text-sage-600 mb-0.5 rounded-2xl">
+                  <Paperclip className="w-5 h-5" />
                 </Button>
-                <div className="flex-1 relative">
-                  <Textarea
-                    placeholder="Type your message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="min-h-[40px] max-h-[120px] resize-none"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+
+                <Textarea
+                  placeholder="Draft your response here..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1 min-h-[56px] max-h-[160px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-slate-800 placeholder:text-slate-300 py-4 text-sm font-medium leading-relaxed"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+
+                <div className="flex gap-2 mb-0.5">
+                  <Button variant="ghost" size="icon" className="h-12 w-12 text-slate-400 hover:text-sage-600 rounded-2xl">
+                    <Smile className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim()}
+                    className={`h-12 w-12 rounded-2xl transition-all duration-500 ${newMessage.trim()
+                      ? "bg-sage-600 text-white shadow-xl shadow-sage-600/30 hover:bg-sage-700 active:scale-90"
+                      : "bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed"
+                      }`}
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Smile className="w-4 h-4" />
-                </Button>
-                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                  <Send className="w-4 h-4" />
-                </Button>
               </div>
+              <p className="text-center text-[9px] font-bold uppercase tracking-[0.3em] text-slate-300 mt-6 pulse">Encrypted Channel Established</p>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Select a conversation</h3>
-              <p className="text-muted-foreground">
-                Choose a conversation from the list to start messaging
+          <div className="flex-1 flex items-center justify-center bg-slate-50/30">
+            <div className="max-w-sm text-center">
+              <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-slate-50">
+                <MessageCircle className="w-10 h-10 text-slate-200" />
+              </div>
+              <h3 className="text-2xl font-serif italic text-slate-800 mb-4 text-balance">Strategic Dialogue Pending</h3>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                Select a service provider from your curated portfolio to resume existing communication channels.
               </p>
             </div>
           </div>

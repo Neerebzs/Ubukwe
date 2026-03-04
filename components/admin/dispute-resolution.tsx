@@ -213,7 +213,7 @@ export function AdminDisputeResolution() {
                   </div>
                   <div className="flex flex-col items-end text-right">
                     <div className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-600 mb-1">Filing Date</div>
-                    <div className="text-sm font-medium text-slate-900">{new Date(dispute.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                    <div className="text-sm font-medium text-slate-900">{new Date(dispute.createdAt).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                   </div>
                 </div>
               </CardHeader>
@@ -247,7 +247,7 @@ export function AdminDisputeResolution() {
                     <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full">
                       <Clock className="w-3 h-3 text-slate-600" />
                       <span className="text-[10px] uppercase tracking-widest font-black text-slate-500">
-                        Deadline: {new Date(dispute.deadline).toLocaleDateString()}
+                        Deadline: {new Date(dispute.deadline).toLocaleDateString('en-CA')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-full">

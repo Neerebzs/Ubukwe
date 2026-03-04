@@ -186,7 +186,7 @@ export function AdminUsers() {
                     <div className="grid grid-cols-1 gap-1">
                       <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Joined On</p>
                       <p className="text-sm font-medium text-slate-600">
-                        {new Date(user.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(user.created_at).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     </div>
 
@@ -293,7 +293,7 @@ export function AdminUsers() {
                     <div className="p-2 bg-slate-50 rounded-xl"><CalendarIcon className="w-4 h-4 text-slate-600" /></div>
                     <div className="space-y-0.5">
                       <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Member Since</p>
-                      <p className="text-sm font-medium text-slate-700">{new Date(selectedUser.created_at).toLocaleString()}</p>
+                      <p className="text-sm font-medium text-slate-700">{new Date(selectedUser.created_at).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                   </div>
 

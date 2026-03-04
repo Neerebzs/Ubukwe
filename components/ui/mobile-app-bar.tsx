@@ -40,8 +40,8 @@ export function MobileAppBar({
   notificationCount = 0,
 }: MobileAppBarProps) {
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 md:hidden">
-      <div className="flex items-center justify-between h-14 px-4">
+    <header className="sticky top-0 z-40 w-full bg-[#fdfcfb] border-b border-slate-100 md:hidden shadow-sm">
+      <div className="flex items-center justify-between h-20 px-6">
         {/* Left Section */}
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {showBack ? (
@@ -65,11 +65,11 @@ export function MobileAppBar({
               </Button>
             )
           )}
-          
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-semibold truncate">{title}</h1>
+
+          <div className="flex-1 min-w-0 border-l border-slate-100 pl-4">
+            <h1 className="text-xl font-serif italic text-slate-900 tracking-tight truncate">{title}</h1>
             {subtitle && (
-              <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em] truncate mt-0.5">{subtitle}</p>
             )}
           </div>
         </div>

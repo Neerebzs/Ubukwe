@@ -261,10 +261,10 @@ export default function ProviderOnboarding() {
         setCurrentStep(5)
       } catch (error: any) {
         console.error("Verification failed:", error)
-        
+
         // Handle specific verification errors with actual API messages
         let errorMessage = "Identity verification failed. Please try again."
-        
+
         if (error.message) {
           if (error.message.includes("face_match") || error.message.includes("Face does not match")) {
             errorMessage = "Face verification failed. Please ensure good lighting and retake your selfie."
@@ -283,7 +283,7 @@ export default function ProviderOnboarding() {
             errorMessage = error.message
           }
         }
-        
+
         toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
@@ -332,10 +332,10 @@ export default function ProviderOnboarding() {
       router.push("/provider/dashboard")
     } catch (error: any) {
       console.error("Submission failed:", error)
-      
+
       // Extract the actual error message from the API response
       let errorMessage = "Failed to submit onboarding data. Please try again."
-      
+
       if (error.message) {
         // Check for specific error messages from the API
         if (error.message.includes("Onboarding application already exists")) {
@@ -361,7 +361,7 @@ export default function ProviderOnboarding() {
           errorMessage = error.message
         }
       }
-      
+
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
@@ -371,7 +371,7 @@ export default function ProviderOnboarding() {
   const progress = (currentStep / 6) * 100
 
   return (
-    <div className="min-h-screen bg-[#f9fafc] py-8 px-4">
+    <div className="min-h-screen bg-[#fbfcff] py-12 px-4 font-sans">
       {cameraActive && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center flex-col gap-4">
           <button
@@ -393,7 +393,7 @@ export default function ProviderOnboarding() {
             <Button
               type="button"
               onClick={captureSelfie}
-              className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
+              className="flex-1 bg-sage-600 hover:bg-sage-700 text-white rounded-full transition-all duration-300"
             >
               <Camera className="w-4 h-4 mr-2" />
               Capture
@@ -403,7 +403,7 @@ export default function ProviderOnboarding() {
               type="button"
               variant="outline"
               onClick={stopCamera}
-              className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30"
+              className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/30 rounded-full backdrop-blur-sm transition-all duration-300"
             >
               Cancel
             </Button>
@@ -412,43 +412,52 @@ export default function ProviderOnboarding() {
       )}
 
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <Link href="/" className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-2">
+        <div className="mb-12">
+          <Link href="/" className="text-sage-600 hover:text-sage-700 text-sm flex items-center gap-2 transition-colors font-medium">
             ← Back to Home
           </Link>
-          <h1 className="text-3xl font-bold mt-4">Provider Onboarding</h1>
-          <p className="text-muted-foreground mt-2">Complete your profile to start offering services</p>
+          <h1 className="text-4xl lg:text-5xl font-serif italic text-slate-900 mt-6 leading-tight">Provider Onboarding</h1>
+          <p className="text-slate-500 mt-3 text-lg">Complete your profile to start offering services on our boutique platform</p>
         </div>
 
-        <div className="mb-8">
-          <Progress value={progress} className="mb-4" />
-          <div className="flex justify-between">
+        <div className="mb-12">
+          <Progress value={progress} className="mb-8 h-2 bg-sage-100 [&>div]:bg-sage-600" />
+          <div className="flex justify-between relative">
             {steps.map((step) => (
-              <div key={step.id} className="flex flex-col items-center flex-1">
+              <div key={step.id} className="flex flex-col items-center flex-1 relative z-10">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${step.completed
-                    ? "bg-primary text-primary-foreground"
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${step.completed
+                    ? "bg-sage-600 border-sage-600 text-white"
                     : currentStep === step.id
-                      ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-white border-sage-600 text-sage-600 shadow-[0_0_20px_rgba(13,148,136,0.3)]"
+                      : "bg-white border-slate-200 text-slate-400"
                     }`}
                 >
-                  {step.completed ? <CheckCircle className="w-5 h-5" /> : step.id}
+                  {step.completed ? <CheckCircle className="w-6 h-6" /> : <span className="text-sm font-bold">{step.id}</span>}
                 </div>
-                <p className="text-xs mt-2 text-center">{step.title}</p>
+                <p className={`text-[11px] font-medium mt-3 uppercase tracking-wider text-center max-w-[80px] ${currentStep === step.id ? "text-sage-600" : "text-slate-400"}`}>
+                  {step.title}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{steps[currentStep - 1].title}</CardTitle>
-            <CardDescription>
-              Step {currentStep} of {steps.length}
-            </CardDescription>
+        <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-md">
+          <CardHeader className="pb-8 pt-10 px-8 lg:px-12 border-b border-slate-100">
+            <div className="flex justify-between items-end">
+              <div>
+                <CardTitle className="text-2xl font-serif text-slate-800">{steps[currentStep - 1].title}</CardTitle>
+                <CardDescription className="text-slate-500 mt-1">
+                  Complete the details to proceed
+                </CardDescription>
+              </div>
+              <span className="text-sm font-medium text-sage-600 bg-sage-50 px-4 py-1.5 rounded-full border border-sage-100">
+                Step {currentStep} of {steps.length}
+              </span>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8 p-8 lg:p-12">
             {stepErrors.length > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <div className="flex gap-3">
@@ -470,13 +479,13 @@ export default function ProviderOnboarding() {
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="businessName">Business/Professional Name *</Label>
+                  <Label htmlFor="businessName" className="text-slate-700 font-medium mb-2 block">Business/Professional Name *</Label>
                   <Input
                     id="businessName"
                     value={formData.businessName}
                     onChange={(e) => handleInputChange("businessName", e.target.value)}
                     placeholder="Enter your business name"
-                    className={stepErrors.some((e) => e.field === "businessName") ? "border-red-500" : ""}
+                    className={`rounded-xl border-slate-200 focus:border-sage-500 focus:ring-sage-500/20 py-6 ${stepErrors.some((e) => e.field === "businessName") ? "border-red-500" : ""}`}
                   />
                   {stepErrors.some((e) => e.field === "businessName") && (
                     <p className="text-sm text-red-600 mt-1">{stepErrors.find((e) => e.field === "businessName")?.message}</p>
@@ -521,12 +530,16 @@ export default function ProviderOnboarding() {
                 <div>
                   <Label htmlFor="serviceCategories">Service Categories *</Label>
                   <p className="text-sm text-muted-foreground mb-2">Select at least one category</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {["Photography", "Venue", "Catering", "Music", "Decoration", "Transportation", "MC Services", "Dance", "Other"].map((cat) => (
                       <Button
                         key={cat}
                         type="button"
                         variant={formData.serviceCategories.includes(cat) ? "default" : "outline"}
+                        className={`rounded-xl py-6 transition-all duration-300 ${formData.serviceCategories.includes(cat)
+                          ? "bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200"
+                          : "hover:border-sage-300 hover:text-sage-600"
+                          }`}
                         onClick={() => {
                           const categories = formData.serviceCategories.includes(cat)
                             ? formData.serviceCategories.filter((c) => c !== cat)
@@ -652,9 +665,9 @@ export default function ProviderOnboarding() {
                     <button
                       type="button"
                       onClick={startCamera}
-                      className="w-full border-2 border-dashed rounded-lg p-6 text-center hover:border-teal-400 transition-colors"
+                      className="w-full border-2 border-dashed rounded-lg p-6 text-center hover:border-sage-400 transition-colors"
                     >
-                      <Camera className="w-12 h-12 mx-auto mb-3 text-teal-600" />
+                      <Camera className="w-12 h-12 mx-auto mb-3 text-sage-600" />
                       <p className="text-sm font-medium">Click to take selfie</p>
                     </button>
 
@@ -726,17 +739,30 @@ export default function ProviderOnboarding() {
               </div>
             )}
 
-            <div className="flex justify-between pt-6 border-t">
-              <Button variant="outline" onClick={handlePrev} disabled={currentStep === 1}>
+            <div className="flex justify-between pt-10 border-t border-slate-100">
+              <Button
+                variant="outline"
+                onClick={handlePrev}
+                disabled={currentStep === 1}
+                className="rounded-full px-8 py-6 border-slate-200 hover:bg-slate-50 transition-colors"
+              >
                 Previous
               </Button>
               {currentStep < 6 ? (
-                <Button onClick={handleNext} disabled={isSubmitting}>
+                <Button
+                  onClick={handleNext}
+                  disabled={isSubmitting}
+                  className="rounded-full px-10 py-6 bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-200 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
                   {isSubmitting ? "Verifying..." : currentStep === 4 ? "Verify Identity" : "Next Step"}
                   {currentStep !== 4 && <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="rounded-full px-12 py-6 bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-200 transition-all duration-300 transform hover:-translate-y-0.5"
+                >
                   {isSubmitting ? "Submitting..." : "Submit Application"}
                 </Button>
               )}

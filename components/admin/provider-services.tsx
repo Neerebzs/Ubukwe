@@ -464,7 +464,7 @@ export function AdminProviderServices() {
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Submitted</span>
                           <span className="text-xs font-medium text-slate-600">
-                            {new Date(selectedService.created_at).toLocaleDateString()}
+                            {new Date(selectedService.created_at).toLocaleDateString('en-CA')}
                           </span>
                         </div>
                       </div>

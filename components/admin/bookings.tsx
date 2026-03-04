@@ -247,7 +247,7 @@ export function AdminBookingsMetrics() {
                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Event Horizon</p>
                             <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5 leading-none">
                               <Calendar className="h-3.5 w-3.5 text-slate-600" />
-                              {new Date(booking.booking_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(booking.booking_date).toLocaleDateString('en-CA', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                           </div>
 
@@ -353,11 +353,11 @@ export function AdminBookingsMetrics() {
                       <div className="space-y-5 bg-[#608d64]/5 p-6 rounded-[2rem] border border-[#608d64]/10">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Engagement Date</span>
-                          <span className="font-serif italic text-slate-700">{new Date(selectedBooking.booking_date).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                          <span className="font-serif italic text-slate-700">{new Date(selectedBooking.booking_date).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Submitted Date</span>
-                          <span className="text-slate-500">{new Date(selectedBooking.created_at).toLocaleDateString()}</span>
+                          <span className="text-slate-500">{new Date(selectedBooking.created_at).toLocaleDateString('en-CA')}</span>
                         </div>
                         <div className="pt-4 border-t border-[#608d64]/10 space-y-1">
                           <p className="text-[10px] font-black text-[#608d64] uppercase tracking-widest">Total Transaction Value</p>

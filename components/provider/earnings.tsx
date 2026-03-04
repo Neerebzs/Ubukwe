@@ -1,151 +1,216 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, Download, Calendar, Wallet, CreditCard, Clock, FileText } from "lucide-react"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
+import { StatCard } from "@/components/admin/stat-card"
+import { cn } from "@/lib/utils"
 
 interface ProviderEarningsProps {
   recentCompleted: Array<{
-    id: number;
-    client: string;
-    service: string;
-    date: string;
-    amount: number;
-  }>;
+    id: string
+    serviceName: string
+    customerName: string
+    amount: number
+    date: string
+  }>
 }
 
 export function ProviderEarnings({ recentCompleted }: ProviderEarningsProps) {
   // Mock time-series data; replace with API later
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("weekly");
+  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly");
   const series = useMemo(() => {
     if (period === "weekly") {
       return [
-        { label: "Mon", amount: 80000 },
-        { label: "Tue", amount: 120000 },
-        { label: "Wed", amount: 60000 },
-        { label: "Thu", amount: 160000 },
-        { label: "Fri", amount: 200000 },
-        { label: "Sat", amount: 90000 },
-        { label: "Sun", amount: 50000 },
+        { label: "Mon", amount: 45000 },
+        { label: "Tue", amount: 52000 },
+        { label: "Wed", amount: 48000 },
+        { label: "Thu", amount: 61000 },
+        { label: "Fri", amount: 55000 },
+        { label: "Sat", amount: 67000 },
+        { label: "Sun", amount: 42000 },
       ];
     }
     if (period === "monthly") {
       return [
-        { label: "W1", amount: 320000 },
-        { label: "W2", amount: 420000 },
-        { label: "W3", amount: 380000 },
-        { label: "W4", amount: 450000 },
+        { label: "Week 1", amount: 210000 },
+        { label: "Week 2", amount: 245000 },
+        { label: "Week 3", amount: 195000 },
+        { label: "Week 4", amount: 280000 },
       ];
     }
     return [
-      { label: "Jan", amount: 1200000 },
-      { label: "Feb", amount: 980000 },
-      { label: "Mar", amount: 1450000 },
+      { label: "Jan", amount: 850000 },
+      { label: "Feb", amount: 920000 },
+      { label: "Mar", amount: 780000 },
       { label: "Apr", amount: 1100000 },
-      { label: "May", amount: 1680000 },
-      { label: "Jun", amount: 1520000 },
+      { label: "May", amount: 950000 },
+      { label: "Jun", amount: 1250000 },
     ];
   }, [period]);
+
+  // Mock data for the new BarChart, derived from 'series' for consistency
+  const data = useMemo(() => series.map(item => ({ name: item.label, total: item.amount })), [series]);
 
   const totalInPeriod = series.reduce((s, p) => s + p.amount, 0);
   const avgPerPoint = Math.round(totalInPeriod / series.length);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Earnings & Payments</h2>
-        <Button variant="outline">
-          <DollarSign className="h-4 w-4 mr-2" />
-          Request Payout
-        </Button>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Financial Overview</h2>
+        <div className="flex items-center gap-2">
+          <div className="h-[1px] w-8 bg-[#668c65]/60" />
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Revenue & Payout Intelligence</p>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">850,000 RWF</div>
-            <p className="text-xs text-green-600">+8% from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Available Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">320,000 RWF</div>
-            <p className="text-xs text-muted-foreground">Ready for payout</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Total Earned</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2,450,000 RWF</div>
-            <p className="text-xs text-muted-foreground">All time earnings</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Cumulative Revenue"
+          value="4,250,000 RWF"
+          icon={Wallet}
+          trend="12.5%"
+          trendType="up"
+          color="#668c65"
+        />
+        <StatCard
+          label="Pending Clearance"
+          value="850,000 RWF"
+          icon={Clock}
+          trend="8.2%"
+          trendType="up"
+          color="#6366f1"
+        />
+        <StatCard
+          label="Next Disbursement"
+          value="June 15, 2024"
+          icon={Calendar}
+          color="#f59e0b"
+        />
+        <StatCard
+          label="Active Contracts"
+          value="12"
+          icon={FileText}
+          trend="3"
+          trendType="up"
+          color="#0ea5e9"
+        />
       </div>
 
-      {/* Trends */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Earnings Trends
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button variant={period === "weekly" ? "default" : "outline"} size="sm" onClick={() => setPeriod("weekly")}>Weekly</Button>
-              <Button variant={period === "monthly" ? "default" : "outline"} size="sm" onClick={() => setPeriod("monthly")}>Monthly</Button>
-              <Button variant={period === "yearly" ? "default" : "outline"} size="sm" onClick={() => setPeriod("yearly")}>Yearly</Button>
+      <div className="grid gap-6 md:grid-cols-7">
+        <Card className="md:col-span-4 border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
+          <CardHeader className="p-8 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-serif italic text-slate-900">Revenue Velocity</CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Monthly earnings trajectory</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl border-slate-100 text-[10px] font-black uppercase tracking-widest px-4 h-9">
+                <Download className="w-4 h-4 mr-2 text-[#668c65]" />
+                Export Data
+              </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Simple bar visualization without external charts */}
-          <div className="grid grid-cols-7 md:grid-cols-12 gap-3 items-end">
-            {series.map((point, idx) => {
-              const max = Math.max(...series.map(p => p.amount)) || 1;
-              const height = Math.max(8, Math.round((point.amount / max) * 100));
-              return (
-                <div key={idx} className="flex flex-col items-center justify-end">
-                  <div className="text-xs text-muted-foreground mb-1">{point.amount.toLocaleString()}</div>
-                  <div className="w-6 md:w-8 bg-primary/20 hover:bg-primary/30 transition-all rounded" style={{ height: `${height}px` }} />
-                  <div className="text-xs mt-1 text-muted-foreground">{point.label}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex items-center justify-between text-sm">
-            <div className="text-muted-foreground">Total this {period}:</div>
-            <div className="font-semibold">{totalInPeriod.toLocaleString()} RWF</div>
-          </div>
-          <div className="mt-1 flex items-center justify-between text-sm">
-            <div className="text-muted-foreground">Average per {period === 'weekly' ? 'day' : period === 'monthly' ? 'week' : 'month'}:</div>
-            <div className="font-semibold">{avgPerPoint.toLocaleString()} RWF</div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={10}
+                    fontWeight={900}
+                    tickLine={false}
+                    axisLine={false}
+                    dx={0}
+                    dy={10}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={10}
+                    fontWeight={900}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `${value / 1000}k`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f1f5f9', radius: 8 }}
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px',
+                      fontWeight: '700'
+                    }}
+                  />
+                  <Bar
+                    dataKey="total"
+                    fill="#668c65"
+                    radius={[8, 8, 8, 8]}
+                    barSize={32}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index === data.length - 1 ? '#0b7a6f' : '#668c65'} fillOpacity={0.8} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
+        <Card className="md:col-span-3 border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
+          <CardHeader className="p-8 pb-4">
+            <CardTitle className="text-xl font-serif italic text-slate-900">Live Transitions</CardTitle>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Real-time fiscal ledger</p>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <div className="space-y-6">
+              {[
+                { label: "Wedding MC - June 2024", amount: "+450,000 RWF", date: "June 12, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Platform Service Fee", amount: "-45,000 RWF", date: "June 12, 2024", icon: ArrowDownRight, color: "text-slate-400", bg: "bg-slate-50" },
+                { label: "Deposit - Corporate Gala", amount: "+200,000 RWF", date: "June 10, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Wedding DJ - May Finish", amount: "+600,000 RWF", date: "June 08, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center justify-between group cursor-default">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("p-3 rounded-[1rem] transition-colors", item.bg)}>
+                      <item.icon className={cn("w-4 h-4", item.color)} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.date}</p>
+                      <p className="text-sm font-bold text-slate-900 group-hover:text-[#668c65] transition-colors">{item.label}</p>
+                    </div>
+                  </div>
+                  <div className={cn("text-sm font-black tracking-tight", item.color)}>
+                    {item.amount}
+                  </div>
+                </div>
+              ))}
+              <Button variant="ghost" className="w-full mt-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 h-12">
+                Audit Full Ledger
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
+        <CardHeader className="p-8 pb-4">
+          <CardTitle className="text-xl font-serif italic text-slate-900">Recent Transactions</CardTitle>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Latest completed services</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8 pt-4">
           <div className="space-y-4">
             {recentCompleted.map((booking) => (
               <div key={booking.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <p className="font-medium">{booking.client}</p>
+                  <p className="font-medium">{booking.customerName}</p>
                   <p className="text-sm text-muted-foreground">
-                    {booking.service} - {booking.date}
+                    {booking.serviceName} - {booking.date}
                   </p>
                 </div>
                 <div className="text-right">

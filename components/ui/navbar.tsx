@@ -24,21 +24,21 @@ export function Navbar() {
       <header className="w-full bg-white/70 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-100/50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 group">
-            <div className="h-11 w-11 rounded-full bg-[#608d64] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+            <div className="h-11 w-11 rounded-full bg-[#668c65] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
               <span className="text-white font-serif italic text-xl">U</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-serif italic tracking-tight text-[#608d64] leading-none">Ubukwe</span>
+              <span className="text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">Ubukwe</span>
               <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">Rwanda Collective</span>
             </div>
           </Link>
 
           <div className="relative flex-1 max-w-md mx-12 hidden lg:block">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#608d64] transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
             <input
               type="text"
               placeholder="Discover artisans & services..."
-              className="w-full pl-12 pr-6 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#608d64]/20 focus:ring-4 focus:ring-[#608d64]/5 transition-all duration-500"
+              className="w-full pl-12 pr-6 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/20 focus:ring-4 focus:ring-[#668c65]/5 transition-all duration-500"
             />
           </div>
 
@@ -48,19 +48,19 @@ export function Navbar() {
               <nav className="flex space-x-8 items-center">
                 <a href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="Home" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#608d64] group-hover:w-full transition-all duration-500" />
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
                 </a>
                 <a href="/services" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="Services" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#608d64] group-hover:w-full transition-all duration-500" />
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
                 </a>
                 <a href="/events" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="Events" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#608d64] group-hover:w-full transition-all duration-500" />
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
                 </a>
                 <a href="/about" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="About" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#608d64] group-hover:w-full transition-all duration-500" />
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
                 </a>
               </nav>
 
@@ -76,7 +76,7 @@ export function Navbar() {
                       </Button>
                     </Link>
                     <Link href="/auth/signup">
-                      <Button size="sm" className="bg-[#608d64] hover:bg-slate-900 text-white shadow-xl px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+                      <Button size="sm" className="bg-[#668c65] hover:bg-slate-900 text-white shadow-xl px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
                         <TranslatedText text="Get Started" />
                       </Button>
                     </Link>
@@ -130,12 +130,12 @@ export function Navbar() {
           />
 
           {/* Drawer */}
-          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-white shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.1)] overflow-y-auto animate-in slide-in-from-right duration-700 ease-out flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-[#fdfcfb] shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.1)] overflow-y-auto animate-in slide-in-from-right duration-700 ease-out flex flex-col">
             <div className="p-8 space-y-10 flex-1">
               {/* Brand Header */}
               <div className="flex items-center justify-between pb-8 border-b border-slate-50">
                 <div className="flex flex-col">
-                  <span className="font-serif italic text-3xl text-[#608d64]">Ubukwe</span>
+                  <span className="font-serif italic text-3xl text-[#668c65]">Ubukwe</span>
                   <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-slate-400 mt-1">Rwanda Collective</span>
                 </div>
                 <button
@@ -148,7 +148,7 @@ export function Navbar() {
 
               {/* Navigation Narrative */}
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4">Explore Portals</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 px-6">Explore Portals</p>
                 <nav className="space-y-1">
                   {[
                     { href: "/", label: "Home", icon: Home },
@@ -163,12 +163,12 @@ export function Navbar() {
                       className="flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
                     >
                       <div className="flex items-center space-x-4">
-                        <item.icon className="h-4 w-4 text-slate-400 group-hover:text-[#608d64] transition-colors" />
+                        <item.icon className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-600 group-hover:text-slate-900">
                           <TranslatedText text={item.label} />
                         </span>
                       </div>
-                      <div className="h-1 w-1 rounded-full bg-slate-200 group-hover:bg-[#608d64] transition-colors" />
+                      <div className="h-1 w-1 rounded-full bg-slate-200 group-hover:bg-[#668c65] transition-colors" />
                     </a>
                   ))}
                 </nav>
@@ -176,11 +176,11 @@ export function Navbar() {
 
               {/* Mobile Search */}
               <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#608d64] transition-colors" />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
                 <input
                   type="text"
                   placeholder="Artisans, Venues, Magic..."
-                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#608d64]/10 transition-all"
+                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/10 transition-all"
                 />
               </div>
 
@@ -203,7 +203,7 @@ export function Navbar() {
                     </Button>
                   </Link>
                   <Link href="/auth/signup" onClick={toggleMenu} className="block">
-                    <Button className="w-full h-14 bg-[#608d64] hover:bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl" size="lg">
+                    <Button className="w-full h-14 bg-[#668c65] hover:bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl" size="lg">
                       <TranslatedText text="Join" />
                     </Button>
                   </Link>
@@ -220,7 +220,7 @@ export function Navbar() {
                     className="block"
                   >
                     <Button variant="outline" className="w-full h-14 border-slate-200 text-slate-900 text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-white transition-all" size="lg">
-                      <LayoutDashboard className="h-4 w-4 mr-3 text-[#608d64]" />
+                      <LayoutDashboard className="h-4 w-4 mr-3 text-[#668c65]" />
                       <TranslatedText text="Dashboard" />
                     </Button>
                   </Link>

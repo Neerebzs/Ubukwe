@@ -31,7 +31,7 @@ export function ServiceCard({
 }: ServiceCardProps) {
   return (
     <Link href={`/services/${id}`}>
-      <Card className="group overflow-hidden border border-slate-100 bg-white hover:shadow-2xl hover:border-teal-100 transition-all duration-500 rounded-[32px]">
+      <Card className="group overflow-hidden border border-slate-100 bg-white hover:shadow-2xl hover:border-sage-100 transition-all duration-500 rounded-[32px]">
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
             src={image}
@@ -66,7 +66,7 @@ export function ServiceCard({
               <MapPin className="h-3.5 w-3.5" />
               <span className="text-[11px] font-bold uppercase tracking-widest">{location}</span>
             </div>
-            <h3 className="font-serif italic text-2xl text-slate-900 line-clamp-1 group-hover:text-teal-600 transition-colors">
+            <h3 className="font-serif italic text-2xl text-slate-900 line-clamp-1 group-hover:text-sage-600 transition-colors">
               {title}
             </h3>
           </div>

@@ -405,7 +405,7 @@ export function AdminServices() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Origin Date</p>
-                    <p className="text-sm font-medium text-slate-700">{new Date(serviceDetail.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</p>
+                    <p className="text-sm font-medium text-slate-700">{new Date(serviceDetail.created_at).toLocaleDateString('en-CA', { dateStyle: 'long' })}</p>
                   </div>
                 </div>
 

@@ -16,7 +16,8 @@ import {
   Briefcase,
   Activity,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Wallet
 } from "lucide-react";
 import {
   LineChart,
@@ -33,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
+import { StatCard } from "@/components/admin/stat-card";
 
 interface BookingStats {
   total: number;
@@ -65,7 +67,7 @@ export function ProviderOverview() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch booking statistics
         const statsResponse = await apiClient.get<BookingStats>("/api/v1/bookings/provider/bookings/statistics/summary");
         setStats(statsResponse.data || null);
@@ -95,7 +97,7 @@ export function ProviderOverview() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-teal-600 mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin text-sage-600 mx-auto mb-4" />
           <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
@@ -111,16 +113,16 @@ export function ProviderOverview() {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-    
+
     // Count bookings for this day
     const dayBookings = recentBookings.filter(b => {
       const bookingDate = new Date(b.created_at + 'T00:00:00');
       return bookingDate.toDateString() === date.toDateString();
     });
-    
+
     const bookingsCount = dayBookings.length;
     const revenue = dayBookings.reduce((sum, b) => sum + b.total_amount, 0);
-    
+
     return {
       name: dayName,
       bookings: bookingsCount,
@@ -128,207 +130,149 @@ export function ProviderOverview() {
     };
   });
   return (
-    <div className="space-y-8 pb-8">
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard Overview</h1>
-          <p className="text-slate-500 font-medium">Welcome back! Here's what's happening with your services today.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="rounded-xl border-slate-200 font-bold text-slate-600">
-            Export Report
-          </Button>
-          <Button size="sm" className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-sm">
-            Manage Services
-          </Button>
+    <div className="space-y-8 animate-in fade-in duration-700 pb-8">
+      {/* Editorial Header Section */}
+      <div className="flex flex-col gap-1 mb-8">
+        <h1 className="text-4xl font-serif italic text-slate-900 tracking-tight">Business Intel</h1>
+        <div className="flex items-center gap-2">
+          <div className="h-[1px] w-8 bg-[#668c65]/60" />
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Real-time Performance Narrative</p>
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Primary Stat Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-none shadow-sm bg-white rounded-3xl p-1 group hover:shadow-md transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] py-0.5">
-                <ArrowUpRight className="w-3 h-3 mr-1" />
-                12%
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Total Bookings</p>
-              <h3 className="text-3xl font-black text-slate-900">{totalBookings}</h3>
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                {stats?.pending || 0} pending, {stats?.confirmed || 0} confirmed
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white rounded-3xl p-1 group hover:shadow-md transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <DollarSign className="h-5 w-5" />
-              </div>
-              <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] py-0.5">
-                <ArrowUpRight className="w-3 h-3 mr-1" />
-                8.4%
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Monthly Earnings</p>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                {monthlyEarnings.toLocaleString()} <span className="text-sm font-bold text-slate-400">RWF</span>
-              </h3>
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                From {stats?.completed || 0} completed bookings
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white rounded-3xl p-1 group hover:shadow-md transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-yellow-50 text-yellow-600 rounded-2xl group-hover:bg-yellow-600 group-hover:text-white transition-colors">
-                <Star className="h-5 w-5" />
-              </div>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map(i => <Star key={i} className={cn("w-2.5 h-2.5", i <= Math.round(averageRating) ? "text-yellow-400 fill-current" : "text-slate-200")} />)}
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Avg. Rating</p>
-              <h3 className="text-3xl font-black text-slate-900">{averageRating}</h3>
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">Based on customer reviews</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white rounded-3xl p-1 group hover:shadow-md transition-all duration-300">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-slate-50 text-slate-600 rounded-2xl group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                <Briefcase className="h-5 w-5" />
-              </div>
-              <Badge className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] py-0.5">
-                Stable
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Active Services</p>
-              <h3 className="text-3xl font-black text-slate-900">{serviceCount}</h3>
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">Services listed on platform</p>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Cumulative Bookings"
+          value={totalBookings}
+          icon={Calendar}
+          trend="+12%"
+          color="#668c65"
+          subtitle={`${stats?.pending || 0} pending review`}
+        />
+        <StatCard
+          label="Monthly Revenue"
+          value={`${monthlyEarnings.toLocaleString()} RWF`}
+          icon={Wallet}
+          trend="+8.4%"
+          color="#668c65"
+          subtitle={`From ${stats?.completed || 0} completions`}
+        />
+        <StatCard
+          label="Artisan Merit"
+          value={averageRating}
+          icon={Star}
+          color="#f59e0b"
+          subtitle="Customer satisfaction index"
+        />
+        <StatCard
+          label="Active Domain"
+          value={serviceCount}
+          icon={Briefcase}
+          color="#0ea5e9"
+          subtitle="Services currently live"
+        />
       </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Trend Chart */}
-        <Card className="lg:col-span-2 border-none shadow-sm bg-white rounded-3xl p-6">
-          <CardHeader className="p-0 mb-8 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-extrabold text-slate-900">Performance Trends</CardTitle>
-              <CardDescription className="font-medium">Total bookings and revenue over the last 7 days</CardDescription>
+      {/* Trend Analysis Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
+          <CardHeader className="p-8 pb-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-serif italic text-slate-900">Revenue Trajectory</CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Provider growth & booking performance</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] rounded-full px-4 border-[#668c65]/20 text-[#668c65] font-black tracking-widest uppercase">Last 7 Days</Badge>
             </div>
-            <select className="bg-slate-50 border-none text-xs font-bold rounded-lg px-2 py-1 outline-none text-slate-600">
-              <option>Last 7 Days</option>
-              <option>Last 30 Days</option>
-            </select>
           </CardHeader>
-          <CardContent className="p-0 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.1} />
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis
-                  dataKey="name"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
-                  dy={10}
-                />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    fontWeight: 'bold',
-                    fontSize: '12px'
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="bookings"
-                  stroke="#0d9488"
-                  strokeWidth={4}
-                  fillOpacity={1}
-                  fill="url(#colorBookings)"
-                  dot={{ r: 4, fill: '#0d9488', strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 6, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <CardContent className="p-8">
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#668c65" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#668c65" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
+                    dy={10}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: 'none',
+                      boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px',
+                      fontWeight: 700
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#668c65"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                    dot={{ r: 4, fill: '#668c65', strokeWidth: 2, stroke: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Performance Insights Sidebar */}
-        <Card className="border-none shadow-sm bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden">
+        <Card className="border-slate-100 bg-slate-900 text-white rounded-[2rem] p-10 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <TrendingUp className="w-48 h-48" />
           </div>
-          <div className="relative z-10 space-y-8">
+          <div className="relative z-10 space-y-10">
             <div>
-              <h4 className="text-xl font-black mb-2 flex items-center">
-                <Activity className="w-5 h-5 mr-3 text-teal-400" />
-                Growth Insights
+              <h4 className="text-2xl font-serif italic mb-2 flex items-center">
+                <Activity className="w-5 h-5 mr-3 text-[#608d64]" />
+                Artisan Velocity
               </h4>
-              <p className="text-slate-400 text-sm font-medium">Based on your recent performance metrics.</p>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Growth Analytics Summary</p>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
+            <div className="space-y-8">
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Booking Conversion</span>
-                  <span className="font-black text-teal-400">68%</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Booking Conversion</span>
+                  <span className="font-black text-[#608d64]">68%</span>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-teal-500 rounded-full" style={{ width: '68%' }} />
+                <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#608d64] rounded-full shadow-[0_0_8px_#608d64]" style={{ width: '68%' }} />
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium">12% higher than category average</p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Profile Visibility</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Profile Resonance</span>
                   <span className="font-black text-blue-400">+1,420</span>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '85%' }} />
+                <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full shadow-[0_0_8px_#3b82f6]" style={{ width: '85%' }} />
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium">Increased peaks on weekends</p>
               </div>
             </div>
 
-            <div className="pt-4 space-y-4">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-teal-400" />
-                  <p className="text-xs font-bold text-white">Pro Tip</p>
+            <div className="pt-6">
+              <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle2 className="w-4 h-4 text-[#668c65]" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Sage Wisdom</p>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">Update your gallery with at least 3 new reels to increase engagement by up to 25%.</p>
+                <p className="text-xs text-slate-400 leading-relaxed font-light italic">"Update your portfolio with 3 new cultural reels to increase engagement by 25%."</p>
               </div>
             </div>
           </div>
@@ -336,67 +280,60 @@ export function ProviderOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        {/* Recent Bookings List */}
-        <Card className="border-none shadow-sm bg-white rounded-3xl overflow-hidden">
-          <CardHeader className="px-8 pt-8 pb-4 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-extrabold text-slate-900">Recent Activity</CardTitle>
-              <CardDescription className="font-medium">Latest bookings from your clients</CardDescription>
+        {/* Recent Activity Narrative */}
+        <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
+          <CardHeader className="p-8 border-b border-slate-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-serif italic text-slate-900">Artisan Narrative</CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">The Recent Evolution of Your Services</p>
+              </div>
+              <button className="text-[10px] font-black text-[#668c65] uppercase tracking-widest hover:translate-x-1 transition-transform">
+                View Entire Ledger &rarr;
+              </button>
             </div>
-            <Button variant="ghost" size="sm" className="text-teal-600 font-bold hover:bg-teal-50">
-              View All Bookings
-            </Button>
           </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <div className="space-y-3">
-              {recentBookings.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No recent bookings</p>
-                </div>
-              ) : (
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-50">
+              {recentBookings.length > 0 ? (
                 recentBookings.map((booking) => (
-                  <div key={booking.id} className="group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-teal-200 hover:shadow-sm transition-all duration-300">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-                        {booking.customer_name.charAt(0)}
+                  <div key={booking.id} className="p-8 flex items-center justify-between group hover:bg-slate-50/50 transition-colors">
+                    <div className="flex items-center gap-6">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-[#668c65] font-black text-xs group-hover:bg-white transition-colors border border-slate-100 uppercase">
+                        {booking.customer_name.substring(0, 2)}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 leading-none mb-1">{booking.customer_name}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-teal-600">{booking.service_name}</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                            <Clock className="w-2.5 h-2.5 mr-1" />
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-slate-900">{booking.customer_name}</span>
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">•</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             {new Date(booking.booking_date + 'T00:00:00').toLocaleDateString()}
                           </span>
                         </div>
+                        <p className="text-sm text-[#668c65] font-serif italic tracking-tight">{booking.service_name}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-8">
                       <div className="text-right hidden sm:block">
-                        <p className="font-black text-slate-900">{booking.total_amount.toLocaleString()} RWF</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Total Fee</p>
+                        <p className="text-sm font-black text-slate-900">{booking.total_amount.toLocaleString()} RWF</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Honorarium</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          className={cn(
-                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border-none",
-                            booking.status === "completed" ? "bg-emerald-500 text-white" :
-                              booking.status === "confirmed" ? "bg-blue-500 text-white" :
-                                booking.status === "in_progress" ? "bg-yellow-500 text-white" :
-                                  "bg-slate-200 text-slate-600"
-                          )}
-                        >
-                          {booking.status}
-                        </Badge>
-                        <Button variant="ghost" size="icon" className="rounded-full text-slate-300 hover:text-slate-600">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <Badge className={cn(
+                        "rounded-full px-4 text-[10px] font-black uppercase tracking-widest border-none shadow-none",
+                        booking.status === "completed" ? "bg-[#668c65]/10 text-[#668c65]" :
+                          booking.status === "confirmed" ? "bg-blue-50 text-blue-600" :
+                            booking.status === "pending" ? "bg-amber-50 text-amber-600" :
+                              "bg-slate-100 text-slate-500"
+                      )}>
+                        {booking.status}
+                      </Badge>
                     </div>
                   </div>
                 ))
+              ) : (
+                <div className="p-16 text-center">
+                  <p className="text-sm text-slate-300 font-serif italic">Awaiting the next movement in your artisanal journey...</p>
+                </div>
               )}
             </div>
           </CardContent>

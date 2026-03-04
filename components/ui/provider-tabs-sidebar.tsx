@@ -105,8 +105,8 @@ export function ProviderTabsSidebar({
           <div className="space-y-1">
             <h2 className="font-serif italic text-3xl text-slate-50 tracking-tight">Provider</h2>
             <div className="flex items-center gap-2">
-              <div className="h-[1px] w-4 bg-[#608d64]/50" />
-              <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Business Sanctuary</p>
+              <div className="h-[1px] w-4 bg-[#668c65]/50" />
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em]">Business Sanctuary</p>
             </div>
           </div>
         )}
@@ -132,10 +132,10 @@ export function ProviderTabsSidebar({
                 aria-expanded={expandedGroups[group.title]}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#608d64] transition-colors`}>
+                  <span className={`h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#668c65] transition-colors`}>
                     {groupIconByTitle[group.title]}
                   </span>
-                  <span className="text-[10px] font-black text-slate-500 group-hover:text-[#608d64] uppercase tracking-[0.4em] transition-colors">
+                  <span className="text-[10px] font-black text-slate-500 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
                     {group.title}
                   </span>
                 </div>
@@ -156,17 +156,17 @@ export function ProviderTabsSidebar({
                     disabled={isTabDisabled}
                     className={`relative group w-full text-left text-sm px-4 py-3 rounded-2xl transition-all duration-500 flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'
                       } ${isActive
-                        ? 'bg-white/10 text-white shadow-2xl shadow-[#608d64]/10 border border-white/10'
+                        ? 'bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10'
                         : isTabDisabled
                           ? 'opacity-20 cursor-not-allowed text-slate-500'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     title={isTabDisabled ? "Verify your account to access this tab" : isCollapsed ? tab.label : undefined}
                   >
-                    <span className={`h-5 w-5 flex-shrink-0 transition-colors duration-500 ${isActive ? 'text-[#608d64]' : 'group-hover:text-white'}`}>{tab.icon}</span>
+                    <span className={`h-5 w-5 flex-shrink-0 transition-colors duration-500 ${isActive ? 'text-[#668c65]' : 'group-hover:text-white'}`}>{tab.icon}</span>
                     {!isCollapsed && <span className={`font-medium tracking-tight ${isActive ? 'font-bold' : 'font-light'}`}>{tab.label}</span>}
                     {isActive && !isCollapsed && (
-                      <div className="ml-auto w-1 h-1 rounded-full bg-[#608d64] shadow-[0_0_8px_#608d64]" />
+                      <div className="ml-auto w-1 h-1 rounded-full bg-[#668c65] shadow-[0_0_8px_#668c65]" />
                     )}
                   </button>
                 );
@@ -184,7 +184,7 @@ export function ProviderTabsSidebar({
           <div className={`mb-4 ${isCollapsed ? 'px-0 flex justify-center' : 'px-2'}`}>
             {!isCollapsed ? (
               <div className="p-4 rounded-3xl bg-white/5 border border-white/5 shadow-2xl flex items-center gap-4 group">
-                <div className="w-12 h-12 rounded-2xl bg-[#608d64]/20 flex items-center justify-center text-sm font-black text-[#608d64] flex-shrink-0 border border-[#608d64]/10">
+                <div className="w-12 h-12 rounded-2xl bg-[#668c65]/20 flex items-center justify-center text-sm font-black text-[#668c65] flex-shrink-0 border border-[#668c65]/10">
                   {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
@@ -205,7 +205,7 @@ export function ProviderTabsSidebar({
               </div>
             ) : (
               <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#608d64]/20 flex items-center justify-center text-xs font-black text-[#608d64] border border-[#608d64]/10">
+                <div className="w-10 h-10 rounded-xl bg-[#668c65]/20 flex items-center justify-center text-xs font-black text-[#668c65] border border-[#668c65]/10">
                   {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
                 </div>
                 <button

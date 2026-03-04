@@ -388,7 +388,7 @@ export function AdminProviders() {
                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{statusFilter === "pending" ? "Applied" : "Presence"}</p>
                             <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5 leading-none">
                               <Calendar className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                              {new Date(onboarding?.submitted_at || provider?.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                              {new Date(onboarding?.submitted_at || provider?.created_at).toLocaleDateString('en-CA', { day: 'numeric', month: 'short' })}
                             </p>
                           </div>
 

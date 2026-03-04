@@ -26,15 +26,8 @@ export const useAuth = () => {
         return null;
       }
 
-      try {
-        const response = await authApi.getMe();
-        return response.data;
-      } catch (error) {
-        // If token is invalid, clear auth data
-        tokenManager.clearTokens();
-        userManager.clearUser();
-        return null;
-      }
+      const response = await authApi.getMe();
+      return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
@@ -48,12 +41,12 @@ export const useAuth = () => {
     retry: (failureCount, error: any) => {
       // Retry up to 3 times for timeout/network errors only
       if (failureCount < 3) {
-        const isRetryableError = 
+        const isRetryableError =
           error.message?.includes('timeout') ||
           error.message?.includes('Network error') ||
           error.code === 'ECONNABORTED' ||
           error.code === 'NETWORK_ERROR';
-        
+
         if (isRetryableError) {
           console.log(`Retrying login (attempt ${failureCount + 1}/3)...`);
           return true;
@@ -104,10 +97,10 @@ export const useAuth = () => {
     },
     onError: (error: Error) => {
       console.error('Login error details:', error);
-      
+
       // Provide more specific error messages
       let errorMessage = error.message || 'Login failed';
-      
+
       if (error.message?.includes('timeout')) {
         errorMessage = 'Login request timed out. Please check your internet connection and try again.';
       } else if (error.message?.includes('Network error')) {
@@ -115,7 +108,7 @@ export const useAuth = () => {
       } else if (error.message?.includes('Wrong email or password')) {
         errorMessage = 'Invalid email or password. Please try again.';
       }
-      
+
       toast.error(errorMessage);
     },
   });

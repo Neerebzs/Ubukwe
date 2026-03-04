@@ -164,7 +164,7 @@ export default function ServicesPage() {
                 </div>
                 <div className="relative z-10 space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 shadow-sm">
+                    <div className="w-14 h-14 bg-sage-50 rounded-2xl flex items-center justify-center text-sage-600 shadow-sm">
                       {currentCategory.icon}
                     </div>
                     <Badge variant="secondary" className="bg-slate-900 text-white font-bold px-4 py-1.5 rounded-full border-none">

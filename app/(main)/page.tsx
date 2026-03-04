@@ -199,20 +199,20 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl text-slate-900 leading-[0.9] tracking-tight">
+                <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl text-sage-950 leading-[0.9] tracking-tight">
                   <span className="block font-light">Crafting</span>
                   <span className="block italic font-medium ml-4 md:ml-12 text-primary">Moments</span>
-                  <span className="block font-light text-slate-400">That Last.</span>
+                  <span className="block font-light text-sage-300">That Last.</span>
                 </h1>
 
-                <p className="font-outfit text-slate-500 text-lg md:text-xl max-w-lg leading-relaxed font-light">
+                <p className="font-outfit text-sage-600/70 text-lg md:text-xl max-w-lg leading-relaxed font-light">
                   <TranslatedText text="Experience the art of Rwandan wedding planning. We connect you with the finest providers to create a celebration that honors tradition and embraces elegance." />
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-6">
                 <Link href="/services">
-                  <Button size="lg" className="h-16 px-10 rounded-full bg-[#608d64] hover:bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
+                  <Button size="lg" className="h-16 px-10 rounded-full bg-[#668c65] hover:bg-sage-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300">
                     <TranslatedText text="Start Planning" />
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
@@ -223,7 +223,7 @@ export default function HomePage() {
                       <img src={`/grom.jpg`} className="w-full h-full object-cover grayscale" alt="Client" />
                     </div>
                   ))}
-                  <div className="w-12 h-12 rounded-full border-4 border-white bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-bold text-xs">
+                  <div className="w-12 h-12 rounded-full border-4 border-white bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-xs">
                     +2k
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default function HomePage() {
 
                 {/* Text Accent */}
                 <div className="absolute right-0 bottom-20 z-10 opacity-5 select-none pointer-events-none">
-                  <span className="font-serif text-[180px] leading-none text-slate-900">Hub</span>
+                  <span className="font-serif text-[180px] leading-none text-sage-950">Hub</span>
                 </div>
               </div>
             </div>
@@ -281,23 +281,23 @@ export default function HomePage() {
       >
         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Limited Exclusives" />
             </h2>
-            <p className="text-slate-500 font-medium text-lg">
+            <p className="text-sage-500 font-medium text-lg">
               <TranslatedText text="Hand-picked deals and upcoming events just for you." />
             </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => scroll("left")}
-              className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+              className="p-4 rounded-2xl bg-white shadow-sm border border-sage-100 text-sage-600 hover:bg-sage-950 hover:text-white transition-all"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="p-4 rounded-2xl bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white transition-all"
+              className="p-4 rounded-2xl bg-white shadow-sm border border-sage-100 text-sage-600 hover:bg-sage-950 hover:text-white transition-all"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
@@ -333,7 +333,7 @@ export default function HomePage() {
                     </Badge>
                   </div>
 
-                  <div className="absolute top-4 right-4 bg-[#608d64] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                  <div className="absolute top-4 right-4 bg-[#668c65] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
                     <div className="text-center leading-none">
                       <p className="text-lg font-black">{promo.discount.split(' ')[0]}</p>
                       <p className="text-[8px] font-bold uppercase tracking-tighter">{promo.discount.split(' ')[1]}</p>
@@ -342,26 +342,26 @@ export default function HomePage() {
 
                   {/* Content */}
                   <div className="p-8 space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#608d64]/10 group-hover:text-[#608d64] transition-colors duration-300">
+                    <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-300 group-hover:bg-[#668c65]/10 group-hover:text-[#668c65] transition-colors duration-300">
                       {promo.icon}
                     </div>
 
                     <div>
-                      <h3 className="text-2xl font-extrabold text-slate-900 mb-2 leading-tight">
+                      <h3 className="text-2xl font-extrabold text-sage-950 mb-2 leading-tight">
                         <TranslatedText text={promo.title} />
                       </h3>
-                      <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed">
+                      <p className="text-sage-500 text-sm font-medium line-clamp-2 leading-relaxed">
                         <TranslatedText text={promo.description} />
                       </p>
                     </div>
 
-                    <div className="pt-4 flex items-center justify-between border-t border-slate-50">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                    <div className="pt-4 flex items-center justify-between border-t border-sage-50">
+                      <div className="flex items-center gap-2 text-xs font-bold text-sage-400">
                         <Clock className="w-4 h-4" />
                         <span>Until {promo.validUntil}</span>
                       </div>
                       <Link href="/services">
-                        <Button variant="ghost" className="text-[#608d64] font-bold hover:bg-[#608d64]/10 rounded-xl group/btn p-0">
+                        <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
                           <TranslatedText text="Explore" />
                           <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                         </Button>
@@ -381,12 +381,12 @@ export default function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="group text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-slate-50 text-[#608d64] rounded-2xl flex items-center justify-center group-hover:bg-[#608d64] group-hover:text-white transition-all duration-300">
+                <div className="w-16 h-16 mx-auto bg-sage-50 text-[#668c65] rounded-2xl flex items-center justify-center group-hover:bg-[#668c65] group-hover:text-white transition-all duration-300">
                   {stat.icon}
                 </div>
                 <div>
-                  <div className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter mb-1">{stat.number}</div>
-                  <div className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] font-outfit">
+                  <div className="text-4xl md:text-5xl font-black text-sage-950 tracking-tighter mb-1">{stat.number}</div>
+                  <div className="text-sm font-bold text-sage-400 uppercase tracking-[0.2em] font-outfit">
                     <TranslatedText text={stat.label} />
                   </div>
                 </div>
@@ -401,17 +401,17 @@ export default function HomePage() {
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
             <div className="max-w-2xl space-y-4">
-              <div className="flex items-center gap-2 text-[#608d64]">
+              <div className="flex items-center gap-2 text-[#668c65]">
                 <Sparkles className="h-5 w-5" />
                 <span className="font-outfit font-bold tracking-widest uppercase text-xs">
                   <TranslatedText text="Categories" />
                 </span>
               </div>
-              <h2 className="text-5xl md:text-6xl font-black text-slate-900 leading-tight">
+              <h2 className="text-5xl md:text-6xl font-black text-sage-950 leading-tight">
                 <TranslatedText text="Everything for Your Celebration" />
               </h2>
             </div>
-            <p className="text-lg text-slate-500 max-w-md font-medium leading-relaxed">
+            <p className="text-lg text-sage-500 max-w-md font-medium leading-relaxed">
               <TranslatedText text="Explore our curated directory of luxury wedding providers. Each service is hand-vetted to ensure the highest standards of excellence." />
             </p>
           </div>
@@ -420,22 +420,22 @@ export default function HomePage() {
             {services.map((service, index) => (
               <div
                 key={index}
-                className="group p-10 bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-[#608d64]/30 transition-all duration-500 flex flex-col items-center text-center space-y-6"
+                className="group p-10 bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-[#668c65]/30 transition-all duration-500 flex flex-col items-center text-center space-y-6"
               >
                 <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6", service.color)}>
                   {service.icon}
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                  <h3 className="text-2xl font-black text-sage-950 tracking-tight">
                     <TranslatedText text={service.title} />
                   </h3>
-                  <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                  <p className="text-sage-500 text-sm font-medium leading-relaxed">
                     <TranslatedText text={service.description} />
                   </p>
                 </div>
                 <div className="pt-4 w-full">
                   <Link href="/services">
-                    <Button variant="outline" className="w-full h-14 rounded-2xl border-slate-200 font-bold hover:bg-slate-900 hover:text-white transition-all">
+                    <Button variant="outline" className="w-full h-14 rounded-2xl border-sage-100 font-bold hover:bg-sage-950 hover:text-white transition-all">
                       <TranslatedText text="Explore Providers" />
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -451,10 +451,10 @@ export default function HomePage() {
       <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-20 space-y-4">
-            <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-5xl md:text-6xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Simple Three-Step Planning" />
             </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto font-medium">
+            <p className="text-lg text-sage-500 max-w-2xl mx-auto font-medium">
               <TranslatedText text="We've streamlined the journey from your engagement to your dream wedding day." />
             </p>
           </div>
@@ -469,7 +469,7 @@ export default function HomePage() {
               { step: "03", title: "Celebrate", desc: "Enjoy your perfect moment with everything in place.", icon: <Sparkles className="h-6 w-6" /> },
             ].map((item, index) => (
               <div key={index} className="relative z-10 flex flex-col items-center text-center group">
-                <div className="w-24 h-24 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center mb-8 shadow-sm group-hover:border-[#608d64] group-hover:shadow-xl transition-all duration-500">
+                <div className="w-24 h-24 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center mb-8 shadow-sm group-hover:border-[#668c65] group-hover:shadow-xl transition-all duration-500">
                   <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-xl font-black">
                     {item.step}
                   </div>
@@ -572,10 +572,10 @@ export default function HomePage() {
       <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white border-t border-slate-50">
         <div className="container mx-auto max-w-3xl">
           <div className="text-center mb-16 space-y-4">
-            <h2 className="text-5xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-5xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Common Questions" />
             </h2>
-            <p className="text-lg text-slate-500 font-medium">
+            <p className="text-lg text-sage-500 font-medium">
               <TranslatedText text="Everything you need to know about planning with Ubukwe Hub." />
             </p>
           </div>
@@ -587,15 +587,15 @@ export default function HomePage() {
                   onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
                   className="w-full px-8 py-7 flex items-center justify-between text-left group-hover:bg-white transition-all duration-300"
                 >
-                  <span className="font-bold text-slate-900 text-xl tracking-tight">
+                  <span className="font-bold text-sage-950 text-xl tracking-tight">
                     <TranslatedText text={faq.question} />
                   </span>
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300", expandedFaq === index ? "bg-slate-900 text-white rotate-180" : "bg-white text-slate-400 border border-slate-100 shadow-sm")}>
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300", expandedFaq === index ? "bg-sage-950 text-white rotate-180" : "bg-white text-sage-300 border border-sage-100 shadow-sm")}>
                     <ChevronDown className="h-5 w-5" />
                   </div>
                 </button>
                 {expandedFaq === index && (
-                  <div className="px-8 pb-8 pt-2 bg-white text-slate-500 text-lg font-medium leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="px-8 pb-8 pt-2 bg-white text-sage-500 text-lg font-medium leading-relaxed animate-in fade-in slide-in-from-top-2 duration-300">
                     <TranslatedText text={faq.answer} />
                   </div>
                 )}

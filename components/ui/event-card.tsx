@@ -20,7 +20,7 @@ interface EventCardProps {
 export function EventCard({ id, title, image, time, location, organizer, price, href }: EventCardProps) {
   return (
     <Link href={href}>
-      <Card className="group overflow-hidden border border-slate-100 bg-white hover:border-[#608d64]/20 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] transition-all duration-700 rounded-[32px]">
+      <Card className="group overflow-hidden border border-slate-100 bg-white hover:border-[#668c65]/20 hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] transition-all duration-700 rounded-[32px]">
         <div className="relative aspect-[4/5] overflow-hidden">
           <img
             src={image}
@@ -38,7 +38,7 @@ export function EventCard({ id, title, image, time, location, organizer, price, 
           <Button
             size="icon"
             variant="ghost"
-            className="absolute top-6 right-6 h-10 w-10 bg-white/90 hover:bg-[#608d64] hover:text-white backdrop-blur-md rounded-full shadow-sm transition-all duration-500 group/bookmark"
+            className="absolute top-6 right-6 h-10 w-10 bg-white/90 hover:bg-[#668c65] hover:text-white backdrop-blur-md rounded-full shadow-sm transition-all duration-500 group/bookmark"
             onClick={(e) => {
               e.preventDefault();
               // Handle bookmark logic
@@ -55,8 +55,8 @@ export function EventCard({ id, title, image, time, location, organizer, price, 
         <CardContent className="p-8 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-[1px] w-6 bg-[#608d64]/30" />
-              <span className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.3em]">{location}</span>
+              <div className="h-[1px] w-6 bg-[#668c65]/30" />
+              <span className="text-[9px] font-black text-[#668c65] uppercase tracking-[0.3em]">{location}</span>
             </div>
 
             <h3 className="font-serif italic text-2xl text-slate-900 line-clamp-2 leading-tight">
@@ -76,7 +76,7 @@ export function EventCard({ id, title, image, time, location, organizer, price, 
             </div>
             <div className="text-right">
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Access</span>
-              <span className="text-[10px] font-black text-[#608d64] tracking-wide">{price}</span>
+              <span className="text-[10px] font-black text-[#668c65] tracking-wide">{price}</span>
             </div>
           </div>
         </CardContent>

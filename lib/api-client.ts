@@ -290,11 +290,11 @@ class ApiClient {
     },
     submitOnboarding: async (data: any, rdbFile: File) => {
       const formData = new FormData();
-      
+
       // Map frontend field names to backend field names
       const fieldMapping = {
         businessName: 'business_name',
-        businessType: 'business_type', 
+        businessType: 'business_type',
         yearsExperience: 'years_experience',
         serviceCategories: 'service_categories',
         description: 'business_description',
@@ -314,7 +314,7 @@ class ApiClient {
           formData.append(backendKey, data[key]);
         }
       });
-      
+
       // Append file
       formData.append('rdb_file', rdbFile);
 
@@ -562,7 +562,7 @@ class ApiClient {
     onboarding: {
       getAll: async (status?: string) => {
         const params = status ? { status } : {};
-        return axiosInstance.get<any[]>('/api/v1/admin/onboarding', { params });
+        return axiosInstance.get<any>('/api/v1/admin/onboarding', { params });
       },
       getStats: async () => {
         return axiosInstance.get<any>('/api/v1/admin/onboarding/stats');
@@ -583,7 +583,7 @@ class ApiClient {
     services: {
       getAll: async (status?: string) => {
         const params = status ? { status } : {};
-        return axiosInstance.get<any[]>('/api/v1/admin/services', { params });
+        return axiosInstance.get<any>('/api/v1/admin/services', { params });
       },
       getStats: async () => {
         return axiosInstance.get<any>('/api/v1/admin/services/stats');
@@ -622,7 +622,7 @@ class ApiClient {
     providerServices: {
       getAll: async (status?: string) => {
         const params = status ? { status } : {};
-        return axiosInstance.get<any[]>('/api/v1/admin/provider-services', { params });
+        return axiosInstance.get<any>('/api/v1/admin/provider-services', { params });
       },
       getStats: async () => {
         return axiosInstance.get<any>('/api/v1/admin/provider-services/stats');

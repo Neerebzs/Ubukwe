@@ -72,7 +72,7 @@ export function DashboardHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleMobileMenu}
-                className="md:hidden flex-shrink-0 h-10 w-10 rounded-full hover:bg-[#608d64]/5 text-slate-400"
+                className="md:hidden flex-shrink-0 h-10 w-10 rounded-full hover:bg-[#668c65]/5 text-slate-400"
                 aria-label="Toggle mobile menu"
               >
                 <Menu className="h-5 w-5" />
@@ -83,7 +83,7 @@ export function DashboardHeader({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleSidebar}
-                className="hidden md:flex flex-shrink-0 h-10 w-10 rounded-full hover:bg-[#608d64]/5 text-slate-400 hover:text-[#608d64] transition-all"
+                className="hidden md:flex flex-shrink-0 h-10 w-10 rounded-full hover:bg-[#668c65]/5 text-slate-400 hover:text-[#668c65] transition-all"
                 aria-label="Toggle sidebar"
               >
                 <Menu className="h-5 w-5" />
@@ -98,7 +98,7 @@ export function DashboardHeader({
               </div>
             )}
             {subtitle && (
-              <div className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em] truncate leading-tight mt-1">
+              <div className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] truncate leading-tight mt-1">
                 {subtitle}
               </div>
             )}
@@ -111,7 +111,7 @@ export function DashboardHeader({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-slate-50 text-slate-400 group" title="Switch Language">
-                <Globe className="h-5 w-5 group-hover:text-[#608d64] transition-colors" />
+                <Globe className="h-5 w-5 group-hover:text-[#668c65] transition-colors" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100 bg-white/95 backdrop-blur-xl">
@@ -122,7 +122,7 @@ export function DashboardHeader({
                   <DropdownMenuItem
                     key={lang.code}
                     onClick={() => setLanguage(lang.code)}
-                    className={`rounded-xl px-3 py-2 text-sm transition-all focus:bg-[#608d64]/5 focus:text-[#608d64] cursor-pointer ${language === lang.code ? 'bg-[#608d64]/10 text-[#608d64] font-bold' : 'text-slate-600'
+                    className={`rounded-xl px-3 py-2 text-sm transition-all focus:bg-[#668c65]/5 focus:text-[#668c65] cursor-pointer ${language === lang.code ? 'bg-[#668c65]/10 text-[#668c65] font-bold' : 'text-slate-600'
                       }`}
                   >
                     <span className="mr-3 text-base">{lang.flag}</span>
@@ -144,11 +144,11 @@ export function DashboardHeader({
               <Button variant="ghost" className="h-12 p-1.5 pl-3 gap-3 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100">
                 <div className="text-right hidden sm:block min-w-0">
                   <p className="text-sm font-bold text-slate-900 leading-none truncate">{user.full_name}</p>
-                  <p className="text-[9px] text-[#608d64] font-black uppercase tracking-[0.25em] mt-1.5">{user.role}</p>
+                  <p className="text-[9px] text-[#668c65] font-black uppercase tracking-[0.25em] mt-1.5">{user.role}</p>
                 </div>
                 <Avatar className="h-9 w-9 border-2 border-white shadow-sm ring-1 ring-slate-100">
                   <AvatarImage src={user.profile_image_url} alt={user.full_name} />
-                  <AvatarFallback className="text-xs bg-[#608d64]/10 text-[#608d64] font-black">{initials}</AvatarFallback>
+                  <AvatarFallback className="text-xs bg-[#668c65]/10 text-[#668c65] font-black">{initials}</AvatarFallback>
                 </Avatar>
                 <ChevronDown className="h-4 w-4 text-slate-300 hidden sm:block" />
               </Button>
@@ -156,11 +156,11 @@ export function DashboardHeader({
             <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-slate-100 bg-white/95 backdrop-blur-xl">
               <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Your Sanctuary</DropdownMenuLabel>
               <DropdownMenuSeparator className="my-1 bg-slate-50" />
-              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#608d64]/5 focus:text-[#608d64] transition-all cursor-pointer">
+              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer">
                 <User className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-medium tracking-tight">Profile Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#608d64]/5 focus:text-[#608d64] transition-all cursor-pointer">
+              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer">
                 <Settings className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-medium tracking-tight">Preferences</span>
               </DropdownMenuItem>

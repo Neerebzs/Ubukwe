@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, CheckCircle, Star, Edit2, Save, X, Heart, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
+import { Calendar, CheckCircle, Star, Edit2, Save, X, Heart, DollarSign, TrendingUp, AlertTriangle, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,12 +41,12 @@ export function Overview({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch real wedding details
-  const { data: weddingResponse, isLoading } = useQuery({
+  const { data: weddingResponse, isLoading } = useQuery<Wedding | null>({
     queryKey: ["wedding-me"],
     queryFn: async () => {
       try {
         const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
-        return response.data;
+        return response.data || null;
       } catch (err: any) {
         if (err.message.includes("404")) return null;
         throw err;
@@ -55,18 +55,18 @@ export function Overview({
   });
 
   // Fetch wedding tasks for progress calculation
-  const { data: tasks } = useQuery({
+  const { data: tasks } = useQuery<any[]>({
     queryKey: ["wedding-tasks"],
     queryFn: async () => {
       try {
-        const response = await apiClient.get(API_ENDPOINTS.WEDDING.TASKS);
+        const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.TASKS);
         const data = response.data;
         if (Array.isArray(data)) {
           return data;
-        } else if (data && Array.isArray(data.data)) {
-          return data.data;
-        } else if (data && typeof data === 'object' && data.tasks && Array.isArray(data.tasks)) {
-          return data.tasks;
+        } else if (data && Array.isArray((data as any).data)) {
+          return (data as any).data;
+        } else if (data && typeof data === 'object' && (data as any).tasks && Array.isArray((data as any).tasks)) {
+          return (data as any).tasks;
         }
         return [];
       } catch (err: any) {
@@ -74,11 +74,11 @@ export function Overview({
         throw err;
       }
     },
-    enabled: !!weddingResponse // Only fetch tasks if wedding is set up
+    enabled: !!weddingResponse
   });
 
   // Fetch recommended services
-  const { data: recommendationsRes } = useQuery({
+  const { data: recommendationsRes } = useQuery<ProviderService[]>({
     queryKey: ["service-recommendations"],
     queryFn: async () => {
       const response = await apiClient.get<ProviderService[]>(API_ENDPOINTS.SERVICES.LIST);
@@ -87,11 +87,11 @@ export function Overview({
   });
 
   const recommendedServices = recommendationsRes || [];
-  const currentWedding = weddingResponse || null;
+  const currentWedding = (weddingResponse as any) || null;
   const tasksArray = tasks || [];
 
   // Calculate real planning progress
-  const completedTasks = tasksArray.filter(task => task.is_completed).length;
+  const completedTasks = tasksArray.filter((task: any) => task.is_completed).length;
   const totalTasks = tasksArray.length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -116,6 +116,16 @@ export function Overview({
     };
   };
 
+  // Normalize wedding data
+  const displayWedding = {
+    coupleName: currentWedding?.couple_name || weddingDetails.coupleName,
+    weddingDate: currentWedding?.wedding_date || weddingDetails.weddingDate,
+    guestCount: currentWedding?.guest_count ?? weddingDetails.guestCount,
+    budget: currentWedding ? Number(currentWedding.budget) : (weddingDetails.budget || 0),
+    spent: currentWedding ? Number(currentWedding.spent) : (weddingDetails.spent || 0),
+    venue: currentWedding?.venue || (weddingDetails as any).venue || "Not set"
+  };
+
   const handleEditClick = () => {
     const { bride, groom } = parseCoupleName(displayWedding.coupleName);
     setBrideName(bride);
@@ -138,7 +148,6 @@ export function Overview({
       queryClient.invalidateQueries({ queryKey: ["wedding-me"] });
       toast.success("Wedding details updated successfully");
       setIsEditDialogOpen(false);
-      // Notify parent component about budget update
       if (budget && onBudgetUpdate) {
         onBudgetUpdate(parseFloat(budget));
       }
@@ -158,170 +167,150 @@ export function Overview({
       groom_name: groomName,
       wedding_date: weddingDate
     };
-    
-    if (guestCount) {
-      updateData.guest_count = parseInt(guestCount);
-    }
-    
-    if (budget) {
-      updateData.budget = budget;
-    }
-    
+    if (guestCount) updateData.guest_count = parseInt(guestCount);
+    if (budget) updateData.budget = budget;
     saveMutation.mutate(updateData);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading wedding details...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
+        <span className="ml-2 text-slate-600 font-serif italic text-lg">Curating your experience...</span>
       </div>
     );
   }
 
   const isDetailsSet = !!currentWedding;
-
-  // Normalize wedding data to use camelCase consistently
-  const displayWedding = {
-    coupleName: currentWedding?.couple_name || weddingDetails.coupleName,
-    weddingDate: currentWedding?.wedding_date || weddingDetails.weddingDate,
-    guestCount: currentWedding?.guest_count ?? weddingDetails.guestCount,
-    budget: currentWedding ? Number(currentWedding.budget) : (weddingDetails.budget || 0),
-    spent: currentWedding ? Number(currentWedding.spent) : (weddingDetails.spent || 0),
-    venue: currentWedding?.venue || weddingDetails.venue || "Not set"
-  };
-
-  // Calculate budget metrics
   const budgetUsedPercentage = displayWedding.budget > 0 ? (displayWedding.spent / displayWedding.budget) * 100 : 0;
-  const remainingBudget = displayWedding.budget - displayWedding.spent;
-  const isOverBudget = displayWedding.spent > displayWedding.budget;
   const budgetWarning = budgetUsedPercentage > 90;
 
   return (
-    <div className="space-y-6">
-      {/* Wedding Details Card with Edit */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <Heart className="h-5 w-5 mr-2 text-primary" />
-              Wedding Details
-            </CardTitle>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Wedding Details Card */}
+      <Card className="border-none shadow-[0_20px_50px_rgba(13,148,136,0.05)] bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="pt-10 px-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center text-3xl font-serif italic text-slate-800 tracking-tight">
+                <div className="p-2.5 bg-sage-50 rounded-2xl mr-4">
+                  <Heart className="h-6 w-6 text-sage-600 fill-sage-600/10" />
+                </div>
+                Your Celebration
+              </CardTitle>
+              <p className="text-slate-500 font-medium text-sm ml-16">Curating every precious detail of your story</p>
+            </div>
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button
                   variant={isDetailsSet ? "outline" : "default"}
-                  size="sm"
+                  size="lg"
                   onClick={handleEditClick}
+                  className={`rounded-2xl px-8 h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 ${isDetailsSet
+                    ? "border-sage-100 text-sage-700 hover:bg-sage-50 hover:border-sage-200"
+                    : "bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-600/20"
+                    }`}
                 >
                   <Edit2 className="h-4 w-4 mr-2" />
-                  {isDetailsSet ? "Edit Details" : "Add Details"}
+                  {isDetailsSet ? "Refine Details" : "Set Celebration"}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>{isDetailsSet ? "Edit Wedding Details" : "Add Wedding Details"}</DialogTitle>
-                  <DialogDescription>
-                    {isDetailsSet
-                      ? "Update your wedding information including bride and groom names and wedding date."
-                      : "Add your wedding information including bride and groom names and wedding date."
-                    }
+              <DialogContent className="max-w-[550px] rounded-[2.5rem] border-none shadow-2xl p-10 bg-white/95 backdrop-blur-sm">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="font-serif italic text-3xl text-slate-800">Wedding Information</DialogTitle>
+                  <DialogDescription className="text-slate-500 font-medium mt-2">
+                    Gracefully update the heart of your celebration below.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="bride-name">Bride's Name</Label>
-                    <Input
-                      id="bride-name"
-                      placeholder="Enter bride's name"
-                      value={brideName}
-                      onChange={(e) => setBrideName(e.target.value)}
-                    />
+                <div className="space-y-6 py-4">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="bride-name" className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Bride's Name</Label>
+                      <Input
+                        id="bride-name"
+                        value={brideName}
+                        onChange={(e) => setBrideName(e.target.value)}
+                        className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500 transition-all font-medium"
+                        placeholder="Grace"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="groom-name" className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Groom's Name</Label>
+                      <Input
+                        id="groom-name"
+                        value={groomName}
+                        onChange={(e) => setGroomName(e.target.value)}
+                        className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500 transition-all font-medium"
+                        placeholder="Emile"
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="groom-name">Groom's Name</Label>
-                    <Input
-                      id="groom-name"
-                      placeholder="Enter groom's name"
-                      value={groomName}
-                      onChange={(e) => setGroomName(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="wedding-date">Wedding Date</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="wedding-date" className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Celebration Date</Label>
                     <Input
                       id="wedding-date"
                       type="date"
                       value={weddingDate}
                       onChange={(e) => setWeddingDate(e.target.value)}
+                      className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500 transition-all font-medium"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="guest-count">Guest Count</Label>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="guest-count" className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Estimated Guests</Label>
                       <Input
                         id="guest-count"
                         type="number"
-                        placeholder="e.g., 150"
                         value={guestCount}
                         onChange={(e) => setGuestCount(e.target.value)}
-                        min="1"
+                        className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500 transition-all font-medium"
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="budget">Total Budget (RWF)</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="budget" className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Investment (RWF)</Label>
                       <Input
                         id="budget"
                         type="number"
-                        placeholder="e.g., 5000000"
                         value={budget}
                         onChange={(e) => setBudget(e.target.value)}
-                        min="0"
-                        step="10000"
+                        className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500 transition-all font-medium"
                       />
                     </div>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} disabled={saveMutation.isPending}>
-                    {saveMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    {isDetailsSet ? "Save Changes" : "Save Details"}
+                <DialogFooter className="mt-8 flex gap-3">
+                  <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-2xl h-12 px-6 font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50">Cancel</Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saveMutation.isPending}
+                    className="flex-1 bg-sage-600 hover:bg-sage-700 text-white rounded-2xl h-12 font-bold uppercase tracking-widest transition-all shadow-lg shadow-sage-600/20"
+                  >
+                    {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Preserve Details
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Bride</div>
-              <div className={`text-lg font-semibold ${isDetailsSet ? 'text-primary' : 'text-muted-foreground'}`}>
+        <CardContent className="px-10 pb-12">
+          <div className="grid md:grid-cols-3 gap-8 mt-4">
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 group transition-all duration-500 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 hover:-translate-y-1">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3">The Bride</div>
+              <div className={`text-2xl font-serif italic ${isDetailsSet ? 'text-sage-700' : 'text-slate-300'}`}>
                 {parseCoupleName(displayWedding.coupleName).bride || "Not set"}
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Groom</div>
-              <div className={`text-lg font-semibold ${isDetailsSet ? 'text-primary' : 'text-muted-foreground'}`}>
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 group transition-all duration-500 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 hover:-translate-y-1">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3">The Groom</div>
+              <div className={`text-2xl font-serif italic ${isDetailsSet ? 'text-sage-700' : 'text-slate-300'}`}>
                 {parseCoupleName(displayWedding.coupleName).groom || "Not set"}
               </div>
             </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Wedding Date</div>
-              <div className={`text-lg font-semibold ${isDetailsSet ? 'text-foreground' : 'text-muted-foreground'}`}>
-                {isDetailsSet ? new Date(displayWedding.weddingDate).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                }) : "Not set"}
+            <div className="flex flex-col items-center justify-center p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 group transition-all duration-500 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 hover:-translate-y-1">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-3">Celebration Date</div>
+              <div className={`text-xl font-medium ${isDetailsSet ? 'text-slate-800 tracking-tight' : 'text-slate-300'}`}>
+                {isDetailsSet ? new Date(displayWedding.weddingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : "Not set"}
               </div>
             </div>
           </div>
@@ -329,174 +318,195 @@ export function Overview({
       </Card>
 
       {/* Wedding Statistics */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2" />
-            Wedding Statistics
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-primary">
-                {displayWedding.budget > 0 ? `${budgetUsedPercentage.toFixed(0)}%` : "0%"}
+      <div className="grid md:grid-cols-4 gap-8">
+        {[
+          {
+            title: "Investment Used",
+            value: displayWedding.budget > 0 ? `${budgetUsedPercentage.toFixed(0)}%` : "0%",
+            subtitle: "On Track",
+            icon: DollarSign,
+            color: "teal",
+            warning: budgetWarning,
+          },
+          {
+            title: "Milestones",
+            value: `${planningProgress.percentage}%`,
+            subtitle: "Trending Up",
+            icon: CheckCircle,
+            color: "emerald",
+          },
+          {
+            title: "High Priority",
+            value: tasksArray.filter((t: any) => !t.is_completed && t.priority === "high").length,
+            subtitle: "Action Required",
+            icon: AlertTriangle,
+            color: "amber",
+          },
+          {
+            title: "Days To Go",
+            value: isDetailsSet ? Math.max(0, Math.ceil((new Date(displayWedding.weddingDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : "--",
+            subtitle: "Approaching",
+            icon: Clock,
+            color: "sky",
+          },
+        ].map((stat, i) => (
+          <Card key={i} className="border-none shadow-[0_10px_30px_rgba(0,0,0,0.03)] rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl hover:shadow-sage-500/10 transition-all duration-500 hover:-translate-y-1">
+            <CardContent className="p-8 flex flex-col items-center text-center">
+              <div className={`p-4 rounded-2xl mb-5 group-hover:scale-110 transition-all duration-500 ${stat.color === 'teal' ? 'bg-sage-50 text-sage-600' :
+                stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                  stat.color === 'amber' ? 'bg-amber-50 text-amber-600' : 'bg-sky-50 text-sky-600'
+                }`}>
+                <stat.icon className="h-6 w-6" />
               </div>
-              <div className="text-sm text-muted-foreground">Budget Used</div>
-              {budgetWarning && (
-                <Badge variant="destructive" className="text-xs mt-1">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Alert
-                </Badge>
+              <div className="text-4xl font-serif italic text-slate-800 tracking-tight">{stat.value}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-3">{stat.title}</div>
+
+              <div className={`mt-4 flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all duration-300 ${stat.color === 'teal' ? 'bg-sage-50/50 border-sage-100 text-sage-700' :
+                stat.color === 'emerald' ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' :
+                  stat.color === 'amber' ? 'bg-amber-50/50 border-amber-100 text-amber-700' : 'bg-sky-50/50 border-sky-100 text-sky-700'
+                } group-hover:bg-white group-hover:border-transparent group-hover:shadow-sm`}>
+                <TrendingUp className="h-3 w-3" />
+                <span className="text-[10px] font-bold uppercase">{stat.subtitle}</span>
+              </div>
+
+              {stat.warning && (
+                <div className="mt-4 animate-bounce">
+                  <Badge variant="destructive" className="bg-rose-500 text-white border-none text-[10px] rounded-full px-4 h-6 uppercase font-bold tracking-widest shadow-lg shadow-rose-500/20">
+                    <AlertTriangle className="h-3 w-3 mr-1" /> Re-Budget
+                  </Badge>
+                </div>
               )}
-            </div>
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{planningProgress.percentage}%</div>
-              <div className="text-sm text-muted-foreground">Tasks Complete</div>
-            </div>
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {tasksArray.filter(t => !t.is_completed && t.priority === 'high').length}
-              </div>
-              <div className="text-sm text-muted-foreground">High Priority</div>
-            </div>
-            <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">
-                {tasksArray.filter(t => {
-                  if (!t.end_date || t.is_completed) return false;
-                  const daysUntil = Math.ceil((new Date(t.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                  return daysUntil <= 7 && daysUntil >= 0;
-                }).length}
-              </div>
-              <div className="text-sm text-muted-foreground">Due This Week</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Wedding Progress */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Wedding Planning Progress
+      <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+        <CardHeader className="pt-10 px-10">
+          <CardTitle className="flex items-center text-2xl font-serif italic text-slate-800">
+            <div className="p-2 bg-sage-50 rounded-xl mr-4">
+              <Calendar className="h-5 w-5 text-sage-600" />
+            </div>
+            Planning Journey
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {planningProgress.completed} of {planningProgress.total} tasks completed
-              </span>
-              <span className="text-sm text-muted-foreground">{planningProgress.percentage}% complete</span>
+        <CardContent className="px-10 pb-12">
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Progress Report</span>
+                <p className="text-slate-600 font-medium">
+                  You've gracefully completed <span className="text-sage-600 font-bold">{planningProgress.completed}</span> of <span className="text-sage-600 font-bold">{planningProgress.total}</span> essential tasks.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 bg-sage-50/50 px-5 py-2.5 rounded-2xl border border-sage-100/50">
+                <div className="w-2 h-2 bg-sage-500 rounded-full animate-pulse" />
+                <span className="text-sm font-bold text-sage-700 uppercase tracking-widest">{planningProgress.percentage}% Complete</span>
+              </div>
             </div>
-            <Progress value={planningProgress.percentage} className="h-2" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">
-                  {isDetailsSet ? Math.max(0, Math.ceil(
-                    (new Date(displayWedding.weddingDate).getTime() - new Date().getTime()) /
-                    (1000 * 60 * 60 * 24),
-                  )) : "--"}
+
+            <div className="relative pt-2">
+              <Progress value={planningProgress.percentage} className="h-4 bg-slate-50 [&>div]:bg-sage-600 rounded-full border border-slate-100" />
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+              {[
+                { label: "Days To Go", value: isDetailsSet ? Math.max(0, Math.ceil((new Date(displayWedding.weddingDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : "--", icon: Clock },
+                { label: "Guest List", value: isDetailsSet ? displayWedding.guestCount : "--", icon: Heart },
+                { label: "Artisans", value: recommendedServices.length, icon: Star },
+                { label: "Investment Used", value: isDetailsSet ? `${Math.round((Number(displayWedding.spent) / Number(displayWedding.budget)) * 100)}%` : "0%", icon: DollarSign },
+              ].map((item, idx) => (
+                <div key={idx} className="text-center p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 hover:-translate-y-1 group">
+                  <div className="text-4xl font-serif italic text-sage-700 group-hover:scale-110 transition-transform mb-2">
+                    {item.value}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{item.label}</div>
+                  <item.icon className="h-3 w-3 text-sage-200 mx-auto mt-3 group-hover:text-sage-500 transition-colors" />
                 </div>
-                <div className="text-xs text-muted-foreground">Days to go</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">{isDetailsSet ? displayWedding.guestCount : "--"}</div>
-                <div className="text-xs text-muted-foreground">Guests</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">0</div>
-                <div className="text-xs text-muted-foreground">Services booked</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">
-                  {isDetailsSet ? Math.round((Number(displayWedding.spent) / Number(displayWedding.budget)) * 100) : "0"}%
-                </div>
-                <div className="text-xs text-muted-foreground">Budget used</div>
-              </div>
+              ))}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Quick Actions & Recommendations */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2" />
-              Next Steps
+      <div className="grid lg:grid-cols-2 gap-8">
+        <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+          <CardHeader className="pt-10 px-10">
+            <CardTitle className="flex items-center text-2xl font-serif italic text-slate-800">
+              <div className="p-2 bg-sage-50 rounded-xl mr-4">
+                <CheckCircle className="h-5 w-5 text-sage-600" />
+              </div>
+              Immediate Focus
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="px-10 pb-12 space-y-4">
             {tasksArray.length > 0 ? (
               tasksArray
-                .filter((task) => !task.is_completed)
-                .slice(0, 4)
-                .map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-4 h-4 border-2 border-muted-foreground rounded"></div>
-                      <span className="text-sm">{task.title}</span>
+                .filter((task: any) => !task.is_completed)
+                .slice(0, 5)
+                .map((task: any) => (
+                  <div key={task.id} className="flex items-center justify-between p-5 bg-slate-50/50 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 transition-all duration-300 rounded-2xl border border-transparent hover:border-sage-50 group">
+                    <div className="flex items-center space-x-5">
+                      <div className="w-6 h-6 border-2 border-slate-200 rounded-full flex items-center justify-center group-hover:border-sage-400 transition-colors">
+                        <div className="w-2 h-2 bg-sage-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">{task.title}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {task.priority && (
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${
-                            task.priority === 'high' ? 'border-red-200 text-red-700' :
-                            task.priority === 'medium' ? 'border-yellow-200 text-yellow-700' :
-                            'border-green-200 text-green-700'
-                          }`}
-                        >
-                          {task.priority}
-                        </Badge>
-                      )}
-                      {task.assigned_to && (
-                        <Badge variant="outline" className="text-xs">
-                          {task.assigned_to === 'groom' ? 'Groom' : 
-                           task.assigned_to === 'bride' ? 'Bride' : 'Both'}
-                        </Badge>
-                      )}
-                    </div>
+                    {task.priority && (
+                      <Badge className={`text-[9px] font-bold uppercase tracking-[0.15em] px-3 py-1 border-none rounded-full ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' :
+                          task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                        {task.priority}
+                      </Badge>
+                    )}
                   </div>
                 ))
             ) : (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                {currentWedding ? "No pending tasks. Add some tasks to get started!" : "Set up your wedding details first to start planning."}
+              <div className="text-center py-20 bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
+                <p className="text-slate-400 text-sm font-serif italic">Your journey is beautifully on track.</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Star className="h-5 w-5 mr-2" />
-              Recommended for You
-            </CardTitle>
+        <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+          <CardHeader className="pt-10 px-10">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center text-2xl font-serif italic text-slate-800">
+                <div className="p-2 bg-sage-50 rounded-xl mr-4">
+                  <Star className="h-5 w-5 text-sage-600" />
+                </div>
+                Artisanal Curations
+              </CardTitle>
+              <Button variant="ghost" className="text-[10px] font-bold uppercase tracking-widest text-sage-600 hover:text-sage-700 hover:bg-sage-50 rounded-full h-8">Discover All</Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {recommendedServices.length > 0 ? recommendedServices.map((service) => (
-              <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="text-primary truncate font-medium max-w-[150px]">{service.name}</div>
+          <CardContent className="px-10 pb-12 space-y-4">
+            {recommendedServices.length > 0 ? recommendedServices.map((service: any) => (
+              <div key={service.id} className="flex items-center justify-between p-5 bg-slate-50/50 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 transition-all duration-500 rounded-2xl border border-transparent hover:border-sage-50 group">
+                <div className="flex items-center space-x-5">
+                  <div className="w-12 h-12 bg-sage-50 rounded-2xl flex items-center justify-center text-sage-700 font-serif italic text-lg shadow-sm border border-sage-100/50 group-hover:scale-105 transition-transform">
+                    {service.name.charAt(0)}
+                  </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">{service.category}</p>
+                    <h4 className="text-slate-800 font-bold text-sm tracking-tight group-hover:text-sage-700 transition-colors uppercase leading-none mb-1">{service.name}</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{service.category}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{service.price_range_min ? `${service.price_range_min.toLocaleString()} RWF` : "Contact"}</p>
-                  <div className="flex items-center justify-end text-xs">
-                    <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                    <span>{service.rating.toFixed(1)}</span>
+                <div className="flex flex-col items-end gap-1.5">
+                  <p className="text-sm font-extrabold text-slate-800 tracking-tighter">
+                    {service.price_range_min ? `${service.price_range_min.toLocaleString()} RWF+` : "Curation Required"}
+                  </p>
+                  <div className="flex items-center bg-sage-50/50 px-2.5 py-0.5 rounded-full border border-sage-100/50">
+                    <Star className="h-2.5 w-2.5 text-sage-500 fill-sage-500 mr-1.5" />
+                    <span className="text-[10px] font-bold text-sage-700">{service.rating.toFixed(1)}</span>
                   </div>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                No recommendations yet.
+              <div className="text-center py-20 bg-slate-50/30 rounded-[2rem] border border-dashed border-slate-200">
+                <p className="text-slate-400 text-sm font-serif italic">Your bespoke team is being curated...</p>
               </div>
             )}
           </CardContent>

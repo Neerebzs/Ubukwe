@@ -20,9 +20,10 @@ import {
     Calendar
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient, API_ENDPOINTS, WeddingTask, BudgetCategory } from "@/lib/api";
+import { apiClient, API_ENDPOINTS, WeddingTask, BudgetCategory, Wedding } from "@/lib/api";
 import { toast } from "sonner";
-import { AlertTriangle, Zap, Filter, SortAsc, Clock } from "lucide-react";
+import { AlertTriangle, Zap, Filter, SortAsc, Clock, Heart } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
     Dialog,
     DialogContent,
@@ -53,15 +54,15 @@ const ASSIGNMENT_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-    { value: "pending", label: "Pending", color: "bg-gray-100 text-gray-800" },
-    { value: "in_progress", label: "In Progress", color: "bg-blue-100 text-blue-800" },
-    { value: "completed", label: "Completed", color: "bg-green-100 text-green-800" }
+    { value: "pending", label: "Pending", color: "bg-slate-100 text-slate-800" },
+    { value: "in_progress", label: "In Progress", color: "bg-sage-100 text-sage-800" },
+    { value: "completed", label: "Completed", color: "bg-emerald-100 text-emerald-800" }
 ];
 
 const PRIORITY_OPTIONS = [
-    { value: "low", label: "Low Priority", color: "bg-green-100 text-green-800" },
-    { value: "medium", label: "Medium Priority", color: "bg-yellow-100 text-yellow-800" },
-    { value: "high", label: "High Priority", color: "bg-red-100 text-red-800" }
+    { value: "low", label: "Low Priority", color: "bg-slate-100 text-slate-700" },
+    { value: "medium", label: "Medium Priority", color: "bg-amber-100 text-amber-800" },
+    { value: "high", label: "High Priority", color: "bg-rose-100 text-rose-800" }
 ];
 
 export function WeddingTasks() {
@@ -82,12 +83,12 @@ export function WeddingTasks() {
     const [modalMode, setModalMode] = useState<"add" | "edit" | "view">("add");
 
     // Check if wedding is set up first
-    const { data: weddingResponse, isLoading: isWeddingLoading } = useQuery({
+    const { data: weddingResponse, isLoading: isWeddingLoading } = useQuery<Wedding | null>({
         queryKey: ["wedding-me"],
         queryFn: async () => {
             try {
-                const response = await apiClient.get(API_ENDPOINTS.WEDDING.ME);
-                return response.data;
+                const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
+                return response.data || null;
             } catch (err: any) {
                 if (err.message.includes("404")) return null;
                 throw err;
@@ -99,7 +100,6 @@ export function WeddingTasks() {
         queryKey: ["wedding-tasks"],
         queryFn: async () => {
             const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.TASKS);
-            // Ensure we always return an array
             const data = response.data;
             if (Array.isArray(data)) {
                 return data;
@@ -110,18 +110,18 @@ export function WeddingTasks() {
             }
             return [];
         },
-        enabled: !!weddingResponse // Only fetch tasks if wedding is set up
+        enabled: !!weddingResponse
     });
 
     // Fetch budget categories for dynamic selection
     const { data: budgetCategories } = useQuery<BudgetCategory[]>({
-        queryKey: ["budget-categories", (weddingResponse as any)?.id],
+        queryKey: ["budget-categories", weddingResponse?.id],
         queryFn: async () => {
-            if (!(weddingResponse as any)?.id) return [];
-            const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.BUDGET_CATEGORIES((weddingResponse as any).id));
+            if (!weddingResponse?.id) return [];
+            const response = await apiClient.get<any>(API_ENDPOINTS.WEDDING.BUDGET_CATEGORIES(weddingResponse.id));
             return (response.data?.data || response.data || []) as BudgetCategory[];
         },
-        enabled: !!(weddingResponse as any)?.id
+        enabled: !!weddingResponse?.id
     });
 
     // Fetch single task details for "View" mode
@@ -180,9 +180,9 @@ export function WeddingTasks() {
     };
 
     const today = new Date().toISOString().split('T')[0];
-    const weddingEve = (weddingResponse as any)?.wedding_date
+    const weddingEve = weddingResponse?.wedding_date
         ? (() => {
-            const d = new Date((weddingResponse as any).wedding_date);
+            const d = new Date(weddingResponse.wedding_date);
             d.setDate(d.getDate() - 1);
             return d.toISOString().split('T')[0];
         })()
@@ -194,13 +194,11 @@ export function WeddingTasks() {
             return;
         }
 
-        // Budget category validation - MUST be selected
         if (!budgetCategoryId || budgetCategoryId.trim() === "") {
             toast.error("Please select a budget category before creating the task.");
             return;
         }
 
-        // Date validation
         if (startDate && startDate < today) {
             toast.warning("Start date cannot be in the past.");
             return;
@@ -220,22 +218,20 @@ export function WeddingTasks() {
             }
         }
 
-        // Budget validation
         if (amount && budgetCategoryId) {
             const selectedCategory = budgetCategories?.find(cat => cat.id === budgetCategoryId);
             const taskAmount = parseFloat(amount);
 
             if (selectedCategory && taskAmount > selectedCategory.allocated_amount) {
-                toast.warning(`Budget Warning: This task amount (RWF ${taskAmount.toLocaleString()}) exceeds the allocated budget for ${selectedCategory.category_name} (RWF ${selectedCategory.allocated_amount.toLocaleString()}).`);
-                console.warn(`[BUDGET_VIOLATION] Task "${title}" amount ${taskAmount} exceeds category "${selectedCategory.category_name}" allocation of ${selectedCategory.allocated_amount}`);
-                return; // Block creation
+                toast.warning(`Budget Warning: This task amount exceeds the allocated budget.`);
+                return;
             }
         }
 
         const payload = {
             title,
             description: description || null,
-            budget_category_id: budgetCategoryId, // Always included since it's validated above
+            budget_category_id: budgetCategoryId,
             assigned_to: assignedTo || null,
             start_date: startDate || null,
             end_date: endDate || null,
@@ -277,7 +273,7 @@ export function WeddingTasks() {
     const getStatusBadge = (status: string) => {
         const statusConfig = STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[0];
         return (
-            <Badge className={`${statusConfig.color} border-0`}>
+            <Badge className={`${statusConfig.color} border-0 rounded-full px-3 text-[10px] font-bold uppercase tracking-wider`}>
                 {statusConfig.label}
             </Badge>
         );
@@ -288,7 +284,7 @@ export function WeddingTasks() {
         if (!assignment) return null;
         const Icon = assignment.icon;
         return (
-            <div className="flex items-center text-xs text-muted-foreground">
+            <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 <Icon className="h-3 w-3 mr-1" />
                 {assignment.label}
             </div>
@@ -300,7 +296,7 @@ export function WeddingTasks() {
         const priorityConfig = PRIORITY_OPTIONS.find(p => p.value === priority);
         if (!priorityConfig) return null;
         return (
-            <Badge className={`${priorityConfig.color} border-0 text-xs`}>
+            <Badge className={`${priorityConfig.color} border-0 text-[10px] font-bold uppercase tracking-wider rounded-full px-3`}>
                 {priorityConfig.label}
             </Badge>
         );
@@ -312,7 +308,7 @@ export function WeddingTasks() {
         if (!category) return null;
 
         return (
-            <Badge variant="outline" className="text-xs border-primary/20 bg-primary/5 text-primary">
+            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider border-sage-100 bg-sage-50 text-sage-700 rounded-full px-3">
                 {category.category_name}
             </Badge>
         );
@@ -339,35 +335,28 @@ export function WeddingTasks() {
     if (isWeddingLoading) {
         return (
             <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading wedding details...</span>
+                <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
+                <span className="ml-2 font-serif italic text-slate-600">Curating your experience...</span>
             </div>
         );
     }
 
-    // Show wedding setup prompt if no wedding is configured
     if (!weddingResponse || Object.keys(weddingResponse).length === 0) {
         return (
-            <Card>
+            <Card className="border-none shadow-xl shadow-sage-500/5 bg-gradient-to-br from-sage-50/50 via-white to-transparent rounded-[2.5rem] overflow-hidden">
                 <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                    <CheckCircle className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Set Up Your Wedding First</h3>
-                    <p className="text-muted-foreground mb-6 max-w-md">
-                        Before you can start planning your wedding tasks, please set up your wedding details including the bride and groom names and wedding date.
+                    <CheckCircle className="h-16 w-16 text-sage-200 mb-6" />
+                    <h3 className="text-2xl font-serif italic text-slate-800 mb-2">Set Up Your Celebration</h3>
+                    <p className="text-slate-500 mb-8 max-w-md">
+                        Before you can start planning your magical day, please tell us a bit about your celebration.
                     </p>
                     <Button
-                        onClick={() => {
-                            // Navigate to overview tab to set up wedding
-                            router.push('/customer/dashboard?tab=overview');
-                        }}
-                        className="mb-2"
+                        onClick={() => router.push('/customer/dashboard?tab=overview')}
+                        className="rounded-full px-8 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200"
                     >
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <Heart className="h-4 w-4 mr-2" />
                         Set Up Wedding Details
                     </Button>
-                    <p className="text-xs text-muted-foreground">
-                        You'll be redirected to the dashboard where you can add your wedding information.
-                    </p>
                 </CardContent>
             </Card>
         );
@@ -376,50 +365,22 @@ export function WeddingTasks() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading your checklist...</span>
+                <Loader2 className="h-8 w-8 animate-spin text-sage-600" />
+                <span className="ml-2 font-serif italic text-slate-600">Loading your checklist...</span>
             </div>
         );
     }
 
     if (error) {
-        const errorMessage = (error as any)?.message || "";
-        const isWeddingNotFound = errorMessage.includes("Wedding details not found") || errorMessage.includes("404");
-
-        if (isWeddingNotFound) {
-            return (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                        <CheckCircle className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">Set Up Your Wedding First</h3>
-                        <p className="text-muted-foreground mb-6 max-w-md">
-                            Before you can start planning your wedding tasks, please set up your wedding details including the bride and groom names and wedding date.
-                        </p>
-                        <Button
-                            onClick={() => {
-                                router.push('/customer/dashboard?tab=overview');
-                            }}
-                            className="mb-2"
-                        >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Set Up Wedding Details
-                        </Button>
-                        <p className="text-xs text-muted-foreground">
-                            You'll be redirected to the dashboard where you can add your wedding information.
-                        </p>
-                    </CardContent>
-                </Card>
-            );
-        }
-
         return (
-            <Card>
+            <Card className="border-none shadow-xl shadow-sage-500/5 bg-sage-50/50 rounded-[2.5rem] overflow-hidden">
                 <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                    <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Unable to Load Tasks</h3>
-                    <p className="text-muted-foreground mb-4">There was an error loading your wedding tasks.</p>
+                    <AlertCircle className="h-12 w-12 text-rose-300 mb-4" />
+                    <h3 className="text-xl font-serif italic text-slate-800 mb-2">Something went wrong</h3>
+                    <p className="text-slate-500 mb-6 font-medium">We couldn't load your planning checklist.</p>
                     <Button
                         variant="outline"
+                        className="rounded-full px-6 border-sage-200 text-sage-700 hover:bg-sage-50"
                         onClick={() => queryClient.invalidateQueries({ queryKey: ["wedding-tasks"] })}
                     >
                         Try Again
@@ -435,367 +396,389 @@ export function WeddingTasks() {
     const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     const filteredTasks = filterTasks(tasksArray);
 
-    // Calculate budget totals
     const totalBudget = tasksArray.reduce((sum, task) => sum + (task.amount || 0), 0);
     const completedBudget = tasksArray.filter(t => t.is_completed).reduce((sum, task) => sum + (task.amount || 0), 0);
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Wedding Checklist</h2>
-                    <p className="text-muted-foreground flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {(weddingResponse as any)?.couple_name ?
-                            `Planning for ${(weddingResponse as any).couple_name}` :
-                            "Manage your path to the big day"
-                        }
-                    </p>
-                    {(weddingResponse as any)?.wedding_date && (
-                        <div className="flex items-center gap-4 mt-2">
-                            <p className="text-sm text-primary font-semibold flex items-center gap-1.5 p-1 px-2 bg-primary/10 rounded-md">
-                                <Calendar className="h-4 w-4" />
-                                {new Date((weddingResponse as any).wedding_date).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </p>
-                            {(() => {
-                                const diff = new Date((weddingResponse as any).wedding_date).getTime() - new Date().getTime();
-                                const daysRem = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                                if (daysRem < 0) return null;
-                                return (
-                                    <div className="flex items-center gap-1 text-sm font-bold text-orange-600 animate-bounce cursor-default">
-                                        <Clock className="h-4 w-4" />
-                                        {daysRem} Days To Go!
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    )}
+                    <h2 className="text-3xl font-serif italic text-slate-800">Wedding Checklist</h2>
+                    <div className="flex flex-wrap items-center gap-4 mt-2">
+                        <p className="text-slate-500 flex items-center gap-2 text-sm">
+                            <Users className="h-4 w-4 text-sage-600" />
+                            {weddingResponse?.couple_name ?
+                                `Planning for ${weddingResponse.couple_name}` :
+                                "Manage your path to the big day"
+                            }
+                        </p>
+                        {weddingResponse?.wedding_date && (
+                            <div className="flex items-center gap-4">
+                                <p className="text-xs font-bold uppercase tracking-widest text-sage-700 bg-sage-50 px-3 py-1 rounded-full border border-sage-100">
+                                    {new Date(weddingResponse.wedding_date).toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
+                                </p>
+                                {(() => {
+                                    const diff = new Date(weddingResponse.wedding_date).getTime() - new Date().getTime();
+                                    const daysRem = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                                    if (daysRem < 0) return null;
+                                    return (
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                                            <Clock className="h-3 w-3" />
+                                            {daysRem} Days To Go
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
+                <Button
+                    onClick={() => setIsAddDialogOpen(true)}
+                    className="rounded-full px-6 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-100 self-start md:self-auto"
+                >
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Task
                 </Button>
             </div>
 
-            <Card className="overflow-hidden border-none bg-gradient-to-br from-primary/5 via-transparent to-primary/5 hover:shadow-md transition-all duration-300">
-                <CardHeader className="pb-3 px-6">
+            <Card className="border-none shadow-xl shadow-sage-500/5 bg-gradient-to-br from-sage-50/50 via-white to-transparent rounded-[2.5rem] overflow-hidden">
+                <CardHeader className="pt-8 px-8 pb-4">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-primary animate-pulse" />
+                            <CardTitle className="text-xl font-serif italic text-slate-800 flex items-center gap-2">
+                                <Zap className="h-5 w-5 text-sage-600" />
                                 Planning Progress
                             </CardTitle>
-                            <p className="text-xs text-muted-foreground italic">Your journey to the big day</p>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-2xl font-bold text-primary">{progress}%</span>
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Complete</span>
-                        </div>
-                    </div>
-                    <div className="w-full bg-secondary/50 h-3 rounded-full overflow-hidden mt-4 group">
-                        <div
-                            className="bg-primary h-full transition-all duration-1000 ease-out relative"
-                            style={{ width: `${progress}%` }}
-                        >
-                            <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite] bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%]"></div>
+                        <div className="text-right">
+                            <span className="text-3xl font-bold text-sage-700">{progress}%</span>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Complete</p>
                         </div>
                     </div>
+                </CardHeader>
+                <CardContent className="px-8 pb-10">
+                    <Progress value={progress} className="h-3 bg-sage-50 [&>div]:bg-sage-600 rounded-full" />
+
                     {totalBudget > 0 && (
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-primary/10">
-                            <div className="text-sm group flex items-center gap-2">
-                                <span className="text-muted-foreground font-medium">Total Budget: </span>
-                                <span className="font-bold text-primary group-hover:scale-105 transition-transform duration-200 inline-block">RWF {totalBudget.toLocaleString()}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-sage-100/50">
+                            <div className="flex items-center gap-4 p-4 bg-white/60 rounded-3xl border border-sage-100/50 shadow-sm transition-all hover:shadow-md">
+                                <div className="h-10 w-10 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-600">
+                                    <Wallet className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total Budget</p>
+                                    <p className="text-lg font-bold text-slate-800">RWF {totalBudget.toLocaleString()}</p>
+                                </div>
                             </div>
-                            <div className="text-sm group flex items-center gap-2">
-                                <span className="text-muted-foreground font-medium">Value Realized: </span>
-                                <span className="font-bold text-green-600 group-hover:scale-105 transition-transform duration-200 inline-block">RWF {completedBudget.toLocaleString()}</span>
+                            <div className="flex items-center gap-4 p-4 bg-white/60 rounded-3xl border border-sage-100/50 shadow-sm transition-all hover:shadow-md">
+                                <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                    <CheckCircle className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Value Realized</p>
+                                    <p className="text-lg font-bold text-emerald-700">RWF {completedBudget.toLocaleString()}</p>
+                                </div>
                             </div>
                         </div>
                     )}
-                </CardHeader>
+                </CardContent>
             </Card>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 rounded-full w-fit">
+                        <TabsList className="bg-transparent h-9 gap-1">
+                            <TabsTrigger value="all" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-6 text-xs font-bold uppercase tracking-wider">All ({totalCount})</TabsTrigger>
+                            <TabsTrigger value="pending" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-6 text-xs font-bold uppercase tracking-wider">Pending ({tasksArray.filter(t => !t.is_completed).length})</TabsTrigger>
+                            <TabsTrigger value="completed" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-6 text-xs font-bold uppercase tracking-wider">Completed ({completedCount})</TabsTrigger>
+                        </TabsList>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                        <TabsList className="grid grid-cols-3">
-                            <TabsTrigger value="all">All ({totalCount})</TabsTrigger>
-                            <TabsTrigger value="pending">Pending ({tasksArray.filter(t => !t.is_completed).length})</TabsTrigger>
-                            <TabsTrigger value="completed">Completed ({completedCount})</TabsTrigger>
-                        </TabsList>
-                        <TabsList className="grid grid-cols-3">
-                            <TabsTrigger value="groom">Groom ({tasksArray.filter(t => t.assigned_to === 'groom').length})</TabsTrigger>
-                            <TabsTrigger value="bride">Bride ({tasksArray.filter(t => t.assigned_to === 'bride').length})</TabsTrigger>
-                            <TabsTrigger value="other">Both/Other ({tasksArray.filter(t => t.assigned_to === 'other').length})</TabsTrigger>
-                        </TabsList>
-                        <TabsList className="grid grid-cols-3">
-                            <TabsTrigger value="high">High Priority ({tasksArray.filter(t => t.priority === 'high').length})</TabsTrigger>
-                            <TabsTrigger value="medium">Medium Priority ({tasksArray.filter(t => t.priority === 'medium').length})</TabsTrigger>
-                            <TabsTrigger value="low">Low Priority ({tasksArray.filter(t => t.priority === 'low').length})</TabsTrigger>
-                        </TabsList>
+                        <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 rounded-full w-fit">
+                            <TabsList className="bg-transparent h-9 gap-1">
+                                <TabsTrigger value="groom" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">Groom</TabsTrigger>
+                                <TabsTrigger value="bride" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">Bride</TabsTrigger>
+                                <TabsTrigger value="other" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">Both</TabsTrigger>
+                            </TabsList>
+                        </div>
+                        <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 rounded-full w-fit">
+                            <TabsList className="bg-transparent h-9 gap-1">
+                                <TabsTrigger value="high" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">High</TabsTrigger>
+                                <TabsTrigger value="medium" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">Med</TabsTrigger>
+                                <TabsTrigger value="low" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-4 text-xs font-bold uppercase tracking-wider">Low</TabsTrigger>
+                            </TabsList>
+                        </div>
                     </div>
                 </div>
 
-                <TabsContent value={activeTab} className="mt-6">
-                    <Card>
-                        <CardContent className="p-0">
-                            <div className="space-y-1">
-                                {filteredTasks.length > 0 ? (
-                                    filteredTasks.map((task) => (
-                                        <div
-                                            key={task.id}
-                                            className="flex items-center justify-between p-4 hover:bg-primary/5 transition-all duration-200 group border-b last:border-0 hover:pl-6"
-                                        >
-                                            <div className="flex items-center space-x-3 flex-1">
-                                                <Checkbox
-                                                    className="border-2 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-transform group-hover:scale-110"
-                                                    checked={task.is_completed}
-                                                    onCheckedChange={() => handleToggle(task)}
-                                                />
-                                                <div className="flex flex-col min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`text-sm font-medium ${task.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                                                            {task.title}
-                                                        </span>
-                                                        {getStatusBadge(task.status)}
-                                                        {getPriorityBadge(task.priority)}
-                                                        {getCategoryBadge(task.budget_category_id)}
-                                                    </div>
-                                                    {task.description && (
-                                                        <p className="text-xs text-muted-foreground mb-1">{task.description}</p>
-                                                    )}
-                                                    <div className="flex items-center gap-3 flex-wrap">
-                                                        {getAssignmentIcon(task.assigned_to)}
-                                                        {(task.start_date || task.end_date) && (
-                                                            <div className="flex items-center text-xs text-muted-foreground">
-                                                                <Calendar className="h-3 w-3 mr-1" />
-                                                                {task.start_date && formatDate(task.start_date)}
-                                                                {task.start_date && task.end_date && " - "}
-                                                                {task.end_date && formatDate(task.end_date)}
-                                                            </div>
-                                                        )}
-                                                        {task.amount && (
-                                                            <div className="flex items-center text-xs text-muted-foreground">
-                                                                <span className="font-medium">RWF {task.amount.toLocaleString()}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                <TabsContent value={activeTab} className="mt-8">
+                    <div className="space-y-4">
+                        {filteredTasks.length > 0 ? (
+                            filteredTasks.map((task) => (
+                                <div
+                                    key={task.id}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-[1.5rem] border border-sage-100/30 shadow-sm hover:shadow-md hover:border-sage-200/50 transition-all duration-300 group gap-4 relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-sage-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="flex items-start sm:items-center space-x-4 flex-1">
+                                        <Checkbox
+                                            className="mt-1 sm:mt-0 h-5 w-5 rounded-md border-2 border-slate-300 text-sage-600 focus:ring-sage-600 data-[state=checked]:bg-sage-600 data-[state=checked]:border-sage-600 transition-colors"
+                                            checked={task.is_completed}
+                                            onCheckedChange={() => handleToggle(task)}
+                                        />
+                                        <div className="flex flex-col min-w-0 flex-1 gap-1.5">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className={`text-base font-semibold ${task.is_completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                                    {task.title}
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {getStatusBadge(task.status)}
+                                                    {getPriorityBadge(task.priority)}
+                                                    {getCategoryBadge(task.budget_category_id)}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => {
-                                                        setSelectedTaskId(task.id);
-                                                        setModalMode("view");
-                                                        setIsAddDialogOpen(true);
-                                                    }}
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
-                                                {!task.is_completed && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        onClick={() => {
-                                                            setSelectedTask(task);
-                                                            setModalMode("edit");
-                                                            // Prefill form for editing
-                                                            setTitle(task.title);
-                                                            setDescription(task.description || "");
-                                                            setBudgetCategoryId(task.budget_category_id || "");
-                                                            setAssignedTo(task.assigned_to || "");
-                                                            setStartDate(task.start_date || "");
-                                                            setEndDate(task.end_date || "");
-                                                            setPriority(task.priority || "");
-                                                            setAmount(task.amount?.toString() || "");
-                                                            setIsAddDialogOpen(true);
-                                                        }}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
+                                            {task.description && (
+                                                <p className="text-sm text-slate-500 leading-relaxed font-serif italic">{task.description}</p>
+                                            )}
+                                            <div className="flex items-center gap-4 mt-1 flex-wrap">
+                                                {getAssignmentIcon(task.assigned_to)}
+                                                {(task.start_date || task.end_date) && (
+                                                    <div className="flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                        <Calendar className="h-3 w-3 mr-1.5" />
+                                                        {task.start_date && formatDate(task.start_date)}
+                                                        {task.start_date && task.end_date && " - "}
+                                                        {task.end_date && formatDate(task.end_date)}
+                                                    </div>
                                                 )}
-                                                <Select
-                                                    value={task.status}
-                                                    onValueChange={(value) => handleStatusChange(task, value)}
-                                                >
-                                                    <SelectTrigger className="w-32 h-8 text-xs">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {STATUS_OPTIONS.map((status) => (
-                                                            <SelectItem key={status.value} value={status.value}>
-                                                                {status.label}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    onClick={() => deleteMutation.mutate(task.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {task.amount && (
+                                                    <div className="flex items-center text-[10px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">
+                                                        <span>RWF {task.amount.toLocaleString()}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 text-muted-foreground">
-                                        <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                        <p>No tasks in this category yet.</p>
                                     </div>
-                                )}
+                                    <div className="flex items-center gap-2 self-end sm:self-auto ml-10 sm:ml-0 bg-slate-50 p-1.5 rounded-full border border-slate-200/50">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-slate-400 hover:text-sage-700 hover:bg-sage-50 rounded-full"
+                                            onClick={() => {
+                                                setSelectedTaskId(task.id);
+                                                setModalMode("view");
+                                                setIsAddDialogOpen(true);
+                                            }}
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+                                        {!task.is_completed && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                                                onClick={() => {
+                                                    setSelectedTask(task);
+                                                    setModalMode("edit");
+                                                    setTitle(task.title);
+                                                    setDescription(task.description || "");
+                                                    setBudgetCategoryId(task.budget_category_id || "");
+                                                    setAssignedTo(task.assigned_to || "");
+                                                    setStartDate(task.start_date || "");
+                                                    setEndDate(task.end_date || "");
+                                                    setPriority(task.priority || "");
+                                                    setAmount(task.amount?.toString() || "");
+                                                    setIsAddDialogOpen(true);
+                                                }}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+                                        <Select
+                                            value={task.status}
+                                            onValueChange={(value) => handleStatusChange(task, value)}
+                                        >
+                                            <SelectTrigger className="w-[110px] h-8 text-[10px] font-bold uppercase tracking-wider bg-white border-slate-200 rounded-full">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl">
+                                                {STATUS_OPTIONS.map((status) => (
+                                                    <SelectItem key={status.value} value={status.value} className="text-xs font-semibold">
+                                                        {status.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-full ml-1"
+                                            onClick={() => deleteMutation.mutate(task.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-16 bg-white/50 rounded-[2.5rem] border border-dashed border-sage-200">
+                                <div className="h-16 w-16 bg-sage-50 rounded-full flex items-center justify-center mb-4">
+                                    <CheckCircle className="h-8 w-8 text-sage-300" />
+                                </div>
+                                <h4 className="text-lg font-serif italic text-slate-700 mb-1">No tasks found</h4>
+                                <p className="text-sm text-slate-500">You're all caught up in this category.</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                        )}
+                    </div>
                 </TabsContent>
-            </Tabs>
+            </Tabs >
 
             <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
                 if (!open) resetForm();
                 setIsAddDialogOpen(open);
             }}>
-                <DialogContent className="w-full max-w-[85vw] lg:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl">
-                    <DialogHeader className="p-6 pb-4  border-b">
-                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                <DialogContent className="w-full max-w-[85vw] lg:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl rounded-[2.5rem]">
+                    <DialogHeader className="p-8 pb-6 border-b border-sage-100/50 bg-sage-50/50">
+                        <DialogTitle className="text-2xl font-serif italic text-slate-800 flex items-center gap-3">
                             {modalMode === "view" ? (
-                                <Eye className="h-6 w-6 text-primary p-1 bg-primary/10 rounded-full" />
+                                <div className="p-2 bg-sage-100 text-sage-700 rounded-full">
+                                    <Eye className="h-5 w-5" />
+                                </div>
                             ) : modalMode === "edit" ? (
-                                <Pencil className="h-6 w-6 text-primary p-1 bg-primary/10 rounded-full" />
+                                <div className="p-2 bg-blue-100 text-blue-700 rounded-full">
+                                    <Pencil className="h-5 w-5" />
+                                </div>
                             ) : (
-                                <Plus className="h-6 w-6 text-primary p-1 bg-primary/10 rounded-full" />
+                                <div className="p-2 bg-sage-600 text-white rounded-full">
+                                    <Plus className="h-5 w-5" />
+                                </div>
                             )}
                             {modalMode === "view" ? "Task Details" : modalMode === "edit" ? "Edit Task" : "Add New Task"}
                         </DialogTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-sm text-slate-500 mt-2 font-medium">
                             {modalMode === "view" ? "Intelligence summary and logistics for this task" : "Break down your wedding planning into actionable steps"}
                         </p>
                     </DialogHeader>
 
-                    <div className="p-0 overflow-y-auto max-h-[70vh]">
+                    <div className="p-0 overflow-y-auto max-h-[70vh] bg-white">
                         {modalMode === "view" ? (
                             <div className="animate-in fade-in duration-500">
                                 {isTaskDetailLoading && !selectedTaskId ? (
                                     <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                                        <p className="text-muted-foreground animate-pulse font-medium">Loading task intelligence...</p>
+                                        <Loader2 className="h-10 w-10 animate-spin text-sage-600" />
+                                        <p className="text-slate-500 animate-pulse font-serif italic">Loading task intelligence...</p>
                                     </div>
                                 ) : (
                                     (() => {
                                         const displayTask = taskDetail || tasks?.find(t => t.id === selectedTaskId) || selectedTask;
                                         if (!displayTask) return (
-                                            <div className="py-20 text-center text-muted-foreground">Task not found</div>
+                                            <div className="py-20 text-center text-slate-400 font-serif italic">Task not found</div>
                                         );
 
                                         return (
                                             <div className="flex flex-col md:flex-row">
                                                 {/* Left Column: Task Context */}
-                                                <div className="flex-1 p-8 space-y-8 border-r border-dotted">
+                                                <div className="flex-1 p-8 space-y-8 border-r border-sage-100/50">
                                                     <div className="space-y-4">
                                                         <div className="flex items-center gap-3">
-                                                            {getPriorityBadge(displayTask.priority)}
-                                                            {getStatusBadge(displayTask.status)}
+                                                            {getPriorityBadge(displayTask?.priority)}
+                                                            {getStatusBadge(displayTask?.status)}
                                                         </div>
-                                                        <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
-                                                            {displayTask.title}
+                                                        <h1 className="text-3xl font-serif italic text-slate-800 leading-tight">
+                                                            {displayTask?.title}
                                                         </h1>
-                                                        <div className="h-1 w-20 bg-primary/20 rounded-full" />
+                                                        <div className="h-1 w-20 bg-sage-200 rounded-full" />
                                                     </div>
 
                                                     <div className="space-y-4">
-                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/60 flex items-center gap-2">
+                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-sage-600 flex items-center gap-2">
                                                             <FileText className="h-3 w-3" />
                                                             Description & Scope
                                                         </h4>
-                                                        <p className="text-base text-muted-foreground leading-relaxed bg-primary/[0.02] p-6 rounded-2xl border border-primary/5 italic">
-                                                            {displayTask.description || "Detailed scope has not been defined for this task yet. Please update the task to include specific requirements or notes."}
+                                                        <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                                            {displayTask?.description || "Detailed scope has not been defined for this task yet. Please update the task to include specific requirements or notes."}
                                                         </p>
                                                     </div>
 
                                                     <div className="grid grid-cols-2 gap-6 pt-4">
-                                                        <div className="p-5 rounded-2xl bg-secondary/30 border border-primary/5 space-y-3">
-                                                            <div className="flex items-center gap-2 text-primary">
+                                                        <div className="p-5 rounded-2xl bg-sage-50 border border-sage-100 space-y-3">
+                                                            <div className="flex items-center gap-2 text-sage-700">
                                                                 <Wallet className="h-4 w-4" />
                                                                 <span className="text-[10px] font-bold uppercase tracking-wider">Budget Allocation</span>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <p className="text-2xl font-bold text-foreground">
-                                                                    {displayTask.amount ? `RWF ${displayTask.amount.toLocaleString()}` : "Unallocated"}
+                                                                <p className="text-xl font-bold text-slate-800">
+                                                                    {displayTask?.amount ? `RWF ${displayTask?.amount.toLocaleString()}` : "Unallocated"}
                                                                 </p>
-                                                                <p className="text-xs text-muted-foreground truncate">
-                                                                    {budgetCategories?.find(c => c.id === displayTask.budget_category_id)?.category_name || "General Planning"}
+                                                                <p className="text-xs text-slate-500 truncate">
+                                                                    {budgetCategories?.find(c => c.id === displayTask?.budget_category_id)?.category_name || "General Planning"}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10 space-y-3">
-                                                            <div className="flex items-center gap-2 text-primary">
+                                                        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-3">
+                                                            <div className="flex items-center gap-2 text-slate-600">
                                                                 <Users className="h-4 w-4" />
                                                                 <span className="text-[10px] font-bold uppercase tracking-wider">Ownership</span>
                                                             </div>
                                                             <div className="space-y-1">
-                                                                <p className="text-2xl font-bold text-foreground capitalize">
-                                                                    {displayTask.assigned_to || "Shared"}
+                                                                <p className="text-xl font-bold text-slate-800 capitalize">
+                                                                    {displayTask?.assigned_to || "Shared"}
                                                                 </p>
-                                                                <p className="text-xs text-muted-foreground">Primary Coordinator</p>
+                                                                <p className="text-xs text-slate-500">Primary Coordinator</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Right Sidebar: Timeline & Logistics */}
-                                                <div className="w-full md:w-[400px] bg-muted/30 p-8 space-y-8">
+                                                <div className="w-full md:w-[320px] bg-slate-50 p-8 space-y-8">
                                                     <div className="space-y-6">
-                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Logistics & Timeline</h4>
+                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Logistics & Timeline</h4>
 
                                                         <div className="space-y-6">
                                                             <div className="flex gap-4">
-                                                                <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm border border-primary/10">
+                                                                <div className="h-10 w-10 shrink-0 rounded-2xl bg-white flex items-center justify-center text-sage-600 shadow-sm border border-sage-100/50">
                                                                     <Calendar className="h-5 w-5" />
                                                                 </div>
                                                                 <div className="space-y-1">
-                                                                    <p className="text-[10px] text-muted-foreground font-semibold uppercase">Planning Phase</p>
-                                                                    <p className="text-sm font-bold text-foreground">
-                                                                        {displayTask.start_date ? formatDate(displayTask.start_date) : "Immediate"}
+                                                                    <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Planning Phase</p>
+                                                                    <p className="text-sm font-semibold text-slate-800">
+                                                                        {displayTask?.start_date ? formatDate(displayTask?.start_date) : "Immediate"}
                                                                     </p>
                                                                 </div>
                                                             </div>
 
                                                             <div className="flex gap-4">
-                                                                <div className="h-10 w-10 shrink-0 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm border border-primary/10">
+                                                                <div className="h-10 w-10 shrink-0 rounded-2xl bg-white flex items-center justify-center text-rose-500 shadow-sm border border-rose-100/50">
                                                                     <ArrowRightCircle className="h-5 w-5" />
                                                                 </div>
                                                                 <div className="space-y-1">
-                                                                    <p className="text-[10px] text-muted-foreground font-semibold uppercase">Deadline</p>
-                                                                    <p className="text-sm font-bold text-foreground">
-                                                                        {displayTask.end_date ? formatDate(displayTask.end_date) : "Ongoing"}
+                                                                    <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Deadline</p>
+                                                                    <p className="text-sm font-semibold text-slate-800">
+                                                                        {displayTask?.end_date ? formatDate(displayTask?.end_date) : "Ongoing"}
                                                                     </p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="pt-8 border-t border-primary/5 space-y-4">
-                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Task Progress</h4>
+                                                    <div className="pt-8 border-t border-slate-200/60 space-y-4">
+                                                        <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Task Progress</h4>
                                                         <div className="space-y-2">
                                                             <div className="flex justify-between items-end mb-1">
-                                                                <span className="text-xs font-semibold text-muted-foreground">Current State</span>
-                                                                <span className="text-xs font-bold text-primary capitalize">{displayTask.status.replace('_', ' ')}</span>
+                                                                <span className="text-xs font-semibold text-slate-500">Current State</span>
+                                                                <span className="text-xs font-bold text-sage-700 capitalize">{displayTask?.status?.replace('_', ' ')}</span>
                                                             </div>
-                                                            <div className="h-2 w-full bg-white rounded-full overflow-hidden border">
+                                                            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
                                                                 <div
-                                                                    className={`h-full transition-all duration-1000 ${displayTask.status === 'completed' ? 'bg-green-500' :
-                                                                        displayTask.status === 'in_progress' ? 'bg-blue-500' : 'bg-gray-300'
+                                                                    className={`h-full transition-all duration-1000 ${displayTask?.status === 'completed' ? 'bg-emerald-500' :
+                                                                        displayTask?.status === 'in_progress' ? 'bg-sage-500' : 'bg-slate-400'
                                                                         }`}
-                                                                    style={{ width: displayTask.status === 'completed' ? '100%' : displayTask.status === 'in_progress' ? '50%' : '10%' }}
+                                                                    style={{ width: displayTask?.status === 'completed' ? '100%' : displayTask?.status === 'in_progress' ? '50%' : '10%' }}
                                                                 />
                                                             </div>
                                                         </div>
@@ -804,27 +787,27 @@ export function WeddingTasks() {
                                                     <div className="pt-8 space-y-3">
                                                         <Button
                                                             variant="outline"
-                                                            className="w-full justify-start gap-2 h-11 rounded-xl bg-white border-primary/10 hover:bg-primary/5 hover:text-primary transition-all"
+                                                            className="w-full justify-start gap-2 h-11 rounded-full bg-white border-sage-200 text-sage-700 hover:bg-sage-50 hover:text-sage-800 transition-all font-semibold"
                                                             onClick={resetForm}
                                                         >
                                                             <CheckCircle className="h-4 w-4" />
                                                             Mark as Acknowledged
                                                         </Button>
-                                                        {!displayTask.is_completed && (
+                                                        {!displayTask?.is_completed && (
                                                             <Button
                                                                 variant="ghost"
-                                                                className="w-full justify-start gap-2 h-11 rounded-xl hover:text- hover:bg-primary/5 text-primary transition-all"
+                                                                className="w-full justify-start gap-2 h-11 rounded-full hover:bg-slate-100 text-slate-600 transition-all font-semibold"
                                                                 onClick={() => {
                                                                     setSelectedTask(displayTask);
                                                                     setModalMode("edit");
-                                                                    setTitle(displayTask.title);
-                                                                    setDescription(displayTask.description || "");
-                                                                    setBudgetCategoryId(displayTask.budget_category_id || "");
-                                                                    setAssignedTo(displayTask.assigned_to || "");
-                                                                    setStartDate(displayTask.start_date || "");
-                                                                    setEndDate(displayTask.end_date || "");
-                                                                    setPriority(displayTask.priority || "");
-                                                                    setAmount(displayTask.amount?.toString() || "");
+                                                                    setTitle(displayTask?.title || "");
+                                                                    setDescription(displayTask?.description || "");
+                                                                    setBudgetCategoryId(displayTask?.budget_category_id || "");
+                                                                    setAssignedTo(displayTask?.assigned_to || "");
+                                                                    setStartDate(displayTask?.start_date || "");
+                                                                    setEndDate(displayTask?.end_date || "");
+                                                                    setPriority(displayTask?.priority || "");
+                                                                    setAmount(displayTask?.amount?.toString() || "");
                                                                 }}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
@@ -843,22 +826,22 @@ export function WeddingTasks() {
                                 {/* Primary Info Segment */}
                                 <div className="space-y-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="title" className="flex items-center gap-2 font-semibold">
-                                            <Layout className="h-4 w-4 text-primary" />
-                                            Task Title <span className="text-destructive">*</span>
+                                        <Label htmlFor="title" className="flex items-center gap-2 font-bold text-slate-700">
+                                            <Layout className="h-4 w-4 text-sage-600" />
+                                            Task Title <span className="text-rose-500">*</span>
                                         </Label>
                                         <Input
                                             id="title"
                                             placeholder="e.g., Book the venue"
                                             value={title}
                                             onChange={(e) => setTitle(e.target.value)}
-                                            className="h-12 text-base transition-all focus:ring-2 focus:ring-primary/20 border-primary/10"
+                                            className="h-12 text-base rounded-2xl transition-all focus:ring-2 focus:ring-sage-200 border-slate-200"
                                         />
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="description" className="flex items-center gap-2 font-semibold">
-                                            <FileText className="h-4 w-4 text-primary" />
+                                        <Label htmlFor="description" className="flex items-center gap-2 font-bold text-slate-700">
+                                            <FileText className="h-4 w-4 text-sage-600" />
                                             Description
                                         </Label>
                                         <Textarea
@@ -867,33 +850,33 @@ export function WeddingTasks() {
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             rows={3}
-                                            className="resize-none transition-all focus:ring-2 focus:ring-primary/20 border-primary/10"
+                                            className="resize-none rounded-2xl transition-all focus:ring-2 focus:ring-sage-200 border-slate-200"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
+                                <div className="h-px bg-slate-100" />
 
                                 {/* Budget & Category Segment */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-sage-50/50 rounded-[2rem] border border-sage-100">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="category" className="flex items-center gap-2 font-semibold text-primary">
+                                        <Label htmlFor="category" className="flex items-center gap-2 font-bold text-sage-800">
                                             <LayoutGrid className="h-4 w-4" />
-                                            Budget Category <span className="text-destructive">*</span>
+                                            Budget Category <span className="text-rose-500">*</span>
                                         </Label>
                                         <Select
                                             value={budgetCategoryId}
                                             onValueChange={setBudgetCategoryId}
                                         >
-                                            <SelectTrigger className="bg-white border-primary/20">
+                                            <SelectTrigger className="bg-white border-sage-200/60 rounded-xl h-12">
                                                 <SelectValue placeholder="Select a category" />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="rounded-2xl">
                                                 {budgetCategories?.map((cat) => (
                                                     <SelectItem key={cat.id} value={cat.id}>
                                                         <div className="flex flex-col">
-                                                            <span className="font-medium">{cat.category_name}</span>
-                                                            <span className="text-[10px] text-muted-foreground italic">
+                                                            <span className="font-semibold">{cat.category_name}</span>
+                                                            <span className="text-[10px] text-slate-500 italic">
                                                                 Allocated: RWF {cat.allocated_amount.toLocaleString()}
                                                             </span>
                                                         </div>
@@ -904,19 +887,19 @@ export function WeddingTasks() {
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="amount" className="flex items-center gap-2 font-semibold text-primary">
+                                        <Label htmlFor="amount" className="flex items-center gap-2 font-bold text-sage-800">
                                             <Wallet className="h-4 w-4" />
                                             Budget Amount
                                         </Label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground border-r pr-2 h-4 flex items-center">RWF</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">RWF</span>
                                             <Input
                                                 id="amount"
                                                 type="number"
                                                 placeholder="0"
                                                 value={amount}
                                                 onChange={(e) => setAmount(e.target.value)}
-                                                className="pl-14 h-10 bg-white border-primary/20 transition-all focus:ring-2 focus:ring-primary/20"
+                                                className="pl-14 h-12 rounded-xl bg-white border-sage-200/60 transition-all focus:ring-2 focus:ring-sage-200"
                                                 min="0"
                                                 step="1000"
                                             />
@@ -925,27 +908,27 @@ export function WeddingTasks() {
                                 </div>
 
                                 {/* Logistic Segment */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border p-4 rounded-xl border-dashed">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-slate-200/60 p-6 rounded-[2rem] bg-slate-50/50">
                                     <div className="space-y-4">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="assigned" className="flex items-center gap-2 font-semibold">
-                                                <Users className="h-4 w-4 text-primary" />
+                                            <Label htmlFor="assigned" className="flex items-center gap-2 font-bold text-slate-700">
+                                                <Users className="h-4 w-4 text-indigo-500" />
                                                 Assign To
                                             </Label>
                                             <Select
                                                 value={assignedTo}
                                                 onValueChange={setAssignedTo}
                                             >
-                                                <SelectTrigger className="h-10">
+                                                <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
                                                     <SelectValue placeholder="Select assignment" />
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="rounded-2xl">
                                                     {ASSIGNMENT_OPTIONS.map((option) => {
                                                         const Icon = option.icon;
                                                         return (
-                                                            <SelectItem key={option.value} value={option.value}>
+                                                            <SelectItem key={option.value} value={option.value} className="font-medium">
                                                                 <div className="flex items-center">
-                                                                    <Icon className="h-4 w-4 mr-2 text-primary/60" />
+                                                                    <Icon className="h-4 w-4 mr-2 text-slate-400" />
                                                                     {option.label}
                                                                 </div>
                                                             </SelectItem>
@@ -955,20 +938,20 @@ export function WeddingTasks() {
                                             </Select>
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label htmlFor="priority" className="flex items-center gap-2 font-semibold">
-                                                <Flag className="h-4 w-4 text-primary" />
+                                            <Label htmlFor="priority" className="flex items-center gap-2 font-bold text-slate-700">
+                                                <Flag className="h-4 w-4 text-amber-500" />
                                                 Priority Level
                                             </Label>
                                             <Select
                                                 value={priority}
                                                 onValueChange={setPriority}
                                             >
-                                                <SelectTrigger className="h-10">
+                                                <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
                                                     <SelectValue placeholder="Select priority" />
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="rounded-2xl">
                                                     {PRIORITY_OPTIONS.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
+                                                        <SelectItem key={option.value} value={option.value} className="font-medium">
                                                             <div className="flex items-center">
                                                                 <div className={`w-2 h-2 rounded-full mr-2 ${option.color.split(' ')[0]}`}></div>
                                                                 {option.label}
@@ -982,8 +965,8 @@ export function WeddingTasks() {
 
                                     <div className="space-y-4">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="start-date" className="flex items-center gap-2 font-semibold text-muted-foreground">
-                                                <Calendar className="h-3 w-3" />
+                                            <Label htmlFor="start-date" className="flex items-center gap-2 font-bold text-slate-700">
+                                                <Calendar className="h-4 w-4 text-sage-500" />
                                                 Start Date
                                             </Label>
                                             <Input
@@ -993,12 +976,12 @@ export function WeddingTasks() {
                                                 onChange={(e) => setStartDate(e.target.value)}
                                                 min={today}
                                                 max={weddingEve}
-                                                className="h-10 text-xs transition-all focus:ring-2 focus:ring-primary/20"
+                                                className="h-12 text-sm rounded-xl bg-white border-slate-200 transition-all focus:ring-2 focus:ring-sage-200"
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label htmlFor="end-date" className="flex items-center gap-2 font-semibold text-muted-foreground">
-                                                <Calendar className="h-3 w-3" />
+                                            <Label htmlFor="end-date" className="flex items-center gap-2 font-bold text-slate-700">
+                                                <Calendar className="h-4 w-4 text-rose-400" />
                                                 Target End Date
                                             </Label>
                                             <Input
@@ -1008,7 +991,7 @@ export function WeddingTasks() {
                                                 onChange={(e) => setEndDate(e.target.value)}
                                                 min={today}
                                                 max={weddingEve}
-                                                className="h-10 text-xs transition-all focus:ring-2 focus:ring-primary/20 border-primary/20"
+                                                className="h-12 text-sm rounded-xl bg-white border-slate-200 transition-all focus:ring-2 focus:ring-sage-200"
                                             />
                                         </div>
                                     </div>
@@ -1017,11 +1000,11 @@ export function WeddingTasks() {
                         )}
                     </div>
 
-                    <DialogFooter className="p-6 bg-muted/30 border-t gap-3 sm:gap-0">
+                    <DialogFooter className="p-6 bg-slate-50 border-t border-slate-100 gap-3 sm:gap-0">
                         <Button
                             variant="ghost"
                             onClick={resetForm}
-                            className="hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors"
+                            className="hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors rounded-full font-semibold px-6"
                         >
                             {modalMode === "view" ? "Close" : "Discard"}
                         </Button>
@@ -1029,7 +1012,7 @@ export function WeddingTasks() {
                             <Button
                                 onClick={handleCreate}
                                 disabled={createMutation.isPending || updateMutation.isPending}
-                                className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                className="bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200 px-8 transition-all hover:scale-[1.02] active:scale-[0.98] rounded-full font-semibold"
                             >
                                 {createMutation.isPending || updateMutation.isPending ? (
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

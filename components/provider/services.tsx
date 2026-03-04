@@ -563,7 +563,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                     <Badge
                       className={cn(
                         "absolute top-3 left-3 shadow-sm",
-                        service.status === "active" ? "bg-teal-500 hover:bg-teal-600" : "bg-slate-500 hover:bg-slate-600"
+                        service.status === "active" ? "bg-sage-500 hover:bg-sage-600" : "bg-slate-500 hover:bg-slate-600"
                       )}
                     >
                       {service.status.toUpperCase()}
@@ -575,10 +575,10 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                     <div>
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="text-xs font-bold text-teal-600 uppercase tracking-wider mb-1">
+                          <p className="text-xs font-bold text-sage-600 uppercase tracking-wider mb-1">
                             {service.category}
                           </p>
-                          <h3 className="text-xl font-bold group-hover:text-teal-700 transition-colors uppercase">
+                          <h3 className="text-xl font-bold group-hover:text-sage-700 transition-colors uppercase">
                             {service.title}
                             {service.verified && (
                               <Badge variant="secondary" className="ml-2 text-[10px] h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-tighter">
@@ -627,7 +627,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-teal-600"
+                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-sage-600"
                             onClick={() => handleViewService(service)}
                           >
                             <Eye className="h-4 w-4" />
@@ -635,7 +635,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-teal-600"
+                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-sage-600"
                             onClick={() => handleEditService(service)}
                           >
                             <Edit className="h-4 w-4" />
@@ -664,7 +664,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             "flex-1 sm:flex-none font-semibold",
                             service.status === "active"
                               ? "border-slate-200 text-slate-600 hover:bg-slate-50"
-                              : "bg-teal-600 hover:bg-teal-700 text-white"
+                              : "bg-sage-600 hover:bg-sage-700 text-white"
                           )}
                         >
                           {isToggling === service.id ? (

@@ -130,7 +130,7 @@ export function ServiceDetailView({
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="text-slate-500 hover:text-teal-600 transition-colors"
+          className="text-slate-500 hover:text-sage-600 transition-colors"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to List
@@ -156,7 +156,7 @@ export function ServiceDetailView({
         <div className="lg:col-span-2 space-y-6">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Badge className="bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-100 uppercase tracking-wider text-[10px] px-2 py-0.5 font-bold">
+              <Badge className="bg-sage-50 text-sage-700 hover:bg-sage-100 border-sage-100 uppercase tracking-wider text-[10px] px-2 py-0.5 font-bold">
                 {service.category}
               </Badge>
               <Badge
@@ -181,7 +181,7 @@ export function ServiceDetailView({
 
             <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-slate-500 font-medium">
               <div className="flex items-center">
-                <MapPin className="w-5 h-5 mr-1.5 text-teal-600" />
+                <MapPin className="w-5 h-5 mr-1.5 text-sage-600" />
                 {service.location}, Rwanda
               </div>
               {service.rating && (
@@ -257,7 +257,7 @@ export function ServiceDetailView({
               </div>
 
               <div className="space-y-3">
-                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold h-12 rounded-xl shadow-md transition-all active:scale-95">
+                <Button className="w-full bg-sage-600 hover:bg-sage-700 text-white font-bold h-12 rounded-xl shadow-md transition-all active:scale-95">
                   <Award className="w-4 h-4 mr-2" />
                   Request Verification
                 </Button>
@@ -271,7 +271,7 @@ export function ServiceDetailView({
 
           <Card className="border-none shadow-sm bg-white rounded-3xl p-6">
             <h4 className="font-bold text-slate-900 mb-4 flex items-center">
-              <Mail className="w-4 h-4 mr-2 text-teal-600" />
+              <Mail className="w-4 h-4 mr-2 text-sage-600" />
               Contact Details
             </h4>
             <div className="space-y-4">
@@ -308,25 +308,25 @@ export function ServiceDetailView({
           <TabsList className="bg-transparent h-auto p-0 flex rounded-none gap-8">
             <TabsTrigger
               value="overview"
-              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-600 rounded-none text-slate-500 font-bold text-sm transition-all"
+              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-sage-600 rounded-none text-slate-500 font-bold text-sm transition-all"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="packages"
-              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-600 rounded-none text-slate-500 font-bold text-sm transition-all text-nowrap"
+              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-sage-600 rounded-none text-slate-500 font-bold text-sm transition-all text-nowrap"
             >
               Packages ({service.packages.length})
             </TabsTrigger>
             <TabsTrigger
               value="gallery"
-              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-600 rounded-none text-slate-500 font-bold text-sm transition-all"
+              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-sage-600 rounded-none text-slate-500 font-bold text-sm transition-all"
             >
               Gallery ({regularMedia.length})
             </TabsTrigger>
             <TabsTrigger
               value="promotional"
-              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-600 rounded-none text-slate-500 font-bold text-sm transition-all"
+              className="px-0 py-4 bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-sage-600 rounded-none text-slate-500 font-bold text-sm transition-all"
             >
               Promos ({offers.length + events.length})
             </TabsTrigger>
@@ -347,7 +347,7 @@ export function ServiceDetailView({
               {service.specialties.length > 0 && (
                 <section>
                   <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-                    <Award className="w-5 h-5 mr-2 text-teal-600" />
+                    <Award className="w-5 h-5 mr-2 text-sage-600" />
                     Specialties & Expertise
                   </h3>
                   <div className="flex flex-wrap gap-3">
@@ -363,20 +363,20 @@ export function ServiceDetailView({
             </div>
 
             <div className="space-y-6">
-              <Card className="border-none bg-teal-50 shadow-sm p-6 rounded-3xl relative overflow-hidden">
+              <Card className="border-none bg-sage-50 shadow-sm p-6 rounded-3xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                   <Package className="w-24 h-24" />
                 </div>
-                <h4 className="font-bold text-teal-900 mb-2">Package Overview</h4>
-                <p className="text-teal-700/80 text-sm mb-4">Choose from our curated wedding packages designed for excellence.</p>
+                <h4 className="font-bold text-sage-900 mb-2">Package Overview</h4>
+                <p className="text-sage-700/80 text-sm mb-4">Choose from our curated wedding packages designed for excellence.</p>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-teal-900 font-medium">Available Packages</span>
-                    <span className="bg-white px-2 py-0.5 rounded-full text-teal-900 font-bold">{service.packages.length}</span>
+                    <span className="text-sage-900 font-medium">Available Packages</span>
+                    <span className="bg-white px-2 py-0.5 rounded-full text-sage-900 font-bold">{service.packages.length}</span>
                   </div>
-                  <Separator className="bg-teal-200/50" />
+                  <Separator className="bg-sage-200/50" />
                   {service.packages.slice(0, 3).map(pkg => (
-                    <div key={pkg.id} className="flex items-center gap-2 text-sm text-teal-900 font-medium">
+                    <div key={pkg.id} className="flex items-center gap-2 text-sm text-sage-900 font-medium">
                       <ChevronRight className="w-3.5 h-3.5 opacity-50" />
                       {pkg.name}
                     </div>
@@ -386,7 +386,7 @@ export function ServiceDetailView({
 
               <Card className="border-none shadow-sm bg-slate-900 text-white p-6 rounded-3xl">
                 <h4 className="font-bold mb-4 flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-teal-400" />
+                  <Clock className="w-4 h-4 mr-2 text-sage-400" />
                   Quick Stats
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -418,17 +418,17 @@ export function ServiceDetailView({
               {service.packages.map((pkg) => (
                 <Card key={pkg.id} className={cn(
                   "relative group overflow-hidden border-none shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col rounded-3xl",
-                  pkg.popular ? "ring-2 ring-teal-600 bg-teal-50/30" : "bg-white"
+                  pkg.popular ? "ring-2 ring-sage-600 bg-sage-50/30" : "bg-white"
                 )}>
                   {pkg.popular && (
                     <div className="absolute top-0 right-0">
-                      <div className="bg-teal-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+                      <div className="bg-sage-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
                         Popular
                       </div>
                     </div>
                   )}
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-teal-700 transition-colors">
+                    <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-sage-700 transition-colors">
                       {pkg.name}
                     </CardTitle>
                     <CardDescription className="text-slate-500 text-sm line-clamp-2 mt-1">
@@ -460,7 +460,7 @@ export function ServiceDetailView({
 
                     <Button className={cn(
                       "w-full font-bold py-6 rounded-2xl transition-all active:scale-95",
-                      pkg.popular ? "bg-teal-600 hover:bg-teal-700 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-900"
+                      pkg.popular ? "bg-sage-600 hover:bg-sage-700 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-900"
                     )}>
                       {pkg.popular ? "Best Value" : "Select Package"}
                     </Button>
@@ -486,7 +486,7 @@ export function ServiceDetailView({
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-slate-900 flex items-center">
-                      <ImageIcon className="w-5 h-5 mr-2 text-teal-600" />
+                      <ImageIcon className="w-5 h-5 mr-2 text-sage-600" />
                       Photography
                     </h3>
                   </div>
@@ -580,7 +580,7 @@ export function ServiceDetailView({
               {offers.length > 0 && (
                 <section className="space-y-6">
                   <h3 className="text-xl font-bold text-slate-900 flex items-center">
-                    <Tag className="w-5 h-5 mr-2 text-teal-600" />
+                    <Tag className="w-5 h-5 mr-2 text-sage-600" />
                     Special Offers
                   </h3>
                   <div className="space-y-4">
@@ -590,7 +590,7 @@ export function ServiceDetailView({
                           <div className="relative w-full sm:w-40 aspect-square sm:aspect-auto overflow-hidden">
                             <img src={item.url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-2 left-2">
-                              <Badge className="bg-teal-600 text-white text-[10px] font-bold">OFFER</Badge>
+                              <Badge className="bg-sage-600 text-white text-[10px] font-bold">OFFER</Badge>
                             </div>
                           </div>
                           <div className="p-5 flex-1 flex flex-col justify-between">
@@ -598,7 +598,7 @@ export function ServiceDetailView({
                               <h4 className="font-bold text-slate-900 mb-1">{item.title}</h4>
                               <p className="text-xs text-slate-500 line-clamp-2">{item.description}</p>
                             </div>
-                            <Button variant="link" className="text-teal-600 p-0 h-auto font-bold text-xs self-start mt-3 group-hover:translate-x-1 transition-transform">
+                            <Button variant="link" className="text-sage-600 p-0 h-auto font-bold text-xs self-start mt-3 group-hover:translate-x-1 transition-transform">
                               Redeem details <ChevronRight className="w-3 h-3 ml-0.5" />
                             </Button>
                           </div>
@@ -658,7 +658,7 @@ export function ServiceDetailView({
                 <div className="space-y-6">
                   {service.phone && (
                     <div className="flex items-center gap-4 group">
-                      <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all duration-300">
+                      <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-600 group-hover:bg-sage-600 group-hover:text-white transition-all duration-300">
                         <Phone className="w-5 h-5" />
                       </div>
                       <div>
@@ -692,7 +692,7 @@ export function ServiceDetailView({
                 </div>
 
                 <div className="flex gap-4">
-                  <Button className="flex-1 bg-teal-600 hover:bg-teal-700 h-12 rounded-xl font-bold">
+                  <Button className="flex-1 bg-sage-600 hover:bg-sage-700 h-12 rounded-xl font-bold">
                     <Phone className="w-4 h-4 mr-2" />
                     Call Now
                   </Button>
@@ -708,7 +708,7 @@ export function ServiceDetailView({
                   <ShieldCheck className="w-64 h-64" />
                 </div>
                 <div className="relative z-10 space-y-6">
-                  <div className="w-16 h-16 bg-teal-500/20 rounded-2xl flex items-center justify-center text-teal-400">
+                  <div className="w-16 h-16 bg-sage-500/20 rounded-2xl flex items-center justify-center text-sage-400">
                     <ShieldCheck className="w-8 h-8" />
                   </div>
                   <div>
@@ -717,19 +717,19 @@ export function ServiceDetailView({
                   </div>
                   <ul className="space-y-3">
                     <li className="flex items-center gap-3 text-sm font-medium">
-                      <div className="w-5 h-5 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-400 overflow-hidden">
+                      <div className="w-5 h-5 rounded-full bg-sage-500/10 flex items-center justify-center text-sage-400 overflow-hidden">
                         <CheckCircle className="w-3 h-3" />
                       </div>
                       Identity Verified
                     </li>
                     <li className="flex items-center gap-3 text-sm font-medium">
-                      <div className="w-5 h-5 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-400 overflow-hidden">
+                      <div className="w-5 h-5 rounded-full bg-sage-500/10 flex items-center justify-center text-sage-400 overflow-hidden">
                         <CheckCircle className="w-3 h-3" />
                       </div>
                       Quality Vetted Gallery
                     </li>
                     <li className="flex items-center gap-3 text-sm font-medium">
-                      <div className="w-5 h-5 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-400 overflow-hidden">
+                      <div className="w-5 h-5 rounded-full bg-sage-500/10 flex items-center justify-center text-sage-400 overflow-hidden">
                         <CheckCircle className="w-3 h-3" />
                       </div>
                       Registered Business
