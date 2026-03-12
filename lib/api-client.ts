@@ -677,6 +677,27 @@ class ApiClient {
         return axiosInstance.post<any>(`/api/v1/admin/disputes/${id}/message`, { message, attachment_urls: attachmentUrls });
       },
     },
+    events: {
+      getAll: async (status?: string) => {
+        const params = status ? { status } : {};
+        return axiosInstance.get<any>('/api/v1/admin/events', { params });
+      },
+      getPending: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/events/pending');
+      },
+      getDetails: async (id: string) => {
+        return axiosInstance.get<any>(`/api/v1/admin/events/${id}`);
+      },
+      getStats: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/events/stats');
+      },
+      approve: async (id: string, notes?: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/events/${id}/approve`, { admin_notes: notes });
+      },
+      reject: async (id: string, reason: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/events/${id}/reject`, { rejection_reason: reason });
+      },
+    },
   };
 }
 

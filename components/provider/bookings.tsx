@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, Eye, MessageCircle, Clock, DollarSign, CheckCircle2, Package } from "lucide-react";
+import { AlertCircle, CheckCircle, Eye, MessageCircle, Clock, DollarSign, CheckCircle2, Package, Activity, Users } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { apiClient } from "@/lib/api";
@@ -147,17 +147,28 @@ export function ProviderBookings() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { variant: "outline" as const, label: "Pending" },
-      in_progress: { variant: "secondary" as const, label: "Awaiting Payment" },
-      confirmed: { variant: "default" as const, label: "Confirmed" },
-      completed: { variant: "default" as const, label: "Completed" },
-      cancelled: { variant: "destructive" as const, label: "Cancelled" },
-      rejected: { variant: "destructive" as const, label: "Rejected" },
+    const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+      pending: { bg: "bg-amber-50", text: "text-amber-600", label: "Awaiting Action" },
+      in_progress: { bg: "bg-indigo-50", text: "text-indigo-600", label: "Payment Pending" },
+      confirmed: { bg: "bg-[#668c65]/10", text: "text-[#668c65]", label: "Secured" },
+      completed: { bg: "bg-slate-50", text: "text-slate-500", label: "Realized" },
+      cancelled: { bg: "bg-rose-50", text: "text-rose-600", label: "Retracted" },
+      rejected: { bg: "bg-rose-50", text: "text-rose-600", label: "Declined" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+      <Badge
+        variant="outline"
+        className={cn(
+          "px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase border-none shadow-none",
+          config.bg,
+          config.text
+        )}
+      >
+        {config.label}
+      </Badge>
+    );
   };
 
   if (loading) {
@@ -173,104 +184,82 @@ export function ProviderBookings() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Booking Management</h2>
+        <div className="flex items-center gap-2">
+          <div className="h-[1px] w-8 bg-[#668c65]/60" />
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Client Engagement Ledger</p>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Booking Requests</h2>
-        <div className="flex items-center bg-muted p-1 rounded-lg">
+        <div />
+        <div className="flex items-center bg-slate-50 p-1 rounded-2xl border border-slate-100 shadow-sm">
           <Button
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
-            className="h-8 px-3"
+            className={cn(
+              "h-9 px-6 rounded-xl transition-all duration-300 font-bold text-[10px] uppercase",
+              viewMode === "list" ? "bg-white text-[#668c65] shadow-sm hover:bg-white" : "text-slate-400 hover:text-slate-600 hover:bg-transparent"
+            )}
             onClick={() => setViewMode("list")}
           >
-            <List className="h-4 w-4 mr-2" />
-            List
+            <List className="h-3.5 w-3.5 mr-2" />
+            Ledger View
           </Button>
           <Button
             variant={viewMode === "calendar" ? "default" : "ghost"}
             size="sm"
-            className="h-8 px-3"
+            className={cn(
+              "h-9 px-6 rounded-xl transition-all duration-300 font-bold text-[10px] uppercase",
+              viewMode === "calendar" ? "bg-white text-[#668c65] shadow-sm hover:bg-white" : "text-slate-400 hover:text-slate-600 hover:bg-transparent"
+            )}
             onClick={() => setViewMode("calendar")}
           >
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            Calendar
+            <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+            Chronicle
           </Button>
         </div>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-yellow-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: "Awaiting Action", value: stats.pending.toString(), icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
+            { label: "Active Cycles", value: stats.in_progress.toString(), icon: Activity, color: "text-blue-500", bg: "bg-blue-50" },
+            { label: "Confirmed Ties", value: stats.confirmed.toString(), icon: CheckCircle2, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
+            { label: "Realized Value", value: stats.completed.toString(), icon: DollarSign, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
+          ].map((stat, i) => (
+            <Card key={i} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
+              <CardContent className="p-8">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                    <CardTitle className="text-3xl font-serif italic text-slate-900">{stat.value}</CardTitle>
+                  </div>
+                  <div className={cn("p-4 rounded-2xl transition-transform group-hover:scale-110", stat.bg)}>
+                    <stat.icon className={cn("h-6 w-6", stat.color)} />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold">{stats.pending}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Package className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                  <p className="text-2xl font-bold">{stats.in_progress}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-sage-100 rounded-lg">
-                  <CheckCircle2 className="h-6 w-6 text-sage-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Confirmed</p>
-                  <p className="text-2xl font-bold">{stats.confirmed}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{stats.completed}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
       {/* Conditional View */}
       {viewMode === "calendar" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-1 h-fit">
-            <CardContent className="p-4 flex justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Card className="lg:col-span-1 border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
+            <CardContent className="p-8 flex justify-center">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                className="rounded-md border-0 w-full"
+                className="w-full"
                 components={{
                   DayButton: (props) => {
-                    // Format date to YYYY-MM-DD in local timezone
                     const date = props.day.date;
                     const year = date.getFullYear();
                     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -278,10 +267,17 @@ export function ProviderBookings() {
                     const dateStr = `${year}-${month}-${day}`;
                     const count = bookingCounts[dateStr] || 0;
                     return (
-                      <CalendarDayButton {...props} className={cn(props.className, "relative")}>
+                      <CalendarDayButton {...props} className={cn(
+                        props.className,
+                        "relative rounded-xl hover:bg-slate-50 transition-colors",
+                        props.modifiers?.selected && "bg-[#668c65] text-white hover:bg-[#5a7b59]"
+                      )}>
                         {props.day.date.getDate()}
                         {count > 0 && (
-                          <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-sage-600 text-[9px] text-white font-bold shadow-sm ring-1 ring-white">
+                          <span className={cn(
+                            "absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black",
+                            props.modifiers?.selected ? "bg-white text-[#668c65]" : "bg-[#668c65] text-white ring-2 ring-white"
+                          )}>
                             {count}
                           </span>
                         )}
@@ -293,12 +289,12 @@ export function ProviderBookings() {
             </CardContent>
           </Card>
 
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-xl font-serif italic text-slate-900">
                 {selectedDate
                   ? `Bookings for ${selectedDate.toLocaleDateString()}`
-                  : "All Upcoming Bookings"}
+                  : "Upcoming Engagements"}
               </h3>
               {selectedDate && (
                 <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
@@ -330,15 +326,15 @@ export function ProviderBookings() {
       ) : (
         /* Bookings List */
         bookings.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No bookings yet</h3>
-              <p className="text-muted-foreground">Booking requests will appear here</p>
+          <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
+            <CardContent className="p-20 text-center">
+              <Package className="h-16 w-16 text-slate-100 mx-auto mb-6" />
+              <h3 className="text-2xl font-serif italic text-slate-900 mb-2">Workspace Vacant</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting the next artisanal movement</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6 pb-12">
             {bookings.map((booking) => (
               <BookingCard
                 key={booking.id}
@@ -370,126 +366,161 @@ function BookingCard({
   getStatusBadge: (status: string) => JSX.Element;
 }) {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Service Image */}
-          {booking.service_image && (
-            <div className="relative w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0">
+    <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
+      <CardContent className="p-8">
+        <div className="flex flex-col md:flex-row gap-10">
+          {/* Service Image / Avatar */}
+          <div className="relative w-full md:w-48 h-48 rounded-[1.5rem] overflow-hidden flex-shrink-0 bg-slate-50 group-hover:shadow-lg transition-all duration-500">
+            {booking.service_image ? (
               <Image
-                src={booking.service_image}
+                src={booking.service_image as string}
                 alt={booking.service_name}
                 fill
-                className="object-cover"
+                className="object-cover group-hover:scale-105 transition-transform duration-700"
               />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center text-[#668c65] font-black text-xl mb-3 border border-slate-100">
+                  {booking.customer_name.substring(0, 2).toUpperCase()}
+                </div>
+              </div>
+            )}
+            <div className="absolute top-4 right-4 animate-in fade-in duration-700">
+              {getStatusBadge(booking.status)}
             </div>
-          )}
+          </div>
 
           {/* Booking Details */}
-          <div className="flex-1">
-            <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 space-y-8">
+            <div className="flex items-start justify-between border-b border-slate-50 pb-6">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-semibold">{booking.customer_name}</h3>
-                  {getStatusBadge(booking.status)}
-                  {booking.provider_confirmed && (
-                    <Badge variant="outline" className="bg-sage-50 text-sage-700 border-sage-200">
-                      Provider Confirmed
-                    </Badge>
+                <h3 className="text-3xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
+                  {booking.customer_name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em]">{booking.service_name}</p>
+                  {booking.package_name && (
+                    <>
+                      <span className="text-slate-300 font-bold">•</span>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{booking.package_name}</p>
+                    </>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{booking.service_name}</p>
-                {booking.package_name && (
-                  <p className="text-sm text-muted-foreground">Package: {booking.package_name}</p>
-                )}
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-serif italic text-slate-900">{booking.total_amount.toLocaleString()} <span className="text-[10px] font-black uppercase not-italic text-slate-400 ml-1">RWF</span></p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Contractual Honorarium</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-muted-foreground">Wedding Date</p>
-                <p className="font-medium">
-                  {new Date(booking.booking_date + 'T00:00:00').toLocaleDateString()}
-                </p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="space-y-1">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Engaged Date</p>
+                <div className="flex items-center gap-4">
+                  {/* Visual Calendar Block */}
+                  <div className="flex flex-col w-12 h-14 rounded-xl overflow-hidden border border-slate-100 bg-white shadow-sm flex-shrink-0">
+                    <div className="bg-[#668c65] py-1 text-center">
+                      <span className="text-[7px] font-black text-white uppercase tracking-tighter">
+                        {new Date(booking.booking_date + 'T00:00:00').toLocaleString('en-US', { month: 'short' }).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <span className="text-lg font-serif italic font-bold text-slate-900 leading-none">
+                        {new Date(booking.booking_date + 'T00:00:00').getDate()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-700">{new Date(booking.booking_date + 'T00:00:00').getFullYear()}</span>
+                    <span className="text-[9px] font-black text-[#668c65] uppercase tracking-widest leading-none">Wedding Ritual</span>
+                  </div>
+                </div>
               </div>
               {booking.preferred_time && (
-                <div>
-                  <p className="text-muted-foreground">Preferred Time</p>
-                  <p className="font-medium">{booking.preferred_time}</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Temporal Window</p>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Clock className="h-3.5 w-3.5 text-[#668c65]" />
+                    <span>{booking.preferred_time}</span>
+                  </div>
                 </div>
               )}
               {booking.event_location && (
-                <div>
-                  <p className="text-muted-foreground">Location</p>
-                  <p className="font-medium">{booking.event_location}</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Designated Venue</p>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <CheckCircle className="h-3.5 w-3.5 text-[#668c65]" />
+                    <span className="truncate">{booking.event_location}</span>
+                  </div>
                 </div>
               )}
               {booking.guest_count && (
-                <div>
-                  <p className="text-muted-foreground">Guest Count</p>
-                  <p className="font-medium">{booking.guest_count}</p>
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Attendee Scale</p>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Users className="h-3.5 w-3.5 text-[#668c65]" />
+                    <span>{booking.guest_count} Souls</span>
+                  </div>
                 </div>
               )}
-              <div>
-                <p className="text-muted-foreground">Amount</p>
-                <p className="font-medium text-lg">{booking.total_amount.toLocaleString()} RWF</p>
-              </div>
             </div>
 
-            {/* Contact Info for confirmed bookings */}
-            {(booking.status === "in_progress" || booking.status === "confirmed" || booking.status === "completed") && (
-              <div className="mt-3 p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-1">Customer Contact</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  <p className="text-muted-foreground">Email: {booking.customer_email}</p>
-                  <p className="text-muted-foreground">Phone: {booking.customer_phone}</p>
-                </div>
+            {/* Engagement Details and Actions */}
+            <div className="flex flex-col lg:flex-row items-end justify-between gap-6 pt-2">
+              <div className="flex-1 w-full lg:w-auto">
+                {booking.special_requests ? (
+                  <div className="bg-[#668c65]/5 p-6 rounded-[1.5rem] border border-[#668c65]/10 relative overflow-hidden group/note">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/note:rotate-12 transition-transform">
+                      <MessageCircle className="w-12 h-12 text-[#668c65]" />
+                    </div>
+                    <p className="text-[8px] font-black text-[#668c65] uppercase tracking-widest mb-2">Artisan Specifications</p>
+                    <p className="text-xs text-slate-600 leading-relaxed font-light italic">"{booking.special_requests}"</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4 text-slate-400">
+                    <div className="h-[1px] w-8 bg-slate-100" />
+                    <p className="text-[8px] font-black uppercase tracking-widest">No Special Requests Lodged</p>
+                  </div>
+                )}
               </div>
-            )}
 
-            {booking.special_requests && (
-              <div className="mt-3">
-                <p className="text-sm font-medium">Special Requests</p>
-                <p className="text-sm text-muted-foreground">{booking.special_requests}</p>
+              <div className="flex gap-3 flex-shrink-0">
+                {booking.status === "pending" && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="rounded-xl h-12 px-6 hover:bg-rose-50 hover:text-rose-600 text-slate-400 transition-all font-bold text-[10px] uppercase"
+                      onClick={() => handleReject(booking.id)}
+                      disabled={actionLoading === booking.id}
+                    >
+                      Refuse
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-xl h-12 px-8 bg-slate-900 hover:bg-black text-white shadow-xl shadow-slate-200 transition-all font-bold text-[10px] uppercase"
+                      onClick={() => handleConfirm(booking.id)}
+                      disabled={actionLoading === booking.id}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5 mr-2" />
+                      Approve Request
+                    </Button>
+                  </>
+                )}
+                {(booking.status === "in_progress" || booking.status === "confirmed") && (
+                  <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
+                    <MessageCircle className="h-3.5 w-3.5 mr-2" />
+                    Initiate Contact
+                  </Button>
+                )}
+                {booking.status === "completed" && (
+                  <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
+                    <Eye className="h-3.5 w-3.5 mr-2" />
+                    Inspect Details
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex md:flex-col gap-2 flex-shrink-0">
-            {booking.status === "pending" && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReject(booking.id)}
-                  disabled={actionLoading === booking.id}
-                >
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Decline
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleConfirm(booking.id)}
-                  disabled={actionLoading === booking.id}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Accept
-                </Button>
-              </>
-            )}
-            {(booking.status === "in_progress" || booking.status === "confirmed") && (
-              <Button variant="outline" size="sm">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Contact
-              </Button>
-            )}
-            {booking.status === "completed" && (
-              <Button variant="outline" size="sm">
-                <Eye className="h-4 w-4 mr-2" />
-                Details
-              </Button>
-            )}
+            </div>
           </div>
         </div>
       </CardContent>

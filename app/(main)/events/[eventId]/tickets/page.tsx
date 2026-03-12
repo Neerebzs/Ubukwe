@@ -6,52 +6,60 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TranslatedText } from "@/components/translated-text";
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle } from "lucide-react";
+import { usePublicEvent, usePurchaseTicket } from "@/hooks/useCustomerEvents";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PaymentUI } from "@/components/customer/payment-ui";
+import { TicketDownload } from "@/components/customer/ticket-download";
+import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
+import { toast } from "sonner";
+
+type Step = "selection" | "payment" | "success";
 
 export default function EventTicketingPage() {
   const params = useParams();
   const router = useRouter();
+  const eventId = params.eventId as string;
+  
+  const { data: event, isLoading, error } = usePublicEvent(eventId);
+  const purchaseTicketMutation = usePurchaseTicket();
+  
+  const [currentStep, setCurrentStep] = useState<Step>("selection");
   const [tickets, setTickets] = useState<Record<string, number>>({});
+  const [purchaseData, setPurchaseData] = useState<any>(null);
+  const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  const event = {
-    id: params.eventId,
-    title: "KIGALI SHADES NIGHT",
-    description: "KIGALI SHADES NIGHT is a high-energy experience bringing together top artists and DJs for an unforgettable night of live performances and nonstop music. Hosted at Crystal Lounge, KABC Building, the event blends great vibes, stylish crowds, and premium sounds in one electric atmosphere. Everyone is required to wear the shades provided at the entrance, making the night even more fun, stylish, and unified. Expect powerful performances, smooth DJ sets, and an unforgettable party vibe.",
-    date: "Friday, 6th → Saturday, 7th",
-    time: "18:00 PM - 02:00 AM",
-    venue: "Crystal Lounge",
-    location: "View →",
-    organizer: "KIGALI SHADES NIGHT",
-    organizerLogo: "/placeholder-org.jpg",
-    image: "/grom.jpg",
-    performances: 5,
-    ticketTypes: [
-      {
-        id: "pre-regular",
-        name: "Pre Regular",
-        price: 7000,
-        available: 0,
-        soldOut: true,
-        description: "View Description"
-      },
-      {
-        id: "regular",
-        name: "Regular",
-        price: 10000,
-        available: 100,
-        soldOut: false,
-        description: "View Description"
-      },
-      {
-        id: "vip-table",
-        name: "VIP TABLE",
-        price: 150000,
-        available: 5,
-        soldOut: false,
-        description: "View Description"
-      }
-    ]
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium">Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Event Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              This event is not available or has been removed.
+            </p>
+            <Button onClick={() => router.push("/events")} className="w-full">
+              Browse All Events
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const updateTicketCount = (ticketId: string, change: number) => {
     setTickets(prev => {
@@ -62,6 +70,119 @@ export default function EventTicketingPage() {
   };
 
   const totalTickets = Object.values(tickets).reduce((sum, count) => sum + count, 0);
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Generate QR code
+  const generateQRCode = async (data: string): Promise<string> => {
+    try {
+      return await QRCode.toDataURL(data, {
+        errorCorrectionLevel: "H",
+        type: "image/png",
+        quality: 0.95,
+        margin: 1,
+        width: 300,
+      });
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      return "";
+    }
+  };
+
+  // Generate barcode
+  const generateBarcode = async (data: string): Promise<string> => {
+    try {
+      const canvas = document.createElement("canvas");
+      JsBarcode(canvas, data, {
+        format: "CODE128",
+        width: 2,
+        height: 50,
+        displayValue: true,
+      });
+      return canvas.toDataURL("image/png");
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+      return "";
+    }
+  };
+
+  const handleContinueToPayment = () => {
+    const selectedTickets = Object.keys(tickets)
+      .filter(id => tickets[id] > 0)
+      .map(id => {
+        const type = event.ticket_types?.find(t => t.id === id);
+        return {
+          ticketTypeId: id,
+          quantity: tickets[id],
+          price: type?.price || 0,
+          name: type?.name || "Ticket"
+        };
+      });
+
+    if (selectedTickets.length === 0) return;
+
+    const totalAmount = selectedTickets.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    setPurchaseData({
+      selectedTickets,
+      totalAmount,
+      // Placeholders
+      holderName: "Attendee",
+      holderEmail: "guest@example.com",
+      holderPhone: "0000000000"
+    });
+    setCurrentStep("payment");
+  };
+
+  const handlePaymentSubmit = async (paymentData: any) => {
+    if (!purchaseData) return;
+
+    try {
+      const results = [];
+      for (const item of purchaseData.selectedTickets) {
+        // Issue each ticket individually to get unique numbers/QR codes
+        for (let i = 0; i < item.quantity; i++) {
+          const response = await purchaseTicketMutation.mutateAsync({
+            eventId,
+            ticketTypeId: item.ticketTypeId,
+            ticketData: {
+              holder_name: purchaseData.holderName,
+              holder_email: purchaseData.holderEmail,
+              holder_phone: purchaseData.holderPhone,
+              quantity: 1, // Single ticket per call
+            },
+          });
+
+          // Generate QR code and barcode for each unique ticket
+          const qrCodeUrl = await generateQRCode(response.ticket_number);
+          const barcodeUrl = await generateBarcode(response.ticket_number);
+
+          results.push({
+            ...response,
+            qrCode: qrCodeUrl,
+            barcode: barcodeUrl,
+            totalPrice: item.price, // Price for one ticket
+            ticketTypeName: item.name,
+          });
+        }
+      }
+
+      setPurchasedTickets(results);
+      setCurrentStep("success");
+      toast.success(`Successfully issued ${results.length} tickets!`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to process all ticket requests");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -76,7 +197,7 @@ export default function EventTicketingPage() {
                 onClick={() => router.back()}
               >
                 <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                Back to Calendar
+                Back to Events
               </Button>
               <div className="flex items-center gap-3">
                 <div className="h-[1px] w-12 bg-[#608d64]/30" />
@@ -88,8 +209,13 @@ export default function EventTicketingPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" className="rounded-full border-slate-200 text-slate-400 hover:text-[#608d64] transition-all">
-                <Heart className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="rounded-full border-slate-200 text-slate-400 hover:text-[#608d64] transition-all"
+                onClick={() => setIsFavorite(!isFavorite)}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite ? "fill-current text-[#608d64]" : ""}`} />
               </Button>
               <Button variant="outline" size="icon" className="rounded-full border-slate-200 text-slate-400 hover:text-[#608d64] transition-all">
                 <Share2 className="h-4 w-4" />
@@ -104,14 +230,20 @@ export default function EventTicketingPage() {
           {/* Left Side: Visual & Story */}
           <div className="lg:col-span-12 xl:col-span-5 space-y-12">
             <div className="relative aspect-[4/5] rounded-[40px] overflow-hidden shadow-2xl border-8 border-[#fdfcf9]">
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover"
-              />
+              {event.image_url ? (
+                <img
+                  src={event.image_url}
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                  <span className="text-slate-500">No image available</span>
+                </div>
+              )}
               <div className="absolute top-8 left-8">
                 <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-xl">
-                  {event.performances} Performances
+                  {event.ticket_types?.length || 0} Ticket Types
                 </Badge>
               </div>
             </div>
@@ -119,137 +251,213 @@ export default function EventTicketingPage() {
             <div className="space-y-8 p-12 bg-[#fdfcf9] rounded-[40px] border border-slate-100">
               <h3 className="font-serif italic text-3xl text-slate-900">About the Gathering</h3>
               <p className="text-slate-500 font-light leading-relaxed text-lg">
-                {event.description}
+                {event.description || "Experience an unforgettable event with amazing performances and great vibes."}
               </p>
             </div>
 
-            {/* Organizer Card */}
-            <div className="p-8 rounded-[40px] border border-slate-100 flex items-center justify-between group hover:border-[#608d64]/20 transition-all">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-3xl bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-serif italic text-2xl">
-                  {event.organizer.charAt(0)}
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Presented By</p>
-                  <p className="font-serif italic text-2xl text-slate-900">{event.organizer}</p>
-                </div>
-              </div>
-              <Button variant="ghost" className="h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#608d64] hover:bg-[#608d64]/5">
-                View Profile
-              </Button>
             </div>
-          </div>
 
           {/* Right Side: Ticketing */}
           <div className="lg:col-span-12 xl:col-span-7 space-y-16">
-            {/* Essential Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-10 rounded-[40px] bg-slate-50 border border-slate-100 space-y-6">
-                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-[#608d64] shadow-sm">
-                  <Calendar className="h-6 w-6" />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Temporal Detail</p>
-                  <p className="font-serif italic text-2xl text-slate-900 leading-tight">{event.date}</p>
-                  <p className="text-slate-400 font-light">{event.time}</p>
-                </div>
-              </div>
-
-              <div className="p-10 rounded-[40px] bg-slate-50 border border-slate-100 space-y-6">
-                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center text-[#608d64] shadow-sm">
-                  <MapPin className="h-6 w-6" />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">The Sanctuary</p>
-                  <p className="font-serif italic text-2xl text-slate-900 leading-tight">{event.venue}</p>
-                  <button className="text-[10px] font-black text-[#608d64] uppercase tracking-widest hover:underline mt-2 flex items-center gap-2">
-                    Open Coordinates <ExternalLink className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Ticket Passage Selection */}
-            <div className="space-y-8">
-              <div className="flex items-center justify-between pb-8 border-b border-slate-100">
-                <h2 className="font-serif italic text-4xl text-slate-900 text-center md:text-left">Secure Passage</h2>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Selection Window Open
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {event.ticketTypes.map((type) => (
-                  <div
-                    key={type.id}
-                    className={`p-8 rounded-[40px] border transition-all duration-500 group ${type.soldOut
-                      ? "opacity-50 grayscale bg-slate-50 border-slate-100"
-                      : "bg-white border-slate-100 hover:border-[#608d64]/30 hover:shadow-2xl hover:shadow-[#608d64]/5"
-                      }`}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-4">
-                          <h3 className="font-serif italic text-2xl text-slate-900">{type.name}</h3>
-                          {type.soldOut && (
-                            <Badge variant="destructive" className="bg-slate-200 text-slate-500 border-none rounded-full px-4 text-[8px] font-black tracking-widest">
-                              EXPIRED
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-slate-400 font-light text-sm italic">
-                          Passage grants exclusive access to the {type.name.toLowerCase()} sanctuary and related honors.
-                        </p>
-                        <div className="text-xl font-light text-[#608d64] tracking-tight">
-                          {type.price.toLocaleString()} <span className="text-[10px] font-black uppercase tracking-widest ml-1">RWF</span>
-                        </div>
+            {currentStep === "selection" && (
+              <>
+                {/* Event Highlights Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 animate-in fade-in slide-in-from-bottom duration-700">
+                  <div className="p-8 rounded-[32px] bg-slate-50/50 border border-slate-100 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-white text-[#608d64] shadow-sm">
+                        <Calendar className="h-5 w-5" />
                       </div>
-
-                      {!type.soldOut && (
-                        <div className="flex items-center gap-6 bg-slate-50 px-6 py-4 rounded-3xl border border-slate-100 group-hover:bg-white group-hover:border-[#608d64]/20 transition-all">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-full border border-slate-200 text-slate-400 hover:text-[#608d64] hover:bg-white transition-all"
-                            onClick={() => updateTicketCount(type.id, -1)}
-                            disabled={!tickets[type.id]}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <div className="w-10 text-center font-serif italic text-3xl text-slate-900">
-                            {tickets[type.id] || 0}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-full bg-slate-900 text-white hover:bg-[#608d64] transition-all"
-                            onClick={() => updateTicketCount(type.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Temporal Origin</p>
+                    </div>
+                    <div>
+                      <p className="font-serif italic text-2xl text-slate-900 leading-tight">
+                        {formatDate(event.event_date)}
+                      </p>
+                      {event.event_time && (
+                        <p className="text-xs font-bold text-[#608d64] uppercase tracking-widest mt-2">
+                          {event.event_time}
+                        </p>
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="pt-12">
-                <Button
-                  className={`w-full h-20 rounded-full text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl ${totalTickets > 0
-                    ? "bg-[#608d64] text-white shadow-[#608d64]/20 hover:bg-slate-900 hover:shadow-black/20"
-                    : "bg-slate-100 text-slate-300 pointer-events-none"
-                    }`}
-                  disabled={totalTickets === 0}
-                >
-                  <TranslatedText text="Continue to Sanctuary" />
-                  <ArrowRight className="ml-4 h-6 w-6" />
-                </Button>
-                <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8">
-                  Security Provided by Ubukwe Collective • Encrypted Process
-                </p>
+                  <div className="p-8 rounded-[32px] bg-slate-50/50 border border-slate-100 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-white text-[#608d64] shadow-sm">
+                        <MapPin className="h-5 w-5" />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Ritual Domain</p>
+                    </div>
+                    <div>
+                      <p className="font-serif italic text-2xl text-slate-900 leading-tight truncate">
+                        {event.location}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                        Validated Sanctuary
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ticket Passage Selection */}
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between pb-8 border-b border-slate-100">
+                    <h2 className="font-serif italic text-4xl text-slate-900 text-center md:text-left">Secure Passage</h2>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Selection Window Open
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {event.ticket_types?.map((type) => {
+                      const available = type.quantity - type.sold;
+                      const isSoldOut = available <= 0;
+                      
+                      return (
+                        <div
+                          key={type.id}
+                          className={`p-8 rounded-[40px] border transition-all duration-500 group ${
+                            isSoldOut
+                              ? "opacity-50 grayscale bg-slate-50 border-slate-100"
+                              : "bg-white border-slate-100 hover:border-[#608d64]/30 hover:shadow-2xl hover:shadow-[#608d64]/5"
+                          }`}
+                        >
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-4">
+                                <h3 className="font-serif italic text-2xl text-slate-900">{type.name}</h3>
+                                {isSoldOut && (
+                                  <Badge variant="destructive" className="bg-slate-200 text-slate-500 border-none rounded-full px-4 text-[8px] font-black tracking-widest">
+                                    SOLD OUT
+                                  </Badge>
+                                )}
+                              </div>
+                              {type.description && (
+                                <p className="text-slate-400 font-light text-sm italic">
+                                  {type.description}
+                                </p>
+                              )}
+                              <div className="text-xl font-light text-[#608d64] tracking-tight">
+                                {type.price.toLocaleString()} <span className="text-[10px] font-black uppercase tracking-widest ml-1">RWF</span>
+                              </div>
+                              <p className="text-xs text-slate-500">{available} of {type.quantity} available</p>
+                            </div>
+
+                            {!isSoldOut && (
+                              <div className="flex items-center gap-6 bg-slate-50 px-6 py-4 rounded-3xl border border-slate-100 group-hover:bg-white group-hover:border-[#608d64]/20 transition-all">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 rounded-full border border-slate-200 text-slate-400 hover:text-[#608d64] hover:bg-white transition-all"
+                                  onClick={() => updateTicketCount(type.id, -1)}
+                                  disabled={!tickets[type.id]}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <div className="w-10 text-center font-serif italic text-3xl text-slate-900">
+                                  {tickets[type.id] || 0}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 rounded-full bg-slate-900 text-white hover:bg-[#608d64] transition-all"
+                                  onClick={() => updateTicketCount(type.id, 1)}
+                                  disabled={tickets[type.id] >= available}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-12">
+                    <Button
+                      onClick={handleContinueToPayment}
+                      className={`w-full h-20 rounded-full text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl ${
+                        totalTickets > 0
+                          ? "bg-[#608d64] text-white shadow-[#608d64]/20 hover:bg-slate-900 hover:shadow-black/20"
+                          : "bg-slate-100 text-slate-300 pointer-events-none"
+                      }`}
+                      disabled={totalTickets === 0}
+                    >
+                      <TranslatedText text="Continue to Payment" />
+                      <ArrowRight className="ml-4 h-6 w-6" />
+                    </Button>
+                    <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8">
+                      Security Provided by Ubukwe Collective • Encrypted Process
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+
+
+            {currentStep === "payment" && purchaseData && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCurrentStep("selection")}
+                    className="h-10 w-10"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <h2 className="font-serif italic text-3xl text-slate-900">Payment</h2>
+                </div>
+                <PaymentUI
+                  amount={purchaseData.totalAmount}
+                  eventTitle={event.title}
+                  ticketCount={totalTickets}
+                  onPaymentSubmit={handlePaymentSubmit}
+                  isLoading={purchaseTicketMutation.isPending}
+                  error={purchaseTicketMutation.error ? (purchaseTicketMutation.error as any).message : undefined}
+                />
               </div>
-            </div>
+            )}
+
+            {currentStep === "success" && purchasedTickets.length > 0 && (
+              <div className="space-y-12">
+                <div className="text-center space-y-4">
+                  <h2 className="font-serif italic text-5xl text-slate-900">Your Registry Manifests</h2>
+                  <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-[0.4em]">
+                    {purchasedTickets.length} Gateways Authorized
+                  </p>
+                </div>
+                
+                <div className="space-y-16">
+                  {purchasedTickets.map((ticket, index) => (
+                    <div key={ticket.id} className="animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: `${index * 200}ms` }}>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="h-px flex-1 bg-slate-100" />
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Manifest {index + 1}</span>
+                        <div className="h-px flex-1 bg-slate-100" />
+                      </div>
+                      <TicketDownload
+                        ticketNumber={ticket.ticket_number}
+                        eventTitle={event.title}
+                        eventDate={formatDate(event.event_date)}
+                        eventTime={event.event_time}
+                        eventLocation={event.location}
+                        eventImage={event.image_url}
+                        ticketType={ticket.ticketTypeName}
+                        holderName={purchaseData.holderName}
+                        holderEmail={purchaseData.holderEmail}
+                        price={ticket.totalPrice}
+                        qrCode={ticket.qrCode}
+                        barcode={ticket.barcode}
+                        status="confirmed"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -13,7 +13,9 @@ import {
   FileText,
   DollarSign,
   User,
-  LogOut
+  LogOut,
+  Ticket,
+  Calendar
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
@@ -71,6 +73,7 @@ export function ProviderMobileMenuDrawer({
       icon: <Package className="w-4 h-4" />,
       items: [
         { id: "services", label: "My Services", icon: Package },
+        { id: "events", label: "Events", icon: Calendar },
         { id: "bookings", label: "Bookings", icon: BookOpen },
       ]
     },

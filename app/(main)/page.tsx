@@ -360,7 +360,7 @@ export default function HomePage() {
                         <Clock className="w-4 h-4" />
                         <span>Until {promo.validUntil}</span>
                       </div>
-                      <Link href="/services">
+                      <Link href={promo.type === "event" ? "/events" : "/services"}>
                         <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
                           <TranslatedText text="Explore" />
                           <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />

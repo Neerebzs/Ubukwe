@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, ChevronRight, Home, Users, Store, CheckCircle, BookOpen, ShieldAlert, BarChart, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, Home, Users, Store, CheckCircle, BookOpen, ShieldAlert, BarChart, LogOut, Calendar } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
 import {
@@ -70,6 +70,7 @@ export function AdminMobileMenuDrawer({
       title: "Operations",
       items: [
         { id: "bookings", label: "Bookings", icon: BookOpen },
+        { id: "events", label: "Events", icon: Calendar },
         { id: "services", label: "Services", icon: ShieldAlert },
         { id: "disputes", label: "Disputes", icon: ShieldAlert },
       ]

@@ -51,6 +51,7 @@ import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
 import { MobileAppBar } from "@/components/ui/mobile-app-bar"
 import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
 import { CategoriesManagement } from "@/components/admin/categories";
+import { AdminEvents } from "@/components/admin/events";
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -131,13 +132,15 @@ export function AdminDashboardContent() {
         return <AdminDisputes disputes={[]} />
       case "analytics":
         return <AdminAnalytics />
+      case "events":
+        return <AdminEvents />
       default:
         return null
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-200">
       {/* Mobile App Bar - Only on mobile */}
       <MobileAppBar
         title="Admin Dashboard"
@@ -183,7 +186,7 @@ export function AdminDashboardContent() {
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
         {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
-        <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
+        <div className="hidden md:block sticky top-0 z-30 bg-gray-200">
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Admin",

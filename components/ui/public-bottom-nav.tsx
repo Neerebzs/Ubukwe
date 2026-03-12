@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Briefcase, Info, User } from "lucide-react";
+import { Home, Briefcase, Info, User, Calendar } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { TranslatedText } from "@/components/translated-text";
@@ -23,6 +23,12 @@ export function PublicBottomNav() {
       path: "/services"
     },
     {
+      id: "events",
+      label: "Events",
+      icon: Calendar,
+      path: "/events"
+    },
+    {
       id: "about",
       label: "About",
       icon: Info,
@@ -42,7 +48,7 @@ export function PublicBottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#fdfcfb]/80 backdrop-blur-xl border-t border-slate-100 md:hidden safe-area-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
-      <div className="grid grid-cols-4 h-20">
+      <div className="grid grid-cols-5 h-20">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;

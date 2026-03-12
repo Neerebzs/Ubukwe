@@ -462,223 +462,225 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">My Services</h2>
-          <p className="text-muted-foreground mt-1">Manage and optimize your wedding service listings</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Catalogue</h2>
+        <div className="flex items-center gap-2">
+          <div className="h-[1px] w-8 bg-[#668c65]/60" />
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Artisanal Service Inventory</p>
         </div>
-        <Button onClick={handleCreateService} size="lg" className="shadow-sm">
-          <Plus className="h-5 w-5 mr-2" />
-          Create New Service
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div />
+        <Button onClick={handleCreateService} size="lg" className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-lg shadow-[#668c65]/20 px-8 h-12 transition-all duration-300 group">
+          <Plus className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
+          <span className="font-bold tracking-tight uppercase text-[10px]">Create New Experience</span>
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="border-none shadow-sm bg-muted/30">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search services by title or category..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background border-none shadow-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40 bg-background border-none shadow-sm">
-                  <Filter className="w-4 h-4 mr-2 opacity-50" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-48 bg-background border-none shadow-sm">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex-1 relative group w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
+          <Input
+            placeholder="Search experiences..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-12 h-12 bg-white border-slate-100 rounded-2xl focus-visible:ring-[#668c65] transition-all shadow-sm"
+          />
+        </div>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-12 w-full md:w-40 bg-white border-slate-100 rounded-2xl focus:ring-[#668c65] text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm">
+              <Filter className="w-4 h-4 mr-2 text-[#668c65]/60" />
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+              <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">All Rituals</SelectItem>
+              <SelectItem value="active" className="text-[10px] font-black uppercase tracking-widest text-[#668c65]">Active</SelectItem>
+              <SelectItem value="draft" className="text-[10px] font-black uppercase tracking-widest">Draft</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-12 w-full md:w-48 bg-white border-slate-100 rounded-2xl focus:ring-[#668c65] text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm">
+              <Package className="w-4 h-4 mr-2 text-[#668c65]/60" />
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
+              <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">All Categories</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat.id} value={cat.name} className="text-[10px] font-black uppercase tracking-widest">{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Services List */}
       <div className="grid gap-4">
         {filteredServices.length === 0 ? (
-          <Card className="border-dashed border-2 bg-transparent">
-            <CardContent className="text-center py-20">
-              <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No services found</h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+          <Card className="border-none shadow-none bg-slate-50/50 rounded-[2rem] p-12 text-center">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Search className="h-12 w-12 text-slate-300 mb-4" />
+              <p className="text-slate-900 font-serif italic text-xl mb-2">No artisanal services identified</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
-                  ? "We couldn't find any services matching your current filters. Try adjusting them or clear filters."
-                  : "You haven't added any services yet. Start by creating your first listing."}
+                  ? "Refine your parameters or reset the search to discover more."
+                  : "Begin your legacy by documenting your first artisanal offering."}
               </p>
               {!searchTerm && statusFilter === "all" && categoryFilter === "all" ? (
-                <Button onClick={handleCreateService} size="lg">
+                <Button onClick={handleCreateService} size="lg" className="mt-8 rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-xl shadow-[#668c65]/20 px-8 h-12">
                   <Plus className="h-5 w-5 mr-2" />
-                  Create Your First Service
+                  Manifest Your First Offering
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setCategoryFilter("all"); }}>
-                  Clear all filters
+                <Button variant="ghost" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setCategoryFilter("all"); }} className="mt-8 text-[10px] font-black uppercase tracking-widest text-[#668c65]">
+                  Reset Parameters
                 </Button>
               )}
             </CardContent>
           </Card>
         ) : (
           filteredServices.map((service) => (
-            <Card key={service.id} className="group overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 bg-card">
+            <Card key={service.id} className="group overflow-hidden border-none shadow-none rounded-[2rem] bg-white group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 border border-slate-50">
               <CardContent className="p-0">
                 <div className="flex flex-col md:flex-row h-full">
                   {/* Service Thumbnail */}
-                  <div className="relative w-full md:w-64 h-48 md:h-auto bg-muted overflow-hidden">
+                  <div className="relative w-full md:w-80 h-64 md:h-auto bg-slate-50 overflow-hidden">
                     {service.gallery && service.gallery.length > 0 ? (
                       <Image
                         src={service.gallery[0].url}
                         alt={service.title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-12 w-12 text-muted-foreground/30" />
+                        <Package className="h-12 w-12 text-slate-100" />
                       </div>
                     )}
-                    <Badge
-                      className={cn(
-                        "absolute top-3 left-3 shadow-sm",
-                        service.status === "active" ? "bg-sage-500 hover:bg-sage-600" : "bg-slate-500 hover:bg-slate-600"
-                      )}
-                    >
-                      {service.status.toUpperCase()}
-                    </Badge>
+                    <div className="absolute top-4 left-4">
+                      <Badge
+                        className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border-none shadow-none",
+                          service.status === "active" ? "bg-[#668c65]/10 text-[#668c65]" : "bg-slate-100 text-slate-500"
+                        )}
+                      >
+                        {service.status.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Service Info */}
-                  <div className="flex-1 p-6 flex flex-col justify-between">
+                  <div className="flex-1 p-10 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="text-xs font-bold text-sage-600 uppercase tracking-wider mb-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em]">
                             {service.category}
                           </p>
-                          <h3 className="text-xl font-bold group-hover:text-sage-700 transition-colors uppercase">
+                          <h3 className="text-3xl font-serif italic text-slate-900 tracking-tight group-hover:text-[#668c65] transition-colors leading-tight">
                             {service.title}
                             {service.verified && (
-                              <Badge variant="secondary" className="ml-2 text-[10px] h-4 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-tighter">
-                                Verified
+                              <Badge className="ml-3 bg-indigo-50 text-indigo-600 border-none text-[8px] font-black uppercase px-2 py-0.5 rounded-full">
+                                Verified Manifest
                               </Badge>
                             )}
                           </h3>
                         </div>
                         {service.rating > 0 && (
-                          <div className="flex items-center bg-yellow-50 px-2 py-1 rounded text-yellow-700 text-sm font-bold border border-yellow-100">
-                            <Star className="h-3.5 w-3.5 mr-1 fill-current" />
+                          <div className="flex items-center bg-amber-50 px-3 py-1 rounded-full text-amber-600 text-[10px] font-black border-none uppercase tracking-widest">
+                            <Star className="h-3 w-3 mr-1.5 fill-current" />
                             {service.rating}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-muted-foreground mb-4">
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1 text-slate-400" />
+                      <div className="flex flex-wrap gap-y-4 gap-x-8 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-6">
+                        <div className="flex items-center group/item">
+                          <MapPin className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
                           {service.location}
                         </div>
-                        <div className="flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-1 text-slate-400" />
-                          {service.bookings} Bookings
+                        <div className="flex items-center group/item">
+                          <TrendingUp className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
+                          {service.bookings} Engagements
                         </div>
                         {service.packages && service.packages.length > 0 && (
-                          <div className="flex items-center">
-                            <Package className="h-4 w-4 mr-1 text-slate-400" />
-                            {service.packages.length} Packages
+                          <div className="flex items-center group/item">
+                            <Package className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
+                            {service.packages.length} Tiers
                           </div>
                         )}
                       </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
-                        {service.description || "No description provided for this service."}
+                      <p className="text-sm text-slate-500 italic font-light leading-relaxed line-clamp-2 mb-8">
+                        "{service.description || "No specific manifesto provided for this offering."}"
                       </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                      <div className="text-lg font-bold text-slate-900">
-                        {service.priceRange}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pt-6 border-t border-slate-50">
+                      <div className="space-y-1">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Pricing Matrix</p>
+                        <p className="text-2xl font-serif italic text-[#668c65]">
+                          {service.priceRange}
+                        </p>
                       </div>
 
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <div className="flex -space-x-1 mr-2 invisible sm:visible">
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-sage-600"
+                            className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleViewService(service)}
+                            title="Inspect Data"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-5 w-5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-sage-600"
+                            className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleEditService(service)}
+                            title="Refine Asset"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-5 w-5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full bg-slate-50 text-slate-400 hover:text-destructive"
+                            className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
                             onClick={() => handleDeleteService(service.id)}
                             disabled={isDeleting === service.id}
+                            title="Remove Permanently"
                           >
                             {isDeleting === service.id ? (
                               <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" />
                             )}
                           </Button>
                         </div>
 
+                        <div className="h-8 w-[1px] bg-slate-100 hidden sm:block mx-1" />
+
                         <Button
-                          variant={service.status === "active" ? "outline" : "default"}
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleToggleServiceStatus(service)}
                           disabled={isToggling === service.id}
                           className={cn(
-                            "flex-1 sm:flex-none font-semibold",
+                            "flex-1 sm:flex-none h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                             service.status === "active"
-                              ? "border-slate-200 text-slate-600 hover:bg-slate-50"
-                              : "bg-sage-600 hover:bg-sage-700 text-white"
+                              ? "text-slate-400 hover:text-slate-900 border-none bg-slate-50"
+                              : "bg-[#668c65]/10 text-[#668c65] hover:bg-[#668c65]/20 hover:text-[#5a7b59]"
                           )}
                         >
                           {isToggling === service.id ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
                           ) : null}
-                          {isToggling === service.id ? "Processing..." : service.status === "active" ? "Disable Service" : "Enable Service"}
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-9 px-3 text-slate-400 hover:text-slate-900 sm:hidden"
-                        >
-                          <MoreVertical className="h-4 w-4" />
+                          {service.status === "active" ? "Archive Ritual" : "Manifest Ritual"}
                         </Button>
                       </div>
                     </div>
@@ -696,65 +698,57 @@ export function ProviderServices({ services: initialServices }: ProviderServices
 // Alibaba-style Loading Skeleton
 function ServicesLoadingSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-pulse">
       {/* Header Skeleton */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-96" />
+      <div className="flex flex-col gap-1">
+        <Skeleton className="h-10 w-48 rounded-lg" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-[1px] w-8" />
+          <Skeleton className="h-3 w-40" />
         </div>
-        <Skeleton className="h-10 w-48" />
       </div>
 
       {/* Filters Skeleton */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 w-full md:w-48" />
-            <Skeleton className="h-10 w-full md:w-48" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col md:flex-row gap-4 items-center">
+        <Skeleton className="h-12 flex-1 rounded-2xl" />
+        <div className="flex gap-2 w-full md:w-auto">
+          <Skeleton className="h-12 w-40 rounded-2xl" />
+          <Skeleton className="h-12 w-48 rounded-2xl" />
+        </div>
+      </div>
 
       {/* Services List Skeleton */}
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 space-y-3">
-                  {/* Title and badges */}
-                  <div className="flex items-center space-x-3">
-                    <Skeleton className="h-6 w-64" />
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-5 w-20" />
+          <Card key={i} className="border-none shadow-none rounded-[2rem] overflow-hidden bg-white border border-slate-50">
+            <CardContent className="p-0">
+              <div className="flex flex-col md:flex-row h-full">
+                <Skeleton className="w-full md:w-80 h-64 md:h-auto" />
+                <div className="flex-1 p-10 space-y-6">
+                  <div className="space-y-3">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-10 w-64" />
                   </div>
-
-                  {/* Category and location */}
-                  <Skeleton className="h-4 w-48" />
-
-                  {/* Price and stats */}
-                  <div className="flex items-center space-x-4">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-24" />
+                  <div className="flex gap-4">
                     <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
                   </div>
-
-                  {/* Description */}
                   <div className="space-y-2">
                     <Skeleton className="h-3 w-full" />
                     <Skeleton className="h-3 w-3/4" />
                   </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center space-x-2">
-                  <Skeleton className="h-9 w-20" />
-                  <Skeleton className="h-9 w-20" />
-                  <Skeleton className="h-9 w-24" />
-                  <Skeleton className="h-9 w-10" />
+                  <div className="pt-6 border-t border-slate-50 flex justify-between items-center">
+                    <div className="space-y-2">
+                      <Skeleton className="h-2 w-16" />
+                      <Skeleton className="h-8 w-32" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Skeleton className="h-12 w-12 rounded-xl" />
+                      <Skeleton className="h-12 w-12 rounded-xl" />
+                      <Skeleton className="h-12 w-40 rounded-xl" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

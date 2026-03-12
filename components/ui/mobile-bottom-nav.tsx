@@ -38,7 +38,7 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
     { id: "users", label: "Users", icon: User, path: "/admin/dashboard?tab=users" },
     { id: "providers", label: "Onboarding", icon: Search, path: "/admin/dashboard?tab=providers" },
     { id: "services", label: "Services", icon: BookOpen, path: "/admin/dashboard?tab=services" },
-    { id: "analytics", label: "Analytics", icon: DollarSign, path: "/admin/dashboard?tab=analytics" },
+    { id: "events", label: "Events", icon: Calendar, path: "/admin/dashboard?tab=events" },
   ];
 
   const navItems =

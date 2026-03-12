@@ -7,16 +7,21 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import {
   Calendar, MapPin, Search, Music, Palette, UtensilsCrossed,
-  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark
+  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark, Loader2
 } from "lucide-react"
 import Link from "next/link"
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav"
 import { TranslatedText } from "@/components/translated-text"
 import { EventCard } from "@/components/ui/event-card"
+import { usePublicEvents } from "@/hooks/useCustomerEvents"
 
 export default function EventsPage() {
-  const [activeTab, setActiveTab] = useState("happening-now")
+  const [activeTab, setActiveTab] = useState("all")
   const [selectedCategory, setSelectedCategory] = useState("all")
+
+  const { data: events = [], isLoading, error } = usePublicEvents(
+    selectedCategory !== "all" ? selectedCategory : undefined
+  )
 
   const categories = [
     { id: "all", name: "All", icon: null },
@@ -29,63 +34,36 @@ export default function EventsPage() {
     { id: "more", name: "More", icon: <MoreHorizontal className="h-4 w-4" /> }
   ]
 
-  // Mock data - replace with API call
-  const allEvents = [
-    {
-      id: 1,
-      title: "ATELIER DU VIBE With DEMZA",
-      image: "/beautiful-garden-wedding-venue-rwanda.jpg",
-      time: "Today, 18:00 PM",
-      location: "Atelier du Vin",
-      organizer: "RM Entertainment",
-      price: "From Rwf 10K"
-    },
-    {
-      id: 2,
-      title: "KIGALI SHADES NIGHT",
-      image: "/Intore new.jpeg",
-      time: "Today, 18:00 PM",
-      location: "Crystal Lounge",
-      organizer: "KIGALI SHADES",
-      price: "From Rwf 7K"
-    },
-    {
-      id: 3,
-      title: "KOMPA NIGHT @ LEMON 🍋",
-      image: "/grom.jpg",
-      time: "Today, 19:00 PM",
-      location: "Lemon Kigali",
-      organizer: "@atmosferakigali",
-      price: "From Rwf 5K"
-    },
-    {
-      id: 4,
-      title: "Fomo Friday at lanoche 🔥",
-      image: "/beautiful-garden-wedding-venue-rwanda.jpg",
-      time: "Today, 20:36 PM",
-      location: "La Noche",
-      organizer: "La Noche club",
-      price: "From Rwf 10K"
-    },
-    {
-      id: 5,
-      title: "Wedding Cake Decoration Workshop",
-      image: "/grom.jpg",
-      time: "Tomorrow, 11:00 AM",
-      location: "Culinary Arts Center",
-      organizer: "Culinary Institute",
-      price: "From Rwf 20K"
-    },
-    {
-      id: 6,
-      title: "Traditional Music Showcase",
-      image: "/Intore new.jpeg",
-      time: "Tomorrow, 17:00 PM",
-      location: "Kigali Arena",
-      organizer: "Rwanda Arts",
-      price: "From Rwf 8K"
-    }
-  ]
+  // Filter events based on active tab
+  const getFilteredEvents = () => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const weekendStart = new Date(today)
+    const daysUntilWeekend = (5 - today.getDay() + 7) % 7 || 7
+    weekendStart.setDate(weekendStart.getDate() + daysUntilWeekend)
+
+    return events.filter((event: any) => {
+      const eventDate = new Date(event.event_date)
+      const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
+
+      switch (activeTab) {
+        case "happening-now":
+          return eventDay.getTime() === today.getTime()
+        case "today":
+          return eventDay.getTime() === today.getTime()
+        case "tomorrow":
+          return eventDay.getTime() === tomorrow.getTime()
+        case "weekend":
+          return eventDay >= weekendStart
+        default:
+          return true
+      }
+    })
+  }
+
+  const filteredEvents = getFilteredEvents()
 
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
@@ -130,7 +108,7 @@ export default function EventsPage() {
 
             <div className="flex items-center gap-6 md:border-l md:border-slate-100 md:pl-8">
               <div className="flex items-center gap-8">
-                {["happening-now", "today", "tomorrow", "weekend"].map((tab) => (
+                {["all", "happening-now", "today", "tomorrow", "weekend"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -139,7 +117,7 @@ export default function EventsPage() {
                         : "text-slate-300 hover:text-slate-500"
                       }`}
                   >
-                    <TranslatedText text={tab.replace('-', ' ')} />
+                    <TranslatedText text={tab === "all" ? "all gatherings" : tab.replace('-', ' ')} />
                     {activeTab === tab && (
                       <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#608d64] animate-in slide-in-from-left duration-500" />
                     )}
@@ -170,71 +148,42 @@ export default function EventsPage() {
               </h2>
             </div>
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {allEvents.length} Gatherings Found
+              {filteredEvents.length} Gatherings Found
             </div>
           </div>
 
           {/* Grid Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {activeTab === "happening-now" && allEvents.slice(0, 4).map((event) => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                title={event.title}
-                image={event.image}
-                time={event.time}
-                location={event.location}
-                organizer={event.organizer}
-                price={event.price}
-                href={`/events/${event.id}/tickets`}
-              />
-            ))}
-            {activeTab === "today" && allEvents.slice(0, 4).map((event) => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                title={event.title}
-                image={event.image}
-                time={event.time}
-                location={event.location}
-                organizer={event.organizer}
-                price={event.price}
-                href={`/events/${event.id}/tickets`}
-              />
-            ))}
-            {activeTab === "tomorrow" && allEvents.slice(4, 6).map((event) => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                title={event.title}
-                image={event.image}
-                time={event.time}
-                location={event.location}
-                organizer={event.organizer}
-                price={event.price}
-                href={`/events/${event.id}/tickets`}
-              />
-            ))}
-            {activeTab === "weekend" && allEvents.map((event) => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                title={event.title}
-                image={event.image}
-                time={event.time}
-                location={event.location}
-                organizer={event.organizer}
-                price={event.price}
-                href={`/events/${event.id}/tickets`}
-              />
-            ))}
-          </div>
-
-          {/* Empty State Mockup */}
-          {allEvents.length === 0 && (
-            <div className="py-24 text-center space-y-4">
+          {isLoading ? (
+            <div className="col-span-full flex items-center justify-center py-24">
+              <div className="text-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium">Loading events...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-24">
+              <p className="text-destructive font-medium">Failed to load events</p>
+            </div>
+          ) : filteredEvents.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filteredEvents.map((event: any) => (
+                <EventCard
+                  key={event.id}
+                  id={event.id}
+                  title={event.title}
+                  image={event.image_url}
+                  time={`${new Date(event.event_date).toLocaleDateString()}, ${event.event_time || "TBA"}`}
+                  location={event.location}
+                  organizer={event.category}
+                  price={`From Rwf ${event.ticket_types?.[0]?.price?.toLocaleString() || "TBA"}`}
+                  href={`/events/${event.id}/tickets`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="col-span-full py-24 text-center space-y-4">
               <p className="font-serif italic text-3xl text-slate-300">Quiet for a moment.</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adjust your passage filters</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No events found for this filter</p>
             </div>
           )}
         </div>

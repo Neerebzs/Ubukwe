@@ -21,6 +21,8 @@ import { AvailabilityCalendar } from "@/components/provider/availability-calenda
 import { AssetLibrary } from "@/components/provider/asset-library"
 import { ProviderOnboardingForm } from "@/components/provider/onboarding-form"
 import { ProviderContracts } from "@/components/provider/contracts"
+import { EventsManagement } from "@/components/provider/events-management"
+import { TicketManagementWrapper } from "@/components/provider/ticket-management-wrapper"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Plus } from "lucide-react"
 import { TranslatedText } from "@/components/translated-text"
@@ -147,6 +149,8 @@ export function ProviderDashboardContent() {
     switch (activeTab) {
       case "overview": return <ProviderOverview />
       case "services": return <ProviderServices services={services} />
+      case "events": return <EventsManagement />
+      case "tickets": return <TicketManagementWrapper />
       case "bookings": return <ProviderBookings />
       case "inquiries": return (
         <InquiryManagement
@@ -166,7 +170,7 @@ export function ProviderDashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafc]">
+    <div className="min-h-screen bg-gray-200">
       {/* Mobile App Bar - Only on mobile */}
       <MobileAppBar
         title="Provider Dashboard"
@@ -214,7 +218,7 @@ export function ProviderDashboardContent() {
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
         {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
-        <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
+        <div className="hidden md:block sticky top-0 z-30 bg-gray-200">
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Provider",

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText } from "lucide-react";
+import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ProviderSidebarProps {
@@ -40,6 +40,7 @@ export function ProviderTabsSidebar({
       title: "Services",
       items: [
         { id: "services", label: "My Services", icon: <Package className="w-4 h-4" /> },
+        { id: "events", label: "Events", icon: <Calendar className="w-4 h-4" /> },
         { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
       ]
     },

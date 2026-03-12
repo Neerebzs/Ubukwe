@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Home, Users, Briefcase, BookOpen, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, LogOut, ChevronDown } from "lucide-react";
+import { Home, Users, Briefcase, BookOpen, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, LogOut, ChevronDown, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminTabsSidebarProps {
@@ -37,6 +37,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
       title: "Platform",
       items: [
         { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "events", label: "Events", icon: <Calendar className="w-4 h-4" /> },
         { id: "services", label: "Services", icon: <ShieldAlert className="w-4 h-4" /> },
         { id: "disputes", label: "Disputes", icon: <ShieldAlert className="w-4 h-4" /> },
         { id: "analytics", label: "Analytics", icon: <BarChart3 className="w-4 h-4" /> },
