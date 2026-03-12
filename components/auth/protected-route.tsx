@@ -13,11 +13,11 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles, redirectTo = "/auth/signin" }: ProtectedRouteProps) {
   const router = useRouter();
-  const { user, isUserLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     // Wait for auth state to load
-    if (isUserLoading) return;
+    if (isLoading) return;
 
     // If not authenticated, redirect to login
     if (!user) {
@@ -39,10 +39,10 @@ export function ProtectedRoute({ children, allowedRoles, redirectTo = "/auth/sig
         router.push(redirectTo);
       }
     }
-  }, [user, isUserLoading, allowedRoles, router, redirectTo]);
+  }, [user, isLoading, allowedRoles, router, redirectTo]);
 
   // Show loading state while checking authentication
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f9fafc] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

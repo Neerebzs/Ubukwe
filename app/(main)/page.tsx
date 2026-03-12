@@ -8,7 +8,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { TranslatedText } from "@/components/translated-text";
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { usePublicEvents } from "@/hooks/useCustomerEvents";
 
 export default function HomePage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -44,9 +45,26 @@ export default function HomePage() {
     }
   };
 
-  const promotions = [
+  const { data: realEvents, isLoading: isLoadingEvents } = usePublicEvents();
+
+  // Map real events to promotions format
+  const dynamicEvents = (realEvents || []).map((event: any) => ({
+    id: event.id,
+    type: "event",
+    badge: "Upcoming Event",
+    title: event.title,
+    description: event.description || "Join us for an exclusive experience.",
+    discount: event.ticket_types?.length > 0 
+      ? `${event.ticket_types[0].price.toLocaleString()} RWF`
+      : "Free Entry",
+    validUntil: new Date(event.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    icon: <Calendar className="h-6 w-6" />,
+    image: event.image_url || "/beautiful-garden-wedding-venue-rwanda.jpg"
+  }));
+
+  const hardcodedPromotions = [
     {
-      id: 1,
+      id: "promo-1",
       type: "offer",
       badge: "Limited Offer",
       title: "Summer Wedding Package",
@@ -57,7 +75,7 @@ export default function HomePage() {
       image: "/grom.jpg"
     },
     {
-      id: 2,
+      id: "promo-2",
       type: "promotion",
       badge: "Hot Deal",
       title: "Traditional Dance Package",
@@ -67,51 +85,10 @@ export default function HomePage() {
       icon: <Gift className="h-6 w-6" />,
       image: "/intore-new.jpeg"
     },
-    {
-      id: 3,
-      type: "event",
-      badge: "Upcoming Event",
-      title: "Wedding Expo 2025",
-      description: "Meet top vendors and get exclusive discounts",
-      discount: "Free Entry",
-      validUntil: "Feb 20, 2025",
-      icon: <Calendar className="h-6 w-6" />,
-      image: "/beautiful-garden-wedding-venue-rwanda.jpg"
-    },
-    {
-      id: 4,
-      type: "offer",
-      badge: "Flash Sale",
-      title: "Venue Booking Special",
-      description: "Premium venues at discounted rates for early bookings",
-      discount: "25% OFF",
-      validUntil: "Dec 25, 2024",
-      icon: <TrendingUp className="h-6 w-6" />,
-      image: "/rwandan-wedding-decorations-traditional.jpg"
-    },
-    {
-      id: 5,
-      type: "promotion",
-      badge: "Special Offer",
-      title: "Catering Bundle Deal",
-      description: "Traditional & modern menu combo with free cake",
-      discount: "Save 40%",
-      validUntil: "Jan 30, 2025",
-      icon: <Tag className="h-6 w-6" />,
-      image: "/rwandan-traditional-food-buffet.jpg"
-    },
-    {
-      id: 6,
-      type: "event",
-      badge: "Workshop",
-      title: "Wedding Planning Masterclass",
-      description: "Learn from experts and plan your perfect day",
-      discount: "Register Now",
-      validUntil: "Mar 10, 2025",
-      icon: <Sparkles className="h-6 w-6" />,
-      image: "/grom.jpg"
-    },
   ];
+
+  // Combine dynamic events with some hardcoded promotions as fallbacks or additions
+  const promotions = dynamicEvents.length > 0 ? dynamicEvents : hardcodedPromotions;
 
   const services = [
     {
@@ -310,7 +287,7 @@ export default function HomePage() {
             ref={carouselRef}
             className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-4 md:px-6 scroll-smooth"
           >
-            {promotions.map((promo) => (
+            {promotions.map((promo: any) => (
               <div
                 key={promo.id}
                 className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
@@ -360,7 +337,7 @@ export default function HomePage() {
                         <Clock className="w-4 h-4" />
                         <span>Until {promo.validUntil}</span>
                       </div>
-                      <Link href={promo.type === "event" ? "/events" : "/services"}>
+                      <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : "/services"}>
                         <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
                           <TranslatedText text="Explore" />
                           <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
