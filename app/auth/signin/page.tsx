@@ -74,9 +74,9 @@ export default function SignInPage() {
         <div className="relative z-10 w-full h-full p-20 flex flex-col justify-between text-white drop-shadow-2xl">
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center">
-              <span className="font-serif italic text-2xl">U</span>
+              <span className="font-serif italic text-2xl">V</span>
             </div>
-            <span className="text-3xl font-serif italic tracking-tight">Ubukwe</span>
+            <span className="text-3xl font-serif italic tracking-tight">VowNest</span>
           </Link>
 
           <div className="max-w-md space-y-6">
@@ -166,7 +166,7 @@ export default function SignInPage() {
 
             <Button
               type="submit"
-              className="w-full h-16 bg-white hover:bg-[#608d64]/5 text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+              className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
               disabled={isLoggingIn}
             >
               {isLoggingIn ? (

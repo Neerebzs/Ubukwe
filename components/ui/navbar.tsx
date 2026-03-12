@@ -25,11 +25,11 @@ export function Navbar() {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="h-11 w-11 rounded-full bg-[#668c65] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-              <span className="text-white font-serif italic text-xl">U</span>
+              <span className="text-white font-serif italic text-xl">V</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">Ubukwe</span>
-              <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">Rwanda Collective</span>
+              <span className="text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">VowNest</span>
+              <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">Collective</span>
             </div>
           </Link>
 

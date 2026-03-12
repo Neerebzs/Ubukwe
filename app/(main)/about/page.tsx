@@ -16,7 +16,7 @@ export default function AboutPage() {
             <div className="flex items-center gap-3">
               <div className="h-[1px] w-12 bg-[#608d64]/30" />
               <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">
-                <TranslatedText text="The Heart of Ubukwe" />
+                <TranslatedText text="The Heart of VowNest" />
               </span>
             </div>
             <h1 className="font-serif italic text-6xl md:text-9xl text-slate-900 leading-[0.85] tracking-tight">
@@ -74,7 +74,7 @@ export default function AboutPage() {
         <div className="container mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
             <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Journey</span>
-            <h2 className="font-serif italic text-5xl text-slate-900">How Ubukwe Works</h2>
+            <h2 className="font-serif italic text-5xl text-slate-900">How It Works</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12">
@@ -130,7 +130,7 @@ export default function AboutPage() {
                   </Button>
                 </Link>
                 <Link href="/auth/signup">
-                  <Button variant="outline" className="h-16 px-10 rounded-full border-white/20 text-white hover:bg-white hover:text-slate-900 font-bold transition-all duration-500">
+                  <Button variant="outline" className="h-16 px-10 rounded-full border-white/20 text-[#668c65] hover:bg-white hover:text-slate-900 font-bold transition-all duration-500">
                     <TranslatedText text="Join the Collective" />
                   </Button>
                 </Link>
