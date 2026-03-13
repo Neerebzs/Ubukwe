@@ -2,13 +2,13 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Music, Utensils, MapPin, Palette, Mic, Star, ArrowRight, Heart, Sparkles, Clock, Shield, ChevronDown, Zap, Play, Search, Gift, Calendar, TrendingUp, Tag, Percent } from "lucide-react"
+import { Users, Music, Utensils, MapPin, Palette, Mic, Star, ArrowRight, Heart, Sparkles, Clock, Shield, ChevronDown, Search, Calendar } from "lucide-react"
 import Link from "next/link"
 import React, { useState, useRef, useEffect } from "react";
 import { TranslatedText } from "@/components/translated-text";
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePublicEvents } from "@/hooks/useCustomerEvents";
 
 export default function HomePage() {
@@ -62,33 +62,10 @@ export default function HomePage() {
     image: event.image_url || "/beautiful-garden-wedding-venue-rwanda.jpg"
   }));
 
-  const hardcodedPromotions = [
-    {
-      id: "promo-1",
-      type: "offer",
-      badge: "Limited Offer",
-      title: "Summer Wedding Package",
-      description: "Get 30% off on complete wedding packages booked this month",
-      discount: "30% OFF",
-      validUntil: "Dec 31, 2024",
-      icon: <Percent className="h-6 w-6" />,
-      image: "/grom.jpg"
-    },
-    {
-      id: "promo-2",
-      type: "promotion",
-      badge: "Hot Deal",
-      title: "Traditional Dance Package",
-      description: "Book Intore dancers and get free traditional music",
-      discount: "Buy 1 Get 1",
-      validUntil: "Jan 15, 2025",
-      icon: <Gift className="h-6 w-6" />,
-      image: "/intore-new.jpeg"
-    },
-  ];
+ 
 
-  // Combine dynamic events with some hardcoded promotions as fallbacks or additions
-  const promotions = dynamicEvents.length > 0 ? dynamicEvents : hardcodedPromotions;
+  // Use dynamic events or show loading state
+  const promotions = dynamicEvents;
 
   const services = [
     {
@@ -287,67 +264,106 @@ export default function HomePage() {
             ref={carouselRef}
             className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-4 md:px-6 scroll-smooth"
           >
-            {promotions.map((promo: any) => (
-              <div
-                key={promo.id}
-                className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
-              >
-                {/* Modern Card (No Gradients) */}
-                <div className="group relative h-[500px] rounded-[32px] overflow-hidden bg-white border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500">
-                  {/* Image Holder */}
-                  <div className="h-[240px] w-full overflow-hidden">
-                    <img
-                      src={promo.image}
-                      alt={promo.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </div>
-
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none shadow-sm py-1.5 px-4 rounded-full font-bold text-[10px] uppercase tracking-wider">
-                      {promo.badge}
-                    </Badge>
-                  </div>
-
-                  <div className="absolute top-4 right-4 bg-[#668c65] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                    <div className="text-center leading-none">
-                      <p className="text-lg font-black">{promo.discount.split(' ')[0]}</p>
-                      <p className="text-[8px] font-bold uppercase tracking-tighter">{promo.discount.split(' ')[1]}</p>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-8 space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-300 group-hover:bg-[#668c65]/10 group-hover:text-[#668c65] transition-colors duration-300">
-                      {promo.icon}
-                    </div>
-
-                    <div>
-                      <h3 className="text-2xl font-extrabold text-sage-950 mb-2 leading-tight">
-                        <TranslatedText text={promo.title} />
-                      </h3>
-                      <p className="text-sage-500 text-sm font-medium line-clamp-2 leading-relaxed">
-                        <TranslatedText text={promo.description} />
-                      </p>
-                    </div>
-
-                    <div className="pt-4 flex items-center justify-between border-t border-sage-50">
-                      <div className="flex items-center gap-2 text-xs font-bold text-sage-400">
-                        <Clock className="w-4 h-4" />
-                        <span>Until {promo.validUntil}</span>
+            {isLoadingEvents ? (
+              // Loading state
+              Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`loading-${index}`}
+                  className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
+                >
+                  <div className="h-[500px] rounded-[32px] bg-white border border-slate-100 shadow-xl animate-pulse">
+                    <div className="h-[240px] w-full bg-slate-200 rounded-t-[32px]" />
+                    <div className="p-8 space-y-4">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-200" />
+                      <div className="space-y-2">
+                        <div className="h-6 bg-slate-200 rounded w-3/4" />
+                        <div className="h-4 bg-slate-200 rounded w-full" />
+                        <div className="h-4 bg-slate-200 rounded w-2/3" />
                       </div>
-                      <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : "/services"}>
-                        <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
-                          <TranslatedText text="Explore" />
-                          <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
+                      <div className="pt-4 flex items-center justify-between border-t border-slate-50">
+                        <div className="h-4 bg-slate-200 rounded w-20" />
+                        <div className="h-8 bg-slate-200 rounded w-16" />
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))
+            ) : promotions.length > 0 ? (
+              promotions.map((promo: any) => (
+                <div
+                  key={promo.id}
+                  className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
+                >
+                  {/* Modern Card (No Gradients) */}
+                  <div className="group relative h-[500px] rounded-[32px] overflow-hidden bg-white border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500">
+                    {/* Image Holder */}
+                    <div className="h-[240px] w-full overflow-hidden">
+                      <img
+                        src={promo.image}
+                        alt={promo.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none shadow-sm py-1.5 px-4 rounded-full font-bold text-[10px] uppercase tracking-wider">
+                        {promo.badge}
+                      </Badge>
+                    </div>
+
+                    <div className="absolute top-4 right-4 bg-[#668c65] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                      <div className="text-center leading-none">
+                        <p className="text-lg font-black">{promo.discount.split(' ')[0]}</p>
+                        <p className="text-[8px] font-bold uppercase tracking-tighter">{promo.discount.split(' ')[1]}</p>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-8 space-y-4">
+                      <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-300 group-hover:bg-[#668c65]/10 group-hover:text-[#668c65] transition-colors duration-300">
+                        {promo.icon}
+                      </div>
+
+                      <div>
+                        <h3 className="text-2xl font-extrabold text-sage-950 mb-2 leading-tight">
+                          <TranslatedText text={promo.title} />
+                        </h3>
+                        <p className="text-sage-500 text-sm font-medium line-clamp-2 leading-relaxed">
+                          <TranslatedText text={promo.description} />
+                        </p>
+                      </div>
+
+                      <div className="pt-4 flex items-center justify-between border-t border-sage-50">
+                        <div className="flex items-center gap-2 text-xs font-bold text-sage-400">
+                          <Clock className="w-4 h-4" />
+                          <span>Until {promo.validUntil}</span>
+                        </div>
+                        <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : "/services"}>
+                          <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
+                            <TranslatedText text="Explore" />
+                            <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              // No events state
+              <div className="flex-shrink-0 w-full flex items-center justify-center py-20">
+                <div className="text-center space-y-4">
+                  <Calendar className="h-16 w-16 text-slate-300 mx-auto" />
+                  <h3 className="text-2xl font-bold text-slate-600">
+                    <TranslatedText text="No Events Available" />
+                  </h3>
+                  <p className="text-slate-500">
+                    <TranslatedText text="Check back soon for exciting upcoming events!" />
+                  </p>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>

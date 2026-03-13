@@ -106,8 +106,8 @@ export default function EventsPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-6 md:border-l md:border-slate-100 md:pl-8">
-              <div className="flex items-center gap-8">
+            <div className="flex items-center gap-6 md:border-l md:border-slate-100 md:pl-8 overflow-hidden">
+              <div className="flex items-center gap-8 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
                 {["all", "happening-now", "today", "tomorrow", "weekend"].map((tab) => (
                   <button
                     key={tab}
