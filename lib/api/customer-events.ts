@@ -94,17 +94,16 @@ const apiCall = async (
 export const customerEventAPI = {
   // Get public event details
   getEvent: async (eventId: string): Promise<PublicEvent> => {
-    return apiCall(`/public/events/${eventId}`, "GET");
+    return apiCall(`/api/v1/public/events/${eventId}`, "GET");
   },
 
   // Get public events list (only approved events)
-  getEvents: async (category?: string, status?: string) => {
+  getEvents: async (category?: string) => {
     const params = new URLSearchParams();
     if (category) params.append("category", category);
-    // Note: status parameter is ignored for public endpoint - only approved events are returned
     
     const query = params.toString() ? `?${params.toString()}` : "";
-    return apiCall(`/public/events${query}`, "GET");
+    return apiCall(`/api/v1/public/events${query}`, "GET");
   },
 
   // Purchase ticket
@@ -114,7 +113,7 @@ export const customerEventAPI = {
     ticketData: PurchaseTicketRequest
   ): Promise<TicketPurchaseResponse> => {
     return apiCall(
-      `/provider/events/${eventId}/tickets?ticket_type_id=${ticketTypeId}`,
+      `/api/v1/provider/events/${eventId}/tickets?ticket_type_id=${ticketTypeId}`,
       "POST",
       ticketData
     );
@@ -122,11 +121,11 @@ export const customerEventAPI = {
 
   // Get customer's tickets
   getMyTickets: async () => {
-    return apiCall("/customer/tickets", "GET");
+    return apiCall("/api/v1/customer/tickets", "GET");
   },
 
   // Get single ticket
   getTicket: async (ticketId: string) => {
-    return apiCall(`/customer/tickets/${ticketId}`, "GET");
+    return apiCall(`/api/v1/customer/tickets/${ticketId}`, "GET");
   },
 };

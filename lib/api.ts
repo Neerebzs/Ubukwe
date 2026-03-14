@@ -8,12 +8,6 @@ let baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl
 const API_BASE_URL = baseUrl.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 const API_VERSION = 'v1';
 
-// Debug logging
-console.log('API Configuration:');
-console.log('Raw Base URL:', rawBaseUrl);
-console.log('Processed Base URL:', API_BASE_URL);
-console.log('Full Login URL:', `${API_BASE_URL}/api/${API_VERSION}/auth/login`);
-
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {
@@ -405,9 +399,6 @@ const onTokenRefreshed = (token: string) => {
 // Single request interceptor to add auth token and logging
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Add debugging
-    console.log(`Making ${config.method?.toUpperCase()} request to: ${config.baseURL}${config.url}`);
-
     // Add auth token if available
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');

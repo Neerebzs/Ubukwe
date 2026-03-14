@@ -14,10 +14,10 @@ export const usePublicEvent = (eventId: string) => {
 };
 
 // Fetch public events list
-export const usePublicEvents = (category?: string, status?: string) => {
+export const usePublicEvents = (category?: string) => {
   return useQuery({
-    queryKey: ["public-events", category, status],
-    queryFn: () => customerEventAPI.getEvents(category, status),
+    queryKey: ["public-events", category],
+    queryFn: () => customerEventAPI.getEvents(category),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

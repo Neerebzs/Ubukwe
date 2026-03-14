@@ -139,17 +139,17 @@ const apiCall = async (
 export const ticketPurchaseAPI = {
   // Get available events
   getAvailableEvents: async (): Promise<AvailableEvent[]> => {
-    return apiCall("/tickets/events", "GET");
+    return apiCall("/api/v1/tickets/events", "GET");
   },
 
   // Get event details
   getEventDetails: async (eventId: string): Promise<AvailableEvent> => {
-    return apiCall(`/tickets/events/${eventId}`, "GET");
+    return apiCall(`/api/v1/tickets/events/${eventId}`, "GET");
   },
 
   // Get ticket types for event
   getTicketTypes: async (eventId: string): Promise<TicketTypeForPurchase[]> => {
-    return apiCall(`/tickets/events/${eventId}/ticket-types`, "GET");
+    return apiCall(`/api/v1/tickets/events/${eventId}/ticket-types`, "GET");
   },
 
   // Check ticket availability
@@ -159,7 +159,7 @@ export const ticketPurchaseAPI = {
     quantity: number = 1
   ): Promise<AvailabilityCheck> => {
     return apiCall(
-      `/tickets/check-availability?event_id=${eventId}&ticket_type_id=${ticketTypeId}&quantity=${quantity}`,
+      `/api/v1/tickets/check-availability?event_id=${eventId}&ticket_type_id=${ticketTypeId}&quantity=${quantity}`,
       "GET"
     );
   },
@@ -171,7 +171,7 @@ export const ticketPurchaseAPI = {
     tickets: TicketHolder[],
     paymentReference?: string
   ): Promise<PurchaseConfirmation> => {
-    return apiCall("/tickets/purchase", "POST", {
+    return apiCall("/api/v1/tickets/purchase", "POST", {
       event_id: eventId,
       ticket_type_id: ticketTypeId,
       tickets,
@@ -181,11 +181,11 @@ export const ticketPurchaseAPI = {
 
   // Get customer's tickets
   getMyTickets: async (): Promise<CustomerTicket[]> => {
-    return apiCall("/tickets/my-tickets", "GET");
+    return apiCall("/api/v1/tickets/my-tickets", "GET");
   },
 
   // Validate ticket for check-in
   validateTicket: async (ticketNumber: string): Promise<TicketValidation> => {
-    return apiCall(`/tickets/validate/${ticketNumber}`, "GET");
+    return apiCall(`/api/v1/tickets/validate/${ticketNumber}`, "GET");
   },
 };

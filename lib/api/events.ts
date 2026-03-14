@@ -146,7 +146,7 @@ export const eventAPI = {
         formData.append('ticket_types', JSON.stringify(eventData.ticket_types));
       }
       
-      return apiCall("/provider/events/", "POST", formData, true);
+      return apiCall("/api/v1/provider/events/", "POST", formData, true);
     } else {
       // Use JSON for URL-based image
       const jsonData = {
@@ -160,19 +160,19 @@ export const eventAPI = {
         image_url: eventData.image_url,
         ticket_types: eventData.ticket_types,
       };
-      return apiCall("/provider/events/", "POST", jsonData, false);
+      return apiCall("/api/v1/provider/events/", "POST", jsonData, false);
     }
   },
 
   // Get all events
   getEvents: async (status?: string) => {
     const query = status ? `?status=${status}` : "";
-    return apiCall(`/provider/events/${query}`, "GET");
+    return apiCall(`/api/v1/provider/events/${query}`, "GET");
   },
 
   // Get single event
   getEvent: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}`, "GET");
+    return apiCall(`/api/v1/provider/events/${eventId}`, "GET");
   },
 
   // Update event
@@ -190,22 +190,22 @@ export const eventAPI = {
       status?: string;
     }
   ) => {
-    return apiCall(`/provider/events/${eventId}`, "PUT", eventData);
+    return apiCall(`/api/v1/provider/events/${eventId}`, "PUT", eventData);
   },
 
   // Delete event
   deleteEvent: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}`, "DELETE");
+    return apiCall(`/api/v1/provider/events/${eventId}`, "DELETE");
   },
 
   // Publish event
   publishEvent: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}/publish`, "POST");
+    return apiCall(`/api/v1/provider/events/${eventId}/publish`, "POST");
   },
 
   // Cancel event
   cancelEvent: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}/cancel`, "POST");
+    return apiCall(`/api/v1/provider/events/${eventId}/cancel`, "POST");
   },
 
   // Ticket Types
@@ -218,11 +218,11 @@ export const eventAPI = {
       quantity: number;
     }
   ) => {
-    return apiCall(`/provider/events/${eventId}/ticket-types`, "POST", ticketData);
+    return apiCall(`/api/v1/provider/events/${eventId}/ticket-types`, "POST", ticketData);
   },
 
   getTicketTypes: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}/ticket-types`, "GET");
+    return apiCall(`/api/v1/provider/events/${eventId}/ticket-types`, "GET");
   },
 
   updateTicketType: async (
@@ -236,7 +236,7 @@ export const eventAPI = {
     }
   ) => {
     return apiCall(
-      `/provider/events/${eventId}/ticket-types/${ticketTypeId}`,
+      `/api/v1/provider/events/${eventId}/ticket-types/${ticketTypeId}`,
       "PUT",
       ticketData
     );
@@ -244,7 +244,7 @@ export const eventAPI = {
 
   deleteTicketType: async (eventId: string, ticketTypeId: string) => {
     return apiCall(
-      `/provider/events/${eventId}/ticket-types/${ticketTypeId}`,
+      `/api/v1/provider/events/${eventId}/ticket-types/${ticketTypeId}`,
       "DELETE"
     );
   },
@@ -260,25 +260,25 @@ export const eventAPI = {
     }
   ) => {
     return apiCall(
-      `/provider/events/${eventId}/tickets?ticket_type_id=${ticketTypeId}`,
+      `/api/v1/provider/events/${eventId}/tickets?ticket_type_id=${ticketTypeId}`,
       "POST",
       ticketData
     );
   },
 
   getTickets: async (eventId: string) => {
-    return apiCall(`/provider/events/${eventId}/tickets`, "GET");
+    return apiCall(`/api/v1/provider/events/${eventId}/tickets`, "GET");
   },
 
   checkInTicket: async (eventId: string, ticketId: string) => {
     return apiCall(
-      `/provider/events/${eventId}/tickets/${ticketId}/check-in`,
+      `/api/v1/provider/events/${eventId}/tickets/${ticketId}/check-in`,
       "POST"
     );
   },
 
   // Analytics
   getEventAnalytics: async (eventId: string): Promise<EventAnalytics> => {
-    return apiCall(`/provider/events/${eventId}/analytics`, "GET");
+    return apiCall(`/api/v1/provider/events/${eventId}/analytics`, "GET");
   },
 };

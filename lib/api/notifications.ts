@@ -42,6 +42,11 @@ export const notificationsAPI = {
     const response = await apiClient.get<NotificationResponse>(
       `${NOTIFICATIONS_BASE}?unread_only=${unreadOnly}&limit=${limit}`
     );
+    
+    if (!response.data || !response.data.data) {
+      throw new Error('Invalid response format from notifications API');
+    }
+    
     return response.data.data;
   },
 
@@ -52,6 +57,11 @@ export const notificationsAPI = {
     const response = await apiClient.get<UnreadCountResponse>(
       `${NOTIFICATIONS_BASE}/unread-count`
     );
+    
+    if (!response.data || !response.data.data) {
+      throw new Error('Invalid response format from unread count API');
+    }
+    
     return response.data.data.unread_count;
   },
 
