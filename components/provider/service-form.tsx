@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Trash2, Save, X, MapPin, Star, Image as ImageIcon, Upload, Check, ChevronRight, ChevronLeft, CheckCircle, PlayCircle, Loader2, Film, Camera, Tag, Calendar, AlertCircle } from "lucide-react"
+import { Plus, Trash2, Save, X, MapPin, Star, Image as ImageIcon, Upload, Check, ChevronRight, ChevronLeft, CheckCircle, PlayCircle, Loader2, Film, Camera, Tag, Calendar, AlertCircle, Edit } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -31,13 +31,16 @@ interface ServicePackage {
 interface GalleryItem {
   id: string
   type: "image" | "video" | "reel"
-  contentType: null | "offer" | "event"
+  contentType: null | "offer"
   url: string
   thumbnail?: string
   file?: File
   preview?: string // For local preview
   title: string
   description: string
+  // Special offer fields
+  validFrom?: string // Start date for offers
+  validTo?: string   // End date for offers
 }
 
 export interface ServiceFormData {
@@ -85,11 +88,14 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]) // Track which files are being uploaded
+  const [isSubmitting, setIsSubmitting] = useState(false) // For backend API calls
+  const [submitType, setSubmitType] = useState<"draft" | "active" | null>(null) // Track which button was clicked
   const [activeMediaTab, setActiveMediaTab] = useState<"image" | "video" | "reel">("image")
-  const [activeContentTab, setActiveContentTab] = useState<"offer" | "event">("offer")
   const [galleryItemForm, setGalleryItemForm] = useState({
     title: "",
-    description: ""
+    description: "",
+    validFrom: "",
+    validTo: ""
   })
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
@@ -124,7 +130,8 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
         const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`)
         const data = await response.json()
-        setCategories(data || [])
+        // Safely extract categories array from potential wrapper object
+        setCategories(Array.isArray(data) ? data : (data?.data || []))
       } catch (error) {
         console.error('Failed to fetch categories:', error)
         toast({
@@ -171,7 +178,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     })
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video" | "reel", contentType?: "offer" | "event") => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video" | "reel", contentType?: "offer") => {
     const files = e.target.files
     if (!files || files.length === 0) return
 
@@ -261,7 +268,9 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         file,
         preview,
         title: galleryItemForm.title || "",
-        description: galleryItemForm.description || ""
+        description: galleryItemForm.description || "",
+        validFrom: galleryItemForm.validFrom || undefined,
+        validTo: galleryItemForm.validTo || undefined
       }
 
       newItems.push(newItem)
@@ -279,7 +288,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       })
 
       // Reset form
-      setGalleryItemForm({ title: "", description: "" })
+      setGalleryItemForm({ title: "", description: "", validFrom: "", validTo: "" })
     }
     
     // Reset input
@@ -332,6 +341,33 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     }
     setIsPackageDialogOpen(false)
     setEditingPackage(null)
+  }
+
+  const handleSaveGalleryItem = (itemData: { title: string; description: string; validFrom: string; validTo: string }) => {
+    if (editingGalleryItem) {
+      // Update existing gallery item
+      setFormData({
+        ...formData,
+        gallery: formData.gallery.map(item => 
+          item.id === editingGalleryItem.id 
+            ? { 
+                ...item, 
+                title: itemData.title,
+                description: itemData.description,
+                validFrom: itemData.validFrom || undefined,
+                validTo: itemData.validTo || undefined
+              } 
+            : item
+        )
+      })
+      toast({
+        title: "Offer Updated",
+        description: "Your special offer has been updated successfully."
+      })
+    }
+    setIsGalleryDialogOpen(false)
+    setEditingGalleryItem(null)
+    setGalleryItemForm({ title: "", description: "", validFrom: "", validTo: "" })
   }
 
   const removePackage = (id: string) => {
@@ -715,7 +751,10 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       return
     }
 
+    // Set loading states
     setIsUploading(true)
+    setIsSubmitting(true)
+    setSubmitType(status || "draft")
     setUploadProgress(0)
 
     try {
@@ -730,8 +769,10 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       })))
       
       toast({
-        title: "Uploading Service",
-        description: "Please wait while we upload your service and media files..."
+        title: status === "active" 
+          ? (initialData ? "Updating & Publishing Service..." : "Publishing Service...")
+          : (initialData ? "Updating Service..." : "Saving Service..."),
+        description: "Please wait while we process your request..."
       })
 
       // Step 1: Upload gallery images if there are any with files
@@ -768,7 +809,9 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
           url: item.url || "",
           thumbnail: item.thumbnail,
           title: item.title || "",
-          description: item.description || ""
+          description: item.description || "",
+          validFrom: item.validFrom || undefined,
+          validTo: item.validTo || undefined
         })),
         status: status || formData.status
       }
@@ -795,12 +838,17 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       console.log(`Reels: ${finalData.gallery.filter(i => i.type === "reel").length}`)
       console.log(`Videos: ${finalData.gallery.filter(i => i.type === "video").length}`)
       console.log(`Offers: ${finalData.gallery.filter(i => i.contentType === "offer").length}`)
-      console.log(`Events: ${finalData.gallery.filter(i => i.contentType === "event").length}`)
+      console.log("=== OFFER DATE VALIDATION ===")
+      const offersWithDates = finalData.gallery.filter(i => i.contentType === "offer" && (i.validFrom || i.validTo))
+      console.log(`Offers with dates: ${offersWithDates.length}`)
+      offersWithDates.forEach(offer => {
+        console.log(`Offer "${offer.title}": ${offer.validFrom || 'No start'} to ${offer.validTo || 'No end'}`)
+      })
       console.log("===========================")
 
-      // Step 3: Save the service with gallery URLs
+      // Step 3: Save the service with gallery URLs (Backend API call)
       if (onSave) {
-        onSave(finalData)
+        await onSave(finalData) // Make this await to handle the API call properly
       } else {
         console.log("Service Data with uploaded gallery:", finalData)
       }
@@ -826,11 +874,13 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       console.error("Submit error:", error)
       toast({
         variant: "destructive",
-        title: "Upload Failed",
+        title: "Operation Failed",
         description: error.message || "Failed to save service. Please try again."
       })
     } finally {
       setIsUploading(false)
+      setIsSubmitting(false)
+      setSubmitType(null)
       setUploadProgress(0)
     }
   }
@@ -844,34 +894,40 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   ]
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">
-            {initialData ? "Edit Service" : "Create New Service"}
+    <div className="space-y-10 animate-in fade-in duration-700 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
+        <div className="space-y-1">
+          <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">
+            {initialData ? "Refine Asset" : "Draft New Entry"}
           </h2>
-          <p className="text-muted-foreground">
-            {initialData 
-              ? "Update your service information and settings" 
-              : "Complete all steps to create a service that customers will see"
-            }
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="h-[1px] w-8 bg-[#668c65]/60" />
+            <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">
+              {initialData 
+                ? "Adjusting the details of an existing masterpiece" 
+                : "Introducing a regular service to the catalogue"
+              }
+            </p>
+          </div>
         </div>
         {onCancel && (
-          <Button variant="outline" onClick={onCancel}>
+          <Button 
+            variant="outline" 
+            onClick={onCancel}
+            className="h-12 px-6 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
+          >
             <X className="w-4 h-4 mr-2" />
-            {initialData ? "Cancel Edit" : "Cancel"}
+            {initialData ? "Retreat" : "Discard"}
           </Button>
         )}
       </div>
 
       {/* Progress Indicator */}
-      <Card>
-        <CardContent className="p-6">
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
           <div className="space-y-4">
             {/* Progress Bar */}
-            <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+            <Progress value={(currentStep / totalSteps) * 100} className="h-1 bg-slate-100 [&>div]:bg-[#668c65]" />
 
             {/* Step Indicators */}
             <div className="flex items-center justify-between">
@@ -882,26 +938,33 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
                 return (
                   <div key={stepNum} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center flex-1">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${isCompleted
-                          ? "bg-primary border-primary text-primary-foreground"
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(stepNum)}
+                      className="flex flex-col items-center flex-1 group cursor-pointer hover:scale-105 transition-transform duration-200"
+                    >
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-[#668c65] border-[#668c65] text-white shadow-md shadow-[#668c65]/20 group-hover:shadow-lg group-hover:shadow-[#668c65]/30"
                           : isCurrent
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-muted-foreground bg-background text-muted-foreground"
+                            ? "border-[#668c65] bg-white text-[#668c65] shadow-sm group-hover:shadow-md"
+                            : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-slate-200 group-hover:bg-slate-100"
                         }`}>
                         {isCompleted ? (
                           <CheckCircle className="w-5 h-5" />
                         ) : (
-                          <span className="font-semibold">{stepNum}</span>
+                          <span className="font-semibold text-sm">{stepNum}</span>
                         )}
                       </div>
-                      <span className={`text-xs mt-2 text-center ${isCurrent ? "font-semibold text-foreground" : "text-muted-foreground"
+                      <span className={`text-[9px] font-black uppercase tracking-widest mt-3 text-center transition-colors ${
+                        isCurrent ? "text-slate-900" : isCompleted ? "text-[#668c65]" : "text-slate-400 group-hover:text-slate-600"
                         }`}>
                         {label}
                       </span>
-                    </div>
+                    </button>
                     {stepNum < totalSteps && (
-                      <ChevronRight className={`w-6 h-6 mx-2 ${isCompleted ? "text-primary" : "text-muted-foreground"
+                      <ChevronRight className={`w-4 h-4 mx-2 transition-colors ${
+                        isCompleted ? "text-[#668c65]/50" : "text-slate-200"
                         }`} />
                     )}
                   </div>
@@ -909,21 +972,20 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Step Content */}
       <div className="space-y-6">
         {/* Step 1: Basic Information */}
         {currentStep === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Service Details</CardTitle>
-              <CardDescription>Basic information customers will see</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50">
+              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Service Details</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Basic information customers will see</p>
+            </div>
+            <div className="p-8 space-y-6">
               <div>
-                <Label htmlFor="name">Service Name *</Label>
+                <Label htmlFor="name" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Service Designation *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -933,20 +995,20 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                       setValidationErrors({ ...validationErrors, name: "" })
                     }
                   }}
-                  placeholder="e.g., Traditional Intore Dancers"
-                  className={validationErrors.name ? "border-red-500" : ""}
+                  placeholder="e.g., Traditional Ceremonial Dance"
+                  className={`h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors ${validationErrors.name ? "border-red-500" : ""}`}
                 />
                 {validationErrors.name && (
-                  <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                  <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     {validationErrors.name}
                   </p>
                 )}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Classification *</Label>
                   <Select 
                     value={formData.categoryId} 
                     onValueChange={(categoryId) => {
@@ -959,35 +1021,35 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                     }}
                     disabled={isLoadingCategories}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-14 rounded-2xl border-slate-100 focus:ring-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900">
                       <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
                     </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+                      {categories?.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="location">Location *</Label>
+                  <Label htmlFor="location" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Location *</Label>
                   <Select value={formData.location} onValueChange={(v) => setFormData({ ...formData, location: v })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-14 rounded-2xl border-slate-100 focus:ring-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
                       {locations.map(loc => (
-                        <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                        <SelectItem key={loc} value={loc} className="rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">{loc}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="priceMin">Minimum Price (RWF) *</Label>
+                  <Label htmlFor="priceMin" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Minimum Price (RWF) *</Label>
                   <Input
                     id="priceMin"
                     type="number"
@@ -998,11 +1060,11 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                         setValidationErrors({ ...validationErrors, priceRangeMin: "" })
                       }
                     }}
-                    placeholder="e.g., 120000"
-                    className={validationErrors.priceRangeMin ? "border-red-500" : ""}
+                    placeholder="e.g., 120,000"
+                    className={`h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors ${validationErrors.priceRangeMin ? "border-red-500" : ""}`}
                   />
                   {validationErrors.priceRangeMin && (
-                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {validationErrors.priceRangeMin}
                     </p>
@@ -1010,7 +1072,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 </div>
 
                 <div>
-                  <Label htmlFor="priceMax">Maximum Price (RWF) *</Label>
+                  <Label htmlFor="priceMax" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Maximum Price (RWF) *</Label>
                   <Input
                     id="priceMax"
                     type="number"
@@ -1021,25 +1083,25 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                         setValidationErrors({ ...validationErrors, priceRangeMax: "" })
                       }
                     }}
-                    placeholder="e.g., 200000"
-                    className={validationErrors.priceRangeMax ? "border-red-500" : ""}
+                    placeholder="e.g., 200,000"
+                    className={`h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors ${validationErrors.priceRangeMax ? "border-red-500" : ""}`}
                   />
                   {validationErrors.priceRangeMax && (
-                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {validationErrors.priceRangeMax}
                     </p>
                   )}
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Will display as: {formData.priceRangeMin && formData.priceRangeMax
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                Will display as: <span className="text-[#668c65]">{formData.priceRangeMin && formData.priceRangeMax
                   ? `${Number(formData.priceRangeMin).toLocaleString()} - ${Number(formData.priceRangeMax).toLocaleString()} RWF`
-                  : "Price range will appear here"}
+                  : "Price range will appear here"}</span>
               </p>
 
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Narrative Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -1049,16 +1111,16 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                       setValidationErrors({ ...validationErrors, description: "" })
                     }
                   }}
-                  placeholder="Describe your service in detail. This will be shown to customers..."
+                  placeholder="Elaborate on the artisanal nature of this service..."
                   rows={6}
-                  className={validationErrors.description ? "border-red-500" : ""}
+                  className={`min-h-[160px] rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] resize-none p-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900 ${validationErrors.description ? "border-red-500" : ""}`}
                 />
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-muted-foreground">
-                    {formData.description.length} characters (minimum 50 required)
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {formData.description.length} chars (min 50)
                   </p>
                   {validationErrors.description && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
+                    <p className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       {validationErrors.description}
                     </p>
@@ -1067,26 +1129,27 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               </div>
 
               <div>
-                <Label>Specialties</Label>
-                <div className="flex gap-2 mb-2">
+                <Label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Specialties</Label>
+                <div className="flex gap-2 mb-4">
                   <Input
                     value={currentSpecialty}
                     onChange={(e) => setCurrentSpecialty(e.target.value)}
                     placeholder="e.g., Intore Dance, Traditional Music"
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSpecialty())}
+                    className="h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors"
                   />
-                  <Button type="button" onClick={addSpecialty}>
-                    <Plus className="w-4 h-4" />
+                  <Button type="button" onClick={addSpecialty} className="h-14 w-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/10 transition-all border-none">
+                    <Plus className="w-5 h-5" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {formData.specialties.map((specialty, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    <Badge key={index} variant="secondary" className="bg-[#668c65]/10 text-[#668c65] border-none px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-none flex items-center gap-1 hover:bg-[#668c65]/20 transition-colors">
                       {specialty}
                       <button
                         type="button"
                         onClick={() => removeSpecialty(specialty)}
-                        className="ml-1 hover:text-destructive"
+                        className="ml-1 hover:text-slate-900 transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1095,142 +1158,144 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="verified"
-                      checked={formData.verified}
-                      onChange={(e) => setFormData({ ...formData, verified: e.target.checked })}
-                    />
-                    <Label htmlFor="verified" className="cursor-pointer">Verified Service</Label>
+              <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-50">
+                <div className="flex items-center gap-6 w-full flex-wrap">
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100 flex-1 md:flex-none cursor-pointer" onClick={() => setFormData({ ...formData, verified: !formData.verified })}>
+                    <div className={`w-10 h-6 rounded-full transition-colors relative ${formData.verified ? 'bg-[#668c65]' : 'bg-slate-200'}`}>
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${formData.verified ? 'left-5' : 'left-1'}`} />
+                    </div>
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Verified Manifest</span>
                   </div>
                   <Select value={formData.status} onValueChange={(v: "draft" | "active") => setFormData({ ...formData, status: v })}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-full md:w-48 h-12 rounded-2xl border-slate-100 focus:ring-[#668c65] px-4 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900 text-[10px] font-black uppercase tracking-widest">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
+                    <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+                      <SelectItem value="draft" className="text-[10px] font-black uppercase tracking-widest rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">Draft Archive</SelectItem>
+                      <SelectItem value="active" className="text-[10px] font-black uppercase tracking-widest rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">Active Listing</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Step 2: Packages & Pricing */}
         {currentStep === 2 && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Service Packages</CardTitle>
-                  <CardDescription>Create pricing packages for your service</CardDescription>
-                </div>
-                <Button onClick={handleAddPackage}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Package
-                </Button>
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Service Packages</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Create pricing tiers for your offering</p>
               </div>
-            </CardHeader>
-            <CardContent>
+              <Button onClick={handleAddPackage} className="h-12 rounded-2xl bg-[#668c65] hover:bg-[#5a7c59] text-white shadow-xl shadow-[#668c65]/20 font-bold uppercase text-[10px] tracking-widest border-none shrink-0">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Package
+              </Button>
+            </div>
+            <div className="p-8">
               {formData.packages.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No packages created yet. Click "Add Package" to create your first pricing package.</p>
+                <div className="text-center py-16 bg-slate-50 rounded-3xl border border-slate-100 border-dashed">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <Check className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No packages configured yet</p>
+                  <p className="text-sm text-slate-400 mt-2">Click "Add Package" to create your first pricing tier.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {formData.packages.map((pkg) => (
-                    <Card key={pkg.id} className={pkg.popular ? "border-primary border-2" : ""}>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <CardTitle>{pkg.name}</CardTitle>
+                    <div key={pkg.id} className={`bg-white rounded-3xl border ${pkg.popular ? "border-[#668c65] shadow-lg shadow-[#668c65]/5" : "border-slate-100 shadow-sm"} overflow-hidden transition-all hover:shadow-md`}>
+                      <div className={`p-6 border-b ${pkg.popular ? "bg-[#668c65]/5 border-[#668c65]/10" : "bg-slate-50/50 border-slate-50"}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <h4 className="text-xl font-serif italic text-slate-900 tracking-tight">{pkg.name}</h4>
                             {pkg.popular && (
-                              <Badge variant="default" className="text-xs">Most Popular</Badge>
+                              <Badge variant="default" className="bg-[#668c65] hover:bg-[#668c65] text-white border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md shadow-[#668c65]/20">Featured</Badge>
                             )}
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditPackage(pkg)}>
-                              Edit
+                          <div className="flex gap-2 shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => handleEditPackage(pkg)} className="h-10 rounded-xl border-slate-200 text-slate-600 hover:bg-slate-100 font-bold uppercase text-[10px] tracking-widest">
+                              Modify
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => removePackage(pkg.id)}>
+                            <Button variant="outline" size="sm" onClick={() => removePackage(pkg.id)} className="h-10 w-10 p-0 rounded-xl border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
+                      </div>
+                      <div className="p-6 space-y-6">
                         <div>
-                          <p className="text-sm text-muted-foreground">{pkg.description}</p>
-                          <div className="flex items-baseline gap-2 mt-2">
-                            <span className="text-2xl font-bold">{pkg.price.toLocaleString()} RWF</span>
-                            <span className="text-sm text-muted-foreground">• {pkg.duration}</span>
+                          <p className="text-sm text-slate-600 leading-relaxed">{pkg.description}</p>
+                          <div className="flex items-baseline gap-3 mt-4">
+                            <span className="text-3xl font-bold text-slate-900 tracking-tight">{pkg.price.toLocaleString()} <span className="text-lg text-slate-500 font-normal">RWF</span></span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">{pkg.duration}</span>
                           </div>
                         </div>
-                        <div>
-                          <Label className="text-sm font-medium">Features</Label>
-                          <div className="flex gap-2 mt-2 mb-2">
+                        <div className="pt-6 border-t border-slate-50">
+                          <Label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-4 block">Included Amenities</Label>
+                          <div className="flex gap-2 mb-4">
                             <Input
                               value={currentFeature.packageId === pkg.id ? currentFeature.feature : ""}
                               onChange={(e) => setCurrentFeature({ packageId: pkg.id, feature: e.target.value })}
-                              placeholder="Add a feature..."
+                              placeholder="Add an included feature..."
                               onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addPackageFeature(pkg.id, currentFeature.feature))}
+                              className="h-12 rounded-xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] px-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
                             />
                             <Button
                               type="button"
-                              size="sm"
                               onClick={() => addPackageFeature(pkg.id, currentFeature.feature)}
+                              className="h-12 w-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all border-none"
                             >
                               <Plus className="w-4 h-4" />
                             </Button>
                           </div>
-                          <ul className="space-y-1">
+                          <ul className="space-y-2">
                             {pkg.features.map((feature, index) => (
-                              <li key={index} className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded">
-                                <span className="flex items-center gap-2">
-                                  <Check className="w-3 h-3 text-primary" />
+                              <li key={index} className="flex items-center justify-between text-sm bg-slate-50 border border-slate-100 px-4 py-3 rounded-xl group hover:bg-white hover:border-slate-200 transition-colors">
+                                <span className="flex items-center gap-3 text-slate-700">
+                                  <div className="w-6 h-6 rounded-full bg-[#668c65]/10 flex items-center justify-center shrink-0">
+                                    <Check className="w-3 h-3 text-[#668c65]" />
+                                  </div>
                                   {feature}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => removePackageFeature(pkg.id, index)}
-                                  className="text-destructive hover:underline"
+                                  className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-1"
                                 >
-                                  <X className="w-3 h-3" />
+                                  <X className="w-4 h-4" />
                                 </button>
                               </li>
                             ))}
                           </ul>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Step 3: Gallery */}
         {currentStep === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Media Gallery</CardTitle>
-              <CardDescription>Showcase your service with images, reels, videos, offers, and events</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="media" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="media" className="flex items-center gap-2">
-                    <Camera className="w-4 h-4" />
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50">
+              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Visual Portfolio</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Showcase your service with images, reels, videos, offers, and events</p>
+            </div>
+            <div className="p-8">
+              <Tabs defaultValue="media" className="space-y-8">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-2xl">
+                  <TabsTrigger value="media" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#668c65] data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest py-3">
+                    <Camera className="w-4 h-4 mr-2" />
                     Media Content
                   </TabsTrigger>
-                  <TabsTrigger value="promotional" className="flex items-center gap-2">
-                    <Tag className="w-4 h-4" />
+                  <TabsTrigger value="promotional" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#668c65] data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest py-3">
+                    <Tag className="w-4 h-4 mr-2" />
                     Promotional Content
                   </TabsTrigger>
                 </TabsList>
@@ -1407,243 +1472,157 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 <TabsContent value="promotional" className="space-y-6">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-lg font-semibold">Promotional Content</h3>
-                      <p className="text-sm text-muted-foreground">Create special offers and event announcements</p>
+                      <h3 className="text-lg font-semibold">Special Offers</h3>
+                      <p className="text-sm text-muted-foreground">Create special offers and promotional content to attract customers</p>
                     </div>
 
-                    {/* Content Type Tabs */}
-                    <Tabs value={activeContentTab} onValueChange={(v) => setActiveContentTab(v as "offer" | "event")} className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="offer" className="flex items-center gap-2">
-                          <Tag className="w-4 h-4" />
-                          Special Offers
-                        </TabsTrigger>
-                        <TabsTrigger value="event" className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Events
-                        </TabsTrigger>
-                      </TabsList>
-
-                      {/* Offer Content */}
-                      <TabsContent value="offer" className="space-y-4 mt-6">
-                        <Card className="border-2 border-primary/20 bg-primary/5">
-                          <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Tag className="w-5 h-5 text-primary" />
-                              Create Special Offer
-                            </CardTitle>
-                            <CardDescription>
-                              Promote discounts, packages, or limited-time deals to attract customers
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <Label htmlFor="offer-title">Offer Title</Label>
-                              <Input
-                                id="offer-title"
-                                value={galleryItemForm.title}
-                                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, title: e.target.value })}
-                                placeholder="e.g., 20% Off Wedding Photography Package"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="offer-description">Offer Description</Label>
-                              <Textarea
-                                id="offer-description"
-                                value={galleryItemForm.description}
-                                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, description: e.target.value })}
-                                placeholder="Describe your special offer, terms, and conditions..."
-                                rows={4}
-                              />
-                            </div>
-                            <div className="space-y-3">
-                              <Label>Upload Offer Media</Label>
-                              <p className="text-sm text-muted-foreground">Choose the type of media to showcase your offer</p>
-                              
-                              {/* Hidden file inputs */}
-                              <input
-                                id="offer-image-input"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "image", "offer")}
-                              />
-                              <input
-                                id="offer-reel-input"
-                                type="file"
-                                accept="video/*,image/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "reel", "offer")}
-                              />
-                              <input
-                                id="offer-video-input"
-                                type="file"
-                                accept="video/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "video", "offer")}
-                              />
-                              
-                              <div className="grid grid-cols-3 gap-3">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                                  onClick={() => document.getElementById("offer-image-input")?.click()}
-                                >
-                                  <ImageIcon className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Image</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                                  onClick={() => document.getElementById("offer-reel-input")?.click()}
-                                >
-                                  <Film className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Reel</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                                  onClick={() => document.getElementById("offer-video-input")?.click()}
-                                >
-                                  <PlayCircle className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Video</span>
-                                </Button>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Images: Max 10MB • Videos/Reels: Max 50MB • Multiple files supported
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-
-                      {/* Event Content */}
-                      <TabsContent value="event" className="space-y-4 mt-6">
-                        <Card className="border-2 border-purple-500/20 bg-purple-500/5">
-                          <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Calendar className="w-5 h-5 text-purple-600" />
-                              Create Event Announcement
-                            </CardTitle>
-                            <CardDescription>
-                              Announce upcoming events, workshops, or showcases related to your service
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div>
-                              <Label htmlFor="event-title">Event Title</Label>
-                              <Input
-                                id="event-title"
-                                value={galleryItemForm.title}
-                                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, title: e.target.value })}
-                                placeholder="e.g., Traditional Dance Workshop - March 2026"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="event-description">Event Description</Label>
-                              <Textarea
-                                id="event-description"
-                                value={galleryItemForm.description}
-                                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, description: e.target.value })}
-                                placeholder="Describe your event, date, time, location, and what attendees can expect..."
-                                rows={4}
-                              />
-                            </div>
-                            <div className="space-y-3">
-                              <Label>Upload Event Media</Label>
-                              <p className="text-sm text-muted-foreground">Choose the type of media to promote your event</p>
-                              
-                              {/* Hidden file inputs */}
-                              <input
-                                id="event-image-input"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "image", "event")}
-                              />
-                              <input
-                                id="event-reel-input"
-                                type="file"
-                                accept="video/*,image/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "reel", "event")}
-                              />
-                              <input
-                                id="event-video-input"
-                                type="file"
-                                accept="video/*"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => handleFileUpload(e, "video", "event")}
-                              />
-                              
-                              <div className="grid grid-cols-3 gap-3">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-purple-500/10 hover:border-purple-500 transition-all"
-                                  onClick={() => document.getElementById("event-image-input")?.click()}
-                                >
-                                  <ImageIcon className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Image</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-purple-500/10 hover:border-purple-500 transition-all"
-                                  onClick={() => document.getElementById("event-reel-input")?.click()}
-                                >
-                                  <Film className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Reel</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-24 flex-col gap-2 hover:bg-purple-500/10 hover:border-purple-500 transition-all"
-                                  onClick={() => document.getElementById("event-video-input")?.click()}
-                                >
-                                  <PlayCircle className="w-6 h-6" />
-                                  <span className="text-xs font-medium">Upload Video</span>
-                                </Button>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Images: Max 10MB • Videos/Reels: Max 50MB • Multiple files supported
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
-                    </Tabs>
+                    {/* Special Offer Form */}
+                    <Card className="border-2 border-primary/20 bg-primary/5">
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Tag className="w-5 h-5 text-primary" />
+                          Create Special Offer
+                        </CardTitle>
+                        <CardDescription>
+                          Promote discounts, packages, or limited-time deals to attract customers
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="offer-title">Offer Title</Label>
+                          <Input
+                            id="offer-title"
+                            value={galleryItemForm.title}
+                            onChange={(e) => setGalleryItemForm({ ...galleryItemForm, title: e.target.value })}
+                            placeholder="e.g., 20% Off Wedding Photography Package"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="offer-description">Offer Description</Label>
+                          <Textarea
+                            id="offer-description"
+                            value={galleryItemForm.description}
+                            onChange={(e) => setGalleryItemForm({ ...galleryItemForm, description: e.target.value })}
+                            placeholder="Describe your special offer, terms, and conditions..."
+                            rows={4}
+                          />
+                        </div>
+                        
+                        {/* Valid Period Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="offer-valid-from">Valid From</Label>
+                            <Input
+                              id="offer-valid-from"
+                              type="date"
+                              value={galleryItemForm.validFrom}
+                              onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validFrom: e.target.value })}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="offer-valid-to">Valid Until</Label>
+                            <Input
+                              id="offer-valid-to"
+                              type="date"
+                              value={galleryItemForm.validTo}
+                              onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validTo: e.target.value })}
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <Label>Upload Offer Media</Label>
+                          <p className="text-sm text-muted-foreground">Choose the type of media to showcase your offer</p>
+                          
+                          {/* Hidden file inputs */}
+                          <input
+                            id="offer-image-input"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e, "image", "offer")}
+                          />
+                          <input
+                            id="offer-reel-input"
+                            type="file"
+                            accept="video/*,image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e, "reel", "offer")}
+                          />
+                          <input
+                            id="offer-video-input"
+                            type="file"
+                            accept="video/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e, "video", "offer")}
+                          />
+                          
+                          <div className="grid grid-cols-3 gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                              onClick={() => document.getElementById("offer-image-input")?.click()}
+                            >
+                              <ImageIcon className="w-6 h-6" />
+                              <span className="text-xs font-medium">Upload Image</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                              onClick={() => document.getElementById("offer-reel-input")?.click()}
+                            >
+                              <Film className="w-6 h-6" />
+                              <span className="text-xs font-medium">Upload Reel</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
+                              onClick={() => document.getElementById("offer-video-input")?.click()}
+                            >
+                              <PlayCircle className="w-6 h-6" />
+                              <span className="text-xs font-medium">Upload Video</span>
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Images: Max 10MB • Videos/Reels: Max 50MB • Multiple files supported
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
 
                     {/* Display promotional content */}
-                    {formData.gallery.filter(item => item.contentType === activeContentTab).length > 0 && (
+                    {formData.gallery.filter(item => item.contentType === "offer").length > 0 && (
                       <div className="space-y-3">
                         <Separator />
-                        <h4 className="font-semibold">
-                          {activeContentTab === "offer" ? "Your Offers" : "Your Events"}
-                        </h4>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">Your Special Offers</h4>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Edit className="w-3 h-3" />
+                            Click the blue edit button to modify offers
+                          </p>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {formData.gallery
-                            .filter(item => item.contentType === activeContentTab)
+                            .filter(item => item.contentType === "offer")
                             .map((item) => (
                               <Card key={item.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
                                 <div className="relative aspect-video bg-muted">
                                   {item.type === "image" && item.preview ? (
                                     <img
                                       src={item.preview}
-                                      alt={item.title || `${item.contentType} item`}
+                                      alt={item.title || "Special offer"}
                                       className="w-full h-full object-cover"
                                     />
                                   ) : (item.type === "video" || item.type === "reel") ? (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/30">
                                       {item.type === "reel" ? (
                                         <Film className="w-16 h-16 text-white opacity-75" />
                                       ) : (
@@ -1663,29 +1642,61 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                                   >
                                     <X className="w-4 h-4" />
                                   </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingGalleryItem(item);
+                                      setGalleryItemForm({
+                                        title: item.title || "",
+                                        description: item.description || "",
+                                        validFrom: item.validFrom || "",
+                                        validTo: item.validTo || ""
+                                      });
+                                      setIsGalleryDialogOpen(true);
+                                    }}
+                                    className="absolute top-2 right-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                    title="Edit Offer"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
                                   <div className="absolute top-2 left-2 flex gap-2">
                                     <Badge className="capitalize bg-black/70 text-white border-none">
                                       {item.type}
                                     </Badge>
-                                    <Badge 
-                                      className={`capitalize border-none ${
-                                        item.contentType === "offer" 
-                                          ? "bg-primary text-primary-foreground" 
-                                          : "bg-purple-600 text-white"
-                                      }`}
-                                    >
-                                      {item.contentType}
+                                    <Badge className="capitalize bg-primary text-primary-foreground border-none">
+                                      Special Offer
+                                    </Badge>
+                                    <Badge className="bg-blue-500/90 text-white border-none text-xs">
+                                      <Edit className="w-3 h-3 mr-1" />
+                                      Editable
                                     </Badge>
                                   </div>
                                 </div>
-                                <CardContent className="p-4">
+                                <div className="p-4">
                                   {item.title && (
                                     <h5 className="font-semibold mb-1 line-clamp-1">{item.title}</h5>
                                   )}
                                   {item.description && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
                                   )}
-                                </CardContent>
+                                  {/* Valid Period Display */}
+                                  {(item.validFrom || item.validTo) && (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>
+                                        {item.validFrom && item.validTo 
+                                          ? `${new Date(item.validFrom).toLocaleDateString()} - ${new Date(item.validTo).toLocaleDateString()}`
+                                          : item.validFrom 
+                                            ? `From ${new Date(item.validFrom).toLocaleDateString()}`
+                                            : `Until ${new Date(item.validTo!).toLocaleDateString()}`
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
+                                  <Badge variant="secondary" className="bg-[#668c65]/10 text-[#668c65] border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                    Special Offer
+                                  </Badge>
+                                </div>
                               </Card>
                             ))}
                         </div>
@@ -1695,70 +1706,68 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 </TabsContent>
               </Tabs>
 
-              {/* Summary */}
               {formData.gallery.length > 0 && (
-                <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">Gallery Summary</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formData.gallery.filter(i => i.type === "image").length} Images • {" "}
-                        {formData.gallery.filter(i => i.type === "reel").length} Reels • {" "}
-                        {formData.gallery.filter(i => i.type === "video").length} Videos • {" "}
-                        {formData.gallery.filter(i => i.contentType === "offer").length} Offers • {" "}
-                        {formData.gallery.filter(i => i.contentType === "event").length} Events
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-lg px-4 py-2">
-                      {formData.gallery.length} Total Items
-                    </Badge>
+                <div className="mt-8 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Portfolio Summary</p>
+                    <p className="text-sm text-slate-500">
+                      {formData.gallery.filter(i => i.type === "image").length} Images • {" "}
+                      {formData.gallery.filter(i => i.type === "reel").length} Reels • {" "}
+                      {formData.gallery.filter(i => i.type === "video").length} Videos • {" "}
+                      {formData.gallery.filter(i => i.contentType === "offer").length} Offers
+                    </p>
                   </div>
+                  <Badge variant="outline" className="border-[#668c65] text-[#668c65] bg-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl">
+                    {formData.gallery.length} Assets Total
+                  </Badge>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Step 4: Contact Info */}
         {currentStep === 4 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-              <CardDescription>Contact details shown in the "About" tab of your service</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50">
+              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Contact Details</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Information visible on your service's "About" section</p>
+            </div>
+            <div className="p-8 space-y-6 max-w-2xl">
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Direct Line</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+250 788 123 456"
+                  className="h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors"
                 />
               </div>
 
               <div>
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Electronic Mail</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="contact@example.com"
+                  placeholder="contact@artisan.com"
+                  className="h-14 rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Step 5: Review & Publish */}
         {currentStep === 5 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Review & Publish</CardTitle>
-              <CardDescription>Review all information before publishing your service</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50">
+              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Final Review</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Verify all details before presenting to the world</p>
+            </div>
+            <div className="p-8 space-y-10">
               {/* Basic Info Review */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Basic Information</h3>
@@ -1870,79 +1879,116 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
               {/* Contact Review */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Contact Information</h3>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Phone</p>
-                    <p className="font-medium">{formData.phone || "Not set"}</p>
+                <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-widest border-b border-slate-100 pb-2">Part IV: Contact Details</h3>
+                <div className="grid md:grid-cols-2 gap-6 text-sm">
+                  <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Direct Line</p>
+                    <p className="font-semibold text-slate-900">{formData.phone || "Not provided"}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Email</p>
-                    <p className="font-medium">{formData.email || "Not set"}</p>
+                  <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Electronic Mail</p>
+                    <p className="font-semibold text-slate-900">{formData.email || "Not provided"}</p>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Navigation Buttons */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
+      <div className="sticky bottom-6 z-10 bg-white/80 backdrop-blur-md rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-900/5 p-4 flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={currentStep === 1}
+          className="w-full md:w-auto h-14 px-8 rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Retreat
+        </Button>
+
+        <div className="hidden md:flex flex-col items-center">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Phase {currentStep} of {totalSteps}
+          </p>
+          <div className="flex gap-1 mt-2">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i < currentStep ? "w-6 bg-[#668c65]" : "w-1.5 bg-slate-200"}`} />
+            ))}
+          </div>
+        </div>
+
+        {currentStep < totalSteps ? (
+          <Button 
+            onClick={handleNext} 
+            disabled={isUploading}
+            className="w-full md:w-auto h-14 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/10 transition-all font-bold uppercase text-[10px] tracking-widest border-none"
+          >
+            Advance
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        ) : (
+          <div className="flex w-full md:w-auto gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => handleSubmit("draft")}
+              disabled={isUploading || isSubmitting}
+              className="flex-1 md:flex-none h-14 px-6 rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Previous
+              {(isUploading || isSubmitting) && submitType === "draft" ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2 text-[#668c65]" />
+              )}
+              {(isUploading || isSubmitting) && submitType === "draft" 
+                ? (initialData ? "Updating..." : "Saving...") 
+                : (initialData ? "Update Archive" : "Save to Archive")
+              }
             </Button>
-
-            <div className="text-sm text-muted-foreground">
-              Step {currentStep} of {totalSteps}
+            <Button 
+              onClick={() => handleSubmit("active")}
+              disabled={isUploading || isSubmitting}
+              className="flex-1 md:flex-none h-14 px-8 rounded-2xl bg-[#668c65] hover:bg-[#5a7c59] text-white shadow-xl shadow-[#668c65]/20 font-bold uppercase text-[10px] tracking-widest border-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {(isUploading || isSubmitting) && submitType === "active" ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              )}
+              {(isUploading || isSubmitting) && submitType === "active" 
+                ? (initialData ? "Refining..." : "Publishing...") 
+                : (initialData ? "Refine & Publish" : "Publish to Catalogue")
+              }
+            </Button>
+          </div>
+        )}
+        
+        {(isUploading || isSubmitting) && (
+          <div className="absolute -top-12 left-0 right-0 bg-white rounded-xl shadow-lg border border-slate-100 p-3 mx-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest">
+                {isUploading && !isSubmitting 
+                  ? "Uploading Media Assets..." 
+                  : isSubmitting 
+                    ? (submitType === "active" 
+                        ? (initialData ? "Updating & Publishing Service..." : "Publishing Service...")
+                        : (initialData ? "Updating Service..." : "Saving Service...")
+                      )
+                    : "Processing..."
+                }
+              </p>
+              <p className="text-[10px] font-black text-slate-400">{uploadProgress}%</p>
             </div>
-
-            {currentStep < totalSteps ? (
-              <Button onClick={handleNext} disabled={isUploading}>
-                Next
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => handleSubmit("draft")}
-                  disabled={isUploading}
-                >
-                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  {isUploading ? "Saving..." : initialData ? "Update as Draft" : "Save Draft"}
-                </Button>
-                <Button 
-                  onClick={() => handleSubmit("active")}
-                  disabled={isUploading}
-                >
-                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {isUploading ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update & Publish" : "Publish Service")}
-                </Button>
-              </div>
-            )}
-            
-            {isUploading && (
-              <div className="mt-2 space-y-2">
-                <Progress value={uploadProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground text-center">{uploadProgress}% Complete</p>
-                {uploadingFiles.length > 0 && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    <p>Uploading: {uploadingFiles.join(', ')}</p>
-                  </div>
-                )}
-              </div>
+            <Progress value={uploadProgress} className="h-1 bg-slate-100 [&>div]:bg-[#668c65]" />
+            {uploadingFiles.length > 0 && (
+              <p className="text-[9px] text-slate-400 mt-2 truncate font-mono">
+                {uploadingFiles.join(', ')}
+              </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* Package Dialog */}
       <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
@@ -1955,9 +2001,84 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
             onSave={handleSavePackage}
             onCancel={() => {
               setIsPackageDialogOpen(false)
-              setEditingPackage(null)
             }}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Gallery Item Edit Dialog */}
+      <Dialog open={isGalleryDialogOpen} onOpenChange={setIsGalleryDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Special Offer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 p-4">
+            <div>
+              <Label htmlFor="edit-offer-title">Offer Title</Label>
+              <Input
+                id="edit-offer-title"
+                value={galleryItemForm.title}
+                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, title: e.target.value })}
+                placeholder="e.g., 20% Off Wedding Photography Package"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-offer-description">Offer Description</Label>
+              <Textarea
+                id="edit-offer-description"
+                value={galleryItemForm.description}
+                onChange={(e) => setGalleryItemForm({ ...galleryItemForm, description: e.target.value })}
+                placeholder="Describe your special offer, terms, and conditions..."
+                rows={4}
+              />
+            </div>
+            
+            {/* Valid Period Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-offer-valid-from">Valid From</Label>
+                <Input
+                  id="edit-offer-valid-from"
+                  type="date"
+                  value={galleryItemForm.validFrom}
+                  onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validFrom: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-offer-valid-to">Valid Until</Label>
+                <Input
+                  id="edit-offer-valid-to"
+                  type="date"
+                  value={galleryItemForm.validTo}
+                  onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validTo: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsGalleryDialogOpen(false)
+                  setEditingGalleryItem(null)
+                  setGalleryItemForm({ title: "", description: "", validFrom: "", validTo: "" })
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleSaveGalleryItem(galleryItemForm)}
+                className="flex-1 bg-[#668c65] hover:bg-[#5a7b59] text-white"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

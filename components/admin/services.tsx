@@ -111,10 +111,11 @@ export function AdminServices() {
   const fetchCategories = async () => {
     try {
       const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-      const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`);
-      const data = await response.json();
-      setCategories(data || []);
-    } catch (error) {
+        const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`);
+        const data = await response.json();
+        // Safely extract categories array from potential wrapper object
+        setCategories(Array.isArray(data) ? data : (data?.data || []));
+      } catch (error) {
       toast.error("Failed to fetch categories");
     }
   };
@@ -526,7 +527,7 @@ export function AdminServices() {
                     <SelectValue placeholder="Select service category" />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-slate-100 shadow-xl text-slate-900">
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.slug} className="rounded-xl focus:bg-[#608d64]/5 focus:text-[#608d64]">
                         {category.name}
                       </SelectItem>
@@ -586,7 +587,7 @@ export function AdminServices() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-slate-100 shadow-xl text-slate-900">
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.slug} className="rounded-xl focus:bg-[#608d64]/5 focus:text-[#608d64]">
                         {category.name}
                       </SelectItem>

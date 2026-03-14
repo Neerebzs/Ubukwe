@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Music, Utensils, MapPin, Palette, Mic, Star, ArrowRight, Heart, Sparkles, Clock, Shield, ChevronDown, Search, Calendar } from "lucide-react"
+import { Users, Music, Utensils, MapPin, Palette, Mic, Star, ArrowRight, Heart, Sparkles, Clock, Shield, ChevronDown, Search, Calendar, Tag } from "lucide-react"
 import Link from "next/link"
 import React, { useState, useRef, useEffect } from "react";
 import { TranslatedText } from "@/components/translated-text";
@@ -10,6 +10,7 @@ import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePublicEvents } from "@/hooks/useCustomerEvents";
+import { useOffers } from "@/hooks/useOffers";
 
 export default function HomePage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -46,6 +47,7 @@ export default function HomePage() {
   };
 
   const { data: realEvents, isLoading: isLoadingEvents } = usePublicEvents();
+  const { offers, isLoading: isLoadingOffers } = useOffers();
 
   // Map real events to promotions format
   const dynamicEvents = (realEvents || []).map((event: any) => ({
@@ -62,10 +64,9 @@ export default function HomePage() {
     image: event.image_url || "/beautiful-garden-wedding-venue-rwanda.jpg"
   }));
 
- 
-
-  // Use dynamic events or show loading state
-  const promotions = dynamicEvents;
+  // Combine events and offers
+  const promotions = [...dynamicEvents, ...offers];
+  const isLoading = isLoadingEvents || isLoadingOffers;
 
   const services = [
     {
@@ -264,7 +265,7 @@ export default function HomePage() {
             ref={carouselRef}
             className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-4 md:px-6 scroll-smooth"
           >
-            {isLoadingEvents ? (
+            {isLoading ? (
               // Loading state
               Array.from({ length: 3 }).map((_, index) => (
                 <div
@@ -339,7 +340,7 @@ export default function HomePage() {
                           <Clock className="w-4 h-4" />
                           <span>Until {promo.validUntil}</span>
                         </div>
-                        <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : "/services"}>
+                        <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : `/services/${promo.serviceId || promo.id}`}>
                           <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
                             <TranslatedText text="Explore" />
                             <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />

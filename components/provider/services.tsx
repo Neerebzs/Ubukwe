@@ -81,7 +81,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
       const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`);
       const data = await response.json();
-      setCategories(data || []);
+      setCategories(Array.isArray(data) ? data : (data?.data || []));
     } catch (error) {
       console.error('Failed to fetch categories:', error);
       toast.error("Failed to load categories");
@@ -208,7 +208,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         url: g.url,
         thumbnail: g.thumbnail,
         title: g.title || "",
-        description: g.description || ""
+        description: g.description || "",
+        validFrom: g.validFrom || undefined,
+        validTo: g.validTo || undefined
       })) as any,
       packages: service.packages || [],
       phone: service.phone || "",
@@ -262,7 +264,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         url: g.url || "",
         thumbnail: g.thumbnail,
         title: g.title || "",
-        description: g.description || ""
+        description: g.description || "",
+        validFrom: g.validFrom || undefined,
+        validTo: g.validTo || undefined
       })).filter(item => item.url && item.url.trim() !== "") || [],
     };
 
@@ -432,7 +436,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
           url: g.url,
           thumbnail: g.thumbnail,
           title: g.title || "",
-          description: g.description || ""
+          description: g.description || "",
+          validFrom: g.validFrom || undefined,
+          validTo: g.validTo || undefined
         })) as any,
         packages: editingService.packages || [],
         phone: editingService.phone || "",
@@ -509,7 +515,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-100 shadow-xl">
               <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">All Categories</SelectItem>
-              {categories.map(cat => (
+              {categories?.map(cat => (
                 <SelectItem key={cat.id} value={cat.name} className="text-[10px] font-black uppercase tracking-widest">{cat.name}</SelectItem>
               ))}
             </SelectContent>

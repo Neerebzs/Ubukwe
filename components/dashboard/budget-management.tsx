@@ -843,7 +843,8 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                 axisLine={false}
                                                 tickLine={false}
                                                 width={100}
-                                                tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b', textTransform: 'uppercase' }}
+                                                tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                                                tickFormatter={(value) => value.toUpperCase()}
                                             />
                                             <Tooltip
                                                 cursor={{ fill: '#f8fafc' }}

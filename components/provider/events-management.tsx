@@ -58,6 +58,11 @@ export function EventsManagement() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
+    // Prevent multiple clicks
+    if (deleteEventMutation.isPending) {
+      return;
+    }
+    
     if (confirm("Are you sure you want to delete this event?")) {
       try {
         await deleteEventMutation.mutateAsync(eventId);
@@ -68,6 +73,11 @@ export function EventsManagement() {
   };
 
   const handlePublishEvent = async (eventId: string) => {
+    // Prevent multiple clicks
+    if (publishEventMutation.isPending) {
+      return;
+    }
+    
     try {
       await publishEventMutation.mutateAsync(eventId);
     } catch (error) {
@@ -380,7 +390,11 @@ export function EventsManagement() {
                         <Button
                           variant="outline"
                           className="flex-1 h-11 rounded-2xl border-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-500"
-                          onClick={() => handleViewDetails(event)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleViewDetails(event);
+                          }}
                         >
                           Examine Manifest
                         </Button>
@@ -388,7 +402,11 @@ export function EventsManagement() {
                         <Button
                           variant="outline"
                           className="flex-1 h-11 rounded-2xl border-[#668c65]/20 text-[9px] font-black uppercase tracking-widest text-[#668c65] hover:bg-[#668c65] hover:text-white hover:border-[#668c65] transition-all duration-500 gap-2"
-                          onClick={() => handleManageTickets(event.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleManageTickets(event.id);
+                          }}
                         >
                           <Ticket className="h-4 w-4" />
                           Tickets
@@ -399,7 +417,11 @@ export function EventsManagement() {
                         {event.status === "draft" && (
                           <Button
                             className="flex-1 h-11 bg-[#668c65] hover:bg-[#5a7b59] text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-[#668c65]/20 border-none"
-                            onClick={() => handlePublishEvent(event.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handlePublishEvent(event.id);
+                            }}
                             disabled={publishEventMutation.isPending}
                           >
                             {publishEventMutation.isPending ? (
@@ -413,7 +435,11 @@ export function EventsManagement() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteEvent(event.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteEvent(event.id);
+                          }}
                           disabled={deleteEventMutation.isPending}
                           className={cn(
                             "h-11 w-11 rounded-2xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all",

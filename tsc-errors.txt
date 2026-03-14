@@ -1,0 +1,7 @@
+﻿components/customer/ticket-purchase.tsx(164,6): error TS17008: JSX element 'div' has no corresponding closing tag.
+components/customer/ticket-purchase.tsx(238,8): error TS17008: JSX element 'Dialog' has no corresponding closing tag.
+components/customer/ticket-purchase.tsx(239,10): error TS17008: JSX element 'DialogContent' has no corresponding closing tag.
+components/customer/ticket-purchase.tsx(240,12): error TS17008: JSX element 'DialogHeader' has no corresponding closing tag.
+components/customer/ticket-purchase.tsx(241,8): error TS1005: '</' expected.
+components/provider/service-form.tsx(1705,33): error TS17002: Expected corresponding JSX closing tag for 'Card'.
+components/provider/service-form.tsx(1986,9): error TS1128: Declaration or statement expected.

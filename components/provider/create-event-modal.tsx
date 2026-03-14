@@ -59,6 +59,7 @@ interface TicketDraft {
 export function CreateEventModal({ open, onOpenChange, standalone }: CreateEventModalProps) {
   const [activeTab, setActiveTab] = useState("basic");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSubmissionRef = useRef<number>(0);
   const createEventMutation = useCreateEvent();
 
   const [formData, setFormData] = useState({
@@ -226,6 +227,24 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
   };
 
   const handleSubmit = async () => {
+    console.log('handleSubmit called, isPending:', createEventMutation.isPending);
+    
+    // Prevent multiple submissions
+    if (createEventMutation.isPending) {
+      console.log('Submission blocked: already pending');
+      return;
+    }
+
+    // Prevent rapid successive submissions (within 2 seconds)
+    const now = Date.now();
+    if (now - lastSubmissionRef.current < 2000) {
+      console.log('Submission blocked: too rapid');
+      return;
+    }
+    lastSubmissionRef.current = now;
+
+    console.log('Proceeding with submission...');
+
     try {
       // Combine date and time into ISO datetime
       const eventDateTime = formData.time 
@@ -260,6 +279,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
       };
 
       await createEventMutation.mutateAsync(eventData);
+      console.log('Event created successfully');
       toast.success("Event created successfully!");
       
       // Reset form
@@ -280,7 +300,18 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
       setActiveTab("basic");
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Event creation failed:', error);
       toast.error(error.message || "Failed to create event");
+    }
+  };
+
+  // Handle key press to prevent Enter key from triggering multiple submissions
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!createEventMutation.isPending) {
+        handleSubmit();
+      }
     }
   };
 
@@ -300,7 +331,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
         </div>
       </div>
 
-      <div className="p-12">
+      <div className="p-12" onKeyPress={handleKeyPress}>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-12 overflow-x-auto no-scrollbar">
             {[
@@ -826,7 +857,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               </Button>
               <Button
                 onClick={handleSubmit}
-                className="h-16 flex-1 bg-[#668c65] hover:bg-[#5a7b59] text-white rounded-2xl shadow-2xl shadow-[#668c65]/20 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="h-16 flex-1 bg-[#668c65] hover:bg-[#5a7b59] text-white rounded-2xl shadow-2xl shadow-[#668c65]/20 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 disabled={createEventMutation.isPending}
               >
                 {createEventMutation.isPending ? (
