@@ -107,9 +107,9 @@ export default function ServicesPage() {
                       Our Curation
                     </span>
                   </div>
-                  <h1 className="font-serif text-5xl md:text-7xl text-slate-900 leading-[0.9] tracking-tight">
-                    <span className="block font-light">Explore</span>
-                    <span className="block italic font-medium ml-4 md:ml-8 text-primary">Services</span>
+                  <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl text-slate-900 leading-[0.9] tracking-tight whitespace-nowrap">
+                    <span className="font-light">Explore</span>{" "}
+                    <span className="italic font-medium text-primary">Services</span>
                   </h1>
                   <p className="font-outfit text-slate-500 text-lg max-w-lg leading-relaxed font-light">
                     Find the perfect partners for your special day. From traditional ceremonies to modern celebrations, we've curated the best of Rwanda.
