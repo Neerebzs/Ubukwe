@@ -169,7 +169,7 @@ function CustomerDashboardContent() {
         return <CustomerDisputesView />;
 
       case "reviews":
-        return <ReviewForm bookingId="BK-2024-001" serviceName="Traditional Dancers" providerName="Intore Cultural Group" />;
+        return <ReviewForm bookingId="" serviceName="" providerName="" />;
 
       case "booking":
         return <CustomerBookingWizard />;

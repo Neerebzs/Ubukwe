@@ -51,88 +51,10 @@ export function ProviderDashboardContent() {
     router.push(`/provider/dashboard?tab=${tab}`, { scroll: false })
   }
 
-  const providerStats = {
-    totalBookings: 24,
-    monthlyEarnings: 850000,
-    averageRating: 4.8,
-    activeServices: 3,
-  }
+  // Stats and data are fetched inside individual components (ProviderOverview, ProviderEarnings, etc.)
 
-  const recentBookings = [
-    { id: 1, client: "Marie Uwimana", service: "Traditional Dancers", date: "2024-03-15", status: "confirmed", amount: 120000 },
-    { id: 2, client: "Jean Baptiste", service: "MC Services", date: "2024-03-22", status: "pending", amount: 80000 },
-    { id: 3, client: "Grace Mukamana", service: "Traditional Dancers", date: "2024-04-05", status: "completed", amount: 150000 },
-  ]
-
-  const services = [
-    {
-      id: "1",
-      title: "Traditional Intore Dancers",
-      category: "Entertainment",
-      location: "Kigali",
-      priceRange: "120,000 - 200,000 RWF",
-      priceRangeMin: 120000,
-      priceRangeMax: 200000,
-      bookings: 12,
-      rating: 4.9,
-      status: "active" as const,
-      description: "Professional traditional Rwandan dancers specializing in Intore and cultural performances for weddings.",
-      specialties: ["Intore Dance", "Cultural Music", "Traditional Costumes"],
-      verified: true,
-      packages: [
-        {
-          id: "1",
-          name: "Basic Package",
-          price: 120000,
-          duration: "2 hours",
-          description: "Perfect for intimate ceremonies",
-          features: ["Traditional dance performance", "Up to 5 dancers", "Basic costumes", "2-hour performance"],
-          popular: false,
-        },
-        {
-          id: "2",
-          name: "Standard Package",
-          price: 180000,
-          duration: "3 hours",
-          description: "Most popular choice for weddings",
-          features: ["Extended traditional dance performance", "Up to 8 dancers", "Premium costumes", "Live drumming", "3-hour performance", "Cultural storytelling"],
-          popular: true,
-        }
-      ],
-      gallery: [],
-      phone: "+250 788 123 456",
-      email: "contact@intoregroup.rw"
-    },
-    {
-      id: "2",
-      title: "Wedding MC Services",
-      category: "Entertainment",
-      location: "Kigali",
-      priceRange: "80,000 - 120,000 RWF",
-      priceRangeMin: 80000,
-      priceRangeMax: 120000,
-      bookings: 8,
-      rating: 4.7,
-      status: "active" as const,
-      description: "Bilingual MC specializing in Rwandan wedding ceremonies and cultural traditions.",
-      specialties: ["Bilingual Hosting", "Cultural Expertise", "Event Coordination"],
-      verified: true,
-    },
-    {
-      id: "3",
-      title: "Cultural Music Performance",
-      category: "Entertainment",
-      location: "Kigali",
-      priceRange: "100,000 - 180,000 RWF",
-      priceRangeMin: 100000,
-      priceRangeMax: 180000,
-      bookings: 4,
-      rating: 4.8,
-      status: "draft" as const,
-      description: "Traditional Rwandan musicians playing authentic instruments for wedding ceremonies.",
-      specialties: ["Traditional Instruments", "Live Performances"],
-    },
-  ]
+  const recentBookings: any[] = []
+  const services: any[] = []
 
   // Header logic replaced by DashboardHeader
 
@@ -148,7 +70,7 @@ export function ProviderDashboardContent() {
 
     switch (activeTab) {
       case "overview": return <ProviderOverview />
-      case "services": return <ProviderServices services={services} />
+      case "services": return <ProviderServices />
       case "events": return <EventsManagement />
       case "tickets": return <TicketManagementWrapper />
       case "bookings": return <ProviderBookings />
@@ -163,7 +85,7 @@ export function ProviderDashboardContent() {
 
       case "contracts": return <ProviderContracts />
       case "onboarding": return <ProviderOnboardingForm />
-      case "earnings": return <ProviderEarnings recentCompleted={recentBookings.filter((b) => b.status === "completed")} />
+      case "earnings": return <ProviderEarnings />
       case "profile": return <ProviderProfile />
       default: return null
     }

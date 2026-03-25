@@ -41,17 +41,26 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
     setPhotos(photos.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = () => {
-    const review = {
-      bookingId,
-      ratings,
-      reviewText,
-      photos,
-      verified: isVerified,
-      submittedAt: new Date().toISOString(),
+  const handleSubmit = async () => {
+    if (ratings.overall === 0 || !reviewText.trim()) return
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      await axiosInstance.post("/api/v1/reviews", {
+        booking_id: bookingId,
+        overall_rating: ratings.overall,
+        quality_rating: ratings.quality,
+        value_rating: ratings.value,
+        communication_rating: ratings.communication,
+        punctuality_rating: ratings.punctuality,
+        review_text: reviewText,
+      })
+      onSubmit?.({ bookingId, ratings, reviewText })
+      const { toast } = await import("sonner")
+      toast.success("Review submitted! Thank you for your feedback.")
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to submit review")
     }
-    onSubmit?.(review)
-    alert("Review submitted! Thank you for your feedback.")
   }
 
   const averageRating = Object.values(ratings).reduce((sum, val) => sum + val, 0) / Object.keys(ratings).length

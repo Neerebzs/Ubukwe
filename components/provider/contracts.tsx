@@ -1,253 +1,121 @@
 "use client"
 
-import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { axiosInstance } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileText, CheckCircle, Clock, XCircle, Eye, Download, Send, Edit, Plus } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { FileText, CheckCircle, XCircle, Eye, Download, Send, Edit, Plus } from "lucide-react"
 import { EmptyState } from "@/components/ui/empty-state"
 import { cn } from "@/lib/utils"
 
+interface Contract {
+  id: string
+  provider_id: string
+  customer_id: string
+  booking_id?: string
+  title?: string
+  content: string
+  status: "pending" | "sent" | "signed" | "rejected" | "cancelled"
+  created_at: string
+  sent_at?: string
+  signed_at?: string
+}
+
 export function ProviderContracts() {
-  const contracts = [
-    {
-      id: "CT-2024-001",
-      customerName: "Marie Uwimana",
-      serviceName: "Traditional Dancers",
-      bookingId: "BK-2024-001",
-      status: "draft",
-      createdAt: "2024-03-10",
-      lastModified: "2024-03-10",
+  const { data: contracts = [], isLoading } = useQuery<Contract[]>({
+    queryKey: ["provider-contracts"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<Contract[]>("/api/v1/contracts/provider")
+      return res.data ?? []
     },
-    {
-      id: "CT-2024-002",
-      customerName: "Jean Baptiste",
-      serviceName: "MC Services",
-      bookingId: "BK-2024-002",
-      status: "sent",
-      createdAt: "2024-03-08",
-      sentAt: "2024-03-09",
-    },
-    {
-      id: "CT-2024-003",
-      customerName: "Grace Mukamana",
-      serviceName: "Traditional Dancers",
-      bookingId: "BK-2024-003",
-      status: "signed",
-      createdAt: "2024-03-05",
-      signedAt: "2024-03-07",
-    },
-  ]
+  })
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { variant: any; label: string; icon: any }> = {
-      draft: { variant: "outline", label: "Draft", icon: Edit },
-      sent: { variant: "secondary", label: "Sent", icon: Send },
-      signed: { variant: "default", label: "Signed", icon: CheckCircle },
-      expired: { variant: "destructive", label: "Expired", icon: XCircle },
+    const config: Record<string, { className: string; label: string; icon: any }> = {
+      pending: { className: "bg-slate-50 text-slate-500", label: "Draft", icon: Edit },
+      sent: { className: "bg-indigo-50 text-indigo-600", label: "Sent", icon: Send },
+      signed: { className: "bg-[#668c65]/10 text-[#668c65]", label: "Signed", icon: CheckCircle },
+      rejected: { className: "bg-rose-50 text-rose-600", label: "Rejected", icon: XCircle },
+      cancelled: { className: "bg-slate-50 text-slate-400", label: "Cancelled", icon: XCircle },
     }
-    const c = config[status] || config.draft
+    const c = config[status] || config.pending
     const Icon = c.icon
     return (
-      <Badge
-        variant="outline"
-        className={cn(
-          "px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border-none shadow-none",
-          status === "draft" ? "bg-slate-50 text-slate-500" :
-            status === "sent" ? "bg-indigo-50 text-indigo-600" :
-              status === "signed" ? "bg-[#668c65]/10 text-[#668c65]" :
-                "bg-rose-50 text-rose-600"
-        )}
-      >
+      <Badge variant="outline" className={cn("px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border-none", c.className)}>
         <Icon className="w-3 h-3 mr-1" />
         {c.label}
       </Badge>
     )
   }
 
+  const tabs = [
+    { value: "all", label: "All" },
+    { value: "pending", label: "Drafts" },
+    { value: "sent", label: "Pending" },
+    { value: "signed", label: "Executed" },
+  ]
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-48" />
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-[2rem]" />)}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Contracts</h2>
-        <div className="flex items-center gap-2">
-          <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Agreement Repository & Management</p>
-        </div>
-      </div>
-
       <div className="flex items-center justify-between">
-        <div />
-        <Button className="rounded-2xl bg-[#668c65] hover:bg-[#0b7a6f] text-white shadow-lg shadow-[#668c65]/20 px-8 h-12 transition-all duration-300 group">
-          <FileText className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
-          <span className="font-bold tracking-tight uppercase text-[10px]">Generate New Agreement</span>
+        <div>
+          <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Contracts</h2>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">Agreement Repository</p>
+        </div>
+        <Button className="rounded-2xl bg-[#668c65] hover:bg-[#0b7a6f] text-white px-8 h-12">
+          <Plus className="w-4 h-4 mr-2" />
+          <span className="font-bold uppercase text-[10px]">New Agreement</span>
         </Button>
       </div>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="all">
         <TabsList className="bg-transparent border-b border-slate-100 w-full justify-start rounded-none h-auto p-0 mb-8 space-x-8">
-          {[
-            { value: "all", label: "All Repository" },
-            { value: "draft", label: "Drafts" },
-            { value: "sent", label: "Pending" },
-            { value: "signed", label: "Executed" },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#668c65] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2 pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 data-[state=active]:text-[#668c65] transition-all"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#668c65] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-2 pb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 data-[state=active]:text-[#668c65]"
             >
               {tab.label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent value="all" className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-          {contracts.map((contract) => (
-            <Card key={contract.id} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
-              <CardHeader className="p-8 pb-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-2xl font-serif italic text-slate-900 tracking-tight">{contract.serviceName}</CardTitle>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                      Ref: {contract.id} | Booking: {contract.bookingId}
-                    </p>
-                  </div>
-                  {getStatusBadge(contract.status)}
+        {tabs.map((tab) => {
+          const filtered = tab.value === "all" ? contracts : contracts.filter(c => c.status === tab.value)
+          return (
+            <TabsContent key={tab.value} value={tab.value} className="space-y-6">
+              {filtered.length === 0 ? (
+                <div className="py-20 bg-white rounded-[2rem] border border-dashed border-slate-100 flex items-center justify-center">
+                  <EmptyState
+                    title="No contracts"
+                    description="Contracts will appear here once created."
+                    icon={<FileText className="h-12 w-12 mx-auto text-slate-200" />}
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="px-8 pb-8 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 border-t border-slate-50">
-                  <div className="flex items-center gap-8">
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Client Identity</p>
-                      <p className="text-sm font-bold text-slate-700">{contract.customerName}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Initialization</p>
-                      <p className="text-sm font-medium text-slate-600">{new Date(contract.createdAt).toLocaleDateString()}</p>
-                    </div>
-                    {contract.signedAt && (
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-[#668c65] uppercase tracking-widest">Execution Date</p>
-                        <p className="text-sm font-bold text-[#668c65]">{new Date(contract.signedAt).toLocaleDateString()}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
-                      <Eye className="w-4 h-4 mr-2" />
-                      Inspect
-                    </Button>
-                    <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
-                      <Download className="w-4 h-4 mr-2" />
-                      Export PDF
-                    </Button>
-                    {contract.status === "draft" && (
-                      <Button className="rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-[10px] uppercase px-4 h-10 transition-all">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Modify
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="draft">
-          {contracts.filter((c) => c.status === "draft").length === 0 ? (
-            <div className="py-20 bg-white rounded-[2rem] border border-dashed border-slate-100 flex items-center justify-center">
-              <EmptyState
-                title="Workspace Vacant"
-                description="No draft agreements currently under composition."
-                icon={<FileText className="h-12 w-12 mx-auto text-slate-200" />}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {contracts
-                .filter((c) => c.status === "draft")
-                .map((contract) => (
-                  <Card key={contract.id} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
-                    <CardHeader className="p-8">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl font-serif italic text-slate-900">{contract.serviceName}</CardTitle>
-                        <Button variant="ghost" size="sm" className="rounded-xl h-9 w-9 p-0 hover:bg-slate-50">
-                          <Edit className="w-4 h-4 text-slate-400" />
-                        </Button>
-                      </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Composition for {contract.customerName}</p>
-                    </CardHeader>
-                  </Card>
-                ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="sent">
-          {contracts.filter((c) => c.status === "sent").length === 0 ? (
-            <div className="py-20 bg-white rounded-[2rem] border border-dashed border-slate-100 flex items-center justify-center">
-              <EmptyState
-                title="Transit Clear"
-                description="All dispatched agreements have been acknowledged and executed."
-                icon={<Send className="h-12 w-12 mx-auto text-slate-200" />}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {contracts
-                .filter((c) => c.status === "sent")
-                .map((contract) => (
-                  <Card key={contract.id} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
-                    <CardHeader className="p-8">
+              ) : (
+                filtered.map((contract) => (
+                  <Card key={contract.id} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl transition-all duration-500">
+                    <CardHeader className="p-8 pb-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-xl font-serif italic text-slate-900">{contract.serviceName}</CardTitle>
+                          <CardTitle className="text-2xl font-serif italic text-slate-900">
+                            {contract.title || "Service Agreement"}
+                          </CardTitle>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                            Dispatched to {contract.customerName}
-                          </p>
-                        </div>
-                        {getStatusBadge(contract.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-8 pb-8">
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        <span>Awaiting Signature Since: {contract.sentAt ? new Date(contract.sentAt).toLocaleDateString() : "N/A"}</span>
-                        <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 h-9 px-4">
-                          <Eye className="w-4 h-4 mr-2" />
-                          Review
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="signed">
-          {contracts.filter((c) => c.status === "signed").length === 0 ? (
-            <div className="py-20 bg-white rounded-[2rem] border border-dashed border-slate-100 flex items-center justify-center">
-              <EmptyState
-                title="Archive Empty"
-                description="Executed agreements will be meticulously stored here."
-                icon={<CheckCircle className="h-12 w-12 mx-auto text-slate-200" />}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {contracts
-                .filter((c) => c.status === "signed")
-                .map((contract) => (
-                  <Card key={contract.id} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
-                    <CardHeader className="p-8">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-xl font-serif italic text-slate-900">{contract.serviceName}</CardTitle>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                            Finalized with {contract.customerName}
+                            Ref: {contract.id.slice(0, 8).toUpperCase()}
                           </p>
                         </div>
                         {getStatusBadge(contract.status)}
@@ -255,28 +123,35 @@ export function ProviderContracts() {
                     </CardHeader>
                     <CardContent className="px-8 pb-8">
                       <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-[#668c65]">
-                          Executed: {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString() : "N/A"}
+                        <div className="flex items-center gap-8 text-sm">
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Created</p>
+                            <p className="font-bold text-slate-700">{new Date(contract.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {contract.signed_at && (
+                            <div>
+                              <p className="text-[8px] font-black text-[#668c65] uppercase tracking-widest">Signed</p>
+                              <p className="font-bold text-[#668c65]">{new Date(contract.signed_at).toLocaleDateString()}</p>
+                            </div>
+                          )}
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 h-9 px-4">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
+                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
+                            <Eye className="w-4 h-4 mr-2" />Inspect
                           </Button>
-                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 h-9 px-4">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
+                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
+                            <Download className="w-4 h-4 mr-2" />Export
                           </Button>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-            </div>
-          )}
-        </TabsContent>
+                ))
+              )}
+            </TabsContent>
+          )
+        })}
       </Tabs>
     </div>
   )
 }
-
