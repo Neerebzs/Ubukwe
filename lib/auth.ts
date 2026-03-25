@@ -122,6 +122,8 @@ export const tokenManager = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      // Also set a cookie so Next.js middleware can enforce server-side auth
+      document.cookie = `accessToken=${accessToken}; path=/; SameSite=Lax; max-age=${60 * 60 * 24 * 7}`;
     }
   },
 
@@ -139,6 +141,8 @@ export const tokenManager = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      // Clear the middleware cookie
+      document.cookie = 'accessToken=; path=/; max-age=0';
     }
   },
 
