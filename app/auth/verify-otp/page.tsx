@@ -71,8 +71,8 @@ export default function VerifyOtpPage() {
     const handleResend = async () => {
         setIsResending(true)
         try {
-            // Mock resend logic
-            await new Promise(resolve => setTimeout(resolve, 1500))
+            const { apiClient } = await import('@/lib/api')
+            await apiClient.post(`/api/v1/auth/forgot-password`, { email })
             setTimer(60)
             toast.success("Code resent successfully!")
         } catch (err) {
@@ -92,12 +92,9 @@ export default function VerifyOtpPage() {
 
         setIsVerifying(true)
         try {
-            // Mock OTP verification logic
-            // In a real app, this would call an API like authApi.verifyOtp(email, otpValue)
-            await new Promise(resolve => setTimeout(resolve, 1500))
-
+            const { apiClient } = await import('@/lib/api')
+            await apiClient.post(`/api/v1/auth/verify-otp`, { email, otp: otpValue })
             toast.success("OTP verified successfully!")
-            // Pass the email and possibly a temporary token to the reset page
             router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&otp=${otpValue}`)
         } catch (err: any) {
             toast.error(err.message || "Invalid or expired code")

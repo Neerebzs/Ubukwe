@@ -85,6 +85,14 @@ export const API_ENDPOINTS = {
     MARK_AS_READ: (id: string) => `/api/${API_VERSION}/notifications/${id}/read`,
     MARK_ALL_AS_READ: `/api/${API_VERSION}/notifications/mark-all-read`,
   },
+  // Messaging endpoints
+  MESSAGES: {
+    CONVERSATIONS: `/api/${API_VERSION}/messages/conversations`,
+    CONVERSATION: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}`,
+    SEND: `/api/${API_VERSION}/messages/send`,
+    MARK_READ: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}/read`,
+    UNREAD_COUNT: `/api/${API_VERSION}/messages/unread-count`,
+  },
   // Health check
   HEALTH: `/health`,
 };

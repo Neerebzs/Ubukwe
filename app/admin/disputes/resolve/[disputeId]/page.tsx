@@ -1,80 +1,72 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft, Upload, AlertCircle, CheckCircle, XCircle, MessageSquare, FileText, DollarSign, User, Building, Clock } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ArrowLeft, AlertCircle, CheckCircle, XCircle, FileText, DollarSign, User, Building, Clock, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { axiosInstance } from "@/lib/api-client"
+import { toast } from "sonner"
 
 export default function AdminDisputeResolutionPage({ params }: { params: { disputeId: string } }) {
-  const [resolution, setResolution] = useState({
-    type: "",
-    amount: "",
-    notes: "",
-    status: "investigating",
-  })
+  const router = useRouter()
+  const [dispute, setDispute] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [resolutionNotes, setResolutionNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  // Mock dispute data
-  const dispute = {
-    id: params.disputeId,
-    customer: {
-      name: "Grace Mukamana",
-      email: "grace@example.com",
-      phone: "+250788123456",
-      avatar: "",
-    },
-    provider: {
-      name: "Intore Cultural Group",
-      email: "contact@intore.rw",
-      phone: "+250788654321",
-    },
-    bookingId: "BK-2024-001",
-    serviceName: "Traditional Dancers",
-    issue: "Dancers arrived 2 hours late and missed key moments of the ceremony",
-    disputeType: "late-arrival",
-    priority: "high",
-    status: "investigating",
-    createdAt: "2024-03-10T10:30:00",
-    deadline: "2024-03-17T23:59:59",
-    requestedResolution: "partial-refund",
-    evidence: [
-      { type: "photo", url: "/evidence1.jpg", description: "Photo showing scheduled time" },
-      { type: "message", content: "Provider confirmed 6 PM arrival", timestamp: "2024-03-10T08:00:00" },
-    ],
-    bookingAmount: 120000,
-    escrowAmount: 120000,
-    conversationHistory: [
-      { from: "customer", message: "The dancers were supposed to arrive at 6 PM but came at 8 PM", timestamp: "2024-03-10T20:30:00" },
-      { from: "provider", message: "We apologize for the delay due to traffic", timestamp: "2024-03-10T21:00:00" },
-      { from: "customer", message: "We missed important ceremony moments. We want a refund.", timestamp: "2024-03-10T21:15:00" },
-    ],
+  useEffect(() => {
+    axiosInstance
+      .get(`/api/v1/admin/disputes/${params.disputeId}`)
+      .then((res) => setDispute(res.data?.data ?? res.data))
+      .catch(() => toast.error("Failed to load dispute"))
+      .finally(() => setLoading(false))
+  }, [params.disputeId])
+
+  const handleResolve = async (resolutionType: string) => {
+    if (!resolutionNotes.trim()) {
+      toast.error("Please add resolution notes before finalizing")
+      return
+    }
+    setSubmitting(true)
+    try {
+      await axiosInstance.put(`/api/v1/admin/disputes/${params.disputeId}/resolve`, {
+        resolution_type: resolutionType,
+        resolution_notes: resolutionNotes,
+      })
+      toast.success("Dispute resolved — both parties will be notified.")
+      setTimeout(() => router.push("/admin/dashboard?tab=disputes"), 1500)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resolve dispute")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleResolve = (action: "full-refund" | "partial-refund" | "credit" | "re-service" | "reject") => {
-    const resolutionMap = {
-      "full-refund": { type: "Full Refund", amount: dispute.bookingAmount },
-      "partial-refund": { type: "Partial Refund", amount: Math.floor(dispute.bookingAmount * 0.3) },
-      credit: { type: "Service Credit", amount: dispute.bookingAmount },
-      "re-service": { type: "Re-service", amount: 0 },
-      reject: { type: "Dispute Rejected", amount: 0 },
+  const handleReject = async () => {
+    if (!resolutionNotes.trim()) {
+      toast.error("Please add a rejection reason")
+      return
     }
-
-    const res = resolutionMap[action]
-    setResolution({
-      type: res.type,
-      amount: res.amount.toString(),
-      notes: "",
-      status: action === "reject" ? "rejected" : "resolved",
-    })
-
-    alert(`Dispute ${action === "reject" ? "rejected" : "resolved"}! ${res.type}: ${res.amount.toLocaleString()} RWF`)
+    setSubmitting(true)
+    try {
+      await axiosInstance.put(`/api/v1/admin/disputes/${params.disputeId}/reject`, {
+        reason: resolutionNotes,
+      })
+      toast.success("Dispute rejected.")
+      setTimeout(() => router.push("/admin/dashboard?tab=disputes"), 1500)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reject dispute")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const getPriorityBadge = (priority: string) => {
@@ -96,11 +88,34 @@ export default function AdminDisputeResolutionPage({ params }: { params: { dispu
     }
     const c = config[status] || config.pending
     const Icon = c.icon
+    return <Badge variant={c.variant}><Icon className="w-3 h-3 mr-1" />{c.label}</Badge>
+  }
+
+  if (loading) {
     return (
-      <Badge variant={c.variant}>
-        <Icon className="w-3 h-3 mr-1" />
-        {c.label}
-      </Badge>
+      <div className="min-h-screen bg-[#f9fafc] p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!dispute) {
+    return (
+      <div className="min-h-screen bg-[#f9fafc] p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Dispute not found.</p>
+          <Link href="/admin/dashboard?tab=disputes"><Button variant="outline">Back to Disputes</Button></Link>
+        </div>
+      </div>
     )
   }
 
@@ -257,66 +272,42 @@ export default function AdminDisputeResolutionPage({ params }: { params: { dispu
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid gap-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleResolve("full-refund")}
-                  >
+                  <Button variant="outline" className="w-full justify-start" onClick={() => handleResolve("full-refund")} disabled={submitting}>
                     <DollarSign className="w-4 h-4 mr-2" />
-                    Full Refund ({dispute.bookingAmount.toLocaleString()} RWF)
+                    Full Refund ({(dispute.booking_amount ?? dispute.bookingAmount ?? 0).toLocaleString()} RWF)
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleResolve("partial-refund")}
-                  >
+                  <Button variant="outline" className="w-full justify-start" onClick={() => handleResolve("partial-refund")} disabled={submitting}>
                     <DollarSign className="w-4 h-4 mr-2" />
-                    Partial Refund (30% - {Math.floor(dispute.bookingAmount * 0.3).toLocaleString()} RWF)
+                    Partial Refund (30%)
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleResolve("credit")}
-                  >
+                  <Button variant="outline" className="w-full justify-start" onClick={() => handleResolve("credit")} disabled={submitting}>
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Service Credit
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleResolve("re-service")}
-                  >
+                  <Button variant="outline" className="w-full justify-start" onClick={() => handleResolve("re-service")} disabled={submitting}>
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Re-service / Replacement
                   </Button>
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-start"
-                    onClick={() => handleResolve("reject")}
-                  >
+                  <Button variant="destructive" className="w-full justify-start" onClick={handleReject} disabled={submitting}>
                     <XCircle className="w-4 h-4 mr-2" />
                     Reject Dispute
                   </Button>
                 </div>
-
-                {resolution.type && (
-                  <div className="mt-4 pt-4 border-t space-y-3">
-                    <div>
-                      <Label htmlFor="resolutionNotes">Resolution Notes</Label>
-                      <Textarea
-                        id="resolutionNotes"
-                        value={resolution.notes}
-                        onChange={(e) => setResolution({ ...resolution, notes: e.target.value })}
-                        placeholder="Add notes about the resolution decision..."
-                        rows={4}
-                      />
+                <div className="pt-3 border-t space-y-2">
+                  <Label>Resolution Notes (required)</Label>
+                  <Textarea
+                    value={resolutionNotes}
+                    onChange={(e) => setResolutionNotes(e.target.value)}
+                    placeholder="Explain the resolution decision..."
+                    rows={4}
+                  />
+                  {submitting && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing…
                     </div>
-                    <Button className="w-full" onClick={() => alert("Resolution finalized! (Integration pending)")}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Finalize Resolution
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </CardContent>
             </Card>
 

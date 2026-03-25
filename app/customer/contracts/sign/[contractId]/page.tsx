@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, CheckCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FileText, Download, CheckCircle, Loader2 } from "lucide-react";
+import { axiosInstance } from "@/lib/api-client";
+import { toast } from "sonner";
 import SignatureCanvas from "react-signature-canvas";
 
 export default function ContractSignPage() {
@@ -15,55 +18,57 @@ export default function ContractSignPage() {
   const sigPadRef = useRef<SignatureCanvas>(null);
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
+  const [contract, setContract] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock contract data - replace with API call
-  const contract = {
-    id: params.contractId,
-    title: "Wedding Photography Service Agreement",
-    provider: "Elite Photography Studio",
-    customer: "John & Jane Doe",
-    date: "2024-01-15",
-    content: `This Service Agreement is entered into between Elite Photography Studio ("Provider") and John & Jane Doe ("Client").
+  useEffect(() => {
+    axiosInstance
+      .get(`/api/v1/contracts/${params.contractId}`)
+      .then((res) => setContract(res.data))
+      .catch(() => toast.error("Failed to load contract"))
+      .finally(() => setLoading(false));
+  }, [params.contractId]);
 
-1. SERVICES
-Provider agrees to provide professional wedding photography services on June 15, 2024.
-
-2. DELIVERABLES
-- 8 hours of coverage
-- 500+ edited high-resolution photos
-- Online gallery access
-- Print rights
-
-3. PAYMENT TERMS
-Total: 1,500,000 RWF
-Deposit: 500,000 RWF (due upon signing)
-Balance: 1,000,000 RWF (due 7 days before event)
-
-4. CANCELLATION POLICY
-Cancellations made 30+ days before event: 50% refund
-Cancellations made 14-29 days: 25% refund
-Less than 14 days: No refund`,
-    status: "sent",
-    amount: 1500000,
-  };
-
-  const handleClear = () => {
-    sigPadRef.current?.clear();
-  };
+  const handleClear = () => sigPadRef.current?.clear();
 
   const handleSign = async () => {
-    if (!sigPadRef.current?.isEmpty() && agreed) {
+    if (!sigPadRef.current?.isEmpty() && agreed && contract) {
       setSigning(true);
-      const signatureData = sigPadRef.current.toDataURL();
-      
-      // TODO: Call API to sign contract
-      // await apiClient.customer.contracts.sign(contract.id, { signature_data: signatureData });
-      
-      setTimeout(() => {
+      try {
+        const signatureData = sigPadRef.current.toDataURL();
+        await axiosInstance.post(`/api/v1/contracts/${contract.id}/sign`, {
+          signature_data: signatureData,
+        });
+        toast.success("Contract signed successfully!");
         router.push("/customer/contracts?signed=true");
-      }, 1500);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to sign contract");
+      } finally {
+        setSigning(false);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (!contract) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl text-center">
+        <p className="text-muted-foreground">Contract not found.</p>
+        <Button className="mt-4" onClick={() => router.push("/customer/contracts")}>
+          Back to Contracts
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

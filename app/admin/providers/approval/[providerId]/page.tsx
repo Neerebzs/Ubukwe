@@ -1,64 +1,99 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, CheckCircle, XCircle, FileText, Eye, User, Building, Mail, Phone, MapPin } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowLeft, CheckCircle, XCircle, FileText, Eye, User, Building, Mail, Phone, MapPin, Loader2 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
-import { EmptyState } from "@/components/ui/empty-state"
+import { axiosInstance } from "@/lib/api-client"
+import { toast } from "sonner"
 
 export default function ProviderApprovalDetailPage({ params }: { params: { providerId: string } }) {
+  const router = useRouter()
+  const [application, setApplication] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [approvalDecision, setApprovalDecision] = useState<string>("")
+  const [adminNotes, setAdminNotes] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  // Mock provider application data
-  const application = {
-    id: params.providerId,
-    businessName: "Amahoro Dance Troupe",
-    businessType: "sole-proprietor",
-    fullName: "Marie Uwimana",
-    email: "contact@amahoro.rw",
-    phone: "+250788123456",
-    address: "KG 123 St, Kigali",
-    city: "Kigali",
-    country: "Rwanda",
-    yearsExperience: "6-10",
-    serviceCategories: ["Dance", "Music", "Entertainment"],
-    description:
-      "We are a professional traditional dance troupe with 8 years of experience performing at weddings and cultural events across Rwanda.",
-    submittedAt: "2024-03-12T10:30:00",
-    documents: {
-      idDocument: { name: "national_id.pdf", uploaded: true, verified: true },
-      businessLicense: { name: "business_license.pdf", uploaded: true, verified: true },
-      taxDocument: { name: "tax_registration.pdf", uploaded: true, verified: false },
-      portfolio: [
-        { name: "performance_1.jpg", uploaded: true },
-        { name: "performance_2.jpg", uploaded: true },
-        { name: "performance_3.jpg", uploaded: true },
-        { name: "certificate.pdf", uploaded: true },
-      ],
-    },
-    references: [
-      { name: "Jean Baptiste", phone: "+250788111222", relationship: "Previous Client" },
-      { name: "Grace Mukamana", phone: "+250788333444", relationship: "Previous Client" },
-    ],
+  useEffect(() => {
+    axiosInstance
+      .get(`/api/v1/admin/onboarding/${params.providerId}`)
+      .then((res) => setApplication(res.data?.data ?? res.data))
+      .catch(() => toast.error("Failed to load application"))
+      .finally(() => setLoading(false))
+  }, [params.providerId])
+
+  const handleApprove = async () => {
+    setSubmitting(true)
+    try {
+      await axiosInstance.post(`/api/v1/admin/onboarding/${params.providerId}/approve`, {
+        admin_notes: adminNotes,
+      })
+      setApprovalDecision("approved")
+      toast.success("Provider approved — they will be notified by email.")
+      setTimeout(() => router.push("/admin/dashboard?tab=providers"), 1500)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to approve provider")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleApprove = () => {
-    setApprovalDecision("approved")
-    alert("Provider approved! They will receive an email notification. (Integration pending)")
+  const handleReject = async () => {
+    if (!adminNotes.trim()) {
+      toast.error("Please provide a rejection reason")
+      return
+    }
+    setSubmitting(true)
+    try {
+      await axiosInstance.post(`/api/v1/admin/onboarding/${params.providerId}/reject`, {
+        rejection_reason: adminNotes,
+      })
+      setApprovalDecision("rejected")
+      toast.success("Application rejected — provider will be notified.")
+      setTimeout(() => router.push("/admin/dashboard?tab=providers"), 1500)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reject application")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleReject = (reason: string) => {
-    setApprovalDecision("rejected")
-    alert(`Provider rejected. Reason: ${reason} (Integration pending)`)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f9fafc] p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  const allDocumentsVerified = Object.values(application.documents)
-    .flat()
-    .every((doc: any) => doc.verified !== false)
+  if (!application) {
+    return (
+      <div className="min-h-screen bg-[#f9fafc] p-6 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">Application not found.</p>
+          <Link href="/admin/dashboard?tab=providers">
+            <Button variant="outline">Back to Providers</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f9fafc] p-6">
@@ -277,36 +312,26 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Button className="w-full" onClick={handleApprove} disabled={!allDocumentsVerified}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                  <Button className="w-full" onClick={handleApprove} disabled={submitting}>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                     Approve Provider
                   </Button>
-                  <Button variant="destructive" className="w-full" onClick={() => handleReject("Documents incomplete")}>
-                    <XCircle className="w-4 h-4 mr-2" />
+                  <Button variant="destructive" className="w-full" onClick={handleReject} disabled={submitting}>
+                    {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
                     Reject Application
                   </Button>
                 </div>
 
-                {!allDocumentsVerified && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-sm text-yellow-900">
-                      <strong>Note:</strong> Some documents are pending verification. Review before approving.
-                    </p>
-                  </div>
-                )}
-
-                {approvalDecision && (
-                  <div
-                    className={`p-3 rounded-lg ${approvalDecision === "approved"
-                        ? "bg-green-50 border border-green-200 text-green-900"
-                        : "bg-red-50 border border-red-200 text-red-900"
-                      }`}
-                  >
-                    <p className="text-sm font-medium">
-                      Decision: {approvalDecision === "approved" ? "Approved" : "Rejected"}
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <label className="text-sm font-medium">Notes / Reason</label>
+                  <Textarea
+                    className="mt-1"
+                    placeholder="Add approval notes or rejection reason..."
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
               </CardContent>
             </Card>
 
