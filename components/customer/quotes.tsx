@@ -218,7 +218,7 @@ export function CustomerQuotes() {
                   <div className="flex flex-col gap-3 w-full">
                     <Button
                       onClick={() => router.push(`/customer/dashboard?tab=quotes&quoteId=${quote.id}`, { scroll: false })}
-                      className="h-12 rounded-2xl bg-[#668c65] text-white hover:bg-sage-700 text-[10px] font-bold uppercase tracking-widest"
+                      className="h-12 rounded-2xl text-white text-[10px] font-bold uppercase tracking-widest"
                     >
                       View Details
                     </Button>

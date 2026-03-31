@@ -208,7 +208,7 @@ export function Overview({
                   onClick={handleEditClick}
                   className={`rounded-2xl px-8 h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 ${isDetailsSet
                     ? "border-sage-100 text-sage-700 hover:bg-sage-50 hover:border-sage-200"
-                    : "bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-600/20"
+                    : "shadow-lg"
                     }`}
                 >
                   <Edit2 className="h-4 w-4 mr-2" />
@@ -283,7 +283,7 @@ export function Overview({
                   <Button
                     onClick={handleSave}
                     disabled={saveMutation.isPending}
-                    className="flex-1 bg-sage-600 hover:bg-sage-700 text-white rounded-2xl h-12 font-bold uppercase tracking-widest transition-all shadow-lg shadow-sage-600/20"
+                    className="flex-1 text-white rounded-2xl h-12 font-bold uppercase tracking-widest transition-all shadow-lg px-6"
                   >
                     {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                     Preserve Details

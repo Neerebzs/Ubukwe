@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Calendar, Search, MessageCircle, User, DollarSign, BookOpen } from "lucide-react";
+import { Home, Calendar, Search, MessageCircle, User, DollarSign, BookOpen, Sparkles } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -18,8 +18,8 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
   const customerNavItems = [
     { id: "overview", label: "Home", icon: Home, path: "/customer/dashboard?tab=overview" },
     { id: "planning", label: "Tasks", icon: Calendar, path: "/customer/dashboard?tab=planning" },
+    { id: "ai-assistant", label: "AI", icon: Sparkles, path: "/customer/dashboard?tab=ai-assistant" },
     { id: "vendors", label: "Vendors", icon: Search, path: "/customer/dashboard?tab=vendors" },
-    { id: "budget", label: "Budget", icon: DollarSign, path: "/customer/dashboard?tab=budget" },
     { id: "messages", label: "Messages", icon: MessageCircle, path: "/customer/dashboard?tab=messages" },
   ];
 

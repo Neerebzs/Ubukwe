@@ -141,7 +141,7 @@ export function CustomerContractsView() {
                     {c.status !== "signed" && (
                       <Button
                         onClick={() => handleViewSign(c.id)}
-                        className="h-14 px-8 rounded-2xl bg-[#668c65] text-white hover:bg-sage-700 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-sage-200"
+                        className="h-14 px-8 rounded-2xl text-white text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-xl"
                       >
                         Authorize Agreement
                         <ChevronRight className="w-3.5 h-3.5 ml-2" />

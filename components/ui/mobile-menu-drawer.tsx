@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, ChevronRight, Home, CheckCircle, Star, BookOpen, DollarSign, MessageCircle, Users, Heart, FileText, ShieldAlert, LogOut } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, Home, CheckCircle, Star, BookOpen, DollarSign, MessageCircle, Users, Heart, FileText, ShieldAlert, LogOut, Sparkles } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
 import {
@@ -56,6 +56,7 @@ export function MobileMenuDrawer({
       items: [
         { id: "planning", label: "Planning & Timeline", icon: CheckCircle },
         { id: "budget", label: "Budget", icon: DollarSign },
+        { id: "ai-assistant", label: "AI Assistant", icon: Sparkles },
         { id: "guests", label: "Guest Management", icon: Users },
       ]
     },

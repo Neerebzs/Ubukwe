@@ -303,7 +303,7 @@ export function GuestManagement() {
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
-          <Button onClick={() => setShowAddGuest(true)} className="rounded-full bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200 px-8 transition-all hover:scale-105">
+          <Button onClick={() => setShowAddGuest(true)} className="rounded-full text-white shadow-lg px-8 transition-all hover:scale-105">
             <Plus className="w-4 h-4 mr-2" />
             Add Guest
           </Button>
@@ -510,7 +510,7 @@ export function GuestManagement() {
                 }}>
                 Cancel
               </Button>
-              <Button onClick={handleAddGuest} className="rounded-2xl px-8 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-500/20">
+              <Button onClick={handleAddGuest} className="rounded-2xl px-8 text-white shadow-lg">
                 Register Guest
               </Button>
             </div>
@@ -768,7 +768,7 @@ export function GuestManagement() {
               <Button variant="ghost" onClick={() => setIsEditOpen(false)} className="rounded-2xl px-6 text-slate-500 hover:bg-slate-50">
                 Cancel
               </Button>
-              <Button onClick={handleSaveEdit} className="rounded-2xl px-8 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-500/20">
+              <Button onClick={handleSaveEdit} className="rounded-2xl px-8 text-white shadow-lg">
                 Save Changes
               </Button>
             </div>

@@ -9,77 +9,44 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { ProviderService, GalleryItem } from "@/lib/api"
 
 interface VendorDetailViewProps {
-  vendor: {
-    id: number
-    name: string
-    category: string
-    location: string
-    rating: number
-    reviews: number
-    priceRange: string
-    description: string
-    image: string
-    specialties: string[]
-    availability: string
-    verified: boolean
-  }
-  bookedDates: string[]
+  vendor: ProviderService
   onClose: () => void
 }
 
-export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailViewProps) {
+export function VendorDetailView({ vendor, onClose }: VendorDetailViewProps) {
   const router = useRouter()
   const [selectedImage, setSelectedImage] = useState(0)
 
-  // Mock data
-  const gallery = [
-    { type: "image", url: vendor.image || "/placeholder.svg", thumbnail: vendor.image || "/placeholder.svg" },
-    { type: "image", url: "/vendors/sample-1.jpg", thumbnail: "/vendors/sample-1.jpg" },
-    { type: "image", url: "/vendors/sample-2.jpg", thumbnail: "/vendors/sample-2.jpg" },
-    { type: "image", url: "/vendors/sample-3.jpg", thumbnail: "/vendors/sample-3.jpg" },
-    { type: "video", url: "/vendors/video-1.mp4", thumbnail: "/vendors/video-thumb.jpg" },
-  ]
+  // Build gallery from real service data
+  const gallery: { type: string; url: string; thumbnail: string }[] = (vendor.gallery || []).map((item) => {
+    if (typeof item === "string") return { type: "image", url: item, thumbnail: item };
+    return { type: item.type === "video" ? "video" : "image", url: item.url, thumbnail: item.thumbnail || item.url };
+  });
+  if (gallery.length === 0) gallery.push({ type: "image", url: "/placeholder.svg", thumbnail: "/placeholder.svg" });
 
-  const reviews = [
-    {
-      id: 1,
-      user: "Marie Uwimana",
-      avatar: "",
-      rating: 5,
-      comment: "Amazing performance! Our guests loved it. The dancers were professional and on time.",
-      date: "2024-02-15",
-    },
-    {
-      id: 2,
-      user: "Jean Baptiste",
-      avatar: "",
-      rating: 4,
-      comment: "Very professional and on time. The cultural performance was authentic and beautiful.",
-      date: "2024-02-10",
-    },
-    {
-      id: 3,
-      user: "Grace Mukamana",
-      avatar: "",
-      rating: 5,
-      comment: "Outstanding service! Made our wedding day special with their amazing performance.",
-      date: "2024-01-28",
-    },
-  ]
+  const bookedDates: string[] = [];
+
+  const reviews: { id: number; user: string; avatar: string; rating: number; comment: string; date: string }[] = [];
 
   const handleBookNow = () => {
     router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}`, { scroll: false })
   }
 
   const handleContactVendor = () => {
-    // In real app, this would create an inquiry and open messages tab
-    // For now, navigate to messages tab with vendor ID
     router.push(`/customer/dashboard?tab=messages&vendorId=${vendor.id}`, { scroll: false })
-    // Close modal so user sees messages
     onClose()
   }
+
+  const priceRange = vendor.price_range_min && vendor.price_range_max
+    ? `${vendor.price_range_min.toLocaleString()} - ${vendor.price_range_max.toLocaleString()} RWF`
+    : vendor.price_range_min
+    ? `From ${vendor.price_range_min.toLocaleString()} RWF`
+    : "Contact for price";
+
+  const isVerified = vendor.status === "approved" || vendor.status === "active";
 
   // Generate calendar dates for next 3 months
   const generateCalendarDays = () => {
@@ -159,19 +126,19 @@ export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailV
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={vendor.image || "/placeholder.svg"} />
-                <AvatarFallback>{vendor.name.substring(0, 2)}</AvatarFallback>
+                <AvatarImage src={gallery[0]?.url || "/placeholder.svg"} />
+                <AvatarFallback>{(vendor.business_name || vendor.name).substring(0, 2)}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-2xl">{vendor.name}</CardTitle>
-                  {vendor.verified && (
+                  <CardTitle className="text-2xl">{vendor.business_name || vendor.name}</CardTitle>
+                  {isVerified && (
                     <Badge variant="default" className="text-xs">Verified</Badge>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                   <MapPin className="h-4 w-4" />
-                  {vendor.location} • {vendor.category}
+                  {vendor.location || "Rwanda"} • {vendor.category}
                 </p>
               </div>
             </div>
@@ -197,6 +164,8 @@ export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailV
                   <Play className="h-16 w-16 text-white" />
                   <span className="ml-2 text-white font-medium">Video Preview</span>
                 </div>
+              ) : gallery[selectedImage]?.url && gallery[selectedImage].url !== "/placeholder.svg" ? (
+                <img src={gallery[selectedImage].url} alt={vendor.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
                   <ImageIcon className="h-20 w-20 text-primary/50" />
@@ -217,6 +186,8 @@ export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailV
                       <div className="w-full h-full bg-black/50 flex items-center justify-center">
                         <Play className="h-6 w-6 text-white" />
                       </div>
+                    ) : item.thumbnail && item.thumbnail !== "/placeholder.svg" ? (
+                      <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
                         <ImageIcon className="h-8 w-8 text-primary/50" />
@@ -244,13 +215,13 @@ export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailV
                     />
                   ))}
                 </div>
-                <span className="font-semibold">{vendor.rating}</span>
-                <span className="text-sm text-muted-foreground">({vendor.reviews} reviews)</span>
+                <span className="font-semibold">{vendor.rating?.toFixed(1) || "0.0"}</span>
+                <span className="text-sm text-muted-foreground">({vendor.bookings_count} bookings)</span>
               </div>
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Price Range</p>
-              <p className="text-lg font-bold">{vendor.priceRange}</p>
+              <p className="text-lg font-bold">{priceRange}</p>
             </div>
           </div>
 
@@ -265,156 +236,164 @@ export function VendorDetailView({ vendor, bookedDates, onClose }: VendorDetailV
             </TabsList>
 
             <TabsContent value="packages" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2 text-lg">Choose Your Package</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Select the package that best fits your wedding needs
-                  </p>
-                </div>
-                <div className="grid md:grid-cols-3 gap-4">
-                  {packages.map((pkg) => (
-                    <Card
-                      key={pkg.id}
-                      className={`relative ${
-                        pkg.popular ? "border-primary border-2 shadow-lg" : ""
-                      }`}
-                    >
-                      {pkg.popular && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <Badge variant="default" className="text-xs">Most Popular</Badge>
-                        </div>
-                      )}
-                      <CardHeader>
-                        <CardTitle className="text-lg">{pkg.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{pkg.description}</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
+              {vendor.packages && Array.isArray(vendor.packages) && vendor.packages.length > 0 ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2 text-lg">Choose Your Package</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Select the package that best fits your needs</p>
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {vendor.packages.map((pkg: any, idx: number) => (
+                      <Card key={pkg.id || idx} className={`relative ${pkg.popular ? "border-primary border-2 shadow-lg" : ""}`}>
+                        {pkg.popular && (
+                          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                            <Badge variant="default" className="text-xs">Most Popular</Badge>
+                          </div>
+                        )}
+                        <CardHeader>
+                          <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                          {pkg.description && <p className="text-sm text-muted-foreground">{pkg.description}</p>}
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-bold">{pkg.price.toLocaleString()}</span>
+                            <span className="text-3xl font-bold">{Number(pkg.price || 0).toLocaleString()}</span>
                             <span className="text-sm text-muted-foreground">RWF</span>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">Duration: {pkg.duration}</p>
-                        </div>
-                        <div className="border-t my-4"></div>
-                        <ul className="space-y-2">
-                          {pkg.features.map((feature, index) => (
-                            <li key={index} className="flex items-start gap-2 text-sm">
-                              <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <Button
-                          className="w-full mt-4"
-                          variant={pkg.popular ? "default" : "outline"}
-                          onClick={() => {
-                            router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}&packageId=${pkg.id}`, { scroll: false })
-                          }}
-                        >
-                          Select Package
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {pkg.duration && <p className="text-sm text-muted-foreground">Duration: {pkg.duration}</p>}
+                          {pkg.features && Array.isArray(pkg.features) && (
+                            <>
+                              <div className="border-t my-4"></div>
+                              <ul className="space-y-2">
+                                {pkg.features.map((feature: string, i: number) => (
+                                  <li key={i} className="flex items-start gap-2 text-sm">
+                                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    <span>{feature}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          )}
+                          <Button
+                            className="w-full mt-4"
+                            variant={pkg.popular ? "default" : "outline"}
+                            onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}&packageId=${pkg.id || idx}`, { scroll: false })}
+                          >
+                            Select Package
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Note:</strong> All packages include standard setup and breakdown. Additional services
-                    such as extended hours, extra dancers, or custom requests can be discussed during booking.
-                  </p>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No packages defined. Contact the provider for pricing details.</p>
+                  <Button className="mt-4" onClick={handleBookNow}>Book Now</Button>
                 </div>
-              </div>
+              )}
             </TabsContent>
 
             <TabsContent value="about" className="space-y-4 mt-4">
               <div>
                 <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground">{vendor.description}</p>
+                <p className="text-sm text-muted-foreground">{vendor.description || "No description provided."}</p>
               </div>
-              <div>
-                <h3 className="font-semibold mb-2">Specialties</h3>
-                <div className="flex flex-wrap gap-2">
-                  {vendor.specialties.map((specialty, index) => (
-                    <Badge key={index} variant="secondary">
-                      {specialty}
-                    </Badge>
-                  ))}
+              {vendor.specialties && vendor.specialties.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-2">Specialties</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {vendor.specialties.map((specialty, index) => (
+                      <Badge key={index} variant="secondary">{specialty}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <div>
                 <h3 className="font-semibold mb-2">Contact Information</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>+250 788 123 456</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>contact@{vendor.name.toLowerCase().replace(/\s+/g, "")}.rw</span>
-                  </div>
+                  {vendor.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{vendor.phone}</span>
+                    </div>
+                  )}
+                  {vendor.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span>{vendor.email}</span>
+                    </div>
+                  )}
+                  {vendor.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{[vendor.address, vendor.city, vendor.country].filter(Boolean).join(", ")}</span>
+                    </div>
+                  )}
+                  {!vendor.phone && !vendor.email && !vendor.address && (
+                    <p className="text-muted-foreground">Contact details not available.</p>
+                  )}
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="gallery" className="space-y-4 mt-4">
-              <div className="grid grid-cols-3 gap-4">
-                {gallery.map((item, index) => (
-                  <div
-                    key={index}
-                    className="aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    {item.type === "video" ? (
-                      <div className="w-full h-full bg-black/50 flex items-center justify-center">
-                        <Play className="h-12 w-12 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-primary/50" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {gallery.length > 0 ? (
+                <div className="grid grid-cols-3 gap-4">
+                  {gallery.map((item, index) => (
+                    <div
+                      key={index}
+                      className="aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setSelectedImage(index)}
+                    >
+                      {item.type === "video" ? (
+                        <div className="w-full h-full bg-black/50 flex items-center justify-center">
+                          <Play className="h-12 w-12 text-white" />
+                        </div>
+                      ) : item.url && item.url !== "/placeholder.svg" ? (
+                        <img src={item.url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                          <ImageIcon className="h-12 w-12 text-primary/50" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No gallery images available.</div>
+              )}
             </TabsContent>
 
             <TabsContent value="reviews" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <Card key={review.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>{review.user.substring(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium">{review.user}</div>
-                            <div className="flex">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${
-                                    i < review.rating
-                                      ? "text-yellow-400 fill-current"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
+              {reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <Card key={review.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{review.user.substring(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium">{review.user}</div>
+                              <div className="flex">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={`h-4 w-4 ${i < review.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                                ))}
+                              </div>
                             </div>
+                            <p className="text-sm text-muted-foreground">{review.comment}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground">{review.comment}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(review.date).toLocaleDateString()}
-                          </p>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">No reviews yet.</div>
+              )}
             </TabsContent>
 
             <TabsContent value="availability" className="space-y-4 mt-4">

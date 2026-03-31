@@ -29,6 +29,7 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { CustomerBookingWizard } from "@/components/customer/booking-wizard";
 import { CustomerContractSign } from "@/components/customer/contract-sign";
 import { WeddingTasks } from "@/components/customer/wedding-tasks";
+import { AIAssistantDashboard } from "@/components/customer/ai-assistant-dashboard";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
 import { Loader2 } from "lucide-react";
@@ -48,6 +49,10 @@ function CustomerDashboardContent() {
     queryFn: async () => {
       try {
         const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
+        // Store weddingId for AI assistant page
+        if (response.data?.id) {
+          localStorage.setItem('weddingId', response.data.id);
+        }
         return response.data;
       } catch (err: any) {
         if (err.message.includes("404")) return null;
@@ -138,6 +143,11 @@ function CustomerDashboardContent() {
 
       case "planning":
         return <WeddingTasks />;
+
+      case "ai-assistant":
+        return currentWedding?.id
+          ? <AIAssistantDashboard weddingId={currentWedding.id} onNavigate={handleTabChange} />
+          : <div className="flex items-center justify-center py-20 text-slate-400">Set up your wedding details first to use the AI assistant.</div>;
 
       case "guests":
         return <GuestManagement />;

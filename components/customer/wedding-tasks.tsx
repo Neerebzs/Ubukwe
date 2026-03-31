@@ -42,8 +42,18 @@ import {
     Package,
     ArrowRightCircle,
     Pencil,
-    Eye
+    Eye,
+    Sparkles,
+    ChevronDown,
+    ChevronUp,
+    RefreshCw,
+    X,
+    TrendingUp,
+    DollarSign,
+    ShoppingBag,
+    Clock3
 } from "lucide-react";
+import { aiAssistantAPI } from "@/lib/api/ai-assistant";
 
 
 
@@ -64,6 +74,155 @@ const PRIORITY_OPTIONS = [
     { value: "medium", label: "Medium Priority", color: "bg-amber-100 text-amber-800" },
     { value: "high", label: "High Priority", color: "bg-rose-100 text-rose-800" }
 ];
+
+// ─── AI Suggestions Panel ────────────────────────────────────────────────────
+
+const SUGGESTION_ICONS: Record<string, React.ReactNode> = {
+    timeline_risk: <Clock3 className="h-4 w-4" />,
+    task_priority: <TrendingUp className="h-4 w-4" />,
+    budget_alert: <DollarSign className="h-4 w-4" />,
+    vendor_booking: <ShoppingBag className="h-4 w-4" />,
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+    urgent: "bg-rose-50 border-rose-200 text-rose-700",
+    high:   "bg-amber-50 border-amber-200 text-amber-700",
+    medium: "bg-blue-50 border-blue-200 text-blue-700",
+    low:    "bg-slate-50 border-slate-200 text-slate-600",
+};
+
+function AISuggestionsPanel({ weddingId }: { weddingId: string }) {
+    const queryClient = useQueryClient();
+    const [open, setOpen] = useState(true);
+    const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+    const { data, isLoading, refetch, isFetching } = useQuery({
+        queryKey: ["ai-suggestions", weddingId],
+        queryFn: () => aiAssistantAPI.getActiveSuggestions(weddingId, 5),
+        staleTime: 1000 * 60 * 5,
+        enabled: !!weddingId,
+    });
+
+    const generateMutation = useMutation({
+        mutationFn: () => aiAssistantAPI.generateSuggestions(weddingId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ai-suggestions", weddingId] });
+            toast.success("AI suggestions refreshed");
+        },
+        onError: () => toast.error("Failed to generate suggestions"),
+    });
+
+    const respondMutation = useMutation({
+        mutationFn: ({ id, response }: { id: string; response: string }) =>
+            aiAssistantAPI.respondToSuggestion(id, response as any),
+        onSuccess: (_, { id }) => {
+            setDismissed((prev) => new Set([...prev, id]));
+            queryClient.invalidateQueries({ queryKey: ["ai-suggestions", weddingId] });
+        },
+    });
+
+    const suggestions = (data?.data ?? []).filter((s: any) => !dismissed.has(s.id));
+
+    return (
+        <Card className="border-none shadow-md rounded-2xl overflow-hidden">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center justify-between p-5 bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-xl">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                        <p className="font-bold text-slate-800 text-sm">AI Planning Suggestions</p>
+                        <p className="text-xs text-slate-400">
+                            {suggestions.length > 0
+                                ? `${suggestions.length} active suggestion${suggestions.length !== 1 ? "s" : ""}`
+                                : "No active suggestions"}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={(e) => { e.stopPropagation(); generateMutation.mutate(); }}
+                        disabled={generateMutation.isPending || isFetching}
+                    >
+                        <RefreshCw className={`h-3.5 w-3.5 ${generateMutation.isPending || isFetching ? "animate-spin" : ""}`} />
+                    </Button>
+                    {open ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                </div>
+            </button>
+
+            {open && (
+                <CardContent className="p-4 space-y-3">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm">Loading suggestions...</span>
+                        </div>
+                    ) : suggestions.length === 0 ? (
+                        <div className="text-center py-8 space-y-2">
+                            <CheckCircle className="h-8 w-8 text-emerald-300 mx-auto" />
+                            <p className="text-sm text-slate-500">All caught up! No active suggestions.</p>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full text-xs"
+                                onClick={() => generateMutation.mutate()}
+                                disabled={generateMutation.isPending}
+                            >
+                                <Sparkles className="h-3 w-3 mr-1.5" />
+                                Generate New
+                            </Button>
+                        </div>
+                    ) : (
+                        suggestions.map((s: any) => (
+                            <div
+                                key={s.id}
+                                className={`p-4 rounded-xl border space-y-2 ${PRIORITY_COLORS[s.priority] ?? PRIORITY_COLORS.low}`}
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        {SUGGESTION_ICONS[s.suggestion_type]}
+                                        <p className="font-semibold text-sm truncate">{s.title}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                                            {s.priority}
+                                        </span>
+                                        <button
+                                            onClick={() => respondMutation.mutate({ id: s.id, response: "dismissed" })}
+                                            className="opacity-50 hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <p className="text-xs leading-relaxed opacity-80">{s.message}</p>
+                                {s.suggested_actions?.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {s.suggested_actions.slice(0, 2).map((action: any) => (
+                                            <button
+                                                key={action.action}
+                                                onClick={() => respondMutation.mutate({ id: s.id, response: "accepted" })}
+                                                className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/60 hover:bg-white/90 border border-current/20 transition-all"
+                                            >
+                                                {action.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </CardContent>
+            )}
+        </Card>
+    );
+}
 
 export function WeddingTasks() {
     const router = useRouter();
@@ -352,7 +511,7 @@ export function WeddingTasks() {
                     </p>
                     <Button
                         onClick={() => router.push('/customer/dashboard?tab=overview')}
-                        className="rounded-full px-8 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200"
+                        className="rounded-full px-8 text-white shadow-lg shadow-sage-200"
                     >
                         <Heart className="h-4 w-4 mr-2" />
                         Set Up Wedding Details
@@ -438,7 +597,7 @@ export function WeddingTasks() {
                 </div>
                 <Button
                     onClick={() => setIsAddDialogOpen(true)}
-                    className="rounded-full px-6 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-100 self-start md:self-auto"
+                    className="rounded-full px-6 text-white shadow-lg shadow-sage-100 self-start md:self-auto"
                 >
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Task
@@ -488,8 +647,12 @@ export function WeddingTasks() {
                 </CardContent>
             </Card>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-                <div className="flex flex-col gap-4">
+            {/* AI Suggestions Panel */}
+            {weddingResponse?.id && (
+                <AISuggestionsPanel weddingId={weddingResponse.id} />
+            )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">                <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 rounded-full w-fit">
                         <TabsList className="bg-transparent h-9 gap-1">
                             <TabsTrigger value="all" className="rounded-full data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm px-6 text-xs font-bold uppercase tracking-wider">All ({totalCount})</TabsTrigger>
@@ -1012,7 +1175,7 @@ export function WeddingTasks() {
                             <Button
                                 onClick={handleCreate}
                                 disabled={createMutation.isPending || updateMutation.isPending}
-                                className="bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200 px-8 transition-all hover:scale-[1.02] active:scale-[0.98] rounded-full font-semibold"
+                                className="bg-primary hover:bg-primary/90 text-white shadow-lg px-8 transition-all hover:scale-[1.02] active:scale-[0.98] rounded-full font-semibold"
                             >
                                 {createMutation.isPending || updateMutation.isPending ? (
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

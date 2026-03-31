@@ -5,25 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Search, Filter, MapPin, Phone, MessageCircle, Heart, Calendar, Users, Eye, Image as ImageIcon } from "lucide-react";
+import { Star, Search, MapPin, Heart, Eye, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient, API_ENDPOINTS, ProviderService, ServiceCategory } from "@/lib/api";
 import { VendorDetailView } from "./vendor-detail-view";
-
-interface Vendor {
-  id: number;
-  name: string;
-  category: string;
-  location: string;
-  rating: number;
-  reviews: number;
-  priceRange: string;
-  description: string;
-  image: string;
-  specialties: string[];
-  availability: string;
-  verified: boolean;
-}
+import { VendorRecommendations } from "./vendor-recommendations";
 
 export function VendorMarketplace() {
   const router = useRouter();
@@ -31,340 +19,278 @@ export function VendorMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [sortBy, setSortBy] = useState("rating");
-  const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<"browse" | "ai">("browse");
 
-  const vendors: Vendor[] = [
-    {
-      id: 1,
-      name: "Intore Cultural Group",
-      category: "Entertainment",
-      location: "Kigali",
-      rating: 4.9,
-      reviews: 127,
-      priceRange: "120,000 - 200,000 RWF",
-      description: "Professional traditional Rwandan dancers specializing in Intore and cultural performances for weddings.",
-      image: "/vendors/intore-group.jpg",
-      specialties: ["Intore Dance", "Cultural Music", "Traditional Costumes"],
-      availability: "Available",
-      verified: true,
+  const { data: services = [], isLoading, error } = useQuery({
+    queryKey: ["vendor-marketplace-services", selectedCategory],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all") params.append("category", selectedCategory);
+      const url = `${API_ENDPOINTS.SERVICES.SEARCH}${params.toString() ? `?${params.toString()}` : ""}`;
+      const response = await apiClient.get<ProviderService[]>(url);
+      return response.data || [];
     },
-    {
-      id: 2,
-      name: "Kigali Serena Hotel",
-      category: "Venue",
-      location: "Kigali",
-      rating: 4.8,
-      reviews: 89,
-      priceRange: "800,000 - 1,500,000 RWF",
-      description: "Luxury hotel venue with traditional Rwandan architecture and modern amenities.",
-      image: "/vendors/serena-hotel.jpg",
-      specialties: ["Indoor Venues", "Outdoor Gardens", "Catering"],
-      availability: "Available",
-      verified: true,
-    },
-    {
-      id: 3,
-      name: "Rwandan Delights Catering",
-      category: "Food",
-      location: "Kigali",
-      rating: 4.7,
-      reviews: 156,
-      priceRange: "150,000 - 300,000 RWF",
-      description: "Authentic Rwandan cuisine with traditional recipes and modern presentation.",
-      image: "/vendors/rwandan-delights.jpg",
-      specialties: ["Traditional Cuisine", "Wedding Cakes", "Dietary Options"],
-      availability: "Available",
-      verified: true,
-    },
-    {
-      id: 4,
-      name: "Heritage Decorations",
-      category: "Decor",
-      location: "Butare",
-      rating: 4.6,
-      reviews: 78,
-      priceRange: "200,000 - 400,000 RWF",
-      description: "Traditional Rwandan decorations with cultural patterns and modern floral arrangements.",
-      image: "/vendors/heritage-decor.jpg",
-      specialties: ["Traditional Patterns", "Floral Arrangements", "Venue Transformation"],
-      availability: "Limited",
-      verified: true,
-    },
-    {
-      id: 5,
-      name: "Emmanuel MC Services",
-      category: "Entertainment",
-      location: "Kigali",
-      rating: 4.8,
-      reviews: 94,
-      priceRange: "80,000 - 120,000 RWF",
-      description: "Bilingual MC specializing in Rwandan wedding ceremonies and cultural traditions.",
-      image: "/vendors/emmanuel-mc.jpg",
-      specialties: ["Bilingual Hosting", "Cultural Expertise", "Event Coordination"],
-      availability: "Available",
-      verified: true,
-    },
-    {
-      id: 6,
-      name: "Kinyarwanda Music Ensemble",
-      category: "Entertainment",
-      location: "Gisenyi",
-      rating: 4.9,
-      reviews: 67,
-      priceRange: "100,000 - 180,000 RWF",
-      description: "Traditional Rwandan musicians playing authentic instruments for wedding ceremonies.",
-      image: "/vendors/kinyarwanda-music.jpg",
-      specialties: ["Traditional Instruments", "Live Performances", "Cultural Music"],
-      availability: "Available",
-      verified: true,
-    },
-  ];
-
-  const vendorIdToBookedDates: Record<number, string[]> = {
-    1: ["2024-03-20", "2024-03-25"],
-    2: ["2024-03-22"],
-    3: ["2024-03-21", "2024-03-28"],
-    4: [],
-    5: ["2024-03-20"],
-    6: ["2024-03-25"],
-  };
-
-  const categories = [
-    "all", "Entertainment", "Venue", "Food", "Decor", "Photography", "Transportation", "Beauty"
-  ];
-
-  const locations = [
-    "all", "Kigali", "Butare", "Gisenyi", "Musanze", "Huye", "Rwamagana"
-  ];
-
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === "all" || vendor.category === selectedCategory;
-    const matchesLocation = selectedLocation === "all" || vendor.location === selectedLocation;
-    
-    return matchesSearch && matchesCategory && matchesLocation;
   });
 
-  const sortedVendors = [...filteredVendors].sort((a, b) => {
+  const { data: categories = [] } = useQuery({
+    queryKey: ["public-categories"],
+    queryFn: async () => {
+      const response = await apiClient.categories.getAll<ServiceCategory[]>();
+      return response.data || [];
+    },
+  });
+
+  // Derive unique locations from fetched services
+  const locations = ["all", ...Array.from(new Set(services.map((s) => s.location).filter(Boolean) as string[]))];
+
+  const filteredServices = services.filter((s) => {
+    const matchesSearch =
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.specialties?.some((sp) => sp.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesLocation = selectedLocation === "all" || s.location === selectedLocation;
+    return matchesSearch && matchesLocation;
+  });
+
+  const sortedServices = [...filteredServices].sort((a, b) => {
     switch (sortBy) {
-      case "rating":
-        return b.rating - a.rating;
-      case "price-low":
-        return parseInt(a.priceRange.split(" - ")[0].replace(/,/g, "")) - parseInt(b.priceRange.split(" - ")[0].replace(/,/g, ""));
-      case "price-high":
-        return parseInt(b.priceRange.split(" - ")[0].replace(/,/g, "")) - parseInt(a.priceRange.split(" - ")[0].replace(/,/g, ""));
-      case "reviews":
-        return b.reviews - a.reviews;
-      default:
-        return 0;
+      case "rating": return b.rating - a.rating;
+      case "price-low": return (a.price_range_min || 0) - (b.price_range_min || 0);
+      case "price-high": return (b.price_range_min || 0) - (a.price_range_min || 0);
+      case "reviews": return b.bookings_count - a.bookings_count;
+      default: return 0;
     }
   });
 
-  const getAvailabilityColor = (availability: string) => {
-    switch (availability) {
-      case "Available": return "default";
-      case "Limited": return "secondary";
-      case "Unavailable": return "destructive";
-      default: return "secondary";
-    }
+  const getThumbnail = (service: ProviderService) => {
+    const first = service.gallery?.[0];
+    if (!first) return null;
+    return typeof first === "string" ? first : first.url;
   };
+
+  const getPriceRange = (service: ProviderService) => {
+    if (service.price_range_min && service.price_range_max)
+      return `${service.price_range_min.toLocaleString()} - ${service.price_range_max.toLocaleString()} RWF`;
+    if (service.price_range_min)
+      return `From ${service.price_range_min.toLocaleString()} RWF`;
+    return "Contact for price";
+  };
+
+  const selectedService = selectedVendorId ? services.find((s) => s.id === selectedVendorId) : null;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold">Find Wedding Vendors</h2>
           <p className="text-muted-foreground">Discover trusted Rwandan wedding service providers</p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          {sortedVendors.length} vendors found
-        </Badge>
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveView("browse")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              activeView === "browse" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Browse All
+          </button>
+          <button
+            onClick={() => setActiveView("ai")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              activeView === "ai" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Match
+          </button>
+        </div>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search vendors..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category === "all" ? "All Categories" : category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {activeView === "ai" && <VendorRecommendations />}
 
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger>
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location} value={location}>
-                    {location === "all" ? "All Locations" : location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="reviews">Most Reviews</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Vendor Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedVendors.map((vendor) => (
-          <Card key={vendor.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-            {/* Image Section */}
-            <div className="relative aspect-video w-full bg-gradient-to-br from-primary/20 to-primary/40 overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ImageIcon className="h-16 w-16 text-primary/50" />
-              </div>
-              <div className="absolute top-2 right-2">
-                {vendor.verified && (
-                  <Badge variant="default" className="text-xs">Verified</Badge>
-                )}
-              </div>
-              <div className="absolute bottom-2 left-2">
-                <Badge variant={getAvailabilityColor(vendor.availability)} className="text-xs">
-                  {vendor.availability}
-                </Badge>
-              </div>
-            </div>
-
-            <CardHeader className="pb-3">
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{vendor.name}</CardTitle>
+      {activeView === "browse" && (
+        <div className="space-y-6">
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search vendors..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{vendor.location}</span>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < Math.floor(vendor.rating)
-                          ? "text-yellow-400 fill-current"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm font-medium">{vendor.rating}</span>
-                <span className="text-sm text-muted-foreground">({vendor.reviews} reviews)</span>
-              </div>
 
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {vendor.description}
-              </p>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Price Range:</span>
-                  <span className="font-medium">{vendor.priceRange}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Category:</span>
-                  <Badge variant="outline">{vendor.category}</Badge>
-                </div>
-              </div>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc} value={loc}>{loc === "all" ? "All Locations" : loc}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <div className="flex flex-wrap gap-1">
-                {vendor.specialties.slice(0, 2).map((specialty, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {specialty}
-                  </Badge>
-                ))}
-                {vendor.specialties.length > 2 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{vendor.specialties.length - 2} more
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2">
-                <Button size="sm" className="flex-1" onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}`, { scroll: false })}>
-                  Book Now
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedVendorId(vendor.id)}>
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Heart className="h-4 w-4" />
-                </Button>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="reviews">Most Bookings</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {/* Vendor Details Modal */}
-      {selectedVendorId !== null && (() => {
-        const vendor = vendors.find(v => v.id === selectedVendorId)!;
-        const bookedDates = vendorIdToBookedDates[vendor.id] || [];
-        return (
-          <VendorDetailView
-            vendor={vendor}
-            bookedDates={bookedDates}
-            onClose={() => setSelectedVendorId(null)}
-          />
-        );
-      })()}
+          {/* Loading */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
 
-      {/* No Results */}
-      {sortedVendors.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No vendors found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your search criteria or filters
-            </p>
-            <Button onClick={() => {
-              setSearchTerm("");
-              setSelectedCategory("all");
-              setSelectedLocation("all");
-            }}>
-              Clear Filters
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Error */}
+          {error && !isLoading && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <p className="text-muted-foreground">Failed to load vendors. Please try again.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Vendor Grid */}
+          {!isLoading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedServices.map((service) => {
+                const thumb = getThumbnail(service);
+                const categoryName = categories.find((c) => c.id === service.category_id)?.name || service.category;
+                return (
+                  <Card key={service.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                    <div className="relative aspect-video w-full bg-gradient-to-br from-primary/20 to-primary/40 overflow-hidden">
+                      {thumb ? (
+                        <img src={thumb} alt={service.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <ImageIcon className="h-16 w-16 text-primary/50" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2">
+                        {service.status === "approved" || service.status === "active" ? (
+                          <Badge variant="default" className="text-xs">Verified</Badge>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <CardHeader className="pb-3">
+                      <div className="space-y-2">
+                        <CardTitle className="text-lg">{service.business_name || service.name}</CardTitle>
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{service.location || "Rwanda"}</span>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${i < Math.floor(service.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-medium">{service.rating?.toFixed(1) || "0.0"}</span>
+                        <span className="text-sm text-muted-foreground">({service.bookings_count} bookings)</span>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Price Range:</span>
+                          <span className="font-medium">{getPriceRange(service)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Category:</span>
+                          <Badge variant="outline">{categoryName}</Badge>
+                        </div>
+                      </div>
+
+                      {service.specialties && service.specialties.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {service.specialties.slice(0, 2).map((s, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>
+                          ))}
+                          {service.specialties.length > 2 && (
+                            <Badge variant="secondary" className="text-xs">+{service.specialties.length - 2} more</Badge>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Button size="sm" className="flex-1" onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${service.id}`, { scroll: false })}>
+                          Book Now
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setSelectedVendorId(service.id)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Heart className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Vendor Detail Modal */}
+          {selectedService && (
+            <VendorDetailView
+              vendor={selectedService}
+              onClose={() => setSelectedVendorId(null)}
+            />
+          )}
+
+          {/* No Results */}
+          {!isLoading && !error && sortedServices.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No vendors found</h3>
+                <p className="text-muted-foreground mb-4">Try adjusting your search criteria or filters</p>
+                <Button onClick={() => { setSearchTerm(""); setSelectedCategory("all"); setSelectedLocation("all"); }}>
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );

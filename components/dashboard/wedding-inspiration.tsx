@@ -169,7 +169,7 @@ export function WeddingInspiration() {
             <Bookmark className="w-4 h-4 mr-3 text-sage-600" />
             Saved Curations ({bookmarkedItems.length})
           </Button>
-          <Button className="h-14 px-8 rounded-2xl bg-[#668c65] hover:bg-sage-700 text-white text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-sage-200 transition-all active:scale-95">
+          <Button className="h-14 px-8 rounded-2xl text-white text-[10px] font-bold uppercase tracking-widest shadow-xl transition-all active:scale-95">
             <Share2 className="w-4 h-4 mr-3" />
             Share Portfolio
           </Button>

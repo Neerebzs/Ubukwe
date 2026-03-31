@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Calendar, CheckCircle, Star, BookOpen, DollarSign, Home, ChevronLeft, ChevronRight, Users, MessageCircle, Heart, Clock, MapPin, Camera, LogOut, ChevronDown, ShieldAlert, FileText } from "lucide-react";
+import { Calendar, CheckCircle, Star, BookOpen, DollarSign, Home, ChevronLeft, ChevronRight, Users, MessageCircle, Heart, Clock, MapPin, Camera, LogOut, ChevronDown, ShieldAlert, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DashboardSidebarProps {
@@ -31,7 +31,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
       items: [
         { id: "budget", label: "Budget", icon: <DollarSign className="w-4 h-4" /> },
         { id: "planning", label: "Planning & Timeline", icon: <CheckCircle className="w-4 h-4" /> },
-
+        { id: "ai-assistant", label: "AI Assistant", icon: <Sparkles className="w-4 h-4" /> },
         { id: "guests", label: "Guest Management", icon: <Users className="w-4 h-4" /> },
       ]
     },

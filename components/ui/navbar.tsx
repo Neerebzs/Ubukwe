@@ -76,7 +76,7 @@ export function Navbar() {
                       </Button>
                     </Link>
                     <Link href="/auth/signup">
-                      <Button size="sm" className="bg-[#668c65] hover:bg-slate-900 text-white shadow-xl px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+                      <Button size="sm" className="hover:bg-slate-900 text-white shadow-xl px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
                         <TranslatedText text="Get Started" />
                       </Button>
                     </Link>
@@ -203,7 +203,7 @@ export function Navbar() {
                     </Button>
                   </Link>
                   <Link href="/auth/signup" onClick={toggleMenu} className="block">
-                    <Button className="w-full h-14 bg-[#668c65] hover:bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl" size="lg">
+                    <Button className="w-full h-14 hover:bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl" size="lg">
                       <TranslatedText text="Join" />
                     </Button>
                   </Link>

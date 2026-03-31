@@ -368,7 +368,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
         <div className="space-y-6">
             {/* Budget Overview Header */}
             {/* Budget Overview Header */}
-            <Card className="border-none shadow-[0_20px_50px_rgba(13,148,136,0.05)] bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
                 <CardHeader className="pt-10 px-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-1">
@@ -381,27 +381,24 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             <p className="text-slate-500 font-medium text-sm ml-16">Elegantly managing your wedding investment</p>
                         </div>
                         <Button
-                            variant={currentBudget > 0 ? "outline" : "default"}
+                            variant="default"
                             size="lg"
                             onClick={() => {
                                 setNewTotalBudget(currentBudget.toString());
                                 setIsEditBudgetOpen(true);
                             }}
-                            className={`rounded-2xl px-8 h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 ${currentBudget > 0
-                                ? "border-sage-100 text-sage-700 hover:bg-sage-50 hover:border-sage-200"
-                                : "bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-600/20"
-                                }`}
+                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 rounded-2xl px-8 h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 shadow-none"
                         >
                             {currentBudget > 0 ? (
-                                <>
+                                <span className="flex items-center">
                                     <Edit2 className="h-4 w-4 mr-2" />
                                     Refine Budget
-                                </>
+                                </span>
                             ) : (
-                                <>
+                                <span className="flex items-center">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Set Investment
-                                </>
+                                </span>
                             )}
                         </Button>
                     </div>
@@ -414,7 +411,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             { label: "Remaining", value: `RWF ${remainingBudget.toLocaleString()}`, color: "teal" },
                             { label: "Utilization", value: `${budgetUsedPercentage.toFixed(1)}%`, color: "emerald" },
                         ].map((stat, i) => (
-                            <div key={i} className="text-center p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 hover:-translate-y-1">
+                            <div key={i} className="text-center p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all duration-300 hover:bg-white hover:-translate-y-1">
                                 <div className={`text-xl font-bold tracking-tighter mb-2 ${stat.color === 'rose' ? 'text-rose-600' :
                                     stat.color === 'teal' ? 'text-sage-700' :
                                         stat.color === 'emerald' ? 'text-emerald-700' : 'text-slate-800'
@@ -478,7 +475,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                 <TabsContent value="categories" className="space-y-4">
                     {/* Show create default categories option */}
                     {actualBudgetCategories.length === 0 && (
-                        <Card className="border-none shadow-[0_15px_40px_rgba(13,148,136,0.05)] bg-slate-50/50 rounded-[2rem] overflow-hidden">
+                        <Card className="border-none bg-slate-50/50 rounded-[2rem] overflow-hidden">
                             <CardContent className="p-10">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div className="space-y-3">
@@ -500,7 +497,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             createDefaultCategoriesMutation.mutate(weddingData?.id);
                                         }}
                                         disabled={createDefaultCategoriesMutation.isPending || !weddingData?.id}
-                                        className="bg-sage-600 hover:bg-sage-700 text-white rounded-2xl px-10 h-14 font-bold uppercase tracking-widest shadow-xl shadow-sage-600/20"
+                                        className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 rounded-2xl px-10 h-14 font-bold uppercase tracking-widest shadow-none"
                                     >
                                         {createDefaultCategoriesMutation.isPending ? (
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -518,10 +515,10 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                     {categorySpending.length > 0 && (
                         <div className="flex justify-end mb-6">
                             <Button
-                                variant="outline"
+                                variant="default"
                                 size="sm"
                                 onClick={() => setIsAddCategoryOpen(true)}
-                                className="rounded-xl border-sage-100 text-sage-700 hover:bg-sage-50 text-[10px] font-bold uppercase tracking-widest h-9 px-6"
+                                className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 px-6 shadow-none"
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Custom Allocation
@@ -554,7 +551,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             const remainingCategoryBudget = category.allocated_amount - totalTaskAmount;
 
                             return (
-                                <Card key={category.id} className="border-none shadow-[0_10px_30px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white hover:shadow-xl hover:shadow-sage-500/5 transition-all duration-500 group">
+                                <Card key={category.id} className="border-none rounded-[2.5rem] overflow-hidden bg-white transition-all duration-500 group">
                                     <CardContent className="p-8">
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center space-x-5">
@@ -631,7 +628,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                     {categoryTasks.map((task: any) => (
                                                         <div
                                                             key={task.id}
-                                                            className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl text-sm hover:bg-white hover:shadow-xl hover:shadow-sage-500/5 transition-all duration-300 border border-transparent hover:border-sage-50 group"
+                                                            className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl text-sm hover:bg-white transition-all duration-300 border border-transparent hover:border-sage-50 group"
                                                         >
                                                             <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                                 <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-all ${task.is_completed ? 'bg-sage-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]' : 'bg-slate-200 group-hover:bg-slate-300'}`} />
@@ -655,7 +652,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                 </TabsContent>
 
                 <TabsContent value="manage" className="space-y-8">
-                    <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+                    <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
                         <CardHeader className="pt-10 px-10">
                             <CardTitle className="flex items-center text-2xl font-serif italic text-slate-800">
                                 <div className="p-2 bg-sage-50 rounded-xl mr-4">
@@ -740,9 +737,9 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                             </span>
                                                         </p>
                                                         <Button
-                                                            variant="ghost"
+                                                            variant="default"
                                                             size="sm"
-                                                            className="text-[10px] font-bold uppercase tracking-widest text-sage-600 hover:text-sage-700 hover:bg-sage-50 rounded-xl px-4 h-9 transition-colors"
+                                                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none text-[10px] font-bold uppercase tracking-widest rounded-xl px-4 h-9 transition-colors shadow-none"
                                                         >
                                                             Restore Default
                                                         </Button>
@@ -752,7 +749,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                         })}
                                     </div>
 
-                                    <div className="mt-12 p-10 bg-slate-800 rounded-[2.5rem] text-white shadow-2xl shadow-slate-200">
+                                    <div className="mt-12 p-10 bg-slate-800 rounded-[2.5rem] text-white">
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                                             <div className="space-y-2">
                                                 <h4 className="text-2xl font-serif italic">Cumulative Portfolio Value</h4>
@@ -786,7 +783,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
                 <TabsContent value="analytics" className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8">
-                        <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+                        <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
                             <CardHeader className="pt-10 px-10 pb-2">
                                 <CardTitle className="text-xl font-serif italic text-slate-800">Investment Distribution</CardTitle>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Allocation by Category Portfolio</p>
@@ -826,7 +823,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+                        <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
                             <CardHeader className="pt-10 px-10 pb-2">
                                 <CardTitle className="text-xl font-serif italic text-slate-800">Strategic Performance</CardTitle>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Investment vs Outcome by Category</p>
@@ -859,7 +856,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                         </Card>
                     </div>
 
-                    <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+                    <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
                         <CardHeader className="pt-10 px-10">
                             <CardTitle className="text-xl font-serif italic text-slate-800">Category Insights</CardTitle>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Detailed performance metrics across your portfolio</p>
@@ -903,7 +900,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                 </TabsContent>
 
                 <TabsContent value="projections" className="space-y-8">
-                    <Card className="border-none shadow-[0_15px_40px_rgba(0,0,0,0.02)] rounded-[2.5rem] overflow-hidden bg-white">
+                    <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
                         <CardHeader className="pt-10 px-10">
                             <CardTitle className="text-2xl font-serif italic text-slate-800">Wedding Strategy Projections</CardTitle>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Anticipated milestones and financial trajectory</p>
@@ -996,7 +993,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                         <Button variant="ghost" onClick={() => setIsEditBudgetOpen(false)} className="rounded-xl h-12 px-6 font-bold uppercase tracking-widest text-xs">
                             Cancel
                         </Button>
-                        <Button onClick={handleSaveBudget} disabled={updateBudgetMutation.isPending} className="flex-1 rounded-xl h-12 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-600/20 font-bold uppercase tracking-widest text-xs">
+                        <Button onClick={handleSaveBudget} disabled={updateBudgetMutation.isPending} className="flex-1 rounded-xl h-12 bg-[#0d182b] hover:bg-[#0d182b]/90 text-white font-bold uppercase tracking-widest text-xs shadow-none border-none">
                             {updateBudgetMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                             Commit Strategy
                         </Button>
@@ -1080,7 +1077,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                         <Button
                             onClick={handleAddCustomCategory}
                             disabled={createCustomCategoryMutation.isPending}
-                            className="flex-1 rounded-xl h-12 bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-600/20 font-bold uppercase tracking-widest text-xs"
+                            className="flex-1 rounded-xl h-12 bg-[#0d182b] hover:bg-[#0d182b]/90 text-white font-bold uppercase tracking-widest text-xs shadow-none border-none"
                         >
                             {createCustomCategoryMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
                             Create Category

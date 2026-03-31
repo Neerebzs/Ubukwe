@@ -119,7 +119,7 @@ export function Bookings() {
             <p className="text-slate-500 text-sm max-w-sm mx-auto mb-10 leading-relaxed font-medium">
               Transform your vision into reality by securing world-class services for your celebration.
             </p>
-            <Button className="h-14 px-10 rounded-2xl bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-600/20 font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
+            <Button className="h-14 px-10 rounded-2xl text-white shadow-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
               Explore the Marketplace
             </Button>
           </CardContent>
@@ -316,7 +316,7 @@ export function Bookings() {
                                   Rescind Request
                                 </Button>
                               )}
-                              <Button className="rounded-xl h-14 px-10 bg-[#668c65] hover:bg-sage-700 text-white text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-sage-200">
+                              <Button className="rounded-xl h-14 px-10 text-white text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-xl">
                                 Dismiss View
                               </Button>
                             </DialogFooter>
@@ -324,7 +324,7 @@ export function Bookings() {
                         </Dialog>
 
                         {booking.provider_confirmed && booking.status !== "completed" && (
-                          <Button className="h-14 px-10 bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-600/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
+                          <Button className="h-14 px-10 text-white shadow-xl rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
                             <HandCoins className="h-4 w-4 mr-2 group-hover/pay:-rotate-12 transition-transform" />
                             Finalize Investment
                           </Button>
