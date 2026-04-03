@@ -262,19 +262,6 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
         }
     });
 
-    const createDefaultCategoriesMutation = useMutation({
-        mutationFn: async (weddingId: string) => {
-            return apiClient.post(API_ENDPOINTS.WEDDING.CREATE_DEFAULT_CATEGORIES(weddingId));
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["budget-categories"] });
-            toast.success("Default budget categories created successfully");
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to create budget categories");
-        }
-    });
-
     const createCustomCategoryMutation = useMutation({
         mutationFn: async (data: { weddingId: string; categoryData: any }) => {
             return apiClient.post(
@@ -345,9 +332,6 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
     const currentSpent = totalSpentFromTasks;
     const remainingBudget = currentBudget - currentSpent;
     const budgetUsedPercentage = currentBudget > 0 ? (currentSpent / currentBudget) * 100 : 0;
-
-    // If no budget categories exist and we have a budget, show option to create default categories
-    const shouldShowCreateDefault = currentBudget > 0 && actualBudgetCategories.length === 0;
 
     // Use actual budget categories data or show empty state
     const categorySpending = actualBudgetCategories.length > 0 ? actualBudgetCategories : [];
@@ -473,58 +457,18 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                 </TabsList>
 
                 <TabsContent value="categories" className="space-y-4">
-                    {/* Show create default categories option */}
-                    {actualBudgetCategories.length === 0 && (
-                        <Card className="border-none bg-slate-50/50 rounded-[2rem] overflow-hidden">
-                            <CardContent className="p-10">
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                                    <div className="space-y-3">
-                                        <h3 className="text-2xl font-serif italic text-slate-800">Initialize Your Registry</h3>
-                                        <p className="text-slate-500 font-medium text-sm max-w-xl leading-relaxed">
-                                            {currentBudget > 0
-                                                ? "Set up a professional budget structure curated to international wedding standards. This will elegantly organize your investment."
-                                                : "Begin by defining your total wedding investment, then we can curate the perfect distribution across all categories."
-                                            }
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={() => {
-                                            if (currentBudget <= 0) {
-                                                toast.error("Please set your wedding budget first");
-                                                setIsEditBudgetOpen(true);
-                                                return;
-                                            }
-                                            createDefaultCategoriesMutation.mutate(weddingData?.id);
-                                        }}
-                                        disabled={createDefaultCategoriesMutation.isPending || !weddingData?.id}
-                                        className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 rounded-2xl px-10 h-14 font-bold uppercase tracking-widest shadow-none"
-                                    >
-                                        {createDefaultCategoriesMutation.isPending ? (
-                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        ) : (
-                                            <Plus className="h-4 w-4 mr-2" />
-                                        )}
-                                        {currentBudget > 0 ? "Curate Registry" : "Set Investment First"}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Add Custom Category Button */}
-                    {categorySpending.length > 0 && (
-                        <div className="flex justify-end mb-6">
-                            <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => setIsAddCategoryOpen(true)}
-                                className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 px-6 shadow-none"
-                            >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Custom Allocation
-                            </Button>
-                        </div>
-                    )}
+                    <div className="flex justify-end mb-6">
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setIsAddCategoryOpen(true)}
+                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none rounded-xl text-[10px] font-bold uppercase tracking-widest h-9 px-6 shadow-none"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Custom Allocation
+                        </Button>
+                    </div>
 
                     <div className="grid gap-6">
                         {categorySpending.map((category: any) => {

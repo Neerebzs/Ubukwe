@@ -697,4 +697,39 @@ export const apiClient = {
       return apiClient.get<T>(API_ENDPOINTS.PUBLIC.CATEGORIES);
     }
   },
+
+  // Guest API methods
+  guests: {
+    list<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`/api/v1/wedding/${weddingId}/guests`);
+    },
+    create<T>(weddingId: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(`/api/v1/wedding/${weddingId}/guests`, data);
+    },
+    update<T>(weddingId: string, guestId: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(`/api/v1/wedding/${weddingId}/guests/${guestId}`, data);
+    },
+    delete<T>(weddingId: string, guestId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(`/api/v1/wedding/${weddingId}/guests/${guestId}`);
+    },
+  },
+
+  // Invitation API methods
+  invitations: {
+    list<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`/api/v1/wedding/${weddingId}/invitations`);
+    },
+    create<T>(weddingId: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(`/api/v1/wedding/${weddingId}/invitations`, data);
+    },
+    update<T>(weddingId: string, invId: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(`/api/v1/wedding/${weddingId}/invitations/${invId}`, data);
+    },
+    delete<T>(weddingId: string, invId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(`/api/v1/wedding/${weddingId}/invitations/${invId}`);
+    },
+    aiGenerate<T>(weddingId: string, data: any): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(`/api/v1/wedding/${weddingId}/invitations/ai-generate`, data);
+    },
+  },
 };

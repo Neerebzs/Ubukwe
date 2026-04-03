@@ -555,8 +555,8 @@ export function WeddingTasks() {
     const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
     const filteredTasks = filterTasks(tasksArray);
 
-    const totalBudget = tasksArray.reduce((sum, task) => sum + (task.amount || 0), 0);
-    const completedBudget = tasksArray.filter(t => t.is_completed).reduce((sum, task) => sum + (task.amount || 0), 0);
+    const totalBudget = tasksArray.reduce((sum, task) => sum + (Number(task.amount) || 0), 0);
+    const completedBudget = tasksArray.filter(t => t.is_completed).reduce((sum, task) => sum + (Number(task.amount) || 0), 0);
 
     return (
         <div className="space-y-8">
