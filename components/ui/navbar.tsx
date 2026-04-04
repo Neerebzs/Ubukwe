@@ -10,15 +10,12 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
 import { useAuth } from "@/hooks/useAuth";
 import { AISearch } from "@/components/ui/ai-search";
+import { useMobileMenu } from "@/contexts/mobile-menu-context";
 
 export function Navbar() {
   const isMobile = useIsMobile();
-  const [menuOpen, setMenuOpen] = React.useState(false);
+  const { isMenuOpen, toggleMenu } = useMobileMenu();
   const { user, isAuthenticated, logout } = useAuth();
-
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
 
   return (
     <>
@@ -109,13 +106,13 @@ export function Navbar() {
               className="text-slate-900 focus:outline-none h-12 w-12 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-500 group"
               aria-label="Toggle menu"
             >
-              {menuOpen ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />}
+              {isMenuOpen ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />}
             </button>
           )}
         </div>
       </header>
       {/* Mobile Menu Drawer */}
-      {isMobile === true && menuOpen && (
+      {isMobile === true && isMenuOpen && (
         <div className="fixed inset-0 z-[100] md:hidden">
           {/* Backdrop */}
           <div

@@ -6,6 +6,7 @@ import { GeistMono } from "geist/font/mono"
 import { Suspense } from "react"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 import { I18nProvider } from "@/contexts/i18n-context"
+import { MobileMenuProvider } from "@/contexts/mobile-menu-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -32,7 +33,9 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <I18nProvider>
           <QueryProvider>
-            <Suspense fallback={null}>{children}</Suspense>
+            <MobileMenuProvider>
+              <Suspense fallback={null}>{children}</Suspense>
+            </MobileMenuProvider>
           </QueryProvider>
         </I18nProvider>
         {/* <Analytics /> */}

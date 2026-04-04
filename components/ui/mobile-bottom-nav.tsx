@@ -55,40 +55,35 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#fdfcfb]/80 backdrop-blur-xl border-t border-slate-100 md:hidden safe-area-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
-      <div className="grid grid-cols-5 h-20">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab ? activeTab === item.id : pathname.includes(item.id);
+    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-lg bg-white/95 backdrop-blur-2xl border border-white/20 rounded-full md:hidden shadow-[0_20px_50px_rgba(0,0,0,0.12)] px-2 py-2 flex items-center justify-around h-16">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeTab ? activeTab === item.id : pathname.includes(item.id);
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item)}
-              className={cn(
-                "flex flex-col items-center justify-center space-y-1.5 transition-all duration-500 relative",
-                isActive
-                  ? "text-[#668c65]"
-                  : "text-slate-800 hover:text-slate-900"
-              )}
-            >
-              <div className={cn(
-                "p-2 rounded-xl transition-all duration-500",
-                isActive ? "bg-[#668c65]/10 shadow-[0_0_15px_-3px_rgba(102,140,101,0.3)]" : ""
-              )}>
-                <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
-              </div>
-              <span className={cn(
-                "text-[8px] font-black uppercase tracking-[0.2em]",
-                isActive ? "opacity-100" : "opacity-60"
-              )}>{item.label}</span>
-              {isActive && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-[#668c65] rounded-full" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={item.id}
+            onClick={() => handleNavClick(item)}
+            className={cn(
+              "flex flex-col items-center justify-center transition-all duration-500 relative flex-1 h-full",
+              isActive
+                ? "text-[#668c65]"
+                : "text-slate-400 hover:text-slate-600"
+            )}
+            aria-label={item.label}
+          >
+            <div className={cn(
+              "p-2.5 rounded-full transition-all duration-500 flex items-center justify-center",
+              isActive ? "bg-[#668c65]/10" : ""
+            )}>
+              <Icon className={cn("h-6 w-6", isActive && "stroke-[2.2px]")} />
+            </div>
+            {isActive && (
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#668c65] rounded-full" />
+            )}
+          </button>
+        );
+      })}
     </nav>
   );
 }
