@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,9 +120,11 @@ export function Bookings() {
             <p className="text-slate-500 text-sm max-w-sm mx-auto mb-10 leading-relaxed font-medium">
               Transform your vision into reality by securing world-class services for your celebration.
             </p>
-            <Button className="h-14 px-10 rounded-2xl text-white shadow-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
-              Explore the Marketplace
-            </Button>
+            <Link href="/services">
+              <Button className="h-14 px-10 rounded-2xl text-white shadow-xl bg-[#668c65] hover:bg-sage-900 font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
+                Explore the Marketplace
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       ) : (

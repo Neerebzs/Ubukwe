@@ -9,6 +9,7 @@ import { Button } from "./button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
 import { useAuth } from "@/hooks/useAuth";
+import { AISearch } from "@/components/ui/ai-search";
 
 export function Navbar() {
   const isMobile = useIsMobile();
@@ -33,14 +34,7 @@ export function Navbar() {
             </div>
           </Link>
 
-          <div className="relative flex-1 max-w-md mx-12 hidden lg:block">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
-            <input
-              type="text"
-              placeholder="Discover artisans & services..."
-              className="w-full pl-12 pr-6 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/20 focus:ring-4 focus:ring-[#668c65]/5 transition-all duration-500"
-            />
-          </div>
+          <AISearch className="relative flex-1 max-w-md mx-12 hidden lg:block" />
 
           {/* Desktop Navigation */}
           {isMobile === false && (
@@ -175,14 +169,7 @@ export function Navbar() {
               </div>
 
               {/* Mobile Search */}
-              <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Artisans, Venues, Magic..."
-                  className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/10 transition-all"
-                />
-              </div>
+              <AISearch />
 
               {/* Preferences */}
               <div className="space-y-4 pt-6 border-t border-slate-50">
