@@ -24,14 +24,13 @@ export default function EventsPage() {
   )
 
   const categories = [
-    { id: "all", name: "All", icon: null },
-    { id: "music", name: "Music", icon: <Music className="h-4 w-4" /> },
-    { id: "arts", name: "Arts & Culture", icon: <Palette className="h-4 w-4" /> },
-    { id: "food", name: "Food & Drinks", icon: <UtensilsCrossed className="h-4 w-4" /> },
-    { id: "sports", name: "Sports & wellness", icon: <Dumbbell className="h-4 w-4" /> },
-    { id: "concert", name: "concert", icon: <Mic2 className="h-4 w-4" /> },
-    { id: "cinema", name: "Cinema", icon: <Film className="h-4 w-4" /> },
-    { id: "more", name: "More", icon: <MoreHorizontal className="h-4 w-4" /> }
+    { id: "all",               name: "All",              icon: null },
+    { id: "concert",           name: "Music & Concerts", icon: <Music className="h-4 w-4" /> },
+    { id: "cultural_event",    name: "Arts & Culture",   icon: <Palette className="h-4 w-4" /> },
+    { id: "sports_event",      name: "Sports",           icon: <Dumbbell className="h-4 w-4" /> },
+    { id: "festival",          name: "Festival",         icon: <Mic2 className="h-4 w-4" /> },
+    { id: "movie_screening",   name: "Cinema",           icon: <Film className="h-4 w-4" /> },
+    { id: "other",             name: "More",             icon: <MoreHorizontal className="h-4 w-4" /> },
   ]
 
   // Filter events based on active tab
