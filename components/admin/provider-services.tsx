@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -341,12 +342,12 @@ export function AdminProviderServices() {
 
       {/* Details Modal - Artisanal Dossier */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="w-[92vw] max-w-[1300px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[92vh]">
+        <DialogContent className="w-[85vw] max-w-[1200px] sm:max-w-[1200px] p-0 overflow-y-auto overflow-x-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[90vh]">
           {selectedService && (
-            <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-col">
 
               {/* Enhanced Hero Section */}
-              <div className="relative h-72 shrink-0">
+              <div className="relative h-48 md:h-64 lg:h-72 shrink-0">
                 {selectedService.gallery?.[0] ? (
                   <img
                     src={typeof selectedService.gallery[0] === 'string' ? selectedService.gallery[0] : (selectedService.gallery[0].url || selectedService.gallery[0].image_url)}
@@ -361,50 +362,50 @@ export function AdminProviderServices() {
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
 
                 {/* Status badge top-right */}
-                <div className="absolute top-6 right-6 flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-2.5 md:px-3 py-1 md:py-1.5 rounded-full border border-white/20">
                     <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${
                       selectedService.status === "approved" ? "bg-emerald-400" :
                       selectedService.status === "pending" ? "bg-amber-400" :
                       "bg-rose-400"
                     }`} />
-                    <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">{selectedService.status}</span>
+                    <span className="text-[8px] md:text-[9px] font-black text-white uppercase tracking-[0.2em]">{selectedService.status}</span>
                   </div>
                 </div>
 
                 {/* Title + category bottom-left */}
-                <div className="absolute bottom-10 left-10 right-10 flex items-end justify-between gap-10">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Badge className="bg-[#608d64] text-white border-none px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#608d64]/20">
+                <div className="absolute bottom-4 md:bottom-8 lg:bottom-10 left-4 md:left-8 lg:left-10 right-4 md:right-8 lg:right-10 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-4 md:gap-6 lg:gap-10">
+                  <div className="space-y-2 md:space-y-3">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                      <Badge className="bg-[#608d64] text-white border-none px-3 md:px-4 py-0.5 md:py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#608d64]/20">
                         {selectedService.category}
                       </Badge>
                       {selectedService.verified && (
-                        <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full border border-white/30 text-[9px] font-black uppercase tracking-widest">
-                          <CheckCircle className="w-3 h-3 text-emerald-400" /> Verified
+                        <div className="flex items-center gap-1 md:gap-1.5 bg-white/20 backdrop-blur-sm text-white px-2 md:px-3 py-0.5 md:py-1 rounded-full border border-white/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+                          <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-emerald-400" /> Verified
                         </div>
                       )}
                     </div>
-                    <h2 className="text-5xl font-serif italic text-white leading-tight drop-shadow-lg">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-serif italic text-white leading-tight drop-shadow-lg">
                       {selectedService.name}
                     </h2>
                   </div>
 
                   {selectedService.status === "pending" && (
-                    <div className="flex gap-4 mb-2 shrink-0">
+                    <div className="flex gap-2 md:gap-4 shrink-0 w-full lg:w-auto">
                       <Button
                         size="lg"
                         onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
-                        className="h-14 px-8 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-rose-500 hover:border-rose-500 font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-500"
+                        className="flex-1 lg:flex-none h-11 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-rose-500 hover:border-rose-500 font-black uppercase text-[9px] md:text-[11px] tracking-[0.2em] transition-all duration-500"
                       >
-                        Decline Entry
+                        Decline
                       </Button>
                       <Button
                         size="lg"
                         onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
-                        className="h-14 px-8 rounded-2xl bg-white text-slate-900 hover:scale-105 active:scale-95 font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl transition-all duration-500"
+                        className="flex-1 lg:flex-none h-11 md:h-14 px-4 md:px-8 rounded-xl md:rounded-2xl bg-white text-slate-900 hover:scale-105 active:scale-95 font-black uppercase text-[9px] md:text-[11px] tracking-[0.2em] shadow-2xl transition-all duration-500"
                       >
-                        Authorize Service
+                        Authorize
                       </Button>
                     </div>
                   )}
@@ -412,32 +413,32 @@ export function AdminProviderServices() {
               </div>
 
               {/* Refined Body Layout */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1">
                 <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
                   {/* Main Editorial Body */}
-                  <div className="lg:col-span-8 p-12 space-y-14">
+                  <div className="lg:col-span-8 p-6 md:p-8 lg:p-12 space-y-8 md:space-y-10 lg:space-y-14">
 
                     {/* Narrative Section */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       <div className="flex items-center gap-4">
                         <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Narrative</p>
                         <div className="h-[1px] flex-1 bg-slate-100" />
                       </div>
-                      <p className="text-slate-600 leading-[1.8] text-lg font-light max-w-3xl">
+                      <p className="text-slate-600 leading-[1.8] text-base md:text-lg font-light max-w-3xl">
                         {selectedService.description}
                       </p>
                     </div>
 
                     {/* Specialties with Modern Chips */}
                     {selectedService.specialties?.length > 0 && (
-                      <div className="space-y-6">
+                      <div className="space-y-4 md:space-y-6">
                         <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Distinctive Specialties</p>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2 md:gap-3">
                           {selectedService.specialties.map((s, i) => (
-                            <div key={i} className="group flex items-center gap-2 bg-slate-50 border border-slate-100 hover:border-[#608d64]/30 hover:bg-white px-5 py-2.5 rounded-2xl transition-all duration-300">
-                              <Star className="w-3.5 h-3.5 text-[#608d64]/40 group-hover:text-[#608d64] transition-colors" />
-                              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{s}</span>
+                            <div key={i} className="group flex items-center gap-2 bg-slate-50 border border-slate-100 hover:border-[#608d64]/30 hover:bg-white px-3 md:px-5 py-2 md:py-2.5 rounded-2xl transition-all duration-300">
+                              <Star className="w-3 md:w-3.5 h-3 md:h-3.5 text-[#608d64]/40 group-hover:text-[#608d64] transition-colors" />
+                              <span className="text-[10px] md:text-[11px] font-bold text-slate-700 uppercase tracking-widest">{s}</span>
                             </div>
                           ))}
                         </div>
@@ -446,36 +447,36 @@ export function AdminProviderServices() {
 
                     {/* Investment Packages - Refined Grid */}
                     {selectedService.packages?.length > 0 && (
-                      <div className="space-y-8">
+                      <div className="space-y-6 md:space-y-8">
                         <div className="flex items-center gap-4">
                           <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Investment Tiers</p>
                           <div className="h-[1px] flex-1 bg-slate-100" />
                         </div>
-                        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                           {selectedService.packages.map((pkg: any, idx: number) => (
-                            <div key={idx} className="group relative bg-white rounded-3xl p-8 border border-slate-100 hover:border-[#608d64]/20 hover:shadow-2xl hover:shadow-[#608d64]/5 transition-all duration-500 overflow-hidden">
+                            <div key={idx} className="group relative bg-white rounded-2xl md:rounded-3xl p-5 md:p-8 border border-slate-100 hover:border-[#608d64]/20 hover:shadow-2xl hover:shadow-[#608d64]/5 transition-all duration-500 overflow-hidden">
                               {pkg.popular && (
                                 <div className="absolute top-0 right-0">
-                                  <div className="bg-[#608d64] text-white text-[8px] font-black uppercase tracking-widest px-6 py-1 rotate-45 translate-x-4 translate-y-2 shadow-lg">
+                                  <div className="bg-[#608d64] text-white text-[8px] font-black uppercase tracking-widest px-4 md:px-6 py-1 rotate-45 translate-x-3 md:translate-x-4 translate-y-2 shadow-lg">
                                     Preferred
                                   </div>
                                 </div>
                               )}
-                              <div className="space-y-6">
+                              <div className="space-y-4 md:space-y-6">
                                 <div>
-                                  <h4 className="font-serif italic text-slate-900 text-xl mb-1">{pkg.name}</h4>
+                                  <h4 className="font-serif italic text-slate-900 text-lg md:text-xl mb-1">{pkg.name}</h4>
                                   <div className="flex items-baseline gap-1">
-                                    <span className="text-2xl font-black text-slate-900">{pkg.price?.toLocaleString()}</span>
+                                    <span className="text-xl md:text-2xl font-black text-slate-900">{pkg.price?.toLocaleString()}</span>
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RWF</span>
                                   </div>
                                 </div>
 
                                 {pkg.features?.length > 0 && (
-                                  <div className="space-y-3">
+                                  <div className="space-y-2 md:space-y-3">
                                     {pkg.features.slice(0, 4).map((f: string, fi: number) => (
-                                      <div key={fi} className="flex items-center gap-3 text-xs text-slate-500">
-                                        <div className="h-1 w-1 rounded-full bg-[#608d64]" />
-                                        {f}
+                                      <div key={fi} className="flex items-center gap-2 md:gap-3 text-xs text-slate-500">
+                                        <div className="h-1 w-1 rounded-full bg-[#608d64] shrink-0" />
+                                        <span className="line-clamp-2">{f}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -495,11 +496,11 @@ export function AdminProviderServices() {
 
                     {/* Modern Gallery Grid */}
                     {selectedService.gallery?.length > 1 && (
-                      <div className="space-y-6">
+                      <div className="space-y-4 md:space-y-6">
                         <div className="flex items-center justify-between">
                           <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Visual Anthology ({selectedService.gallery.length})</p>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
                           {selectedService.gallery.slice(0, 8).map((item: any, i: number) => {
                             const src = typeof item === 'string' ? item : (item.url || item.image_url || item.preview)
                             return src ? (
@@ -515,51 +516,51 @@ export function AdminProviderServices() {
                   </div>
 
                   {/* Curated Sidebar */}
-                  <div className="lg:col-span-4 bg-slate-50/50 p-12 space-y-12">
+                  <div className="lg:col-span-4 bg-slate-50/50 p-6 md:p-8 lg:p-12 space-y-8 md:space-y-10 lg:space-y-12">
 
                     {/* Originator Profile */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 md:space-y-6">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">The Originator</p>
-                      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-5">
-                        <div className="flex items-center gap-4">
-                          <div className="h-14 w-14 rounded-2xl bg-[#608d64]/5 border border-[#608d64]/10 flex items-center justify-center shrink-0">
-                            <UserCircle2 className="w-7 h-7 text-[#608d64]" />
+                      <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm space-y-4 md:space-y-5">
+                        <div className="flex items-center gap-3 md:gap-4">
+                          <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-[#608d64]/5 border border-[#608d64]/10 flex items-center justify-center shrink-0">
+                            <UserCircle2 className="w-6 h-6 md:w-7 md:h-7 text-[#608d64]" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-serif italic text-slate-900 text-lg truncate leading-none mb-1">{selectedService.provider?.full_name}</p>
-                            <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-widest opacity-70">Verified Artisan</p>
+                            <p className="font-serif italic text-slate-900 text-base md:text-lg truncate leading-none mb-1">{selectedService.provider?.full_name}</p>
+                            <p className="text-[9px] md:text-[10px] font-bold text-[#608d64] uppercase tracking-widest opacity-70">Verified Artisan</p>
                           </div>
                         </div>
 
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 text-slate-500">
-                            <Calendar className="w-4 h-4 opacity-50" />
-                            <span className="text-[11px] font-medium tracking-wide">{new Date(selectedService.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <div className="space-y-2 md:space-y-3">
+                          <div className="flex items-center gap-2 md:gap-3 text-slate-500">
+                            <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 opacity-50 shrink-0" />
+                            <span className="text-[10px] md:text-[11px] font-medium tracking-wide">{new Date(selectedService.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                           </div>
-                          <div className="flex items-center gap-3 text-slate-500">
-                            <MessageCircle className="w-4 h-4 opacity-50" />
-                            <span className="text-[11px] font-medium tracking-wide truncate">{selectedService.provider?.email}</span>
+                          <div className="flex items-center gap-2 md:gap-3 text-slate-500">
+                            <MessageCircle className="w-3.5 h-3.5 md:w-4 md:h-4 opacity-50 shrink-0" />
+                            <span className="text-[10px] md:text-[11px] font-medium tracking-wide truncate">{selectedService.provider?.email}</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Technical Metadata */}
-                    <div className="space-y-8">
+                    <div className="space-y-6 md:space-y-8">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Logistical Details</p>
 
-                      <div className="grid grid-cols-1 gap-8">
+                      <div className="grid grid-cols-1 gap-6 md:gap-8">
                         {[
                           { label: "Regional Locus", value: selectedService.location, icon: <MapPin className="w-4 h-4 text-[#608d64]" />, detail: "Primary Operation Area" },
                           { label: "Base Valuation", value: `${selectedService.price_range_min?.toLocaleString()} RWF`, icon: <Star className="w-4 h-4 text-[#608d64]" />, detail: "Starting Price Point" },
                         ].map((item, i) => (
-                          <div key={i} className="flex items-start gap-5">
-                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
+                          <div key={i} className="flex items-start gap-3 md:gap-5">
+                            <div className="h-9 w-9 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
                               {item.icon}
                             </div>
-                            <div className="space-y-0.5">
+                            <div className="space-y-0.5 min-w-0">
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
-                              <p className="text-sm font-bold text-slate-900 uppercase tracking-wider">{item.value}</p>
+                              <p className="text-sm font-bold text-slate-900 uppercase tracking-wider break-words">{item.value}</p>
                               <p className="text-[9px] text-slate-400 font-medium">{item.detail}</p>
                             </div>
                           </div>
@@ -569,19 +570,19 @@ export function AdminProviderServices() {
 
                     {/* Secured Communication */}
                     {(selectedService.phone || selectedService.email) && (
-                      <div className="space-y-6">
+                      <div className="space-y-4 md:space-y-6">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Contact Channels</p>
-                        <div className="space-y-4">
+                        <div className="space-y-3 md:space-y-4">
                           {selectedService.phone && (
-                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm">
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Direct Line</p>
                               <p className="text-sm font-bold text-slate-700 tracking-widest">{selectedService.phone}</p>
                             </div>
                           )}
                           {selectedService.email && (
-                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                            <div className="bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-100 shadow-sm">
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Electronic Mail</p>
-                              <p className="text-sm font-bold text-slate-700 break-all">{selectedService.email}</p>
+                              <p className="text-xs md:text-sm font-bold text-slate-700 break-all">{selectedService.email}</p>
                             </div>
                           )}
                         </div>
@@ -590,19 +591,19 @@ export function AdminProviderServices() {
 
                     {/* Final Executive Actions */}
                     {selectedService.status === "pending" && (
-                      <div className="space-y-4 pt-4">
+                      <div className="space-y-3 md:space-y-4 pt-4">
                         <Button
                           onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
-                          className="w-full h-14 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-[#608d64]/30 group"
+                          className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-[#608d64]/30 group"
                         >
-                          <CheckCircle className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" /> Authorize Dossier
+                          <CheckCircle className="w-4 h-4 mr-2 md:mr-3 group-hover:scale-110 transition-transform" /> Authorize Dossier
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
-                          className="w-full h-14 rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 font-black uppercase text-[10px] tracking-[0.2em]"
+                          className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 font-black uppercase text-[10px] tracking-[0.2em]"
                         >
-                          <XCircle className="w-4 h-4 mr-3" /> Decline Entry
+                          <XCircle className="w-4 h-4 mr-2 md:mr-3" /> Decline Entry
                         </Button>
                       </div>
                     )}

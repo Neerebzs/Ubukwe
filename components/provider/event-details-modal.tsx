@@ -515,7 +515,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[92vw] max-w-[1200px] p-0 border-none bg-white shadow-none rounded-[2.5rem] overflow-hidden max-h-[92vh]"
+        className="w-[92vw] max-w-[1200px] sm:max-w-[1200px] p-0 border-none bg-white shadow-none rounded-[2.5rem] overflow-hidden max-h-[92vh]"
         showCloseButton={false}
       >
         {modalContent}

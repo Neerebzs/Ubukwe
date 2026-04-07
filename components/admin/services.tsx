@@ -363,7 +363,7 @@ export function AdminServices() {
 
       {/* Details Modal - Artisanal Record */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="w-[90vw] max-w-[1200px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[92vh]">
+        <DialogContent className="w-[90vw] max-w-[1200px] sm:max-w-[1200px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[92vh]">
           {serviceDetail && (
             <div className="flex flex-col h-full overflow-hidden">
               
