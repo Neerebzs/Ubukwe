@@ -344,10 +344,12 @@ export function AdminProviderServices() {
 
       {/* Details Modal - Artisanal Dossier */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden border-none rounded-[3rem] shadow-2xl bg-slate-50/50 backdrop-blur-xl max-h-[90vh]">
+        <DialogContent className="w-[70vw] max-w-[70vw] p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl bg-white max-h-[92vh]">
           {selectedService && (
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="relative h-[300px] shrink-0">
+
+              {/* Hero */}
+              <div className="relative h-56 shrink-0">
                 {selectedService.gallery?.[0] ? (
                   <img
                     src={typeof selectedService.gallery[0] === 'string' ? selectedService.gallery[0] : (selectedService.gallery[0].url || selectedService.gallery[0].image_url)}
@@ -355,58 +357,76 @@ export function AdminProviderServices() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                    <Package className="w-16 h-16 text-slate-200" />
+                  <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Package className="w-16 h-16 text-slate-300" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-                <div className="absolute bottom-8 left-8 right-8">
-                  <div className="flex items-end justify-between gap-6">
-                    <div className="space-y-2">
-                      <Badge className="bg-[#608d64] text-white hover:bg-[#608d64] border-none px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                        {selectedService.category}
-                      </Badge>
-                      <h2 className="text-4xl font-serif italic text-white leading-tight">
-                        {selectedService.name}
-                      </h2>
-                    </div>
-                    {selectedService.status === "pending" && (
-                      <div className="flex gap-3 mb-1">
-                        <Button
-                          size="sm"
-                          onClick={() => openActionModal(selectedService!, "approve")}
-                          className="h-11 px-6 rounded-2xl bg-white text-slate-900 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all"
-                        >
-                          Authorize Submission
-                        </Button>
-                      </div>
-                    )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                {/* Status badge top-right */}
+                <div className="absolute top-5 right-5">
+                  <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-none shadow-lg ${
+                    selectedService.status === "approved" ? "bg-[#608d64] text-white" :
+                    selectedService.status === "pending" ? "bg-amber-500 text-white" :
+                    "bg-rose-500 text-white"
+                  }`}>
+                    {selectedService.status}
+                  </Badge>
+                </div>
+
+                {/* Title + category bottom-left */}
+                <div className="absolute bottom-6 left-8 right-8 flex items-end justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      {selectedService.category}
+                    </Badge>
+                    <h2 className="text-3xl font-serif italic text-white leading-tight drop-shadow-sm">
+                      {selectedService.name}
+                    </h2>
                   </div>
+                  {selectedService.status === "pending" && (
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
+                        className="h-10 px-5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-rose-500/80 font-bold uppercase text-[10px] tracking-widest transition-all"
+                      >
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
+                        className="h-10 px-5 rounded-xl bg-white text-slate-900 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all"
+                      >
+                        Authorize
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-10">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                  <div className="md:col-span-2 space-y-10">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-px w-8 bg-[#608d64]/40" />
-                        <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Narrative</h3>
-                      </div>
-                      <p className="text-slate-600 leading-relaxed font-light text-lg">
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+
+                  {/* Left — main content */}
+                  <div className="md:col-span-2 p-8 space-y-8">
+
+                    {/* Description */}
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">The Narrative</p>
+                      <p className="text-slate-600 leading-relaxed text-sm font-light">
                         {selectedService.description}
                       </p>
                     </div>
 
+                    {/* Specialties */}
                     {selectedService.specialties?.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-px w-8 bg-[#608d64]/40" />
-                          <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Artisanal Specialties</h3>
-                        </div>
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Specialties</p>
                         <div className="flex flex-wrap gap-2">
                           {selectedService.specialties.map((s, i) => (
-                            <Badge key={i} variant="outline" className="border-slate-200 text-slate-600 font-light px-4 py-1.5 rounded-full text-xs">
+                            <Badge key={i} variant="outline" className="border-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-medium">
                               {s}
                             </Badge>
                           ))}
@@ -414,61 +434,125 @@ export function AdminProviderServices() {
                       </div>
                     )}
 
+                    {/* Packages */}
                     {selectedService.packages?.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-px w-8 bg-[#608d64]/40" />
-                          <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Investment Packages</h3>
-                        </div>
-                        <div className="grid gap-4">
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Investment Packages</p>
+                        <div className="grid sm:grid-cols-2 gap-3">
                           {selectedService.packages.map((pkg: any, idx: number) => (
-                            <div key={idx} className="bg-white border border-slate-100 rounded-[2rem] p-6 flex items-center justify-between group hover:border-[#608d64]/20 transition-all">
-                              <div className="space-y-1">
-                                <h4 className="font-serif italic text-lg text-slate-900">{pkg.name}</h4>
-                                <p className="text-xs text-slate-600 font-light">{pkg.duration}</p>
+                            <div key={idx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 hover:border-[#608d64]/20 transition-all">
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-serif italic text-slate-900 text-base">{pkg.name}</h4>
+                                {pkg.popular && <Badge className="bg-[#608d64]/10 text-[#608d64] border-none text-[9px] font-black uppercase tracking-widest">Popular</Badge>}
                               </div>
-                              <div className="text-right">
-                                <p className="text-xl font-serif italic text-[#608d64]">{pkg.price?.toLocaleString()} RWF</p>
-                              </div>
+                              <p className="text-xl font-bold text-[#608d64]">{pkg.price?.toLocaleString()} <span className="text-xs font-black text-slate-400">RWF</span></p>
+                              {pkg.duration && <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Duration: {pkg.duration}</p>}
+                              {pkg.features?.length > 0 && (
+                                <ul className="mt-3 space-y-1">
+                                  {pkg.features.slice(0, 3).map((f: string, fi: number) => (
+                                    <li key={fi} className="text-xs text-slate-500 flex items-center gap-1.5">
+                                      <CheckCircle className="w-3 h-3 text-[#608d64] shrink-0" />{f}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                  </div>
 
-                  <div className="space-y-8">
-                    <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 space-y-6 shadow-sm">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Originator</p>
-                        <div className="flex items-center gap-3 pt-2">
-                          <div className="h-10 w-10 rounded-full bg-[#608d64]/10 flex items-center justify-center">
-                            <UserCircle2 className="w-6 h-6 text-[#608d64]" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-900">{selectedService.provider?.full_name}</p>
-                            <p className="text-[10px] text-slate-600 font-light">{selectedService.provider?.email}</p>
-                          </div>
+                    {/* Gallery grid */}
+                    {selectedService.gallery?.length > 1 && (
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Gallery ({selectedService.gallery.length})</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedService.gallery.slice(0, 6).map((item: any, i: number) => {
+                            const src = typeof item === 'string' ? item : (item.url || item.image_url || item.preview)
+                            return src ? (
+                              <div key={i} className="aspect-video rounded-xl overflow-hidden bg-slate-100">
+                                <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                              </div>
+                            ) : null
+                          })}
                         </div>
                       </div>
+                    )}
+                  </div>
 
-                      <Separator className="bg-slate-50" />
+                  {/* Right — metadata */}
+                  <div className="p-8 space-y-6 bg-slate-50/50">
 
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Location</span>
-                          <span className="text-xs font-medium text-slate-600 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {selectedService.location}
-                          </span>
+                    {/* Provider */}
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Originator</p>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-[#608d64]/10 flex items-center justify-center shrink-0">
+                          <UserCircle2 className="w-5 h-5 text-[#608d64]" />
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Submitted</span>
-                          <span className="text-xs font-medium text-slate-600">
-                            {new Date(selectedService.created_at).toLocaleDateString('en-CA')}
-                          </span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-slate-900 text-sm truncate">{selectedService.provider?.full_name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{selectedService.provider?.email}</p>
                         </div>
                       </div>
                     </div>
+
+                    <Separator className="bg-slate-100" />
+
+                    {/* Meta fields */}
+                    {[
+                      { label: "Location", value: selectedService.location, icon: <MapPin className="w-3 h-3" /> },
+                      { label: "Submitted", value: new Date(selectedService.created_at).toLocaleDateString('en-CA') },
+                      { label: "Min Price", value: `${selectedService.price_range_min?.toLocaleString()} RWF` },
+                    ].map((item, i) => (
+                      <div key={i} className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                        <p className="text-sm font-medium text-slate-700 flex items-center gap-1">
+                          {item.icon}{item.value}
+                        </p>
+                      </div>
+                    ))}
+
+                    {/* Contact */}
+                    {(selectedService.phone || selectedService.email) && (
+                      <>
+                        <Separator className="bg-slate-100" />
+                        {selectedService.phone && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
+                            <p className="text-sm font-medium text-slate-700">{selectedService.phone}</p>
+                          </div>
+                        )}
+                        {selectedService.email && (
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
+                            <p className="text-sm font-medium text-slate-700 break-all">{selectedService.email}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Action buttons if pending */}
+                    {selectedService.status === "pending" && (
+                      <>
+                        <Separator className="bg-slate-100" />
+                        <div className="space-y-2 pt-1">
+                          <Button
+                            onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
+                            className="w-full h-11 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-[#608d64]/20"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" /> Authorize
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
+                            className="w-full h-11 rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 font-bold uppercase text-[10px] tracking-widest"
+                          >
+                            <XCircle className="w-4 h-4 mr-2" /> Decline
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
