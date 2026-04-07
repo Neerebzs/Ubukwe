@@ -115,23 +115,23 @@ export function ServiceDetailView({
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#668c65] transition-all group"
+          className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#668c65] transition-all group px-2 sm:px-4"
         >
-          <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          Retreat to Inventory
+          <ArrowLeft className="h-4 w-4 sm:mr-2 group-hover:-translate-x-1 transition-transform" />
+          <span className="hidden sm:inline">Retreat</span>
         </Button>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="sm" className="hidden sm:flex rounded-xl text-[10px] font-black uppercase tracking-widest text-[#668c65] bg-[#668c65]/5 hover:bg-[#668c65]/10 h-10 px-5">
             <Share2 className="h-4 w-4 mr-2" />
             Dispatch
           </Button>
-          <Button variant="ghost" size="sm" onClick={onEdit} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 h-10 px-5 transition-all">
-            <Edit className="h-4 w-4 mr-2" />
-            Refine
+          <Button variant="ghost" size="sm" onClick={onEdit} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 h-10 px-3 sm:px-5 transition-all">
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Refine</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 h-10 px-5 transition-all">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Erase
+          <Button variant="ghost" size="sm" onClick={onDelete} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 h-10 px-3 sm:px-5 transition-all">
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Erase</span>
           </Button>
         </div>
       </div>
@@ -160,7 +160,7 @@ export function ServiceDetailView({
               )}
             </div>
 
-            <h1 className="text-6xl sm:text-7xl font-serif italic tracking-tighter text-slate-900 leading-[0.9]">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif italic tracking-tighter text-slate-900 leading-[0.95] sm:leading-[0.9]">
               {service.name}
             </h1>
 
@@ -213,13 +213,13 @@ export function ServiceDetailView({
         </div>
 
         {/* Sidebar info */}
-        <div className="space-y-8">
-          <Card className="border-none shadow-none bg-[#668c65]/5 rounded-[2.5rem] p-10 border border-[#668c65]/10 flex flex-col justify-between h-full">
+        <div className="flex flex-col gap-8 h-full">
+          <Card className="border-none shadow-none bg-[#668c65]/5 rounded-[2.5rem] p-6 md:p-10 border border-[#668c65]/10 flex flex-col justify-between flex-1">
             <div className="space-y-8">
               <div>
                 <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mb-3">Unit Valuation</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-serif italic text-slate-900 tracking-tighter">
+                  <span className="text-4xl md:text-5xl font-serif italic text-slate-900 tracking-tighter">
                     {service.priceRangeMin.toLocaleString()}
                   </span>
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">RWF Origin</span>
@@ -254,7 +254,7 @@ export function ServiceDetailView({
             </div>
           </Card>
 
-          <Card className="border-none shadow-none bg-white rounded-[2rem] p-8 border border-slate-50 shadow-sm">
+          <Card className="border-none shadow-none bg-white rounded-[2rem] p-6 md:p-8 border border-slate-50 shadow-sm">
             <h4 className="text-[10px] font-black text-slate-900 mb-6 flex items-center uppercase tracking-widest group">
               <Mail className="w-4 h-4 mr-3 text-[#668c65] group-hover:rotate-12 transition-transform" />
               Contact Coordinates
@@ -289,8 +289,8 @@ export function ServiceDetailView({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="pt-12">
-        <div className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-10 overflow-x-auto no-scrollbar">
-          <TabsList className="bg-transparent h-auto p-0 flex rounded-none gap-12">
+        <div className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-8 overflow-x-auto scrollbar-hide">
+          <TabsList className="bg-transparent h-auto p-0 flex rounded-none gap-6 sm:gap-12 min-w-max">
             {[
               { id: "overview", label: "Manifest Overview" },
               { id: "packages", label: `Allocation Matrix (${service.packages.length})` },
@@ -341,7 +341,7 @@ export function ServiceDetailView({
             </div>
 
             <div className="space-y-8">
-              <Card className="border-none bg-[#668c65]/5 shadow-none p-8 rounded-[2rem] relative overflow-hidden group">
+              <Card className="border-none bg-[#668c65]/5 shadow-none p-6 md:p-8 rounded-[2rem] relative overflow-hidden group">
                 <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000">
                   <Package className="w-40 h-40" />
                 </div>
@@ -362,7 +362,7 @@ export function ServiceDetailView({
                 </div>
               </Card>
 
-              <Card className="border-none shadow-none bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl shadow-slate-900/10">
+              <Card className="border-none shadow-none bg-slate-900 text-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-900/10">
                 <h4 className="text-[10px] font-black mb-6 flex items-center uppercase tracking-[0.2em] text-slate-500">
                   <TrendingUp className="w-4 h-4 mr-3 text-[#668c65]" />
                   Impact Metrics
@@ -414,7 +414,7 @@ export function ServiceDetailView({
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col p-10 pt-0 space-y-8">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-serif italic text-slate-900 tracking-tighter">{pkg.price.toLocaleString()}</span>
+                      <span className="text-3xl md:text-4xl font-serif italic text-slate-900 tracking-tighter">{pkg.price.toLocaleString()}</span>
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RWF / {pkg.duration}</span>
                     </div>
 
@@ -625,7 +625,7 @@ export function ServiceDetailView({
         < TabsContent value="contact" className="pt-6 animate-in fade-in slide-in-from-bottom-4 duration-700" >
           <Card className="border-none shadow-none bg-white rounded-[2.5rem] overflow-hidden border border-slate-50 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="p-12 space-y-10">
+              <div className="p-6 md:p-12 space-y-10">
                 <div>
                   <h3 className="text-3xl font-serif italic text-slate-900 mb-4">Direct Resonance</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Establish a connection to manifest bespoke rituals and curated alignments.</p>
@@ -669,7 +669,7 @@ export function ServiceDetailView({
                 </div>
               </div>
 
-              <div className="bg-slate-950 p-12 flex flex-col justify-center text-white relative overflow-hidden">
+              <div className="bg-slate-950 p-6 md:p-12 flex flex-col justify-center text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
                   <ShieldCheck className="w-80 h-80" />
                 </div>

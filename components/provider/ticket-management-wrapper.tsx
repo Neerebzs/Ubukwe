@@ -69,20 +69,20 @@ export function TicketManagementWrapper() {
   return (
     <div className="space-y-12 pb-20">
       {/* Event Header */}
-      <div className="flex items-end justify-between border-b border-slate-100 pb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-10">
         <div className="space-y-2">
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em]">
             Event Inventory Control
           </p>
-          <h2 className="text-5xl font-serif italic text-slate-900 tracking-tight leading-none">{event.title}</h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mt-4">
+          <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 tracking-tight leading-none">{event.title}</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex flex-wrap items-center gap-2 mt-4">
             <span className="text-[#668c65]">Manifested at</span> {event.location} <span className="text-slate-200">|</span> <span>{new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'full' })}</span>
           </p>
         </div>
         <Button 
           variant="outline" 
           onClick={() => router.push("/provider/dashboard?tab=events")}
-          className="h-12 px-6 border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all gap-2"
+          className="h-12 px-6 border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all gap-2 self-start md:self-auto"
         >
           <ChevronLeft className="h-4 w-4" />
           Registry List

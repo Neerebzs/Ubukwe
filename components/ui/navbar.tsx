@@ -21,17 +21,17 @@ export function Navbar() {
     <>
       <header className="w-full bg-white/70 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-100/50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="h-11 w-11 rounded-full bg-[#668c65] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-              <span className="text-white font-serif italic text-xl">V</span>
+          <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
+            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#668c65] flex flex-shrink-0 items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+              <span className="text-white font-serif italic text-lg sm:text-xl">V</span>
             </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">VowNest</span>
+            <div className="hidden sm:flex flex-col flex-shrink-0">
+              <span className="text-xl sm:text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">VowNest</span>
               <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">Collective</span>
             </div>
           </Link>
 
-          <AISearch className="relative flex-1 max-w-md mx-12 hidden lg:block" />
+          <AISearch className="relative flex-1 max-w-sm sm:max-w-md mx-3 sm:mx-6 lg:mx-12" />
 
           {/* Desktop Navigation */}
           {isMobile === false && (
@@ -103,10 +103,10 @@ export function Navbar() {
           {isMobile === true && (
             <button
               onClick={toggleMenu}
-              className="text-slate-900 focus:outline-none h-12 w-12 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-500 group"
+              className="text-slate-900 focus:outline-none flex-shrink-0 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition-all duration-500 group"
               aria-label="Toggle menu"
             >
-              {isMenuOpen ? <XIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />}
+              {isMenuOpen ? <XIcon className="h-4 w-4 sm:h-5 sm:w-5" /> : <MenuIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />}
             </button>
           )}
         </div>
@@ -165,8 +165,7 @@ export function Navbar() {
                 </nav>
               </div>
 
-              {/* Mobile Search */}
-              <AISearch />
+              {/* Mobile Search (Moved to main header) */}
 
               {/* Preferences */}
               <div className="space-y-4 pt-6 border-t border-slate-50">

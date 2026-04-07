@@ -353,16 +353,16 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
             {/* Budget Overview Header */}
             {/* Budget Overview Header */}
             <Card className="border-none bg-white/95 backdrop-blur-md rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="pt-10 px-10">
+                <CardHeader className="pt-6 md:pt-10 px-6 md:px-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-1">
-                            <CardTitle className="flex items-center text-3xl font-serif italic text-slate-800 tracking-tight">
-                                <div className="p-2.5 bg-sage-50 rounded-2xl mr-4">
-                                    <DollarSign className="h-6 w-6 text-sage-600" />
+                            <CardTitle className="flex items-center text-xl sm:text-2xl md:text-3xl font-serif italic text-slate-800 tracking-tight">
+                                <div className="p-2 sm:p-2.5 bg-sage-50 rounded-xl sm:rounded-2xl mr-3 sm:mr-4">
+                                    <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-sage-600" />
                                 </div>
                                 Budget Registry
                             </CardTitle>
-                            <p className="text-slate-500 font-medium text-sm ml-16">Elegantly managing your wedding investment</p>
+                            <p className="text-slate-500 font-medium text-[10px] sm:text-xs md:text-sm ml-11 sm:ml-16">Elegantly managing your wedding investment</p>
                         </div>
                         <Button
                             variant="default"
@@ -371,7 +371,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                 setNewTotalBudget(currentBudget.toString());
                                 setIsEditBudgetOpen(true);
                             }}
-                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 rounded-2xl px-8 h-12 text-sm font-bold uppercase tracking-widest transition-all duration-300 shadow-none"
+                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 rounded-2xl px-6 sm:px-8 h-10 sm:h-12 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-300 shadow-none w-full md:w-auto"
                         >
                             {currentBudget > 0 ? (
                                 <span className="flex items-center">
@@ -387,22 +387,22 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="px-10 pb-12">
-                    <div className="grid md:grid-cols-4 gap-6">
+                <CardContent className="px-6 md:px-10 pb-10 md:pb-12">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                         {[
                             { label: "Total Investment", value: `RWF ${currentBudget.toLocaleString()}`, color: "slate" },
                             { label: "Gracefully Spent", value: `RWF ${currentSpent.toLocaleString()}`, color: "rose" },
                             { label: "Remaining", value: `RWF ${remainingBudget.toLocaleString()}`, color: "teal" },
                             { label: "Utilization", value: `${budgetUsedPercentage.toFixed(1)}%`, color: "emerald" },
                         ].map((stat, i) => (
-                            <div key={i} className="text-center p-6 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all duration-300 hover:bg-white hover:-translate-y-1">
-                                <div className={`text-xl font-bold tracking-tighter mb-2 ${stat.color === 'rose' ? 'text-rose-600' :
+                            <div key={i} className="text-center p-4 sm:p-6 bg-slate-50/50 rounded-[1.5rem] sm:rounded-[2rem] border border-slate-100 transition-all duration-300 hover:bg-white hover:-translate-y-1">
+                                <div className={`text-md sm:text-lg md:text-xl font-bold tracking-tighter mb-1 sm:mb-2 ${stat.color === 'rose' ? 'text-rose-600' :
                                     stat.color === 'teal' ? 'text-sage-700' :
                                         stat.color === 'emerald' ? 'text-emerald-700' : 'text-slate-800'
                                     }`}>
                                     {stat.value}
                                 </div>
-                                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{stat.label}</div>
+                                <div className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{stat.label}</div>
                             </div>
                         ))}
                     </div>
@@ -438,7 +438,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
             {/* Budget Categories */}
             <Tabs defaultValue="categories" className="space-y-8">
-                <TabsList className="flex items-center justify-start gap-2 bg-slate-50/50 p-1.5 rounded-2xl w-fit border border-slate-100">
+                <TabsList className="flex items-center justify-start gap-1 sm:gap-2 bg-slate-50/50 p-1 sm:p-1.5 rounded-2xl w-full sm:w-fit border border-slate-100 overflow-x-auto scrollbar-hide no-scrollbar">
                     {[
                         { value: "categories", label: "Registry", icon: LayoutGrid },
                         { value: "manage", label: "Allocations", icon: Edit2 },
@@ -448,9 +448,9 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                         <TabsTrigger
                             key={tab.value}
                             value={tab.value}
-                            className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm data-[state=active]:border border-slate-100/50"
+                            className="flex items-center gap-2 rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 text-[9px] sm:text-xs font-bold uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-sage-700 data-[state=active]:shadow-sm data-[state=active]:border border-slate-100/50 whitespace-nowrap"
                         >
-                            <tab.icon className="h-3.5 w-3.5" />
+                            <tab.icon className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
                             {tab.label}
                         </TabsTrigger>
                     ))}
@@ -495,22 +495,22 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             const remainingCategoryBudget = category.allocated_amount - totalTaskAmount;
 
                             return (
-                                <Card key={category.id} className="border-none rounded-[2.5rem] overflow-hidden bg-white transition-all duration-500 group">
-                                    <CardContent className="p-8">
+                                <Card key={category.id} className="border-none rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-white transition-all duration-500 group">
+                                    <CardContent className="p-6 sm:p-8">
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center space-x-5">
-                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100/50 group-hover:scale-105 transition-transform ${budgetCategory?.color ? budgetCategory.color.replace('bg-', 'bg-opacity-10 text-') : 'bg-slate-50 text-slate-400'}`}>
-                                                    <LayoutGrid className="h-6 w-6" />
+                                                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm border border-slate-100/50 group-hover:scale-105 transition-transform ${budgetCategory?.color ? budgetCategory.color.replace('bg-', 'bg-opacity-10 text-') : 'bg-slate-50 text-slate-400'}`}>
+                                                    <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-2xl font-serif italic text-slate-800 tracking-tight">{category.category_name}</h3>
+                                                    <h3 className="text-xl sm:text-2xl font-serif italic text-slate-800 tracking-tight">{category.category_name}</h3>
                                                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
                                                         {budgetCategory?.description || "Bespoke Category"}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-2xl font-bold tracking-tighter text-slate-800">
+                                                <div className="text-lg sm:text-2xl font-bold tracking-tighter text-slate-800">
                                                     RWF {category.allocated_amount.toLocaleString()}
                                                 </div>
                                                 <div className="text-[10px] font-bold uppercase tracking-widest text-sage-600/60 mt-1">
@@ -519,18 +519,18 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
                                             {[
                                                 { label: "Spent", value: spentAmount, color: "text-rose-600" },
                                                 { label: "Grace", value: Math.abs(variance), color: variance > 0 ? 'text-rose-600' : 'text-sage-700' },
                                                 { label: "Tasks", value: `${completedCategoryTasks.length}/${categoryTasks.length}`, isRaw: true, color: "text-slate-800" },
                                                 { label: "Share", value: `${((category.allocated_amount / currentBudget) * 100).toFixed(1)}%`, isRaw: true, color: "text-slate-800" },
                                             ].map((stat, idx) => (
-                                                <div key={idx} className="text-center p-4 bg-slate-50/50 rounded-2xl border border-slate-100/30 transition-colors hover:bg-white hover:shadow-sm">
-                                                    <div className={`text-md font-bold tracking-tighter mb-1 ${stat.color}`}>
+                                                <div key={idx} className="text-center p-3 sm:p-4 bg-slate-50/50 rounded-[1rem] sm:rounded-2xl border border-slate-100/30 transition-colors hover:bg-white hover:shadow-sm">
+                                                    <div className={`text-sm sm:text-md font-bold tracking-tighter mb-0.5 sm:mb-1 ${stat.color}`}>
                                                         {stat.isRaw ? stat.value : `RWF ${stat.value.toLocaleString()}`}
                                                     </div>
-                                                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{stat.label}</div>
+                                                    <div className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{stat.label}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -568,7 +568,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                         RWF {remainingCategoryBudget.toLocaleString()} Available
                                                     </Badge>
                                                 </div>
-                                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                                     {categoryTasks.map((task: any) => (
                                                         <div
                                                             key={task.id}
@@ -597,19 +597,19 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
                 <TabsContent value="manage" className="space-y-8">
                     <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
-                        <CardHeader className="pt-10 px-10">
-                            <CardTitle className="flex items-center text-2xl font-serif italic text-slate-800">
-                                <div className="p-2 bg-sage-50 rounded-xl mr-4">
-                                    <Edit2 className="h-5 w-5 text-sage-600" />
+                        <CardHeader className="pt-6 md:pt-10 px-6 md:px-10">
+                            <CardTitle className="flex items-center text-xl sm:text-2xl font-serif italic text-slate-800">
+                                <div className="p-2 sm:p-2.5 bg-sage-50 rounded-xl sm:rounded-2xl mr-3 sm:mr-4">
+                                    <Edit2 className="h-4 w-4 sm:h-5 sm:w-5 text-sage-600" />
                                 </div>
                                 Investment Allocations
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-10 pb-12">
+                        <CardContent className="px-6 md:px-10 pb-10 md:pb-12">
                             {categorySpending.length > 0 ? (
                                 <div className="space-y-10">
-                                    <div className="bg-slate-50/50 p-8 rounded-3xl border border-dashed border-slate-200">
-                                        <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-3xl">
+                                    <div className="bg-slate-50/50 p-6 md:p-8 rounded-3xl border border-dashed border-slate-200">
+                                        <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-3xl">
                                             Curate your spending by refining the allocations for each category. Your total investment is elegantly distributed to ensure harmony in your planning. Changes are preserved in real-time.
                                         </p>
                                     </div>
@@ -619,30 +619,30 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                             const percentage = currentBudget > 0 ? (category.allocated_amount / currentBudget) * 100 : 0;
 
                                             return (
-                                                <div key={category.id} className="p-8 bg-white rounded-3xl border border-slate-100 transition-all hover:shadow-xl hover:shadow-sage-500/5 group">
-                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-8">
-                                                        <div className="flex items-center space-x-5">
-                                                            <div className={`w-3 h-3 rounded-full ${budgetCategory?.color || 'bg-slate-200'}`} />
+                                                <div key={category.id} className="p-6 sm:p-8 bg-white rounded-3xl border border-slate-100 transition-all hover:shadow-xl hover:shadow-sage-500/5 group">
+                                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-8 mb-6 md:mb-8">
+                                                        <div className="flex items-center space-x-3 sm:space-x-5">
+                                                            <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${budgetCategory?.color || 'bg-slate-200'}`} />
                                                             <div>
-                                                                <h4 className="text-lg font-bold text-slate-800">{category.category_name}</h4>
-                                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                                                                <h4 className="text-base sm:text-lg font-bold text-slate-800">{category.category_name}</h4>
+                                                                <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5 sm:mt-1">
                                                                     {budgetCategory?.description || "Bespoke Category"}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="text-lg font-serif italic text-sage-700">
+                                                        <div className="text-left md:text-right">
+                                                            <div className="text-md sm:text-lg font-serif italic text-sage-700">
                                                                 {percentage.toFixed(1)}% Allocation
                                                             </div>
-                                                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                                                            <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-0.5 sm:mt-1">
                                                                 Yielded: RWF {category.spent_amount.toLocaleString()}
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                                         <div className="space-y-3">
-                                                            <Label htmlFor={`budget-${category.id}`} className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 ml-1">
+                                                            <Label htmlFor={`budget-${category.id}`} className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 ml-1">
                                                                 Allocated Investment (RWF)
                                                             </Label>
                                                             <div className="relative">
@@ -651,12 +651,12 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                                     type="number"
                                                                     value={category.allocated_amount}
                                                                     onChange={() => { }} // Integration logic
-                                                                    className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500/10 transition-all font-bold text-slate-700 text-lg px-6"
+                                                                    className="h-12 sm:h-14 rounded-[1rem] sm:rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500/10 transition-all font-bold text-slate-700 text-base sm:text-lg px-4 sm:px-6"
                                                                 />
                                                             </div>
                                                         </div>
                                                         <div className="space-y-3">
-                                                            <Label htmlFor={`percentage-${category.id}`} className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 ml-1">
+                                                            <Label htmlFor={`percentage-${category.id}`} className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 ml-1">
                                                                 Allocation Share (%)
                                                             </Label>
                                                             <div className="relative">
@@ -665,15 +665,15 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                                     type="number"
                                                                     value={percentage.toFixed(1)}
                                                                     onChange={() => { }} // Integration logic
-                                                                    className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500/10 transition-all font-bold text-slate-700 text-lg px-6"
+                                                                    className="h-12 sm:h-14 rounded-[1rem] sm:rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white focus:ring-sage-500/10 transition-all font-bold text-slate-700 text-base sm:text-lg px-4 sm:px-6"
                                                                 />
-                                                                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-bold">%</div>
+                                                                <div className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 text-slate-300 font-bold">%</div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-                                                        <p className="text-[11px] font-medium text-slate-400 flex items-center">
+                                                    <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                        <p className="text-[10px] sm:text-[11px] font-medium text-slate-400 flex items-center">
                                                             <AlertCircle className="h-3 w-3 mr-2 opacity-50" />
                                                             Variance Analysis:
                                                             <span className={`ml-2 font-bold ${category.spent_amount > category.allocated_amount ? 'text-rose-600' : 'text-sage-700'}`}>
@@ -683,7 +683,7 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                                         <Button
                                                             variant="default"
                                                             size="sm"
-                                                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none text-[10px] font-bold uppercase tracking-widest rounded-xl px-4 h-9 transition-colors shadow-none"
+                                                            className="bg-[#0d182b] text-white hover:bg-[#0d182b]/90 border-none text-[8px] sm:text-[10px] font-bold uppercase tracking-widest rounded-xl px-4 h-9 transition-colors shadow-none w-full sm:w-auto"
                                                         >
                                                             Restore Default
                                                         </Button>
@@ -693,19 +693,19 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                                         })}
                                     </div>
 
-                                    <div className="mt-12 p-10 bg-slate-800 rounded-[2.5rem] text-white">
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                                    <div className="mt-8 sm:mt-12 p-6 sm:p-10 bg-slate-800 rounded-[2rem] sm:rounded-[2.5rem] text-white">
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8">
                                             <div className="space-y-2">
-                                                <h4 className="text-2xl font-serif italic">Cumulative Portfolio Value</h4>
-                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 max-w-sm leading-relaxed">
+                                                <h4 className="text-xl sm:text-2xl font-serif italic text-white">Cumulative Portfolio Value</h4>
+                                                <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 max-w-sm leading-relaxed">
                                                     The total of all bespoke allocations curated for your wedding vision.
                                                 </p>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-4xl font-bold tracking-tighter text-sage-400">
+                                            <div className="text-left md:text-right">
+                                                <div className="text-2xl sm:text-4xl font-bold tracking-tighter text-sage-400">
                                                     RWF {categorySpending.reduce((sum: number, cat: any) => sum + cat.allocated_amount, 0).toLocaleString()}
                                                 </div>
-                                                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2">
+                                                <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1 sm:mt-2">
                                                     of RWF {currentBudget.toLocaleString()} Total Strategy
                                                 </div>
                                             </div>
@@ -727,13 +727,13 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
 
                 <TabsContent value="analytics" className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8">
-                        <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
-                            <CardHeader className="pt-10 px-10 pb-2">
-                                <CardTitle className="text-xl font-serif italic text-slate-800">Investment Distribution</CardTitle>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Allocation by Category Portfolio</p>
+                        <Card className="border-none rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-white mt-8">
+                            <CardHeader className="pt-6 md:pt-10 px-6 md:px-10 pb-2">
+                                <CardTitle className="text-lg sm:text-xl font-serif italic text-slate-800">Investment Distribution</CardTitle>
+                                <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Allocation by Category Portfolio</p>
                             </CardHeader>
-                            <CardContent className="p-10">
-                                <div className="h-[350px]">
+                            <CardContent className="p-6 sm:p-10">
+                                <div className="h-[250px] sm:h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
@@ -767,13 +767,13 @@ export function BudgetManagement({ totalBudget = 0, onBudgetUpdate }: BudgetMana
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none rounded-[2.5rem] overflow-hidden bg-white">
-                            <CardHeader className="pt-10 px-10 pb-2">
-                                <CardTitle className="text-xl font-serif italic text-slate-800">Strategic Performance</CardTitle>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Investment vs Outcome by Category</p>
+                        <Card className="border-none rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-white mt-8">
+                            <CardHeader className="pt-6 md:pt-10 px-6 md:px-10 pb-2">
+                                <CardTitle className="text-lg sm:text-xl font-serif italic text-slate-800">Strategic Performance</CardTitle>
+                                <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Investment vs Outcome by Category</p>
                             </CardHeader>
-                            <CardContent className="p-10">
-                                <div className="h-[350px]">
+                            <CardContent className="p-6 sm:p-10">
+                                <div className="h-[250px] sm:h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={categorySpending} layout="vertical">
                                             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />

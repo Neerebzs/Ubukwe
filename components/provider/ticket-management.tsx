@@ -216,32 +216,33 @@ export function TicketManagement({
     <div className="space-y-12">
       {/* Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-12 flex h-auto w-full rounded-2xl border border-slate-100/50 bg-slate-50/50 p-1">
-          <TabsTrigger
-            value="types"
-            className="h-12 flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none"
-          >
-            Inventory Design
-          </TabsTrigger>
-          <TabsTrigger
-            value="tickets"
-            className="h-12 flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none"
-          >
-            Registered Souls
-          </TabsTrigger>
+        <TabsList className="mb-8 flex h-auto w-full rounded-2xl border border-slate-100/50 bg-slate-50/50 p-1 overflow-x-auto scrollbar-hide">
+          <TabsList className="bg-transparent h-auto p-0 flex rounded-none w-full">
+            <TabsTrigger
+              value="types"
+              className="h-10 sm:h-12 flex-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none px-2"
+            >
+              Inventory Design
+            </TabsTrigger>
+            <TabsTrigger
+              value="tickets"
+              className="h-10 sm:h-12 flex-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none px-2"
+            >
+              Registered Souls
+            </TabsTrigger>
+          </TabsList>
         </TabsList>
 
         <TabsContent value="types" className="space-y-12">
           {/* Stats Bar */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              { label: "Total Ritual Capacity", value: eventCapacity, color: "text-slate-900" },
+            {[{ label: "Total Ritual Capacity", value: eventCapacity, color: "text-slate-900" },
               { label: "Allocated Tiers", value: getTotalTickets(), color: "text-[#668c65]" },
             { label: "Available Registry", value: getAvailableCapacity(), color: "text-slate-400" },
             ].map((stat, i) => (
-              <div key={i} className="flex h-32 flex-col justify-between rounded-[2rem] border border-slate-100 bg-white p-8 transition-colors hover:border-[#668c65]/20">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
-                <p className={cn("text-4xl font-serif italic", stat.color)}>{stat.value}</p>
+              <div key={i} className="flex h-28 sm:h-32 flex-col justify-between rounded-[2rem] border border-slate-100 bg-white p-6 sm:p-8 transition-colors hover:border-[#668c65]/20">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
+                <p className={cn("text-3xl sm:text-4xl font-serif italic", stat.color)}>{stat.value}</p>
               </div>
             ))}
           </div>
@@ -253,11 +254,11 @@ export function TicketManagement({
               const available = type.quantity - type.sold;
               return (
                 <Card key={type.id} className="overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white transition-all hover:border-[#668c65]/20 shadow-none">
-                  <CardHeader className="p-8 pb-4">
+                  <CardHeader className="p-6 sm:p-8 pb-3 sm:pb-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
-                        <CardTitle className="font-serif text-2xl italic text-slate-900">{type.name}</CardTitle>
-                        <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <CardTitle className="font-serif text-xl sm:text-2xl italic text-slate-900">{type.name}</CardTitle>
+                        <CardDescription className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
                           {type.description || "No description provided"}
                         </CardDescription>
                       </div>
@@ -284,7 +285,7 @@ export function TicketManagement({
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-8 p-8 pt-0">
+                  <CardContent className="space-y-6 sm:space-y-8 p-6 sm:p-8 pt-0">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
                         <span className="text-slate-300">Saturation</span>
@@ -294,7 +295,7 @@ export function TicketManagement({
                         <div className="h-full bg-[#668c65] transition-all duration-700" style={{ width: `${soldPct}%` }} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-y-6">
+                    <div className="grid grid-cols-2 gap-y-4 sm:gap-y-6">
                       {[
                         { label: "Exchange Value", value: `${type.price.toLocaleString()} RWF`, color: "text-[#668c65]" },
                         { label: "Total Supply", value: type.quantity },
@@ -303,7 +304,7 @@ export function TicketManagement({
                       ].map((d, idx) => (
                         <div key={idx}>
                           <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-300">{d.label}</p>
-                          <p className={cn("font-serif text-xs italic font-bold", d.color || "text-slate-900")}>{d.value}</p>
+                          <p className={cn("font-serif text-[10px] sm:text-xs italic font-bold", d.color || "text-slate-900")}>{d.value}</p>
                         </div>
                       ))}
                     </div>
@@ -349,13 +350,13 @@ export function TicketManagement({
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {tickets.map((t) => (
                 <div key={t.id} className="rounded-[2.5rem] border border-slate-50 bg-white p-8 transition-colors hover:border-[#668c65]/20">
-                  <div className="mb-8 flex items-start justify-between">
+                  <div className="mb-6 sm:mb-8 flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="font-serif text-lg italic text-slate-900">{t.holder_name}</p>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-[#668c65]">{t.holder_email}</p>
+                      <p className="font-serif text-base sm:text-lg italic text-slate-900">{t.holder_name}</p>
+                      <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#668c65]">{t.holder_email}</p>
                     </div>
                     <Badge className={cn(
-                      "rounded-full border-none px-3 py-1.5 text-[7px] font-black uppercase tracking-widest",
+                      "rounded-full border-none px-2 py-1 sm:px-3 sm:py-1.5 text-[6px] sm:text-[7px] font-black uppercase tracking-widest",
                       t.is_checked_in ? "bg-[#668c65]/10 text-[#668c65]" : "bg-slate-50 text-slate-300"
                     )}>
                       {t.is_checked_in ? "Verified" : "Pending"}
@@ -387,9 +388,9 @@ export function TicketManagement({
       {(isAddingType || isEditingType || isCreatingTicket) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-none">
-            <CardHeader className="border-b border-slate-50 p-10">
+            <CardHeader className="border-b border-slate-50 p-6 sm:p-10">
               <div className="flex items-center justify-between">
-                <CardTitle className="font-serif text-3xl italic text-slate-900">
+                <CardTitle className="font-serif text-2xl sm:text-3xl italic text-slate-900">
                   {isCreatingTicket ? "Issue Guest Ticket" : isEditingType ? "Edit Ticket Type" : "Create New Ticket Type"}
                 </CardTitle>
                 <Button
@@ -402,7 +403,7 @@ export function TicketManagement({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-8 p-10">
+            <CardContent className="space-y-6 sm:space-y-8 p-6 sm:p-10">
               {isCreatingTicket ? (
                 <>
                   <div className="space-y-2">
