@@ -33,10 +33,16 @@ export default function EventTicketingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">Loading event details...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-6">
+        <div className="relative flex items-center justify-center">
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-100" />
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-[#608d64] border-t-transparent animate-spin" />
+           <Calendar className="w-8 h-8 text-[#608d64] animate-pulse" />
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="font-serif italic text-2xl text-slate-900">
+            <TranslatedText text="Loading Event..." />
+          </h3>
         </div>
       </div>
     );

@@ -64,6 +64,23 @@ export default function EventsPage() {
 
   const filteredEvents = getFilteredEvents()
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-6">
+        <div className="relative flex items-center justify-center">
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-100" />
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-[#608d64] border-t-transparent animate-spin" />
+           <Calendar className="w-8 h-8 text-[#608d64] animate-pulse" />
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="font-serif italic text-2xl text-slate-900">
+            <TranslatedText text="Evaluating Events..." />
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
       {/* Hero Section */}
@@ -152,14 +169,7 @@ export default function EventsPage() {
           </div>
 
           {/* Grid Cards */}
-          {isLoading ? (
-            <div className="col-span-full flex items-center justify-center py-24">
-              <div className="text-center">
-                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                <p className="text-muted-foreground font-medium">Loading events...</p>
-              </div>
-            </div>
-          ) : error ? (
+          {error ? (
             <div className="col-span-full text-center py-24">
               <p className="text-destructive font-medium">Failed to load events</p>
             </div>

@@ -134,6 +134,23 @@ export default function HomePage() {
     { number: "24/7", label: "Support", icon: <Clock className="h-6 w-6" /> },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-6">
+        <div className="relative flex items-center justify-center">
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-100" />
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
+           <Heart className="w-8 h-8 text-[#668c65] animate-pulse" />
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="font-serif italic text-2xl text-sage-950">
+            <TranslatedText text="Preparing Details..." />
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
       {/* Editorial Hero Section */}

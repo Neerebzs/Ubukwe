@@ -78,10 +78,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">Loading service details...</p>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] space-y-6">
+                <div className="relative flex items-center justify-center">
+                   <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-200" />
+                   <div className="absolute w-20 h-20 rounded-full border-[3px] border-primary border-t-transparent animate-spin" />
+                   <Heart className="w-8 h-8 text-primary animate-pulse" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-serif italic text-2xl text-slate-900">
+                    Finding Service...
+                  </h3>
                 </div>
             </div>
         );

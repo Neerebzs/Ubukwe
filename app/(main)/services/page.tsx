@@ -90,6 +90,23 @@ export default function ServicesPage() {
 
   const currentCategory = categories.find(c => c.value === selectedCategory);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] space-y-6">
+        <div className="relative flex items-center justify-center">
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-200" />
+           <div className="absolute w-20 h-20 rounded-full border-[3px] border-primary border-t-transparent animate-spin" />
+           <Search className="w-8 h-8 text-primary animate-pulse" />
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="font-serif italic text-2xl text-slate-900">
+            Finding Services...
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col md:pl-10 mx-auto px-4">
       <div className="flex flex-1 flex-col md:flex-row">
@@ -195,28 +212,8 @@ export default function ServicesPage() {
               </div>
             )}
 
-            {/* Results Skeleton */}
-            {isLoading ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="h-[450px] bg-white border border-slate-50 rounded-[32px] overflow-hidden p-6 space-y-6 animate-pulse">
-                    <div className="aspect-[4/3] bg-slate-50 rounded-2xl" />
-                    <div className="space-y-4">
-                      <div className="h-4 bg-slate-50 rounded-full w-1/4" />
-                      <div className="h-8 bg-slate-50 rounded-full w-3/4" />
-                      <div className="h-[1px] bg-slate-50 w-full mt-4" />
-                      <div className="flex justify-between items-center">
-                        <div className="h-10 w-10 bg-slate-50 rounded-full" />
-                        <div className="space-y-2">
-                          <div className="h-3 bg-slate-50 rounded-full w-12" />
-                          <div className="h-3 bg-slate-50 rounded-full w-20" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
+            {/* Results */}
+            {error ? (
               <div className="text-center py-24 bg-white rounded-[32px] border border-dashed border-slate-200">
                 <div className="text-red-500 mb-6 inline-block p-6 bg-red-50 rounded-3xl">
                   <span className="text-3xl">⚠️</span>
