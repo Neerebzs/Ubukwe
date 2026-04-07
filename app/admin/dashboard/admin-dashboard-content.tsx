@@ -2,40 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useQuery } from "@tanstack/react-query"
+import { axiosInstance } from "@/lib/api-client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import {
-  Users,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  Shield,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Filter,
-  Eye,
-  Edit,
-  Ban,
-  MessageCircle,
-  Star,
-  Clock,
-  UserCheck,
-  Settings,
-  BarChart3,
-  Menu,
-  Home,
-  Briefcase,
-  BookOpen,
-  ShieldAlert,
-  ChevronLeft,
-  Bell,
-  Search,
-} from "lucide-react"
 import { AdminTabsSidebar } from "@/components/ui/admin-tabs-sidebar";
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminUsers } from "@/components/admin/users";
@@ -65,9 +34,7 @@ export function AdminDashboardContent() {
 
   useEffect(() => {
     const currentTab = searchParams.get("tab") || "overview"
-    if (currentTab !== activeTab) {
-      setActiveTab(currentTab)
-    }
+    if (currentTab !== activeTab) setActiveTab(currentTab)
   }, [searchParams, activeTab])
 
   const handleTabChange = (tab: string) => {
@@ -75,27 +42,48 @@ export function AdminDashboardContent() {
     router.push(`/admin/dashboard?tab=${tab}`, { scroll: false })
   }
 
-  // Platform stats will be fetched by sub-components or in future iterations
+  // ── Real API data ──────────────────────────────────────────────────────────
+  const { data: statsData } = useQuery({
+    queryKey: ["admin-platform-stats"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<any>("/api/v1/admin/stats")
+      return res.data
+    },
+    refetchInterval: 60_000,
+  })
+
+  const { data: activityData = [] } = useQuery({
+    queryKey: ["admin-recent-activity"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<any>("/api/v1/admin/recent-activity?limit=10")
+      return res.data ?? []
+    },
+    refetchInterval: 30_000,
+  })
+
   const platformStats = {
-    totalUsers: 0,
-    activeProviders: 0,
-    totalBookings: 0,
-    monthlyRevenue: 0,
-    pendingApprovals: 0,
-    activeDisputes: 0,
+    totalUsers:       statsData?.totalUsers       ?? 0,
+    activeProviders:  statsData?.activeProviders  ?? 0,
+    totalBookings:    statsData?.totalBookings     ?? 0,
+    monthlyRevenue:   statsData?.monthlyRevenue    ?? 0,
+    pendingApprovals: statsData?.pendingApprovals  ?? 0,
+    activeDisputes:   statsData?.activeDisputes    ?? 0,
   }
 
-  const recentActivity: any[] = []
+  const recentActivity = Array.isArray(activityData)
+    ? activityData.map((a: any, i: number) => ({
+        id: a.entityId ?? i,
+        type: a.type ?? "activity",
+        user: a.userId ? a.userId.slice(0, 8) : "System",
+        action: a.action ?? "",
+        time: a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+        status: a.status ?? "completed",
+      }))
+    : []
+  // ──────────────────────────────────────────────────────────────────────────
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  // Header logic replaced by DashboardHeader
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed)
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
 
   const renderContent = () => {
     switch (activeTab) {
