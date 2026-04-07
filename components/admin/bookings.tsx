@@ -66,6 +66,36 @@ export function AdminBookingsMetrics() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  const TABS_CONFIG: Record<string, { label: string; title: string; description: string; icon: JSX.Element }> = {
+    all: {
+      label: "Entire Chronicle",
+      title: "Comprehensive Ledger",
+      description: "A complete historical record of all platform engagements and service interactions.",
+      icon: <ClipboardList className="w-3.5 h-3.5" />
+    },
+    pending: {
+      label: "Awaiting",
+      title: "Awaiting Resolution",
+      description: "Service requests currently pending artisan approval or client finalization.",
+      icon: <Clock className="w-3.5 h-3.5" />
+    },
+    confirmed: {
+      label: "Engaged",
+      title: "Active Narratives",
+      description: "Validated bookings currently in progress or scheduled for upcoming horizons.",
+      icon: <CheckCircle className="w-3.5 h-3.5" />
+    },
+    completed: {
+      label: "Concluded",
+      title: "Archived Successes",
+      description: "Successful engagements that have reached their natural conclusion and are now archived.",
+      icon: <Package className="w-3.5 h-3.5" />
+    }
+  };
+
+  const activeTabConfig = TABS_CONFIG[statusFilter] || TABS_CONFIG.all;
+
+
   useEffect(() => {
     fetchBookings();
     fetchStats();
@@ -74,17 +104,41 @@ export function AdminBookingsMetrics() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
+      console.log('📊 Fetching admin bookings...');
       const response: any = await apiClient.admin.bookings.getAll();
-      const data = response.data?.data || response.data || response || [];
+      console.log('📊 Admin bookings response:', response);
+      
+      // Handle different response formats
+      let data = [];
+      if (response.data?.bookings) {
+        // Response format: { data: { bookings: [...] } }
+        data = response.data.bookings;
+      } else if (response.bookings) {
+        // Response format: { bookings: [...] }
+        data = response.bookings;
+      } else if (response.data?.data) {
+        // Response format: { data: { data: [...] } }
+        data = response.data.data;
+      } else if (response.data) {
+        // Response format: { data: [...] }
+        data = Array.isArray(response.data) ? response.data : [];
+      } else if (Array.isArray(response)) {
+        // Direct array response
+        data = response;
+      }
+      
+      console.log('📊 Processed bookings data:', data);
       setBookings(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-      // Fallback for demo if API fails
-      setBookings([
-        { id: "BK-1024", customer_name: "Aline Mutesi", service_name: "Premium Wedding Photography", booking_date: "2024-06-15", total_amount: 450000, status: "confirmed", customer_email: "aline@example.com", customer_phone: "+250 788 123 456", event_location: "Kigali Convention Centre", package_name: "Diamond Collection", created_at: "2024-03-01" },
-        { id: "BK-1025", customer_name: "Jean Claude", service_name: "Executive Catering Service", booking_date: "2024-07-02", total_amount: 1200000, status: "pending", customer_email: "jc@example.com", customer_phone: "+250 788 987 654", event_location: "Serena Hotel", package_name: "Gala Menu", created_at: "2024-03-02" },
-        { id: "BK-1026", customer_name: "Sandrine Iradukunda", service_name: "Artisanal Floral Design", booking_date: "2024-05-20", total_amount: 300000, status: "completed", customer_email: "sandrine@example.com", customer_phone: "+250 785 444 333", event_location: "Private Residence, Nyarutarama", package_name: "Garden Romance", created_at: "2024-02-15" }
-      ]);
+      
+      if (data.length === 0) {
+        toast.info('No bookings found');
+      } else {
+        toast.success(`Loaded ${data.length} booking(s)`);
+      }
+    } catch (error: any) {
+      console.error("❌ Error fetching bookings:", error);
+      toast.error(error.message || "Failed to fetch bookings");
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -92,16 +146,31 @@ export function AdminBookingsMetrics() {
 
   const fetchStats = async () => {
     try {
+      console.log('📊 Fetching booking stats...');
       const response: any = await apiClient.admin.bookings.getStats();
-      const data = response.data || response || {};
+      console.log('📊 Booking stats response:', response);
+      
+      // Handle different response formats
+      let data: any = {};
+      if (response.data?.data) {
+        data = response.data.data;
+      } else if (response.data) {
+        data = response.data;
+      } else {
+        data = response;
+      }
+      
+      console.log('📊 Processed stats data:', data);
       setStats({
-        total: data.total || 342,
-        pending: data.pending || 28,
-        confirmed: data.confirmed || 156,
-        completed: data.completed || 158
+        total: data.total || 0,
+        pending: data.pending || 0,
+        confirmed: data.confirmed || 0,
+        completed: data.completed || 0
       });
-    } catch (error) {
-      setStats({ total: 342, pending: 28, confirmed: 156, completed: 158 });
+    } catch (error: any) {
+      console.error("❌ Error fetching stats:", error);
+      toast.error(error.message || "Failed to fetch booking statistics");
+      setStats({ total: 0, pending: 0, confirmed: 0, completed: 0 });
     }
   };
 
@@ -131,7 +200,9 @@ export function AdminBookingsMetrics() {
           <h1 className="text-4xl font-serif italic text-slate-900 tracking-tight">Collective Ledger</h1>
           <div className="flex items-center gap-2">
             <div className="h-[1px] w-8 bg-[#608d64]/60" />
-            <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Chronicle of Platform Engagements</p>
+            <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">
+              {activeTabConfig.title} — Chronicle of Platform Engagements
+            </p>
           </div>
         </div>
 
@@ -173,26 +244,60 @@ export function AdminBookingsMetrics() {
       </div>
 
       <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-        <TabsList className="flex items-center gap-1 bg-white border border-slate-100 p-1.5 rounded-[1.8rem] h-auto w-fit mb-8 shadow-sm">
-          {[
-            { id: "all", label: "Entire Chronicle", icon: <ClipboardList className="w-3.5 h-3.5" /> },
-            { id: "pending", label: "Awaiting", icon: <Clock className="w-3.5 h-3.5" /> },
-            { id: "confirmed", label: "Engaged", icon: <CheckCircle className="w-3.5 h-3.5" /> },
-            { id: "completed", label: "Concluded", icon: <Package className="w-3.5 h-3.5" /> }
-          ].map((tab) => (
-            <TabsTrigger
-              key={tab.id}
-              value={tab.id}
-              className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2.5 ${statusFilter === tab.id
-                ? "bg-slate-900 text-white shadow-xl translate-y-[-1px]"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <TabsList className="flex items-center gap-1.5 bg-white border border-slate-100 p-2 rounded-[2rem] h-auto w-fit shadow-sm">
+            {Object.entries(TABS_CONFIG).map(([id, tab]) => (
+              <TabsTrigger
+                key={id}
+                value={id}
+                className={`h-12 px-8 rounded-full text-[11px] font-black uppercase tracking-widest transition-all duration-700 flex items-center gap-3 relative overflow-hidden group 
+                  ${statusFilter === id 
+                    ? "!bg-[#1a1c1e] !text-white shadow-2xl translate-y-[-2px] ring-4 ring-slate-900/5 scale-105" 
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50/80"}
+                  `}
+              >
+                <div className={`p-1.5 rounded-lg transition-colors 
+                  ${statusFilter === id ? "!bg-white/10 !text-white" : "bg-slate-50 text-slate-400 group-hover:bg-white group-hover:text-slate-600"}
+                `}>
+                  {tab.icon}
+                </div>
+                <span className="relative z-10">{tab.label}</span>
+                {statusFilter === id && (
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none z-0" />
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <div className="hidden lg:flex flex-col items-end text-right animate-in fade-in slide-in-from-right-4 duration-1000">
+            <h2 className="text-3xl font-serif italic text-slate-900 tracking-tight leading-none">
+              {activeTabConfig.label}
+            </h2>
+            <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.3em] mt-2">
+              Viewing Category Content
+            </p>
+          </div>
+        </div>
+
+        {/* Dynamic Context Section */}
+        <div className="mb-10 p-10 bg-white border border-slate-50 rounded-[3rem] animate-in fade-in slide-in-from-bottom-2 duration-700 flex flex-col md:flex-row md:items-center gap-10">
+          <div className="h-20 w-20 rounded-[1.8rem] bg-[#608d64]/5 border border-[#608d64]/10 flex items-center justify-center shrink-0">
+            {statusFilter === "all" ? (
+              <ClipboardList className="w-10 h-10 text-[#608d64]/40" />
+            ) : (
+              <div className="text-[#608d64]/40 scale-[2] transform-gpu transition-transform duration-500">
+                {activeTabConfig.icon}
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-serif italic text-slate-900">{activeTabConfig.title}</h3>
+            <p className="text-[11px] font-medium text-slate-600 uppercase tracking-widest max-w-2xl leading-relaxed">
+              {activeTabConfig.description}
+            </p>
+          </div>
+        </div>
+
 
         <TabsContent value={statusFilter} className="mt-0 focus-visible:outline-none">
           {loading ? (
@@ -283,87 +388,98 @@ export function AdminBookingsMetrics() {
 
       {/* Booking Dossier Modal - Sanctuary Aesthetic */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl">
-          <div className="bg-[#fdfcf9] p-12 space-y-10">
-            <DialogHeader className="space-y-1">
-              <DialogTitle className="text-3xl font-serif italic text-slate-900 tracking-tight">Ledger Dossier</DialogTitle>
-              <div className="flex items-center gap-2">
-                <div className="h-[1px] w-6 bg-[#608d64]/60" />
-                <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Detailed Transaction Insight</p>
+        <DialogContent className="max-w-[95vw] lg:max-w-7xl w-full p-0 overflow-hidden border-none rounded-[3rem] shadow-2xl">
+          <div className="bg-[#fdfcf9] p-6 md:p-14 space-y-10 lg:space-y-14 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-3xl md:text-5xl font-serif italic text-slate-900 tracking-tight outline-none">Ledger Dossier</DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-[1px] w-8 bg-[#608d64]/60" />
+                <p className="text-[10px] md:text-[12px] font-black text-[#608d64] uppercase tracking-[0.4em]">Detailed Transaction Insight</p>
               </div>
             </DialogHeader>
 
             {selectedBooking && (
-              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150 fill-mode-both">
                 {/* Visual Identity Hub */}
-                <div className="flex items-center gap-8">
-                  <div className="h-24 w-24 rounded-[2rem] bg-white border-4 border-white shadow-2xl shadow-slate-200/50 flex items-center justify-center">
-                    <User className="w-10 h-10 text-[#608d64]/60" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10">
+                  <div className="h-24 w-24 md:h-32 md:w-32 rounded-[2.5rem] bg-white border-4 border-white shadow-2xl shadow-slate-200/50 flex items-center justify-center shrink-0">
+                    <User className="w-10 h-10 md:w-14 md:h-14 text-[#608d64]/60" />
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="text-2xl font-serif italic text-slate-900">{selectedBooking.customer_name}</h4>
-                    <div className="flex items-center gap-3">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${getStatusConfig(selectedBooking.status).bg} ${getStatusConfig(selectedBooking.status).color}`}>
+                  <div className="space-y-3">
+                    <h4 className="text-3xl md:text-4xl font-serif italic text-slate-900 leading-tight">{selectedBooking.customer_name}</h4>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className={`px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2.5 ${getStatusConfig(selectedBooking.status).bg} ${getStatusConfig(selectedBooking.status).color}`}>
                         {getStatusConfig(selectedBooking.status).icon}
                         {getStatusConfig(selectedBooking.status).label}
                       </span>
-                      <span className="text-[11px] text-slate-600 font-light flex items-center gap-1.5 font-mono">
-                        #{selectedBooking.id}
+                      <span className="px-4 py-2 bg-slate-50 rounded-full text-[11px] text-slate-500 font-medium flex items-center gap-2 font-mono border border-slate-100">
+                        <span className="text-slate-300">#</span>{selectedBooking.id}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Narrative Grid */}
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Engagement Details</p>
-                      <div className="space-y-5 bg-white p-6 rounded-[2rem] border border-slate-50">
-                        <div className="flex items-center gap-4">
-                          <div className="p-2.5 bg-slate-50 rounded-xl text-slate-600"><Package className="w-4 h-4" /></div>
-                          <div>
-                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Service</p>
-                            <p className="text-sm font-serif italic text-slate-700">{selectedBooking.service_name}</p>
+                <div className="grid lg:grid-cols-2 gap-8 md:gap-12">
+                  <div className="space-y-10">
+                    <div className="space-y-5">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] ml-2">Engagement Details</p>
+                      <div className="space-y-6 bg-white p-8 md:p-10 rounded-[3rem] border border-slate-50 shadow-sm">
+                        <div className="flex items-center gap-5 group/item text-left">
+                          <div className="p-3.5 bg-slate-50 rounded-2xl text-slate-400 group-hover/item:text-[#608d64] group-hover/item:bg-[#608d64]/5 transition-colors"><Package className="w-5 h-5" /></div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Service Profile</p>
+                            <p className="text-lg font-serif italic text-slate-800 leading-tight">{selectedBooking.service_name}</p>
                           </div>
                         </div>
                         {selectedBooking.package_name && (
-                          <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-slate-50 rounded-xl text-slate-600"><ClipboardList className="w-4 h-4" /></div>
-                            <div>
-                              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Selected Package</p>
-                              <p className="text-sm font-medium text-slate-700">{selectedBooking.package_name}</p>
+                          <div className="flex items-center gap-5 group/item text-left">
+                            <div className="p-3.5 bg-slate-50 rounded-2xl text-slate-400 group-hover/item:text-[#608d64] group-hover/item:bg-[#608d64]/5 transition-colors"><ClipboardList className="w-5 h-5" /></div>
+                            <div className="space-y-0.5">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Selected Tier</p>
+                              <p className="text-lg font-medium text-slate-800 leading-tight">{selectedBooking.package_name}</p>
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-4">
-                          <div className="p-2.5 bg-slate-50 rounded-xl text-slate-600"><MapPin className="w-4 h-4" /></div>
-                          <div>
-                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Sanctuary Location</p>
-                            <p className="text-sm font-medium text-slate-700">{selectedBooking.event_location || "Confidential Location"}</p>
+                        <div className="flex items-center gap-5 group/item text-left">
+                          <div className="p-3.5 bg-slate-50 rounded-2xl text-slate-400 group-hover/item:text-[#608d64] group-hover/item:bg-[#608d64]/5 transition-colors"><MapPin className="w-5 h-5" /></div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Sanctuary Location</p>
+                            <p className="text-lg font-medium text-slate-800 leading-tight">{selectedBooking.event_location || "Confidential Location"}</p>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Timeline & Value</p>
-                      <div className="space-y-5 bg-[#608d64]/5 p-6 rounded-[2rem] border border-[#608d64]/10">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Engagement Date</span>
-                          <span className="font-serif italic text-slate-700">{new Date(selectedBooking.booking_date).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <div className="space-y-10">
+                    <div className="space-y-5 h-full flex flex-col text-left">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] ml-2">Timeline & Value</p>
+                      <div className="flex-1 space-y-8 bg-[#608d64]/5 p-8 md:p-10 rounded-[3rem] border border-[#608d64]/10">
+                        <div className="grid grid-cols-1 gap-6">
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Engagement Horizon</p>
+                            <p className="text-xl md:text-2xl font-serif italic text-slate-800">
+                              {new Date(selectedBooking.booking_date).toLocaleDateString('en-CA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Entry Date</p>
+                            <p className="text-sm font-medium text-slate-500 flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5" />
+                              {new Date(selectedBooking.created_at).toLocaleDateString('en-CA')}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Submitted Date</span>
-                          <span className="text-slate-500">{new Date(selectedBooking.created_at).toLocaleDateString('en-CA')}</span>
-                        </div>
-                        <div className="pt-4 border-t border-[#608d64]/10 space-y-1">
-                          <p className="text-[10px] font-black text-[#608d64] uppercase tracking-widest">Total Transaction Value</p>
-                          <p className="text-3xl font-serif italic text-[#4a6e4d]">
-                            {selectedBooking.total_amount.toLocaleString()} <span className="text-sm font-sans font-bold text-slate-600">RWF</span>
-                          </p>
+                        
+                        <div className="pt-8 border-t border-[#608d64]/10 space-y-2">
+                          <p className="text-[11px] font-black text-[#608d64] uppercase tracking-[0.3em] leading-none mb-2">Total Transaction Value</p>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-5xl font-serif italic text-[#4a6e4d]">
+                              {selectedBooking.total_amount.toLocaleString()}
+                            </p>
+                            <span className="text-xs font-black text-slate-500 uppercase tracking-widest border-b-2 border-slate-200 pb-1">RWF</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -375,9 +491,9 @@ export function AdminBookingsMetrics() {
             <DialogFooter className="pt-4">
               <Button
                 onClick={() => setIsDetailModalOpen(false)}
-                className="w-full h-14 bg-slate-900 text-white border-none rounded-2xl font-bold uppercase tracking-widest text-[11px] hover:bg-slate-800 transition-all duration-300 shadow-xl shadow-slate-200"
+                className="w-full h-16 bg-slate-950 text-white border-none rounded-[2rem] font-black uppercase tracking-[0.3em] text-[12px] hover:bg-slate-900 transition-all duration-500 shadow-2xl shadow-slate-200 mt-4 group"
               >
-                Conclude Dossier
+                <span className="group-hover:tracking-[0.4em] transition-all">Conclude Dossier</span>
               </Button>
             </DialogFooter>
           </div>
