@@ -115,9 +115,12 @@ export function useMessagesSocket(otherUserId: string | null) {
     ws.onclose = (e) => {
       setConnected(false);
       wsRef.current = null;
-      // Reconnect unless intentionally closed (code 1000) or auth failure (4001)
-      if (shouldReconnect.current && e.code !== 1000 && e.code !== 4001) {
+      // 4001 = auth failure, 4003 = no confirmed booking — don't retry these
+      if (shouldReconnect.current && e.code !== 1000 && e.code !== 4001 && e.code !== 4003) {
         reconnectTimer.current = setTimeout(connect, 3000);
+      }
+      if (e.code === 4003) {
+        setError('no_booking');
       }
     };
   }, [getWsUrl, appendMessage]);

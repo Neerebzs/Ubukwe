@@ -139,6 +139,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         })));
     }
 
+    // First portfolio image (exclude offers/events)
+    const firstPortfolioImage = serviceData.gallery?.find((item: any) => {
+        const type = typeof item === 'string' ? 'image' : item.type;
+        const contentType = typeof item === 'object' ? item.contentType : null;
+        return (!type || type === 'image') && !contentType;
+    });
+    const firstPortfolioUrl = firstPortfolioImage
+        ? (typeof firstPortfolioImage === 'string' ? firstPortfolioImage : firstPortfolioImage.url)
+        : "/placeholder.svg";
+
     // Map backend to frontend structure with better data handling
     const service = {
         id: serviceData.id,
@@ -149,10 +159,10 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         rating: serviceData.rating || 0,
         verified: serviceData.status === "approved",
         experience: "Expert",
-        image: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
-        coverImage: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
+        image: firstPortfolioUrl,
+        coverImage: firstPortfolioUrl,
         description: serviceData.description || "Professional wedding service provider.",
-        longDescription: serviceData.description || "A professional wedding service provider dedicated to making your special day unforgettable with authentic Rwandan traditions and modern excellence.",
+        longDescription: "", // removed — same as description, was causing duplication
         specialties: serviceData.specialties || [serviceData.category],
         features: [
             "Professional service delivery",
@@ -370,11 +380,21 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                         <div className="relative animate-in fade-in slide-in-from-right duration-1000">
                             <div className="aspect-[4/5] rounded-[100px] overflow-hidden border-[12px] border-slate-50 shadow-2xl relative">
-                                <img
-                                    src={service.coverImage}
-                                    alt={service.title}
-                                    className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-1000"
-                                />
+                                {service.gallery.photos.length > 1 ? (
+                                    <div className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                                        {service.gallery.photos.map((photo, i) => (
+                                            <div key={i} className="flex-none w-full h-full snap-start">
+                                                <img src={photo.url} alt={photo.caption} className="w-full h-full object-cover" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={service.coverImage}
+                                        alt={service.title}
+                                        className="w-full h-full object-cover scale-105 hover:scale-100 transition-transform duration-1000"
+                                    />
+                                )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60" />
                                 <div className="absolute bottom-12 left-12 right-12">
                                     <div className="p-6 bg-white/90 backdrop-blur-md rounded-[32px] shadow-2xl border border-white/20">
@@ -438,7 +458,6 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         <p className="text-xl leading-relaxed text-slate-600 first-letter:text-7xl first-letter:font-serif first-letter:italic first-letter:mr-4 first-letter:float-left first-letter:text-primary first-letter:leading-none">
                                             {service.description}
                                         </p>
-                                        <p className="text-slate-600 text-lg leading-relaxed">{service.longDescription}</p>
                                     </div>
 
                                     {/* Specialties */}
@@ -634,24 +653,44 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                                 {service.gallery.photos.length} Pieces
                                             </Badge>
                                         </div>
-                                        <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                                            {service.gallery.photos.map((photo) => (
-                                                <div 
-                                                    key={photo.id} 
-                                                    className="relative rounded-[32px] overflow-hidden group cursor-pointer border border-slate-100 shadow-sm break-inside-avoid"
-                                                    onClick={() => setSelectedImage({ url: photo.url, caption: photo.caption })}
-                                                >
-                                                    <img
-                                                        src={photo.url}
-                                                        alt={photo.caption}
-                                                        className="w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                    />
-                                                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
-                                                        <p className="text-white text-sm font-medium italic font-serif">{photo.caption}</p>
-                                                    </div>
+
+                                        {service.gallery.photos.length === 1 ? (
+                                            /* Single image — just show it */
+                                            <div
+                                                className="relative rounded-[32px] overflow-hidden group cursor-pointer border border-slate-100 shadow-sm"
+                                                onClick={() => setSelectedImage({ url: service.gallery.photos[0].url, caption: service.gallery.photos[0].caption })}
+                                            >
+                                                <img src={service.gallery.photos[0].url} alt={service.gallery.photos[0].caption} className="w-full object-cover" />
+                                            </div>
+                                        ) : (
+                                            /* Multiple images — horizontal scroll slider */
+                                            <div className="relative">
+                                                <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2">
+                                                    {service.gallery.photos.map((photo) => (
+                                                        <div
+                                                            key={photo.id}
+                                                            className="relative flex-none w-[75%] md:w-[45%] snap-start rounded-[32px] overflow-hidden group cursor-pointer border border-slate-100 shadow-sm aspect-[4/3]"
+                                                            onClick={() => setSelectedImage({ url: photo.url, caption: photo.caption })}
+                                                        >
+                                                            <img
+                                                                src={photo.url}
+                                                                alt={photo.caption}
+                                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                            />
+                                                            <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
+                                                                <p className="text-white text-sm font-medium italic font-serif">{photo.caption}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                {/* Scroll hint dots */}
+                                                <div className="flex justify-center gap-1.5 mt-4">
+                                                    {service.gallery.photos.map((_, i) => (
+                                                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

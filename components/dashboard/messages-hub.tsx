@@ -126,6 +126,14 @@ export function MessagesHub() {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Deep-link: ?with=<userId> from the "chat unlocked" notification
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const withId = params.get("with");
+    if (withId) setSelectedId(withId);
+  }, []);
+
   const { data: conversations = [], isLoading: convsLoading } = useConversations();
   const { data: history = [], isLoading: historyLoading } = useMessageHistory(selectedId);
   const { connected, error: wsError, sendMessage } = useMessagesSocket(selectedId);
@@ -137,7 +145,7 @@ export function MessagesHub() {
 
   // Show WS error once
   useEffect(() => {
-    if (wsError) toast.error("Messaging connection lost — retrying…");
+    if (wsError && wsError !== 'no_booking') toast.error("Messaging connection lost — retrying…");
   }, [wsError]);
 
   const selectConversation = (id: string) => {
@@ -294,33 +302,45 @@ export function MessagesHub() {
 
             {/* Input */}
             <div className="p-6 border-t border-slate-50">
-              <div className="flex items-end gap-3 p-2 pl-4 bg-slate-50 rounded-3xl border border-transparent focus-within:border-sage-500/30 focus-within:bg-white transition-all">
-                <Textarea
-                  placeholder="Type a message…"
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!draft.trim() || !connected}
-                  className={`h-12 w-12 rounded-2xl mb-0.5 transition-all ${
-                    draft.trim() && connected
-                      ? "bg-sage-600 text-white shadow-lg hover:bg-sage-700 active:scale-95"
-                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  }`}
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
-              </div>
+              {wsError === 'no_booking' ? (
+                <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                  <span className="text-2xl">🔒</span>
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">Booking required to chat</p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Complete and pay for a booking with this provider to unlock messaging.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-end gap-3 p-2 pl-4 bg-slate-50 rounded-3xl border border-transparent focus-within:border-sage-500/30 focus-within:bg-white transition-all">
+                  <Textarea
+                    placeholder="Type a message…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!draft.trim() || !connected}
+                    className={`h-12 w-12 rounded-2xl mb-0.5 transition-all ${
+                      draft.trim() && connected
+                        ? "bg-sage-600 text-white shadow-lg hover:bg-sage-700 active:scale-95"
+                        : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                    }`}
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+              )}
               <p className="text-center text-[9px] font-bold uppercase tracking-[0.3em] text-slate-300 mt-4">
-                End-to-end encrypted
+                {wsError === 'no_booking' ? 'Unlock by completing a booking' : 'End-to-end encrypted'}
               </p>
             </div>
           </>
