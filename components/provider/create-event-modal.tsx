@@ -483,7 +483,6 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                       {/* Food & Drink */}
                       <div className="px-2 py-1 mt-2 text-[8px] font-black text-slate-400 uppercase tracking-widest">Food & Drink</div>
                       {[
-                        { value: "food_festival", label: "Food Festival" },
                         { value: "wine_tasting", label: "Wine Tasting" },
                       ].map((cat) => (
                         <SelectItem key={cat.value} value={cat.value} className="rounded-xl text-[10px] font-black uppercase tracking-widest py-3 hover:bg-[#668c65]/5 focus:bg-[#668c65]/5">
