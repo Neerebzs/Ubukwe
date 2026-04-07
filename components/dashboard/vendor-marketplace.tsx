@@ -252,8 +252,8 @@ export function VendorMarketplace() {
                       )}
 
                       <div className="flex items-center space-x-2 pt-2">
-                        <Button size="sm" className="flex-1" onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${service.id}`, { scroll: false })}>
-                          Book Now
+                        <Button size="sm" className="flex-1" onClick={() => setSelectedVendorId(service.id)}>
+                          View Details
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setSelectedVendorId(service.id)}>
                           <Eye className="h-4 w-4" />

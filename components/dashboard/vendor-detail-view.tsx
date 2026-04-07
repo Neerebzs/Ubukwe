@@ -147,7 +147,6 @@ export function VendorDetailView({ vendor, onClose }: VendorDetailViewProps) {
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Contact
               </Button>
-              <Button onClick={handleBookNow}>Book Now</Button>
               <Button variant="outline" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
@@ -276,7 +275,7 @@ export function VendorDetailView({ vendor, onClose }: VendorDetailViewProps) {
                           <Button
                             className="w-full mt-4"
                             variant={pkg.popular ? "default" : "outline"}
-                            onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}&packageId=${pkg.id || idx}`, { scroll: false })}
+                            onClick={() => router.push(`/booking/${vendor.id}?packageId=${pkg.id || idx}&packageName=${encodeURIComponent(pkg.name)}`, { scroll: false })}
                           >
                             Select Package
                           </Button>
@@ -287,8 +286,10 @@ export function VendorDetailView({ vendor, onClose }: VendorDetailViewProps) {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>No packages defined. Contact the provider for pricing details.</p>
-                  <Button className="mt-4" onClick={handleBookNow}>Book Now</Button>
+                  <p>No packages defined. Please select a package from the service details page.</p>
+                  <Button className="mt-4" onClick={() => router.push(`/services/${vendor.id}`, { scroll: false })}>
+                    View Service Details
+                  </Button>
                 </div>
               )}
             </TabsContent>
@@ -461,10 +462,10 @@ export function VendorDetailView({ vendor, onClose }: VendorDetailViewProps) {
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={handleBookNow} className="flex-1">
-              Book This Service
+            <Button onClick={() => router.push(`/services/${vendor.id}`, { scroll: false })} className="flex-1">
+              View Full Details
             </Button>
-            <Button variant="outline">Contact Provider</Button>
+            <Button variant="outline" onClick={handleContactVendor}>Contact Provider</Button>
             <Button variant="outline">Save to Favorites</Button>
           </div>
         </CardContent>

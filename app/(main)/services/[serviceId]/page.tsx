@@ -889,7 +889,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                                 <div className="space-y-4 relative">
                                     <Button
-                                        className="w-full h-16 rounded-2xl bg-white text-slate-900 hover:bg-[#608d64]/5 transition-all font-black uppercase tracking-[0.2em] text-[10px]"
+                                        className="w-full h-16 rounded-2xl bg-white text-slate-900 hover:bg-[#608d64]/5 hover:text-[#658c65] transition-all font-black uppercase tracking-[0.2em] text-[10px]"
                                         disabled={!selectedPackage}
                                         onClick={(e) => handleBookingClick(e, `/booking/${service.id}?packageId=${selectedPackage?.id}&packageName=${encodeURIComponent(selectedPackage?.name || '')}`)}
                                     >
@@ -900,7 +900,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                             Select a collection to continue
                                         </p>
                                     )}
-                                    <Button variant="ghost" className="w-full h-14 rounded-2xl text-white hover:bg-white/5 border border-white/10 font-bold uppercase tracking-[0.2em] text-[10px]">
+                                    <Button variant="ghost" className="w-full h-14 rounded-2xl text-white hover:bg-white/5 hover:text-[#658c65] border border-white/10 font-bold uppercase tracking-[0.2em] text-[10px]">
                                         Request Personal Quote
                                     </Button>
                                 </div>
