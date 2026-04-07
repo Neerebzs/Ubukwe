@@ -228,122 +228,117 @@ export default function HomePage() {
       </section>
 
 
-      {/* Modernized Full-Width Promotional Carousel */}
+      {/* Full-Height Background Promotional Carousel */}
       <section
-        className="py-16 md:py-24 px-0 relative bg-slate-50/50 overflow-hidden group/carousel"
+        className="py-20 md:py-32 px-0 relative bg-[#fcfbf9] overflow-hidden group/carousel"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <h2 className="text-4xl md:text-5xl font-black text-sage-950 tracking-tight">
-              <TranslatedText text="Limited Exclusives" />
+        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-4 w-4 text-[#668c65]" />
+              <span className="text-[#668c65] font-outfit font-bold tracking-[0.4em] uppercase text-[10px]">
+                <TranslatedText text="Curated Exclusives" />
+              </span>
+            </div>
+            <h2 className="text-5xl md:text-6xl font-serif italic text-sage-950 leading-tight">
+              <TranslatedText text="Limited Moments." />
             </h2>
-            <p className="text-sage-500 font-medium text-lg">
-              <TranslatedText text="Hand-picked deals and upcoming events just for you." />
-            </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button
               onClick={() => scroll("left")}
-              className="p-4 rounded-2xl bg-white shadow-sm border border-sage-100 text-sage-600 hover:bg-sage-950 hover:text-white transition-all"
+              className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-6 w-6 group-hover/btn:-translate-x-1 transition-transform" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="p-4 rounded-2xl bg-white shadow-sm border border-sage-100 text-sage-600 hover:bg-sage-950 hover:text-white transition-all"
+              className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-6 w-6 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
 
         <div className="w-full max-w-7xl mx-auto">
-          {/* Carousel Wrapper */}
           <div
             ref={carouselRef}
-            className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-4 md:px-6 scroll-smooth"
+            className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 px-4 md:px-6 scroll-smooth"
           >
             {isLoading ? (
-              // Loading state
               Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={`loading-${index}`}
-                  className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
+                  className="flex-shrink-0 w-[75vw] sm:w-[55vw] md:w-[35vw] lg:w-[310px] snap-center"
                 >
-                  <div className="h-[500px] rounded-[32px] bg-white border border-slate-100 shadow-xl animate-pulse">
-                    <div className="h-[240px] w-full bg-slate-200 rounded-t-[32px]" />
-                    <div className="p-8 space-y-4">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-200" />
-                      <div className="space-y-2">
-                        <div className="h-6 bg-slate-200 rounded w-3/4" />
-                        <div className="h-4 bg-slate-200 rounded w-full" />
-                        <div className="h-4 bg-slate-200 rounded w-2/3" />
-                      </div>
-                      <div className="pt-4 flex items-center justify-between border-t border-slate-50">
-                        <div className="h-4 bg-slate-200 rounded w-20" />
-                        <div className="h-8 bg-slate-200 rounded w-16" />
-                      </div>
-                    </div>
-                  </div>
+                  <div className="h-[390px] rounded-[2.5rem] bg-slate-100 animate-pulse overflow-hidden" />
                 </div>
               ))
             ) : promotions.length > 0 ? (
               promotions.map((promo: any) => (
                 <div
                   key={promo.id}
-                  className="flex-shrink-0 w-[85vw] sm:w-[70vw] md:w-[45vw] lg:w-[400px] snap-center"
+                  className="flex-shrink-0 w-[75vw] sm:w-[55vw] md:w-[35vw] lg:w-[310px] snap-center"
                 >
-                  {/* Modern Card (No Gradients) */}
-                  <div className="group relative h-[500px] rounded-[32px] overflow-hidden bg-white border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500">
-                    {/* Image Holder */}
-                    <div className="h-[240px] w-full overflow-hidden">
-                      <img
-                        src={promo.image}
-                        alt={promo.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    </div>
-
-                    {/* Badges */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge className="bg-white/90 backdrop-blur-md text-slate-900 border-none shadow-sm py-1.5 px-4 rounded-full font-bold text-[10px] uppercase tracking-wider">
+                  {/* Premium Full-Height Background Card */}
+                  <div className="group relative h-[390px] rounded-[2.5rem] overflow-hidden bg-slate-900 border border-slate-100/10 shadow-lg hover:shadow-2xl transition-all duration-700">
+                    {/* Background Image */}
+                    <img
+                      src={promo.image}
+                      alt={promo.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 origin-center"
+                    />
+                    
+                    {/* Multi-Layer Overlay */}
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-700" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    
+                    {/* Glassmorphism Badges (Top) */}
+                    <div className="absolute top-8 left-8">
+                      <Badge className="bg-white/10 backdrop-blur-md text-white border border-white/20 shadow-xl py-2 px-5 rounded-full font-bold text-[9px] uppercase tracking-[0.2em]">
                         {promo.badge}
                       </Badge>
                     </div>
 
-                    <div className="absolute top-4 right-4 bg-[#668c65] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                      <div className="text-center leading-none">
-                        <p className="text-lg font-black">{promo.discount.split(' ')[0]}</p>
-                        <p className="text-[8px] font-bold uppercase tracking-tighter">{promo.discount.split(' ')[1]}</p>
-                      </div>
+                    {/* Integrated Price Label (Top Right) */}
+                    <div className="absolute top-8 right-8">
+                       <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 flex flex-col items-center">
+                          <span className="text-[8px] font-black text-white/60 uppercase tracking-widest leading-tight mb-1">Value</span>
+                          <span className="text-sm font-bold text-white font-outfit">
+                            {promo.discount}
+                          </span>
+                       </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-8 space-y-4">
-                      <div className="w-12 h-12 rounded-2xl bg-sage-50 flex items-center justify-center text-sage-300 group-hover:bg-[#668c65]/10 group-hover:text-[#668c65] transition-colors duration-300">
-                        {promo.icon}
+                    {/* Floating Content Section (Bottom) */}
+                    <div className="absolute inset-x-8 bottom-8 z-10 space-y-6">
+                      <div className="space-y-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md text-white flex items-center justify-center scale-90 group-hover:scale-100 transition-transform duration-500 border border-white/10">
+                           {React.cloneElement(promo.icon as React.ReactElement, { className: 'w-5 h-5' })}
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-3xl font-serif italic text-white leading-tight">
+                            <TranslatedText text={promo.title} />
+                          </h3>
+                          <p className="text-white/70 text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-white transition-colors duration-500">
+                            <TranslatedText text={promo.description} />
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-                        <h3 className="text-2xl font-extrabold text-sage-950 mb-2 leading-tight">
-                          <TranslatedText text={promo.title} />
-                        </h3>
-                        <p className="text-sage-500 text-sm font-medium line-clamp-2 leading-relaxed">
-                          <TranslatedText text={promo.description} />
-                        </p>
-                      </div>
-
-                      <div className="pt-4 flex items-center justify-between border-t border-sage-50">
-                        <div className="flex items-center gap-2 text-xs font-bold text-sage-400">
-                          <Clock className="w-4 h-4" />
+                      <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                        <div className="flex items-center gap-2 text-[9px] font-black text-white/40 uppercase tracking-[0.3em]">
+                          <Clock className="w-3.5 h-3.5" />
                           <span>Until {promo.validUntil}</span>
                         </div>
                         <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : `/services/${promo.serviceId || promo.id}`}>
-                          <Button variant="ghost" className="text-[#668c65] font-bold hover:bg-[#668c65]/10 rounded-xl group/btn p-0">
+                          <Button variant="ghost" className="h-10 px-0 flex items-center text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-transparent group/btn">
                             <TranslatedText text="Explore" />
-                            <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                            <div className="ml-3 w-8 h-[1px] bg-white/30 group-hover/btn:w-12 group-hover/btn:bg-[#668c65] transition-all duration-500 relative">
+                               <ArrowRight className="absolute -right-1 -top-1.5 w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:text-[#668c65] transition-all" />
+                            </div>
                           </Button>
                         </Link>
                       </div>
@@ -352,16 +347,19 @@ export default function HomePage() {
                 </div>
               ))
             ) : (
-              // No events state
               <div className="flex-shrink-0 w-full flex items-center justify-center py-20">
-                <div className="text-center space-y-4">
-                  <Calendar className="h-16 w-16 text-slate-300 mx-auto" />
-                  <h3 className="text-2xl font-bold text-slate-600">
-                    <TranslatedText text="No Events Available" />
-                  </h3>
-                  <p className="text-slate-500">
-                    <TranslatedText text="Check back soon for exciting upcoming events!" />
-                  </p>
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+                    <Calendar className="h-10 w-10 text-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-3xl font-serif italic text-slate-900">
+                      <TranslatedText text="No Events Yet" />
+                    </h3>
+                    <p className="text-slate-400 font-medium max-w-xs mx-auto">
+                      <TranslatedText text="Check back soon for exclusive deals and exciting upcoming events." />
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

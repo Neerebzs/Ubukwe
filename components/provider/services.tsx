@@ -47,6 +47,8 @@ interface Service {
     contentType?: null | "offer" | "event";
     title?: string;
     description?: string;
+    validFrom?: string;
+    validTo?: string;
   }>;
   phone?: string;
   email?: string;
@@ -211,6 +213,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const handleSaveService = async (formData: ServiceFormData) => {
     setIsSaving(true);
 
+    console.log("Gallery debug:", formData.gallery?.map(g => ({
       id: g.id,
       type: g.type,
       hasUrl: !!g.url,

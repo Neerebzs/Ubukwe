@@ -125,6 +125,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     // Debug gallery items
     if (Array.isArray(serviceData.gallery)) {
+        console.log("Gallery debug:", serviceData.gallery.map((item: any) => ({
             type: typeof item === 'string' ? 'string/image' : item.type,
             url: typeof item === 'string' ? item : item.url
         })));

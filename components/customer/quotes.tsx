@@ -17,6 +17,8 @@ import { toast } from "sonner"
 interface Quote {
   id: string
   provider_id: string
+  provider?: string // Added
+  service?: string // Added
   customer_id: string
   inquiry_id?: string
   line_items?: any[]
@@ -97,7 +99,24 @@ export function CustomerQuotes() {
           <Button variant="outline" onClick={() => router.push("/customer/dashboard?tab=quotes", { scroll: false })}>
             <ArrowLeft className="w-4 h-4 mr-2" />Back to Quotes
           </Button>
-          <CustomerQuoteDetail quote={quote} />
+          <CustomerQuoteDetail 
+            quote={{
+              ...quote,
+              provider: quote.provider || "Service Provider",
+              service: quote.service || "Booking Service",
+              createdAt: quote.created_at,
+              validUntil: quote.expires_at || quote.sent_at || quote.created_at,
+              status: (quote.status === "sent" ? "pending" : 
+                       quote.status === "rejected" ? "declined" : 
+                       quote.status) as any,
+              lineItems: quote.line_items?.map(li => ({
+                description: li.description || "",
+                quantity: li.quantity || 1,
+                unitPrice: li.unit_price || 0,
+                total: li.total || 0,
+              }))
+            }} 
+          />
         </div>
       )
     }

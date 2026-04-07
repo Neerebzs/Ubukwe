@@ -733,12 +733,13 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     setUploadProgress(0)
 
     try {
+      console.log("Gallery items state:", formData.gallery.map(g => ({
         id: g.id,
         type: g.type,
         hasFile: !!g.file,
         hasUrl: !!g.url,
         fileName: g.file?.name
-      })))
+      })));
       
       toast({
         title: status === "active" 
@@ -751,11 +752,12 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       const galleryUrls = await uploadGalleryImages()
       setUploadProgress(50)
 
+      console.log("Gallery upload progress:", galleryUrls.map(g => ({
         id: g.id,
         type: g.type,
         hasUrl: !!g.url,
         url: g.url
-      })))
+      })));
 
       // Validate gallery is not empty after upload
       if (!galleryUrls || galleryUrls.length === 0) {
