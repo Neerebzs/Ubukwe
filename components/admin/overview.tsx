@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { axiosInstance } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserCheck, Calendar, DollarSign, TrendingUp, Clock, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Users, UserCheck, Calendar, DollarSign, Clock, ArrowDownRight } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { StatCard } from "./stat-card";
 
 interface ActivityItem {
@@ -25,23 +27,51 @@ interface PlatformStats {
   activeDisputes: number;
 }
 
-// Simulated trend data
-const trendData = [
-  { name: 'Jan', users: 400, revenue: 2400 },
-  { name: 'Feb', users: 300, revenue: 1398 },
-  { name: 'Mar', users: 200, revenue: 9800 },
-  { name: 'Apr', users: 278, revenue: 3908 },
-  { name: 'May', users: 189, revenue: 4800 },
-  { name: 'Jun', users: 239, revenue: 3800 },
-  { name: 'Jul', users: 349, revenue: 4300 },
+// Simulated trend data — replaced by real API below
+const FALLBACK_TREND = [
+  { name: 'Jan', users: 0, revenue: 0 },
 ];
 
 export function AdminOverview({ platformStats, recentActivity }: { platformStats: PlatformStats; recentActivity: ActivityItem[] }) {
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => { setIsMounted(true); }, []);
+
+  const { data: revenueData = FALLBACK_TREND } = useQuery({
+    queryKey: ["admin-revenue-analytics"],
+    queryFn: async () => {
+      const [usersRes, revenueRes] = await Promise.all([
+        axiosInstance.get<any[]>("/api/v1/admin/analytics/users"),
+        axiosInstance.get<any[]>("/api/v1/admin/analytics/revenue?period=monthly"),
+      ])
+
+      const usersData: any[] = usersRes.data ?? []
+      const revData: any[] = revenueRes.data ?? []
+
+      // Build lookup maps
+      const usersMap: Record<string, number> = {}
+      usersData.forEach((d) => { usersMap[d.month ?? ""] = d.total ?? 0 })
+
+      const revenueMap: Record<string, number> = {}
+      revData.forEach((d) => { revenueMap[d.period ?? d.month ?? ""] = d.revenue ?? 0 })
+
+      // Always generate last 7 months as x-axis so the chart always has a line
+      const months: { name: string; users: number; revenue: number }[] = []
+      const now = new Date()
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+        const label = d.toLocaleString("default", { month: "short" })
+        months.push({
+          name: label,
+          users: usersMap[key] ?? 0,
+          revenue: revenueMap[key] ?? 0,
+        })
+      }
+      return months
+    },
+    staleTime: 5 * 60_000,
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -98,7 +128,7 @@ export function AdminOverview({ platformStats, recentActivity }: { platformStats
             <div className="h-[300px] w-full">
               {isMounted ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
+                  <LineChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis
                       dataKey="name"

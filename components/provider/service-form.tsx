@@ -1116,25 +1116,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-50">
-                <div className="flex items-center gap-6 w-full flex-wrap">
-                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100 flex-1 md:flex-none cursor-pointer" onClick={() => setFormData({ ...formData, verified: !formData.verified })}>
-                    <div className={`w-10 h-6 rounded-full transition-colors relative ${formData.verified ? 'bg-[#668c65]' : 'bg-slate-200'}`}>
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${formData.verified ? 'left-5' : 'left-1'}`} />
-                    </div>
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Verified Manifest</span>
-                  </div>
-                  <Select value={formData.status} onValueChange={(v: "draft" | "active") => setFormData({ ...formData, status: v })}>
-                    <SelectTrigger className="w-full md:w-48 h-12 rounded-2xl border-slate-100 focus:ring-[#668c65] px-4 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900 text-[10px] font-black uppercase tracking-widest">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
-                      <SelectItem value="draft" className="text-[10px] font-black uppercase tracking-widest rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">Draft Archive</SelectItem>
-                      <SelectItem value="active" className="text-[10px] font-black uppercase tracking-widest rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">Active Listing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+
             </div>
           </div>
         )}
@@ -1765,10 +1747,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                     </div>
                   )}
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <input type="checkbox" checked={formData.verified} readOnly />
-                      <Label>Verified Service</Label>
-                    </div>
                     <Badge variant={formData.status === "active" ? "default" : "secondary"}>
                       Status: {formData.status}
                     </Badge>
@@ -1823,10 +1801,35 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                 {formData.gallery.length === 0 ? (
                   <p className="text-muted-foreground">No gallery items added</p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {formData.gallery.map((item) => (
-                      <div key={item.id} className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                        <Badge variant="outline">{item.type}</Badge>
+                      <div key={item.id} className="aspect-video rounded-xl overflow-hidden bg-slate-100 relative">
+                        {(item.preview || item.url) ? (
+                          item.type === "video" || item.type === "reel" ? (
+                            <video
+                              src={item.preview || item.url}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={item.preview || item.url}
+                              alt={item.title || "Gallery item"}
+                              className="w-full h-full object-cover"
+                            />
+                          )
+                        ) : item.file ? (
+                          <img
+                            src={URL.createObjectURL(item.file)}
+                            alt={item.title || "Gallery item"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Badge variant="outline">{item.type}</Badge>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

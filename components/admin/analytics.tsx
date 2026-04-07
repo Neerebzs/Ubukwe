@@ -1,16 +1,46 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { axiosInstance } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "./stat-card";
-import { Star } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function AdminAnalytics() {
-  const categories = [
-    { label: "Traditional Dancers", value: 85, color: "#608d64" },
-    { label: "Wedding Venues", value: 78, color: "#0d182b" },
-    { label: "Catering Services", value: 71, color: "#94a3b8" },
-    { label: "MC Services", value: 64, color: "#cbd5e1" },
-  ];
+  const { data: stats } = useQuery({
+    queryKey: ["admin-analytics-stats"],
+    queryFn: async () => {
+      const [platformRes, bookingRes] = await Promise.all([
+        axiosInstance.get<any>("/api/v1/admin/stats"),
+        axiosInstance.get<any>("/api/v1/admin/bookings/stats"),
+      ])
+      return { platform: platformRes.data, bookings: bookingRes.data }
+    },
+    staleTime: 5 * 60_000,
+  })
+
+  const { data: providerServices = [] } = useQuery({
+    queryKey: ["admin-provider-services-stats"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<any>("/api/v1/admin/provider-services/stats")
+      return res.data?.data ?? []
+    },
+    staleTime: 5 * 60_000,
+  })
+
+  // Build category vitality from real provider service stats
+  const categories: { label: string; value: number; color: string }[] = Array.isArray(providerServices)
+    ? providerServices.slice(0, 4).map((s: any, i: number) => ({
+        label: s.service_type ?? s.category ?? s.name ?? `Category ${i + 1}`,
+        value: Math.min(100, Math.round((s.count ?? s.total ?? 0) / Math.max(1, providerServices.reduce((sum: number, x: any) => sum + (x.count ?? x.total ?? 0), 0)) * 100)),
+        color: ["#608d64", "#0d182b", "#94a3b8", "#cbd5e1"][i] ?? "#94a3b8",
+      }))
+    : []
+
+  const totalBookings = stats?.bookings?.total ?? stats?.platform?.totalBookings ?? 0
+  const completedBookings = stats?.bookings?.completed ?? 0
+  const successRate = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 0
+  const monthlyRevenue = stats?.platform?.monthlyRevenue ?? 0
 
   return (
     <div className="space-y-12 pb-12">
@@ -29,27 +59,27 @@ export function AdminAnalytics() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="User Growth"
-          value="+15%"
-          subtitle="Monthly adoption rate"
-          icon="📈"
+          label="Total Users"
+          value={stats?.platform?.totalUsers ?? "—"}
+          subtitle="Registered accounts"
+          icon="👥"
         />
         <StatCard
           label="Booking Success"
-          value="87%"
-          subtitle="Completion velocity"
+          value={`${successRate}%`}
+          subtitle="Completion rate"
           icon="✨"
         />
         <StatCard
-          label="Platform Rating"
-          value="4.8"
-          subtitle="Ecosystem satisfaction"
+          label="Active Providers"
+          value={stats?.platform?.activeProviders ?? "—"}
+          subtitle="Verified providers"
           icon="⭐"
         />
         <StatCard
-          label="Revenue Velocity"
-          value="+18%"
-          subtitle="Economic expansion"
+          label="Monthly Revenue"
+          value={`${(monthlyRevenue / 1000).toFixed(0)}K RWF`}
+          subtitle="This month"
           icon="🌿"
         />
       </div>
@@ -99,8 +129,8 @@ export function AdminAnalytics() {
 
             <div className="space-y-6">
               {[
-                { label: "Active Nodes", value: "1,248" },
-                { label: "Data Integrity", value: "99.9%" },
+                { label: "Active Nodes", value: (stats?.platform?.totalUsers ?? 0).toLocaleString() },
+                { label: "Booking Rate", value: `${successRate}%` },
                 { label: "Platform Pulse", value: "Optimal" },
               ].map((item, i) => (
                 <div key={i} className="flex justify-between items-end border-b border-white/5 pb-4">
