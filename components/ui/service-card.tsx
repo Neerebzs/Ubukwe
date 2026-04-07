@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,15 @@ export function ServiceCard({
 }: ServiceCardProps) {
   const allImages = images && images.length > 0 ? images : [image];
   const [current, setCurrent] = useState(0);
+
+  // Auto-advance every 3 seconds when there are multiple images
+  useEffect(() => {
+    if (allImages.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrent((c) => (c + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [allImages.length]);
 
   const prev = (e: React.MouseEvent) => {
     e.preventDefault();

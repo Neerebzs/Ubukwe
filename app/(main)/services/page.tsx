@@ -245,7 +245,9 @@ export default function ServicesPage() {
                       image={getThumbnail(service)}
                       images={service.gallery?.filter((item: any) => {
                         const type = typeof item === 'string' ? 'image' : item.type;
-                        return !type || type === 'image';
+                        const contentType = typeof item === 'object' ? item.contentType : null;
+                        // Only portfolio images (no offers, no videos, no reels)
+                        return (!type || type === 'image') && contentType !== 'offer';
                       }).map((item: any) =>
                         typeof item === 'string' ? item : (item.url || item.preview)
                       ).filter(Boolean)}

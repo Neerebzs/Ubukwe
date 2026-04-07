@@ -139,6 +139,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         })));
     }
 
+    // First portfolio image (exclude offers/events)
+    const firstPortfolioImage = serviceData.gallery?.find((item: any) => {
+        const type = typeof item === 'string' ? 'image' : item.type;
+        const contentType = typeof item === 'object' ? item.contentType : null;
+        return (!type || type === 'image') && !contentType;
+    });
+    const firstPortfolioUrl = firstPortfolioImage
+        ? (typeof firstPortfolioImage === 'string' ? firstPortfolioImage : firstPortfolioImage.url)
+        : "/placeholder.svg";
+
     // Map backend to frontend structure with better data handling
     const service = {
         id: serviceData.id,
@@ -149,8 +159,8 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         rating: serviceData.rating || 0,
         verified: serviceData.status === "approved",
         experience: "Expert",
-        image: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
-        coverImage: typeof serviceData.gallery?.[0] === 'string' ? serviceData.gallery[0] : (serviceData.gallery?.[0]?.url || "/placeholder.svg"),
+        image: firstPortfolioUrl,
+        coverImage: firstPortfolioUrl,
         description: serviceData.description || "Professional wedding service provider.",
         longDescription: "", // removed — same as description, was causing duplication
         specialties: serviceData.specialties || [serviceData.category],
