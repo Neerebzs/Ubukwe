@@ -15,7 +15,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { StatCard } from "./stat-card";
 
 interface ProviderService {
@@ -164,12 +163,12 @@ export function AdminProviderServices() {
       <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
         <TabsList className="flex items-center gap-1 bg-white border border-slate-100 p-1.5 rounded-[1.8rem] h-auto w-fit mb-8 shadow-sm">
           {[
-            { id: "pending", label: "Awaiting Review" },
-            { id: "approved", label: "Authorized" },
-            { id: "suspended", label: "Archived" },
-            { id: "on_hold", label: "Deferred" },
-            { id: "rejected", label: "Declined" },
-            { id: "all", label: "Complete Logs" }
+            { id: "pending",   label: "Awaiting Review" },
+            { id: "approved",  label: "Authorized" },
+            { id: "draft",     label: "Drafts" },
+            { id: "rejected",  label: "Declined" },
+            { id: "suspended", label: "Suspended" },
+            { id: "all",       label: "All" }
           ].map((tab) => (
             <TabsTrigger
               key={tab.id}
