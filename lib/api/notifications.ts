@@ -40,30 +40,68 @@ export const notificationsAPI = {
    * Get all notifications for current user
    */
   async getNotifications(unreadOnly: boolean = false, limit: number = 50): Promise<Notification[]> {
+    console.log('🔔 Fetching notifications:', { unreadOnly, limit });
+    
     const response = await apiClient.get<NotificationResponse>(
       `${NOTIFICATIONS_BASE}?unread_only=${unreadOnly}&limit=${limit}`
     );
     
-    if (!response.data || !response.data.data) {
+    console.log('🔔 Notifications response:', response);
+    console.log('🔔 Response.data:', response.data);
+    
+    // Handle both wrapped and unwrapped responses
+    if (Array.isArray(response.data)) {
+      // Direct array response
+      console.log('🔔 Returning direct array:', response.data);
+      return response.data as Notification[];
+    } else if (response.data && response.data.data) {
+      // Wrapped response
+      console.log('🔔 Returning wrapped data:', response.data.data);
+      return response.data.data;
+    } else {
+      console.error('❌ Invalid response format:', response.data);
       throw new Error('Invalid response format from notifications API');
     }
-    
-    return response.data.data;
   },
 
   /**
    * Get unread notification count
    */
   async getUnreadCount(): Promise<number> {
-    const response = await apiClient.get<UnreadCountResponse>(
-      `${NOTIFICATIONS_BASE}/unread-count`
-    );
+    console.log('🔔 Fetching unread count');
     
-    if (!response.data || !response.data.data) {
-      throw new Error('Invalid response format from unread count API');
+    try {
+      const response = await apiClient.get<UnreadCountResponse>(
+        `${NOTIFICATIONS_BASE}/unread-count`
+      );
+      
+      console.log('🔔 Unread count full response:', response);
+      console.log('🔔 Response.data:', response.data);
+      
+      // Handle multiple response formats
+      if (typeof response.data === 'number') {
+        // Direct number response
+        console.log('🔔 Returning direct number:', response.data);
+        return response.data;
+      } else if (response.data && typeof response.data.unread_count === 'number') {
+        // Flat response with unread_count
+        console.log('🔔 Returning flat unread_count:', response.data.unread_count);
+        return response.data.unread_count;
+      } else if (response.data && response.data.data && typeof response.data.data.unread_count === 'number') {
+        // Wrapped response
+        console.log('🔔 Returning wrapped unread count:', response.data.data.unread_count);
+        return response.data.data.unread_count;
+      } else {
+        console.error('❌ Invalid unread count response format:', response.data);
+        console.error('❌ Response type:', typeof response.data);
+        console.error('❌ Response keys:', response.data ? Object.keys(response.data) : 'null');
+        // Return 0 instead of throwing to prevent breaking the UI
+        return 0;
+      }
+    } catch (error) {
+      console.error('❌ Error fetching unread count:', error);
+      return 0;
     }
-    
-    return response.data.data.unread_count;
   },
 
   /**

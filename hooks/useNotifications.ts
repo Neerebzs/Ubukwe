@@ -16,7 +16,17 @@ export const useNotifications = (unreadOnly: boolean = false, limit: number = 50
   // Get notifications
   const { data: notifications = [], isLoading, error, refetch } = useQuery({
     queryKey: notificationKeys.list(unreadOnly),
-    queryFn: () => notificationsAPI.getNotifications(unreadOnly, limit),
+    queryFn: async () => {
+      try {
+        console.log('🔔 useNotifications: Fetching notifications...');
+        const result = await notificationsAPI.getNotifications(unreadOnly, limit);
+        console.log('🔔 useNotifications: Received notifications:', result);
+        return result;
+      } catch (err) {
+        console.error('❌ useNotifications: Error fetching notifications:', err);
+        throw err;
+      }
+    },
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: 60 * 1000, // Refetch every minute
   });
@@ -24,7 +34,17 @@ export const useNotifications = (unreadOnly: boolean = false, limit: number = 50
   // Get unread count
   const { data: unreadCount = 0, refetch: refetchUnreadCount } = useQuery({
     queryKey: notificationKeys.unreadCount(),
-    queryFn: () => notificationsAPI.getUnreadCount(),
+    queryFn: async () => {
+      try {
+        console.log('🔔 useNotifications: Fetching unread count...');
+        const result = await notificationsAPI.getUnreadCount();
+        console.log('🔔 useNotifications: Received unread count:', result);
+        return result;
+      } catch (err) {
+        console.error('❌ useNotifications: Error fetching unread count:', err);
+        return 0;
+      }
+    },
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
   });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bell, Check, CheckCheck, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -53,6 +54,14 @@ export function NotificationList({ onClose }: NotificationListProps) {
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-slate-600" />
             <h3 className="font-semibold text-slate-900">Notifications</h3>
+            {unreadNotifications.length > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="ml-1 px-2 py-0.5 text-xs font-bold"
+              >
+                {unreadNotifications.length} new
+              </Badge>
+            )}
           </div>
           {onClose && (
             <Button
@@ -79,8 +88,8 @@ export function NotificationList({ onClose }: NotificationListProps) {
             <TabsTrigger value="unread">
               Unread
               {unreadNotifications.length > 0 && (
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ({unreadNotifications.length})
+                <span className="ml-2 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-bold">
+                  {unreadNotifications.length}
                 </span>
               )}
             </TabsTrigger>
