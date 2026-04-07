@@ -92,7 +92,7 @@ export function ProviderDashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-200">
+    <div className="min-h-screen bg-[#f9fafc]">
       {/* Mobile App Bar - Only on mobile */}
       <MobileAppBar
         title="Provider Dashboard"
@@ -140,7 +140,7 @@ export function ProviderDashboardContent() {
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'}`}>
         {/* Desktop Header - Hidden on mobile, Sticky on desktop */}
-        <div className="hidden md:block sticky top-0 z-30 bg-gray-200">
+        <div className="hidden md:block sticky top-0 z-30 bg-[#f9fafc]">
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Provider",

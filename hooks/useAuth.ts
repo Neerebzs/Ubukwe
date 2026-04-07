@@ -98,17 +98,8 @@ export const useAuth = () => {
     onError: (error: Error) => {
       console.error('Login error details:', error);
 
-      // Provide more specific error messages
-      let errorMessage = error.message || 'Login failed';
-
-      if (error.message?.includes('timeout')) {
-        errorMessage = 'Login request timed out. Please check your internet connection and try again.';
-      } else if (error.message?.includes('Network error')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (error.message?.includes('Wrong email or password')) {
-        errorMessage = 'Invalid email or password. Please try again.';
-      }
-
+      // Use the error message from the API response
+      const errorMessage = error.message || 'Login failed. Please try again.';
       toast.error(errorMessage);
     },
   });
@@ -123,7 +114,8 @@ export const useAuth = () => {
       router.push('/auth/signin');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Registration failed');
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      toast.error(errorMessage);
     },
   });
 
@@ -140,7 +132,7 @@ export const useAuth = () => {
 
       toast.success('Logged out successfully');
       router.push('/auth/signin');
-    },
+    }, 
     onError: (error: Error) => {
       // Even if logout fails on server, clear local data
       tokenManager.clearTokens();

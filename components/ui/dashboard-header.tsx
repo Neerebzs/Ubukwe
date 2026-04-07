@@ -10,8 +10,10 @@ import {
   Menu,
   Settings,
   User,
-  ChevronDown
+  ChevronDown,
+  Home
 } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,6 +109,18 @@ export function DashboardHeader({
 
         {/* Right Side: Global Tools & User Sanctuary */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          {/* Return to Home */}
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full hover:bg-slate-50 text-slate-400 group"
+              title="Return to Site Home"
+            >
+              <Home className="h-5 w-5 group-hover:text-[#668c65] transition-colors" />
+            </Button>
+          </Link>
+
           {/* Language Selector - Redesigned */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

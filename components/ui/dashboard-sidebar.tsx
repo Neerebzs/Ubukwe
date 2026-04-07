@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Calendar, CheckCircle, Star, BookOpen, DollarSign, Home, ChevronLeft, ChevronRight, Users, MessageCircle, Heart, Clock, MapPin, Camera, LogOut, ChevronDown, ShieldAlert, FileText, Sparkles } from "lucide-react";
+import { Calendar, CheckCircle, Star, BookOpen, DollarSign, Home, ChevronLeft, ChevronRight, Users, MessageCircle, Heart, Clock, MapPin, Camera, LogOut, ChevronDown, ShieldAlert, FileText, Sparkles, Globe } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 interface DashboardSidebarProps {
@@ -118,7 +119,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
           variant="ghost"
           size="sm"
           onClick={onToggle}
-          className="p-2 h-10 w-10 rounded-full hover:bg-white/5 text-slate-500 hover:text-white transition-all"
+          className="p-2 h-10 w-10 rounded-full hover:bg-white/5 text-white/50 hover:text-white transition-all"
         >
           {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </Button>
@@ -136,14 +137,14 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
                 aria-expanded={expandedGroups[group.title]}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#668c65] transition-colors`}>
+                  <span className={`h-4 w-4 flex-shrink-0 text-white/60 group-hover:text-[#668c65] transition-colors`}>
                     {groupIconByTitle[group.title]}
                   </span>
-                  <span className="text-[10px] font-black text-slate-500 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
+                  <span className="text-[10px] font-black text-white/70 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
                     {group.title}
                   </span>
                 </div>
-                <ChevronDown className={`w-3 h-3 text-slate-600 transition-transform duration-500 ${isClient && expandedGroups[group.title] ? '' : '-rotate-90'}`} />
+                <ChevronDown className={`w-3 h-3 text-white/40 transition-transform duration-500 ${isClient && expandedGroups[group.title] ? '' : '-rotate-90'}`} />
               </button>
             )}
 
@@ -158,7 +159,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
                     className={`relative group w-full text-left text-sm px-4 py-3 rounded-2xl transition-all duration-500 flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'
                       } ${isActive
                         ? 'bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10'
-                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
                       }`}
                     title={isCollapsed ? tab.label : undefined}
                   >
@@ -178,7 +179,20 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
       </nav>
 
       {/* User Sanctuary Area */}
-      <div className="flex-shrink-0 pt-8 border-t border-white/5">
+      <div className="flex-shrink-0 pt-8 border-t border-white/5 space-y-4">
+        {/* Return to Main Site */}
+        <div className={`px-2 ${isCollapsed ? 'flex justify-center' : ''}`}>
+          <Link href="/">
+            <button
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-white/50 hover:text-white hover:bg-white/5 transition-all group ${isCollapsed ? 'justify-center' : ''}`}
+              title="Return to Main Site"
+            >
+              <Globe className="h-5 w-5 text-[#668c65]/70 group-hover:text-[#668c65]" />
+              {!isCollapsed && <span className="font-medium tracking-tight">Return to Site</span>}
+            </button>
+          </Link>
+        </div>
+
         {user && (
           <div className={`mb-4 ${isCollapsed ? 'px-0 flex justify-center' : 'px-2'}`}>
             {!isCollapsed ? (
@@ -190,7 +204,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
                   <p className="text-sm font-bold text-white truncate">
                     {user.full_name}
                   </p>
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate">
+                  <p className="text-[10px] text-white/50 font-black uppercase tracking-widest truncate">
                     Collective Member
                   </p>
                 </div>
@@ -209,7 +223,7 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
                 </div>
                 <button
                   onClick={onLogout}
-                  className="p-3 rounded-full text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
+                  className="p-3 rounded-full text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />

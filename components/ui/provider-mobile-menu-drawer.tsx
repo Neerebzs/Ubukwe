@@ -15,10 +15,12 @@ import {
   User,
   LogOut,
   Ticket,
-  Calendar
+  Calendar,
+  Globe
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import {
   Collapsible,
   CollapsibleContent,
@@ -131,7 +133,7 @@ export function ProviderMobileMenuDrawer({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-all text-slate-400 hover:text-white"
+            className="h-10 w-10 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/50 hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -149,14 +151,14 @@ export function ProviderMobileMenuDrawer({
                   className="w-full flex items-center justify-between group transition-all"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="h-4 w-4 flex-shrink-0 text-slate-500 group-hover:text-[#668c65] transition-colors">
+                    <span className="h-4 w-4 flex-shrink-0 text-white/60 group-hover:text-[#668c65] transition-colors">
                       {section.icon}
                     </span>
-                    <span className="text-[10px] font-black text-slate-500 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
+                    <span className="text-[10px] font-black text-white/70 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
                       {section.title}
                     </span>
                   </div>
-                  <ChevronDown className={cn("h-3 w-3 text-slate-600 transition-transform duration-500", !isExpanded && "-rotate-90")} />
+                  <ChevronDown className={cn("h-3 w-3 text-white/40 transition-transform duration-500", !isExpanded && "-rotate-90")} />
                 </button>
 
                 {isExpanded && (
@@ -176,8 +178,8 @@ export function ProviderMobileMenuDrawer({
                             isActive
                               ? "bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10"
                               : isTabDisabled
-                                ? "opacity-20 cursor-not-allowed text-slate-500"
-                                : "text-slate-400 hover:text-white hover:bg-white/5"
+                                ? "opacity-20 cursor-not-allowed text-white/50"
+                                : "text-white/60 hover:text-white hover:bg-white/5"
                           )}
                         >
                           <Icon className={cn("h-5 w-5 flex-shrink-0 transition-colors duration-500", isActive ? "text-[#668c65]" : "group-hover:text-white")} />
@@ -195,6 +197,19 @@ export function ProviderMobileMenuDrawer({
               </div>
             );
           })}
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <Link href="/" onClick={onClose}>
+              <button
+                className="w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-white/50 hover:text-white hover:bg-white/5 transition-all group"
+                title="Return to Main Site"
+              >
+                <div className="h-4 w-4 flex-shrink-0 text-[#668c65]/70 group-hover:text-[#668c65] transition-colors">
+                  <Globe className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest">Return to Site</span>
+              </button>
+            </Link>
+          </div>
         </nav>
 
         {/* User Profile Footer */}
@@ -208,7 +223,7 @@ export function ProviderMobileMenuDrawer({
                 <p className="text-sm font-bold text-white truncate">
                   {user.full_name || "Provider"}
                 </p>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest truncate">
+                <p className="text-[10px] text-white/50 font-black uppercase tracking-widest truncate">
                   Artisan Collective
                 </p>
               </div>
@@ -218,7 +233,7 @@ export function ProviderMobileMenuDrawer({
                     onLogout();
                     onClose();
                   }}
-                  className="p-2 rounded-xl text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
+                  className="p-2 rounded-xl text-white/60 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />

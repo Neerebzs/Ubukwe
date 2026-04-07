@@ -39,6 +39,8 @@ export const authApi = {
         data
       );
 
+      console.log('Login successful, response:', response);
+
       return {
         status: 'success',
         message: 'Login successful',
@@ -49,7 +51,10 @@ export const authApi = {
         },
       };
     } catch (error: any) {
-      console.error('Login failed:', error.message);
+      console.log('=== Login Error in authApi ===');
+      console.log('Error caught in authApi.login:', error);
+      console.log('Error message:', error.message);
+      console.log('==============================');
       throw error;
     }
   },

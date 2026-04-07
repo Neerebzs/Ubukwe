@@ -108,7 +108,7 @@ export function AISearch({ className }: { className?: string }) {
             onChange={e => handleInput(e.target.value)}
             onFocus={() => setIsOpen(true)}
             placeholder="Ask AI — find venues, photographers..."
-            className="w-full pl-14 pr-10 py-3 bg-slate-50 border border-transparent rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/20 focus:ring-4 focus:ring-[#668c65]/5 transition-all duration-300 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 placeholder:text-xs"
+            className="w-full pl-14 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/30 focus:ring-4 focus:ring-[#668c65]/5 shadow-sm transition-all duration-300 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 placeholder:text-xs"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(""); setResponse(null); inputRef.current?.focus(); }}

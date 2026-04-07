@@ -435,19 +435,30 @@ axiosInstance.interceptors.response.use(
     const { config, response } = error;
     const originalRequest = config;
 
+    console.log('=== Response Interceptor Error ===');
+    console.log('Error:', error);
+    console.log('Response status:', response?.status);
+    console.log('Response data:', response?.data);
+    console.log('Current path:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
+    console.log('==================================');
+
     // Treat 203 or 401 as an auth error
     if ((response?.status === 203 || response?.status === 401) && !originalRequest._retry) {
       if (typeof window !== 'undefined') {
         const refreshToken = localStorage.getItem('refreshToken');
 
-        // If no refresh token, or already on signin page, just redirect
+        // If no refresh token, or already on signin page, just pass through the error
         if (!refreshToken || window.location.pathname.includes('/auth/signin')) {
+          // Don't clear tokens or redirect during login - just pass the error through
+          if (window.location.pathname.includes('/auth/signin')) {
+            return Promise.reject(error);
+          }
+          
+          // For other pages without refresh token, clear and redirect
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
-          if (!window.location.pathname.includes('/auth/signin')) {
-            window.location.href = '/auth/signin';
-          }
+          window.location.href = '/auth/signin';
           return Promise.reject(error);
         }
 
@@ -549,27 +560,55 @@ export const apiClient = {
         statusCode: response.status
       };
     } catch (error: any) {
-      // If we already threw an error above, just re-throw it
-      if (error.message && !error.response) {
-        throw error;
+      // Debug logging
+      console.log('=== API Error Debug ===');
+      console.log('Error object:', error);
+      console.log('Error code:', error.code);
+      console.log('Error message:', error.message);
+      console.log('Error response:', error.response);
+      console.log('Error response data:', error.response?.data);
+      console.log('Error response status:', error.response?.status);
+      console.log('Error request:', error.request);
+      
+      // Check if error is actually a response object (status 203 case)
+      if (error.status && error.data && !error.response) {
+        console.log('Error is a response object, not an error object');
+        console.log('Response status:', error.status);
+        console.log('Response data:', error.data);
       }
+      console.log('======================');
 
-      const responseData = error.response?.data;
+      // Check if the error is actually a response object (happens with 203 status)
+      // This must be checked BEFORE network error checks
+      let responseData;
+      if (error.status && error.data && !error.response) {
+        // Error is actually a response object - extract data from it
+        responseData = error.data;
+      } else {
+        // Normal error object with response property
+        responseData = error.response?.data;
+      }
 
       // Handle timeout errors specifically
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         throw new Error('Request timeout. Please check your internet connection and try again.');
       }
 
-      // Handle network errors
-      if (error.code === 'NETWORK_ERROR' || !error.response) {
+      // Handle network errors (no response from server)
+      // Only treat as network error if we don't have response data
+      if (!responseData && (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK' || (!error.response && error.request))) {
         throw new Error('Network error. Please check your internet connection and try again.');
       }
 
-      // Try to extract a meaningful error message
+      // If error has no response and no request, it's likely an error we already threw
+      if (!error.response && !error.request && error.message) {
+        throw error;
+      }
+
       let errorMessage = 'An unexpected error occurred';
 
       if (responseData) {
+        console.log('Extracting error from responseData:', responseData);
         if (typeof responseData === 'string') {
           errorMessage = responseData;
         } else if (responseData.detail) {
@@ -593,6 +632,7 @@ export const apiClient = {
         errorMessage = error.message;
       }
 
+      console.log('Final error message:', errorMessage);
       throw new Error(errorMessage);
     }
   },

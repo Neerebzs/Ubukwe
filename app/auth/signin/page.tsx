@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Eye, EyeOff } from "lucide-react"
+import { Loader2, Eye, EyeOff, Home } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginRequest } from "@/lib/api"
@@ -97,6 +97,19 @@ export default function SignInPage() {
         {/* Subtle background texture */}
         <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
         <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+
+        {/* Return to Home - Mobile/Desktop */}
+        <div className="absolute top-8 left-8 lg:left-24 z-20">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-[10px] font-black text-white/40 hover:text-[#608d64] uppercase tracking-[0.3em] transition-all group"
+          >
+            <div className="h-8 w-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-[#608d64]/30 group-hover:bg-[#608d64]/5 transition-all">
+              <Home className="h-3 w-3" />
+            </div>
+            <span>Return Home</span>
+          </Link>
+        </div>
 
         <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
           {/* Header */}
