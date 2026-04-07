@@ -526,23 +526,16 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       
       // Upload image files
       const imageFiles = filesToUpload.filter(item => item.type === "image")
-      console.log(`Found ${imageFiles.length} image files to upload`)
       for (const item of imageFiles) {
         if (!item.file) continue
-        console.log(`Uploading image: ${item.file.name}, size: ${item.file.size} bytes`)
         setUploadingFiles(prev => [...prev, item.file!.name])
         try {
           const response = await apiClient.upload.general<any>(item.file, "ubukwe/gallery", "image")
-          console.log("Image upload response:", response)
-          console.log("Response data:", response.data)
-          console.log("Response data type:", typeof response.data)
-          console.log("Response data keys:", response.data ? Object.keys(response.data) : 'no data')
           
           // The backend returns FileUploadResponse which has url at top level
           // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
           const imageUrl = response.data?.url;
           
-          console.log("Extracted image URL:", imageUrl)
           
           if (imageUrl) {
             // Generate thumbnail URL from Cloudinary
@@ -551,7 +544,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               url: imageUrl,
               thumbnail: thumbnailUrl
             })
-            console.log(`✅ Image uploaded successfully: ${imageUrl}`)
           } else {
             console.error(`❌ Image upload failed - no URL found in response:`, response)
             console.error("Full response structure:", JSON.stringify(response, null, 2))
@@ -567,21 +559,16 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
       // Upload reel files
       const reelFiles = filesToUpload.filter(item => item.type === "reel")
-      console.log(`Found ${reelFiles.length} reel files to upload`)
       for (const item of reelFiles) {
         if (!item.file) continue
-        console.log(`Uploading reel: ${item.file.name}, size: ${item.file.size} bytes`)
         setUploadingFiles(prev => [...prev, item.file!.name])
         try {
           const response = await apiClient.upload.general<any>(item.file, "ubukwe/reels", "video")
-          console.log("Reel upload response:", response)
-          console.log("Reel response data:", response.data)
           
           // The backend returns FileUploadResponse which has url at top level
           // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
           const reelUrl = response.data?.url;
           
-          console.log("Extracted reel URL:", reelUrl)
           
           if (reelUrl) {
             // Generate thumbnail URL for video
@@ -590,7 +577,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               url: reelUrl,
               thumbnail: thumbnailUrl
             })
-            console.log(`✅ Reel uploaded successfully: ${reelUrl}`)
           } else {
             console.error(`❌ Reel upload failed - no URL found in response:`, response)
             console.error("Full reel response structure:", JSON.stringify(response, null, 2))
@@ -606,21 +592,16 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
       // Upload video files
       const videoFiles = filesToUpload.filter(item => item.type === "video")
-      console.log(`Found ${videoFiles.length} video files to upload`)
       for (const item of videoFiles) {
         if (!item.file) continue
-        console.log(`Uploading video: ${item.file.name}, size: ${item.file.size} bytes`)
         setUploadingFiles(prev => [...prev, item.file!.name])
         try {
           const response = await apiClient.upload.general<any>(item.file, "ubukwe/videos", "video")
-          console.log("Video upload response:", response)
-          console.log("Video response data:", response.data)
           
           // The backend returns FileUploadResponse which has url at top level
           // The API client wraps it as: { status: 'success', data: { success: true, url: "..." } }
           const videoUrl = response.data?.url;
           
-          console.log("Extracted video URL:", videoUrl)
           
           if (videoUrl) {
             // Generate thumbnail URL for video
@@ -629,7 +610,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               url: videoUrl,
               thumbnail: thumbnailUrl
             })
-            console.log(`✅ Video uploaded successfully: ${videoUrl}`)
           } else {
             console.error(`❌ Video upload failed - no URL found in response:`, response)
             console.error("Full video response structure:", JSON.stringify(response, null, 2))
@@ -643,8 +623,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         }
       }
 
-      console.log("All upload results:", uploadResults)
-      console.log(`Expected ${filesToUpload.length} uploads, got ${uploadResults.length} results`)
 
       // Validate we got results for all files
       if (uploadResults.length !== filesToUpload.length) {
@@ -679,13 +657,11 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         }
       }
 
-      console.log("Upload results mapping:", uploadResultsMap)
 
       // Update formData with uploaded URLs and thumbnails
       const updatedGallery = formData.gallery.map(item => {
         if (item.file && !item.url && uploadResultsMap.has(item.id)) {
           const result = uploadResultsMap.get(item.id)
-          console.log(`Mapping result for item ${item.id}:`, result)
           return { 
             ...item, 
             url: result?.url || "",
@@ -695,7 +671,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         return item
       })
 
-      console.log("Updated gallery after upload:", updatedGallery)
 
       setFormData({
         ...formData,
@@ -758,9 +733,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     setUploadProgress(0)
 
     try {
-      console.log("=== BEFORE UPLOAD ===")
-      console.log("Gallery items count:", formData.gallery.length)
-      console.log("Gallery items:", formData.gallery.map(g => ({
         id: g.id,
         type: g.type,
         hasFile: !!g.file,
@@ -779,9 +751,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       const galleryUrls = await uploadGalleryImages()
       setUploadProgress(50)
 
-      console.log("=== AFTER UPLOAD ===")
-      console.log("Gallery URLs count:", galleryUrls.length)
-      console.log("Gallery URLs:", galleryUrls.map(g => ({
         id: g.id,
         type: g.type,
         hasUrl: !!g.url,
@@ -830,27 +799,14 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       setUploadProgress(75)
 
       // Log the complete payload for debugging
-      console.log("=== SERVICE FORM PAYLOAD ===")
-      console.log(JSON.stringify(finalData, null, 2))
-      console.log("=== GALLERY STATISTICS ===")
-      console.log(`Total Items: ${finalData.gallery.length}`)
-      console.log(`Images: ${finalData.gallery.filter(i => i.type === "image").length}`)
-      console.log(`Reels: ${finalData.gallery.filter(i => i.type === "reel").length}`)
-      console.log(`Videos: ${finalData.gallery.filter(i => i.type === "video").length}`)
-      console.log(`Offers: ${finalData.gallery.filter(i => i.contentType === "offer").length}`)
-      console.log("=== OFFER DATE VALIDATION ===")
       const offersWithDates = finalData.gallery.filter(i => i.contentType === "offer" && (i.validFrom || i.validTo))
-      console.log(`Offers with dates: ${offersWithDates.length}`)
       offersWithDates.forEach(offer => {
-        console.log(`Offer "${offer.title}": ${offer.validFrom || 'No start'} to ${offer.validTo || 'No end'}`)
       })
-      console.log("===========================")
 
       // Step 3: Save the service with gallery URLs (Backend API call)
       if (onSave) {
         await onSave(finalData) // Make this await to handle the API call properly
       } else {
-        console.log("Service Data with uploaded gallery:", finalData)
       }
 
       setUploadProgress(100)

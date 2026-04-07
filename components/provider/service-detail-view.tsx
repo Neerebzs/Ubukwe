@@ -95,12 +95,6 @@ export function ServiceDetailView({
   const [activeTab, setActiveTab] = useState("overview")
 
   // Debug logging
-  console.log("=== SERVICE DETAIL VIEW ===");
-  console.log("Service:", service);
-  console.log("Gallery:", service.gallery);
-  console.log("Gallery length:", service.gallery?.length);
-  console.log("Gallery items:", service.gallery);
-  console.log("===========================");
 
   if (isLoading) {
     return <ServiceDetailSkeleton />

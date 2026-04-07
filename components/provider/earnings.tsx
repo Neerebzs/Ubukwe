@@ -1,225 +1,193 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, Download, Calendar, Wallet, CreditCard, Clock, FileText } from "lucide-react"
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts"
-import { StatCard } from "@/components/admin/stat-card"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { axiosInstance } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, TrendingUp, Wallet, CreditCard, Clock, Download } from "lucide-react";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { toast } from "sonner";
 
-interface ProviderEarningsProps {
-  recentCompleted: Array<{
-    id: string
-    serviceName: string
-    customerName: string
-    amount: number
-    date: string
-  }>
+interface EarningSummary {
+  total_earnings: number;
+  pending_earnings: number;
+  completed_earnings: number;
+  available_for_withdrawal: number;
 }
 
-export function ProviderEarnings({ recentCompleted }: ProviderEarningsProps) {
-  // Mock time-series data; replace with API later
-  const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("monthly");
-  const series = useMemo(() => {
-    if (period === "weekly") {
-      return [
-        { label: "Mon", amount: 45000 },
-        { label: "Tue", amount: 52000 },
-        { label: "Wed", amount: 48000 },
-        { label: "Thu", amount: 61000 },
-        { label: "Fri", amount: 55000 },
-        { label: "Sat", amount: 67000 },
-        { label: "Sun", amount: 42000 },
-      ];
-    }
-    if (period === "monthly") {
-      return [
-        { label: "Week 1", amount: 210000 },
-        { label: "Week 2", amount: 245000 },
-        { label: "Week 3", amount: 195000 },
-        { label: "Week 4", amount: 280000 },
-      ];
-    }
-    return [
-      { label: "Jan", amount: 850000 },
-      { label: "Feb", amount: 920000 },
-      { label: "Mar", amount: 780000 },
-      { label: "Apr", amount: 1100000 },
-      { label: "May", amount: 950000 },
-      { label: "Jun", amount: 1250000 },
-    ];
-  }, [period]);
+interface Earning {
+  id: string;
+  booking_id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+}
 
-  // Mock data for the new BarChart, derived from 'series' for consistency
-  const data = useMemo(() => series.map(item => ({ name: item.label, total: item.amount })), [series]);
+export function ProviderEarnings() {
+  const queryClient = useQueryClient();
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
-  const totalInPeriod = series.reduce((s, p) => s + p.amount, 0);
-  const avgPerPoint = Math.round(totalInPeriod / series.length);
+  const { data: summary, isLoading: summaryLoading } = useQuery<EarningSummary>({
+    queryKey: ["earnings-summary"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<EarningSummary>("/api/v1/provider/earnings/summary");
+      return res.data;
+    },
+  });
+
+  const { data: earnings = [], isLoading: earningsLoading } = useQuery<Earning[]>({
+    queryKey: ["earnings-details"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<Earning[]>("/api/v1/provider/earnings/details");
+      return res.data ?? [];
+    },
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: async (amount: number) => {
+      return axiosInstance.post("/api/v1/provider/earnings/withdraw", { amount });
+    },
+    onSuccess: () => {
+      toast.success("Withdrawal request submitted");
+      queryClient.invalidateQueries({ queryKey: ["earnings-summary"] });
+      setWithdrawAmount("");
+    },
+    onError: (err: any) => toast.error(err.message || "Withdrawal failed"),
+  });
+
+  // Build a simple monthly chart from earnings data
+  const chartData = (() => {
+    const months: Record<string, number> = {};
+    earnings.forEach(e => {
+      const month = new Date(e.created_at).toLocaleString("default", { month: "short" });
+      months[month] = (months[month] || 0) + Number(e.amount);
+    });
+    return Object.entries(months).map(([label, amount]) => ({ label, amount }));
+  })();
+
+  if (summaryLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem]" />)}
+        </div>
+        <Skeleton className="h-64 rounded-[2rem]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Financial Overview</h2>
-        <div className="flex items-center gap-2">
-          <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Revenue & Payout Intelligence</p>
-        </div>
+      <div>
+        <h2 className="text-4xl font-serif italic text-slate-900">Earnings</h2>
+        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">Revenue Overview</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Cumulative Revenue"
-          value="4,250,000 RWF"
-          icon={Wallet}
-          trend="12.5%"
-          trendType="up"
-          color="#668c65"
-        />
-        <StatCard
-          label="Pending Clearance"
-          value="850,000 RWF"
-          icon={Clock}
-          trend="8.2%"
-          trendType="up"
-          color="#6366f1"
-        />
-        <StatCard
-          label="Next Disbursement"
-          value="June 15, 2024"
-          icon={Calendar}
-          color="#f59e0b"
-        />
-        <StatCard
-          label="Active Contracts"
-          value="12"
-          icon={FileText}
-          trend="3"
-          trendType="up"
-          color="#0ea5e9"
-        />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-7">
-        <Card className="md:col-span-4 border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
-          <CardHeader className="p-8 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-serif italic text-slate-900">Revenue Velocity</CardTitle>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Monthly earnings trajectory</p>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Earned", value: summary?.total_earnings ?? 0, icon: TrendingUp, color: "text-sage-700" },
+          { label: "Completed", value: summary?.completed_earnings ?? 0, icon: DollarSign, color: "text-emerald-700" },
+          { label: "Pending", value: summary?.pending_earnings ?? 0, icon: Clock, color: "text-amber-600" },
+          { label: "Available", value: summary?.available_for_withdrawal ?? 0, icon: Wallet, color: "text-blue-600" },
+        ].map((s, i) => (
+          <Card key={i} className="border-none shadow-sm rounded-[2rem] bg-white">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <s.icon className={`w-5 h-5 ${s.color}`} />
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{s.label}</p>
               </div>
-              <Button variant="outline" size="sm" className="rounded-xl border-slate-100 text-[10px] font-black uppercase tracking-widest px-4 h-9">
-                <Download className="w-4 h-4 mr-2 text-[#668c65]" />
-                Export Data
-              </Button>
-            </div>
+              <p className={`text-2xl font-bold tracking-tight ${s.color}`}>
+                {Number(s.value).toLocaleString()} <span className="text-xs font-normal text-slate-400">RWF</span>
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Chart */}
+      {chartData.length > 0 && (
+        <Card className="border-none shadow-sm rounded-[2rem] bg-white">
+          <CardHeader className="p-8 pb-4">
+            <CardTitle className="text-xl font-serif italic text-slate-900">Earnings History</CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
-                  <XAxis
-                    dataKey="name"
-                    stroke="#94a3b8"
-                    fontSize={10}
-                    fontWeight={900}
-                    tickLine={false}
-                    axisLine={false}
-                    dx={0}
-                    dy={10}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    fontSize={10}
-                    fontWeight={900}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value / 1000}k`}
-                  />
-                  <Tooltip
-                    cursor={{ fill: '#f1f5f9', radius: 8 }}
-                    contentStyle={{
-                      borderRadius: '16px',
-                      border: 'none',
-                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                      fontSize: '12px',
-                      fontWeight: '700'
-                    }}
-                  />
-                  <Bar
-                    dataKey="total"
-                    fill="#668c65"
-                    radius={[8, 8, 8, 8]}
-                    barSize={32}
-                  >
-                    {data.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === data.length - 1 ? '#0b7a6f' : '#668c65'} fillOpacity={0.8} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <CardContent className="p-8 pt-0">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData}>
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString()} RWF`, "Earnings"]} />
+                <Bar dataKey="amount" fill="#668c65" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
+      )}
 
-        <Card className="md:col-span-3 border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
+      {/* Withdrawal */}
+      {(summary?.available_for_withdrawal ?? 0) > 0 && (
+        <Card className="border-none shadow-sm rounded-[2rem] bg-white">
           <CardHeader className="p-8 pb-4">
-            <CardTitle className="text-xl font-serif italic text-slate-900">Live Transitions</CardTitle>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Real-time fiscal ledger</p>
+            <CardTitle className="text-xl font-serif italic text-slate-900">Request Withdrawal</CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
-            <div className="space-y-6">
-              {[
-                { label: "Wedding MC - June 2024", amount: "+450,000 RWF", date: "June 12, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
-                { label: "Platform Service Fee", amount: "-45,000 RWF", date: "June 12, 2024", icon: ArrowDownRight, color: "text-slate-400", bg: "bg-slate-50" },
-                { label: "Deposit - Corporate Gala", amount: "+200,000 RWF", date: "June 10, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
-                { label: "Wedding DJ - May Finish", amount: "+600,000 RWF", date: "June 08, 2024", icon: ArrowUpRight, color: "text-emerald-600", bg: "bg-emerald-50" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between group cursor-default">
-                  <div className="flex items-center gap-4">
-                    <div className={cn("p-3 rounded-[1rem] transition-colors", item.bg)}>
-                      <item.icon className={cn("w-4 h-4", item.color)} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.date}</p>
-                      <p className="text-sm font-bold text-slate-900 group-hover:text-[#668c65] transition-colors">{item.label}</p>
-                    </div>
+          <CardContent className="p-8 pt-0 flex items-center gap-4">
+            <div className="relative flex-1 max-w-xs">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">RWF</span>
+              <input
+                type="number"
+                value={withdrawAmount}
+                onChange={e => setWithdrawAmount(e.target.value)}
+                placeholder="Amount"
+                className="w-full h-12 pl-14 pr-4 rounded-2xl bg-slate-50 border-none text-sm font-bold focus:outline-none focus:ring-2 focus:ring-sage-500/20"
+              />
+            </div>
+            <Button
+              onClick={() => withdrawMutation.mutate(Number(withdrawAmount))}
+              disabled={!withdrawAmount || Number(withdrawAmount) <= 0 || withdrawMutation.isPending}
+              className="h-12 rounded-2xl bg-[#668c65] text-white hover:bg-sage-700 px-8 font-bold uppercase text-[10px] tracking-widest"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Withdraw
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent transactions */}
+      <Card className="border-none shadow-sm rounded-[2rem] bg-white">
+        <CardHeader className="p-8 pb-4">
+          <CardTitle className="text-xl font-serif italic text-slate-900">Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent className="p-8 pt-0">
+          {earningsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
+            </div>
+          ) : earnings.length === 0 ? (
+            <p className="text-slate-400 text-sm text-center py-8">No transactions yet</p>
+          ) : (
+            <div className="space-y-3">
+              {earnings.slice(0, 10).map(e => (
+                <div key={e.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Booking {e.booking_id.slice(0, 8).toUpperCase()}</p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                      {new Date(e.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  <div className={cn("text-sm font-black tracking-tight", item.color)}>
-                    {item.amount}
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className={`text-[9px] font-bold uppercase ${e.status === "completed" ? "text-emerald-600 border-emerald-200" : "text-amber-600 border-amber-200"}`}>
+                      {e.status}
+                    </Badge>
+                    <p className="font-bold text-slate-800">{Number(e.amount).toLocaleString()} RWF</p>
                   </div>
                 </div>
               ))}
-              <Button variant="ghost" className="w-full mt-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 h-12">
-                Audit Full Ledger
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
-        <CardHeader className="p-8 pb-4">
-          <CardTitle className="text-xl font-serif italic text-slate-900">Recent Transactions</CardTitle>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Latest completed services</p>
-        </CardHeader>
-        <CardContent className="p-8 pt-4">
-          <div className="space-y-4">
-            {recentCompleted.map((booking) => (
-              <div key={booking.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <p className="font-medium">{booking.customerName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {booking.serviceName} - {booking.date}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium text-green-600">+{booking.amount.toLocaleString()} RWF</p>
-                  <p className="text-xs text-muted-foreground">Completed</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

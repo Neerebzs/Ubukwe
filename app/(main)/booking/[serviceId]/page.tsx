@@ -63,7 +63,6 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     queryKey: ["service", params.serviceId],
     queryFn: async () => {
       try {
-        console.log(`🔍 BookingPage: Fetching service ${params.serviceId}`);
         const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
         return (response as any).data || response;
       } catch (err) {
@@ -116,7 +115,6 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       return response;
     },
     onSuccess: (data) => {
-      console.log('✅ Booking created:', data);
       toast.success('Booking request sent successfully!');
       setCurrentStep(4); // Go to confirmation
       // Navigate to customer dashboard bookings tab after 3 seconds
@@ -173,7 +171,6 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       special_requests: bookingData.specialRequests || null
     };
 
-    console.log('📤 Sending booking request:', bookingPayload);
     createBookingMutation.mutate(bookingPayload);
   }
 
@@ -585,7 +582,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       htmlFor="acceptContract"
                       className="text-sm font-medium leading-normal cursor-pointer"
                     >
-                      I agree to the <button type="button" className="text-primary hover:underline" onClick={() => alert("Show contract")}>Booking Terms & Conditions</button> and cancellation policy.
+                      I agree to the <button type="button" className="text-primary hover:underline" onClick={() => {}}>Booking Terms & Conditions</button> and cancellation policy.
                     </label>
                   </div>
                 </div>

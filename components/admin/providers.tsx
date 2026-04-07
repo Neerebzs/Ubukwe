@@ -79,7 +79,6 @@ export function AdminProviders() {
   const fetchProviders = async () => {
     setIsLoading(true);
     try {
-      console.log("Fetching providers with statusFilter:", statusFilter);
 
       if (statusFilter === "pending") {
         const response: any = await apiClient.admin.onboarding.getAll('pending');
@@ -91,7 +90,6 @@ export function AdminProviders() {
         setProviders(data);
       } else {
         // Fetch providers with specific status filter (active, suspended)
-        console.log("Calling providers.getAll() with status:", statusFilter);
         const response = await apiClient.admin.providers.getAll(statusFilter);
         const formattedProviders = response.data.map((provider: any) => ({
           provider: provider,

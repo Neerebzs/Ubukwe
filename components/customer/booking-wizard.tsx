@@ -72,7 +72,6 @@ export function CustomerBookingWizard() {
 
   const handleBookingSubmit = () => {
     // In real app, this would process the booking and payment
-    console.log("Booking submitted:", bookingData)
     setCurrentStep(4) // Go to confirmation
   }
 
@@ -370,7 +369,7 @@ export function CustomerBookingWizard() {
                     />
                     <label htmlFor="acceptContract" className="text-sm cursor-pointer">
                       I agree to the booking contract and payment schedule.{" "}
-                      <button type="button" className="underline text-primary" onClick={() => alert("Show contract preview (integration pending)")}>
+                      <button type="button" className="underline text-primary" onClick={() => {}}>
                         View contract
                       </button>
                     </label>

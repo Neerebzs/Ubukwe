@@ -78,9 +78,7 @@ export function ProviderBookings() {
 
   const fetchBookings = async () => {
     try {
-      console.log("Fetching provider bookings...");
       const response = await apiClient.get<BookingData[]>("/api/v1/bookings/provider/bookings");
-      console.log("Bookings response:", response);
       setBookings(response.data || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -90,9 +88,7 @@ export function ProviderBookings() {
 
   const fetchStats = async () => {
     try {
-      console.log("Fetching provider statistics...");
       const response = await apiClient.get<BookingStats>("/api/v1/bookings/provider/bookings/statistics/summary");
-      console.log("Stats response:", response);
       setStats(response.data || null);
     } catch (error) {
       console.error("Error fetching statistics:", error);

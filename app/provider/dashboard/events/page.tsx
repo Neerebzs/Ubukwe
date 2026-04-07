@@ -1,49 +1,53 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { axiosInstance } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, Ticket, DollarSign, Calendar, Download, Eye } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrendingUp, Users, Ticket, DollarSign, Calendar } from "lucide-react";
+
+interface Event {
+  id: string;
+  title: string;
+  event_date: string;
+  status: string;
+  total_tickets?: number;
+  sold_tickets?: number;
+  revenue?: number;
+}
 
 export default function EventAnalyticsPage() {
-  const events = [
-    {
-      id: "1",
-      name: "Kigali Wedding Expo 2024",
-      date: "2024-03-15",
-      status: "upcoming",
-      totalTickets: 450,
-      soldTickets: 285,
-      revenue: 8550000,
-      views: 1250,
-      ticketTypes: [
-        { name: "Early Bird", sold: 55, total: 100, revenue: 825000 },
-        { name: "Regular", sold: 180, total: 300, revenue: 4500000 },
-        { name: "VIP", sold: 50, total: 50, revenue: 2500000 }
-      ]
-    }
-  ];
+  const { data: events = [], isLoading } = useQuery<Event[]>({
+    queryKey: ["provider-events-analytics"],
+    queryFn: async () => {
+      const res = await axiosInstance.get<any>("/api/v1/provider/events");
+      return res.data?.data ?? res.data ?? [];
+    },
+  });
 
-  const stats = {
-    totalRevenue: 8550000,
-    totalTicketsSold: 285,
-    totalViews: 1250,
-    conversionRate: 22.8,
-    trends: { revenue: 15.3, tickets: 12.5, views: 8.2 }
-  };
+  const totalRevenue = events.reduce((s, e) => s + (e.revenue ?? 0), 0);
+  const totalSold = events.reduce((s, e) => s + (e.sold_tickets ?? 0), 0);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+        {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Event Analytics</h1>
-          <p className="text-muted-foreground">Track your event ticket sales and performance</p>
-        </div>
-        <Button>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold">Event Analytics</h1>
+        <p className="text-muted-foreground">Track your event ticket sales and performance</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -53,149 +57,90 @@ export default function EventAnalyticsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()} RWF</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-green-600">+{stats.trends.revenue}%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{totalRevenue.toLocaleString()} RWF</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTicketsSold}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-green-600">+{stats.trends.tickets}%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{totalSold}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Page Views</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <TrendingUp className="h-3 w-3 text-green-600" />
-              <span className="text-green-600">+{stats.trends.views}%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{events.length}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.conversionRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">Views to purchases</p>
+            <div className="text-2xl font-bold">
+              {events.filter(e => e.status === "approved" || e.status === "active").length}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-4">
+      <Tabs defaultValue="all">
         <TabsList>
           <TabsTrigger value="all">All Events</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="past">Past</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {events.map((event) => (
-            <Card key={event.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>{event.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4" />
-                      {event.date}
-                    </CardDescription>
-                  </div>
-                  <Badge variant={event.status === "upcoming" ? "default" : "secondary"}>
-                    {event.status}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Tickets Sold</p>
-                    <p className="text-2xl font-bold">{event.soldTickets}/{event.totalTickets}</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(event.soldTickets / event.totalTickets) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Revenue</p>
-                    <p className="text-2xl font-bold">{event.revenue.toLocaleString()} RWF</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Page Views</p>
-                    <p className="text-2xl font-bold">{event.views.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold mb-3">Ticket Breakdown</h4>
-                  <div className="space-y-3">
-                    {event.ticketTypes.map((type, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">{type.name}</span>
-                            <span className="text-sm text-muted-foreground">{type.sold}/{type.total}</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full" 
-                              style={{ width: `${(type.sold / type.total) * 100}%` }}
-                            />
-                          </div>
+        {["all", "upcoming", "past"].map(tab => {
+          const filtered = tab === "all" ? events
+            : tab === "upcoming" ? events.filter(e => new Date(e.event_date) >= new Date())
+            : events.filter(e => new Date(e.event_date) < new Date());
+          return (
+            <TabsContent key={tab} value={tab} className="space-y-4">
+              {filtered.length === 0 ? (
+                <Card><CardContent className="py-8 text-center text-muted-foreground">No events found</CardContent></Card>
+              ) : (
+                filtered.map(event => (
+                  <Card key={event.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle>{event.title}</CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(event.event_date).toLocaleDateString()}
+                          </CardDescription>
                         </div>
-                        <div className="ml-4 text-right">
-                          <p className="text-sm font-semibold">{type.revenue.toLocaleString()} RWF</p>
+                        <Badge variant={event.status === "approved" ? "default" : "secondary"}>
+                          {event.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-3 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Tickets Sold</p>
+                          <p className="text-xl font-bold">{event.sold_tickets ?? 0}/{event.total_tickets ?? 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Revenue</p>
+                          <p className="text-xl font-bold">{(event.revenue ?? 0).toLocaleString()} RWF</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">View Details</Button>
-                  <Button variant="outline" className="flex-1">Manage Event</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="upcoming">
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Upcoming events will appear here
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="past">
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Past events will appear here
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   );

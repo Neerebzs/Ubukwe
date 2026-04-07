@@ -56,22 +56,18 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         queryKey: ["service-detail", params.serviceId],
         queryFn: async () => {
             try {
-                console.log(`🔍 Fetching service: ${params.serviceId}`);
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
-                console.log(`✅ Service response:`, response);
 
                 // The backend returns the service directly (not wrapped in ApiResponse)
                 // Cast to ProviderService since apiClient returns it directly for this endpoint
                 const serviceData = response as unknown as ProviderService;
 
                 if (!serviceData || !serviceData.id) {
-                    console.log(`❌ No valid service data in response`);
                     throw new Error('Service not found or not available');
                 }
 
                 return serviceData;
             } catch (error: any) {
-                console.log(`❌ Service fetch error:`, error);
                 // If it's a 404 or other error, throw it so React Query can handle it
                 throw error;
             }
@@ -128,9 +124,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const pkgArray = Array.isArray(serviceData.packages) ? serviceData.packages : [];
 
     // Debug gallery items
-    console.log('📸 Gallery items:', serviceData.gallery);
     if (Array.isArray(serviceData.gallery)) {
-        console.log('📸 Gallery item types:', serviceData.gallery.map((item: any) => ({
             type: typeof item === 'string' ? 'string/image' : item.type,
             url: typeof item === 'string' ? item : item.url
         })));
@@ -196,7 +190,6 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 const contentType = typeof item === 'object' ? item.contentType : null;
                 // Only show videos with contentType === null in gallery tab
                 const isVideo = type === 'video' && contentType === null;
-                if (isVideo) console.log('🎥 Found video:', item);
                 return isVideo;
             }).map((item: any, i: number) => ({
                 id: item.id || `video-${i}`,
@@ -210,7 +203,6 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 const contentType = typeof item === 'object' ? item.contentType : null;
                 // Only show reels with contentType === null in gallery tab
                 const isReel = type === 'reel' && contentType === null;
-                if (isReel) console.log('🎬 Found reel:', item);
                 return isReel;
             }).map((item: any, i: number) => ({
                 id: item.id || `reel-${i}`,

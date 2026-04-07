@@ -323,9 +323,6 @@ export default function ProviderOnboarding() {
         country: formData.country,
       }
 
-      console.log('Submitting onboarding data:', onboardingData)
-      console.log('RDB file:', documents.businessLicense)
-
       const response = await apiClient.provider.submitOnboarding(onboardingData, documents.businessLicense)
 
       toast.success("Onboarding application submitted successfully! You will be notified once it's reviewed.")

@@ -227,23 +227,19 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
   };
 
   const handleSubmit = async () => {
-    console.log('handleSubmit called, isPending:', createEventMutation.isPending);
     
     // Prevent multiple submissions
     if (createEventMutation.isPending) {
-      console.log('Submission blocked: already pending');
       return;
     }
 
     // Prevent rapid successive submissions (within 2 seconds)
     const now = Date.now();
     if (now - lastSubmissionRef.current < 2000) {
-      console.log('Submission blocked: too rapid');
       return;
     }
     lastSubmissionRef.current = now;
 
-    console.log('Proceeding with submission...');
 
     try {
       // Combine date and time into ISO datetime
@@ -279,7 +275,6 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
       };
 
       await createEventMutation.mutateAsync(eventData);
-      console.log('Event created successfully');
       toast.success("Event created successfully!");
       
       // Reset form

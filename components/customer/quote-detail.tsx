@@ -52,33 +52,63 @@ export function CustomerQuoteDetail({ quote }: CustomerQuoteDetailProps) {
   const isExpired = new Date(quote.validUntil) < new Date() && quote.status === "pending"
   const daysUntilExpiry = Math.ceil((new Date(quote.validUntil).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 
-  const handleAccept = () => {
-    // In real app, this would call API to accept quote
-    alert(`Quote ${quote.id} accepted! This would create a booking.`)
-    setIsAcceptDialogOpen(false)
-    router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+  const handleAccept = async () => {
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      await axiosInstance.post(`/api/v1/provider/quotes/customer/${quote.id}/respond?action=accept`)
+      const { toast } = await import("sonner")
+      toast.success("Quote accepted!")
+      setIsAcceptDialogOpen(false)
+      router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to accept quote")
+    }
   }
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     if (!declineReason.trim()) {
-      alert("Please provide a reason for declining")
+      const { toast } = await import("sonner")
+      toast.error("Please provide a reason for declining")
       return
     }
-    // In real app, this would call API to decline quote
-    alert(`Quote ${quote.id} declined. Reason: ${declineReason}`)
-    setIsDeclineDialogOpen(false)
-    router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      await axiosInstance.post(`/api/v1/provider/quotes/customer/${quote.id}/respond?action=reject`)
+      const { toast } = await import("sonner")
+      toast.success("Quote declined.")
+      setIsDeclineDialogOpen(false)
+      router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to decline quote")
+    }
   }
 
-  const handleRequestChanges = () => {
+  const handleRequestChanges = async () => {
     if (!changeRequest.trim()) {
-      alert("Please describe the changes you'd like")
+      const { toast } = await import("sonner")
+      toast.error("Please describe the changes you'd like")
       return
     }
-    // In real app, this would call API to request changes
-    alert(`Change request sent for quote ${quote.id}. Provider will be notified.`)
-    setIsRequestChangesDialogOpen(false)
-    router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+    // Send as a message to the provider via messaging
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      if (quote.providerId) {
+        await axiosInstance.post("/api/v1/messages/send", {
+          recipient_id: quote.providerId,
+          message: `Change request for Quote ${quote.id}: ${changeRequest}`,
+          message_type: "quote",
+        })
+      }
+      const { toast } = await import("sonner")
+      toast.success("Change request sent to provider.")
+      setIsRequestChangesDialogOpen(false)
+      router.push(`/customer/dashboard?tab=quotes`, { scroll: false })
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to send change request")
+    }
   }
 
   return (

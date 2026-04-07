@@ -57,7 +57,6 @@ export function AdminUsers() {
 
       const response = await apiClient.admin.users.getAll(params);
       // Backend returns { users: [], total, etc. }
-      console.log('Users API Response:', response.data);
       setUsers(response.data.users || []);
     } catch (error) {
       console.error('Failed to fetch users:', error);

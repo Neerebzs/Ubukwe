@@ -140,11 +140,9 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
   };
 
   const handleExportAttendees = () => {
-    console.log("Exporting attendee list...");
   };
 
   const handleShareEvent = () => {
-    console.log("Sharing event...");
   };
 
   const modalContent = (

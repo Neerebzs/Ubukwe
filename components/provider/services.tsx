@@ -92,20 +92,12 @@ export function ProviderServices({ services: initialServices }: ProviderServices
     setIsLoading(true);
     try {
       const response = await apiClient.providerServices.getAll();
-      console.log("=== SERVICES API RESPONSE ===");
-      console.log("Raw response:", response);
 
       // Backend returns list directly, not wrapped in { data: [...] }
       const responseData = response.data as any;
       const servicesArray = Array.isArray(responseData) ? responseData : (responseData?.data || []);
-      console.log("Services array:", servicesArray);
 
       const mappedServices = servicesArray.map((s: any) => {
-        console.log("=== MAPPING SERVICE ===");
-        console.log("Service name:", s.name);
-        console.log("Gallery data:", s.gallery);
-        console.log("Gallery type:", typeof s.gallery);
-        console.log("Is array:", Array.isArray(s.gallery));
 
         return {
           id: s.id,
@@ -129,7 +121,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
           // Handle gallery - can be array of objects or array of strings
           gallery: Array.isArray(s.gallery)
             ? s.gallery.map((item: any, idx: number) => {
-              console.log("Gallery item:", item, "Type:", typeof item);
               // If item is a string (URL), convert to gallery object
               if (typeof item === 'string') {
                 return {
@@ -157,9 +148,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         };
       });
 
-      console.log("Mapped services:", mappedServices);
-      console.log("First service gallery:", mappedServices[0]?.gallery);
-      console.log("===========================");
 
       setServices(mappedServices);
     } catch (error) {
@@ -184,13 +172,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   };
 
   const handleEditService = (service: Service) => {
-    console.log("=== EDITING SERVICE ===");
-    console.log("Original service:", service);
-    console.log("Gallery data:", service.gallery);
 
     // Find the category ID from the categories list
     const categoryData = categories.find(cat => cat.name === service.category);
-    console.log("Found category:", categoryData);
 
     const editData = {
       name: service.title,
@@ -219,9 +203,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       verified: service.verified || false,
     };
 
-    console.log("Edit data prepared:", editData);
-    console.log("Edit gallery:", editData.gallery);
-    console.log("========================");
 
     setEditingService(service);
     setShowCreateForm(true);
@@ -230,12 +211,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   const handleSaveService = async (formData: ServiceFormData) => {
     setIsSaving(true);
 
-    console.log("=== HANDLE SAVE SERVICE ===")
-    console.log("Is editing:", !!editingService)
-    console.log("Editing service ID:", editingService?.id)
-    console.log("Form data:", formData)
-    console.log("Received gallery count:", formData.gallery?.length || 0)
-    console.log("Gallery items:", formData.gallery?.map(g => ({
       id: g.id,
       type: g.type,
       hasUrl: !!g.url,
@@ -270,18 +245,12 @@ export function ProviderServices({ services: initialServices }: ProviderServices
       })).filter(item => item.url && item.url.trim() !== "") || [],
     };
 
-    console.log("=== FINAL PAYLOAD ===")
-    console.log("Gallery count after filter:", servicePayload.gallery.length)
-    console.log("Gallery:", servicePayload.gallery)
-    console.log("Payload:", servicePayload)
 
     try {
       if (editingService) {
-        console.log("Updating service with ID:", editingService.id)
         await apiClient.providerServices.update(editingService.id, servicePayload);
         toast.success("Service updated successfully!");
       } else {
-        console.log("Creating new service")
         await apiClient.providerServices.create(servicePayload);
         toast.success("Service created successfully!");
       }
@@ -412,13 +381,9 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   if (showCreateForm) {
     // Prepare initial data for edit mode
     const initialData = editingService ? (() => {
-      console.log("=== PREPARING EDIT DATA ===");
-      console.log("Editing service:", editingService);
-      console.log("Categories available:", categories);
 
       // Find the category ID from the categories list
       const categoryData = categories.find(cat => cat.name === editingService.category);
-      console.log("Found category for edit:", categoryData);
 
       const data = {
         name: editingService.title,
@@ -447,9 +412,6 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         verified: editingService.verified || false,
       };
 
-      console.log("Final edit data:", data);
-      console.log("Edit gallery count:", data.gallery?.length);
-      console.log("============================");
 
       return data;
     })() : undefined;

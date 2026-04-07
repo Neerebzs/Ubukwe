@@ -85,23 +85,64 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
   const taxAmount = (taxableAmount * taxRate) / 100
   const total = taxableAmount + taxAmount
 
-  const handleSave = () => {
-    const quote = {
-      ...quoteData,
-      lineItems,
-      subtotal,
-      discount: discountAmount,
-      tax: taxAmount,
-      total,
-      createdAt: new Date().toISOString(),
+  const handleSave = async () => {
+    if (!quoteData.customerId) {
+      const { toast } = await import("sonner")
+      toast.error("Customer ID is required to save a quote")
+      return
     }
-    alert("Quote saved! (Integration pending)")
-    console.log("Quote:", quote)
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      await axiosInstance.post("/api/v1/provider/quotes/", {
+        customer_id: quoteData.customerId,
+        inquiry_id: quoteData.inquiryId || undefined,
+        line_items: lineItems,
+        subtotal,
+        discount: discountAmount,
+        discount_type: discountType,
+        tax: taxAmount,
+        total,
+        notes: quoteData.notes,
+        expires_at: quoteData.validUntil,
+      })
+      const { toast } = await import("sonner")
+      toast.success("Quote saved as draft")
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to save quote")
+    }
   }
 
-  const handleSend = () => {
-    handleSave()
-    alert("Quote sent to customer! (Integration pending)")
+  const handleSend = async () => {
+    if (!quoteData.customerId) {
+      const { toast } = await import("sonner")
+      toast.error("Customer ID is required to send a quote")
+      return
+    }
+    try {
+      const { axiosInstance } = await import("@/lib/api-client")
+      const res = await axiosInstance.post("/api/v1/provider/quotes/", {
+        customer_id: quoteData.customerId,
+        inquiry_id: quoteData.inquiryId || undefined,
+        line_items: lineItems,
+        subtotal,
+        discount: discountAmount,
+        discount_type: discountType,
+        tax: taxAmount,
+        total,
+        notes: quoteData.notes,
+        expires_at: quoteData.validUntil,
+      })
+      const quoteId = res.data?.id
+      if (quoteId) {
+        await axiosInstance.post(`/api/v1/provider/quotes/${quoteId}/send`)
+      }
+      const { toast } = await import("sonner")
+      toast.success("Quote sent to customer!")
+    } catch (err: any) {
+      const { toast } = await import("sonner")
+      toast.error(err.message || "Failed to send quote")
+    }
   }
 
   return (
