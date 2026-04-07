@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ShieldX,
   Package,
+  PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Notification } from "@/lib/api/notifications";
@@ -32,6 +33,9 @@ const notificationIcons = {
   review_received: Star,
   verification_approved: ShieldCheck,
   verification_rejected: ShieldX,
+  event_submitted: PartyPopper,
+  event_approved: CheckCircle,
+  event_rejected: XCircle,
   message: MessageCircle,
 };
 
@@ -45,6 +49,9 @@ const notificationColors = {
   review_received: "text-yellow-600 bg-yellow-50",
   verification_approved: "text-green-600 bg-green-50",
   verification_rejected: "text-red-600 bg-red-50",
+  event_submitted: "text-amber-600 bg-amber-50",
+  event_approved: "text-green-600 bg-green-50",
+  event_rejected: "text-red-600 bg-red-50",
   message: "text-blue-600 bg-blue-50",
 };
 
@@ -73,6 +80,20 @@ export function NotificationItem({ notification, showDivider }: NotificationItem
           router.push('/customer/dashboard?tab=bookings');
         } else if (user.role === 'admin') {
           router.push('/admin/dashboard?tab=bookings');
+        }
+      }
+    } else if (notification.related_event_id) {
+      // Navigate to events tab
+      const userRole = localStorage.getItem('user');
+      if (userRole) {
+        const user = JSON.parse(userRole);
+        if (user.role === 'service_provider') {
+          router.push('/provider/dashboard?tab=events');
+        } else if (user.role === 'admin') {
+          router.push('/admin/dashboard?tab=events');
+        } else {
+          // For customers, navigate to public events page
+          router.push(`/events/${notification.related_event_id}`);
         }
       }
     }
