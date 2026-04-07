@@ -9,7 +9,6 @@ import { AdminTabsSidebar } from "@/components/ui/admin-tabs-sidebar";
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminUsers } from "@/components/admin/users";
 import { AdminProviders } from "@/components/admin/providers";
-import { AdminServices } from "@/components/admin/services";
 import { AdminProviderServices } from "@/components/admin/provider-services";
 import { AdminBookingsMetrics } from "@/components/admin/bookings";
 import { AdminDisputes } from "@/components/admin/disputes";
@@ -97,16 +96,12 @@ export function AdminDashboardContent() {
         return (
           <div className="space-y-6">
             <Tabs defaultValue="provider-services" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="provider-services">Provider Services</TabsTrigger>
-                <TabsTrigger value="service-categories">Service Categories</TabsTrigger>
                 <TabsTrigger value="categories">Categories Management</TabsTrigger>
               </TabsList>
               <TabsContent value="provider-services">
                 <AdminProviderServices />
-              </TabsContent>
-              <TabsContent value="service-categories">
-                <AdminServices />
               </TabsContent>
               <TabsContent value="categories">
                 <CategoriesManagement />

@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { StatCard } from "./stat-card";
 
 interface ServiceData {
@@ -285,10 +286,7 @@ export function AdminServices() {
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 ${statusFilter === tab.id
-                ? "bg-slate-900 text-white shadow-xl translate-y-[-1px]"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                }`}
+              className="h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 data-[state=active]:!bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:translate-y-[-1px] text-slate-600 hover:text-slate-800 hover:bg-slate-50"
             >
               {tab.label}
             </TabsTrigger>
@@ -365,84 +363,139 @@ export function AdminServices() {
 
       {/* Details Modal - Artisanal Record */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-none rounded-[3rem] shadow-2xl bg-white">
+        <DialogContent className="w-[90vw] max-w-[1200px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[92vh]">
           {serviceDetail && (
-            <div className="p-10 space-y-8">
-              <div className="space-y-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <Badge className="bg-[#608d64]/10 text-[#608d64] hover:bg-[#608d64]/10 border-none px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+            <div className="flex flex-col h-full overflow-hidden">
+              
+              {/* Header Banner - Minimalist & Premium */}
+              <div className="bg-slate-900 p-12 text-white relative overflow-hidden shrink-0">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+                  <Package className="w-80 h-80 rotate-12" />
+                </div>
+                
+                <div className="relative z-10 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-[#608d64] text-white hover:bg-[#608d64] border-none px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#608d64]/20">
                       {serviceDetail.service_type}
                     </Badge>
-                    <h2 className="text-4xl font-serif italic text-slate-900 leading-tight">
-                      {serviceDetail.service_name}
-                    </h2>
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                      <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+                        serviceDetail.status === "approved" ? "bg-emerald-400" : "bg-amber-400"
+                      }`} />
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em]">{serviceDetail.status}</span>
+                    </div>
                   </div>
-                  <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-none ${serviceDetail.status === 'approved' ? 'bg-[#608d64] text-white' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                    {serviceDetail.status}
-                  </Badge>
+                  
+                  <h2 className="text-6xl font-serif italic leading-tight drop-shadow-sm max-w-4xl">
+                    {serviceDetail.service_name}
+                  </h2>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px w-8 bg-[#608d64]/40" />
-                    <h3 className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Manifest</h3>
+              {/* Spaced Body Layout */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                  
+                  {/* Left: Main Content */}
+                  <div className="lg:col-span-8 p-14 space-y-12">
+                    <section className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Manifest</p>
+                        <div className="h-[1px] flex-1 bg-slate-100" />
+                      </div>
+                      <p className="text-slate-600 leading-[1.8] font-light text-xl max-w-3xl whitespace-pre-wrap">
+                        {serviceDetail.description || "No narrative established for this catalogue entry."}
+                      </p>
+                    </section>
+                    
+                    <section className="grid sm:grid-cols-2 gap-10">
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Visibility & Promotion</p>
+                        <div className="flex flex-wrap gap-3">
+                          <div className={cn(
+                            "px-5 py-3 rounded-2xl border flex items-center gap-3 transition-all",
+                            serviceDetail.is_featured 
+                              ? "bg-amber-50 border-amber-100 text-amber-700" 
+                              : "bg-slate-50 border-slate-100 text-slate-400 opacity-60"
+                          )}>
+                            <Star className={cn("w-4 h-4", serviceDetail.is_featured && "fill-current")} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Featured Entry</span>
+                          </div>
+                          <div className={cn(
+                            "px-5 py-3 rounded-2xl border flex items-center gap-3 transition-all",
+                            serviceDetail.is_visible_on_homepage 
+                              ? "bg-blue-50 border-blue-100 text-blue-700" 
+                              : "bg-slate-50 border-slate-100 text-slate-400 opacity-60"
+                          )}>
+                            <Home className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Homepage Presence</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Chronicle Details</p>
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center gap-4">
+                          <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-slate-400 shadow-sm">
+                            <Calendar className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Created On</p>
+                            <p className="text-sm font-bold text-slate-900 tracking-wider">
+                              {new Date(serviceDetail.created_at).toLocaleDateString('en-CA', { dateStyle: 'long' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
                   </div>
-                  <p className="text-slate-600 leading-relaxed font-light text-lg">
-                    {serviceDetail.description || "No narrative established for this catalogue entry."}
-                  </p>
-                </div>
 
-                <div className="grid grid-cols-2 gap-8 pt-4">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Catalogue Status</p>
-                    <div className="flex items-center gap-2">
-                      {serviceDetail.is_featured && <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-amber-100 text-[9px] uppercase tracking-widest py-0.5">Featured</Badge>}
-                      {serviceDetail.is_visible_on_homepage && <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] uppercase tracking-widest py-0.5">Homepage</Badge>}
+                  {/* Right: Administrative Sidebar */}
+                  <div className="lg:col-span-4 bg-slate-50/50 p-14 space-y-12">
+                    <div className="space-y-6">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Catalogue Ownership</p>
+                      
+                      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-2xl bg-[#608d64]/5 border border-[#608d64]/10 flex items-center justify-center shrink-0">
+                            <UserCircle2 className="w-7 h-7 text-[#608d64]" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Originator</p>
+                            <p className="font-serif italic text-slate-900 text-lg truncate leading-none">{serviceDetail.creator?.full_name || "System Record"}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3 pt-2">
+                           <div className="flex items-center gap-3 text-slate-500">
+                            <MessageCircle className="w-4 h-4 opacity-50 text-[#608d64]" />
+                            <span className="text-[11px] font-medium tracking-wide truncate">{serviceDetail.creator?.email || "internal@ubukwe.com"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-10">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDetailsModalOpen(false)}
+                        className="w-full h-14 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-100 font-black uppercase text-[10px] tracking-[0.2em] transition-all"
+                      >
+                        Exit Archive
+                      </Button>
+                      
+                      {serviceDetail.status === "pending" && (
+                        <Button
+                          onClick={() => openActionModal(serviceDetail.id, "approve")}
+                          className="w-full h-14 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-[#608d64]/30 group border-none"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" /> 
+                          Authorize Entry
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Origin Date</p>
-                    <p className="text-sm font-medium text-slate-700">{new Date(serviceDetail.created_at).toLocaleDateString('en-CA', { dateStyle: 'long' })}</p>
-                  </div>
                 </div>
-
-                <Separator className="bg-slate-50" />
-
-                <div className="bg-slate-50/50 rounded-[2rem] p-6 space-y-4">
-                  <div className="flex items-center justify-between group">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[#608d64]">
-                        <UserCircle2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Originator</p>
-                        <p className="font-medium text-slate-900">{serviceDetail.creator?.full_name || "System"}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDetailsModalOpen(false)}
-                  className="flex-1 h-12 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
-                >
-                  Close Archive
-                </Button>
-                {serviceDetail.status === "pending" && (
-                  <Button
-                    onClick={() => openActionModal(serviceDetail.id, "approve")}
-                    className="flex-1 h-12 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-bold uppercase text-[10px] tracking-widest shadow-xl shadow-[#608d64]/20 transition-all border-none"
-                  >
-                    Authorize Entry
-                  </Button>
-                )}
               </div>
             </div>
           )}

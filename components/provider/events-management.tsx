@@ -189,10 +189,10 @@ export function EventsManagement() {
       <div className="flex items-end justify-between border-b border-slate-100 pb-10">
         <div>
           <h1 className="text-6xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
-            The Event Collective
+            My Events
           </h1>
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mt-2">
-            Ritual Manifest & Analytical Registry
+            Manage & Track Your Events
           </p>
         </div>
         <Button
@@ -200,7 +200,7 @@ export function EventsManagement() {
           className="h-14 px-8 bg-slate-900 hover:bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-900/10 gap-3"
         >
           <Plus className="h-4 w-4 text-[#668c65]" />
-          Inscribe New Ritual
+          Create New Event
         </Button>
       </div>
 
@@ -250,10 +250,10 @@ export function EventsManagement() {
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
-              { label: "Total Rituals", value: stats.totalEvents, icon: Calendar, sub: "Archive Volume" },
-              { label: "Manifested", value: stats.publishedEvents, icon: TrendingUp, sub: "Live Gatherings" },
-              { label: "Souls Unified", value: stats.totalTicketsSold, icon: Users, sub: "Collective Registry" },
-              { label: "Value Accrued", value: `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`, icon: DollarSign, sub: "Wealth Manifest" }
+              { label: "Total Events", value: stats.totalEvents, icon: Calendar, sub: "All Events" },
+              { label: "Published", value: stats.publishedEvents, icon: TrendingUp, sub: "Live Events" },
+              { label: "Tickets Sold", value: stats.totalTicketsSold, icon: Users, sub: "Total Attendees" },
+              { label: "Total Revenue", value: `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`, icon: DollarSign, sub: "Earnings" }
             ].map((stat, i) => (
               <StatCard
                 key={i}
@@ -271,7 +271,7 @@ export function EventsManagement() {
             <div className="flex-1 relative group">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-[#668c65] transition-colors" />
               <Input
-                placeholder="Search Rituals by Title or Location..."
+                placeholder="Search events by title or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-14 pl-14 pr-6 rounded-2xl border-slate-100 bg-white shadow-sm focus:ring-0 focus:border-[#668c65]/30 transition-all text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300"
@@ -283,12 +283,12 @@ export function EventsManagement() {
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-2">
                 {[
-                  { value: "all", label: "All Gatherings" },
-                  { value: "draft", label: "Draft Rituals" },
-                  { value: "published", label: "Published Manifests" },
-                  { value: "ongoing", label: "Ongoing Assemblies" },
-                  { value: "completed", label: "Historical Records" },
-                  { value: "cancelled", label: "Retracted Rituals" }
+                  { value: "all", label: "All Events" },
+                  { value: "draft", label: "Draft" },
+                  { value: "published", label: "Published" },
+                  { value: "ongoing", label: "Ongoing" },
+                  { value: "completed", label: "Completed" },
+                  { value: "cancelled", label: "Cancelled" }
                 ].map((item) => (
                   <SelectItem key={item.value} value={item.value} className="rounded-xl text-[10px] font-black uppercase tracking-widest py-3 hover:bg-[#668c65]/5 focus:bg-[#668c65]/5">
                     {item.label}
@@ -302,13 +302,13 @@ export function EventsManagement() {
           {filteredEvents.length === 0 ? (
             <Card className="border-none shadow-none bg-slate-50/50 rounded-[2.5rem] p-20 text-center">
               <Calendar className="h-16 w-16 text-slate-200 mx-auto mb-6" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">No rituals found in the current registry</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">No events found</p>
               <Button
                 onClick={handleCreateEvent}
                 variant="outline"
                 className="h-12 border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-white hover:border-[#668c65]/30"
               >
-                Inscribe Your First Ritual
+                Create Your First Event
               </Button>
             </Card>
           ) : (
@@ -328,12 +328,12 @@ export function EventsManagement() {
                         <Calendar className="h-12 w-12" />
                       </div>
                     )}
-                    <div className="absolute top-6 left-6">
+                    <div className="flex items-start justify-between">
                       <Badge className={cn(
                         "border-none px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm backdrop-blur-md",
                         event.status === "published" ? "bg-[#668c65]/90 text-white" : "bg-white/90 text-slate-600"
                       )}>
-                        {event.status} Ritual
+                        {event.status}
                       </Badge>
                     </div>
                   </div>
@@ -354,10 +354,10 @@ export function EventsManagement() {
                     {/* Event Details Grid */}
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { label: "Temporal Origin", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) },
-                        { label: "Collective Capacity", value: event.capacity },
-                        { label: "Souls Manifested", value: event.tickets_sold },
-                        { label: "Wealth Accrued", value: `${(event.total_revenue / 1000).toFixed(0)}k`, color: "text-[#668c65]" }
+                        { label: "Event Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) },
+                        { label: "Capacity", value: event.capacity },
+                        { label: "Tickets Sold", value: event.tickets_sold },
+                        { label: "Revenue", value: `${(event.total_revenue / 1000).toFixed(0)}k`, color: "text-[#668c65]" }
                       ].map((detail, idx) => (
                         <div key={idx}>
                           <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">{detail.label}</p>
@@ -366,10 +366,10 @@ export function EventsManagement() {
                       ))}
                     </div>
 
-                    {/* Saturation Progress */}
+                    {/* Progress Bar */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Saturation Density</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Capacity</span>
                         <span className="text-[10px] font-serif italic font-bold text-[#668c65]">
                           {Math.round((event.tickets_sold / event.capacity) * 100)}%
                         </span>
@@ -384,7 +384,7 @@ export function EventsManagement() {
                       </div>
                     </div>
 
-                    {/* Strategic Actions */}
+                    {/* Action Buttons */}
                     <div className="space-y-3 pt-2">
                       <div className="flex gap-2">
                         <Button
@@ -396,7 +396,7 @@ export function EventsManagement() {
                             handleViewDetails(event);
                           }}
                         >
-                          Examine Manifest
+                          View Details
                         </Button>
 
                         <Button
@@ -409,7 +409,7 @@ export function EventsManagement() {
                           }}
                         >
                           <Ticket className="h-4 w-4" />
-                          Tickets
+                          Manage Tickets
                         </Button>
                       </div>
 
@@ -427,7 +427,7 @@ export function EventsManagement() {
                             {publishEventMutation.isPending ? (
                               <Loader className="h-4 w-4 animate-spin text-white" />
                             ) : (
-                              "Manifest Ritual"
+                              "Publish Event"
                             )}
                           </Button>
                         )}
@@ -451,7 +451,7 @@ export function EventsManagement() {
                           ) : (
                             <div className="flex items-center gap-2">
                               <X className="h-3.5 w-3.5" />
-                              {event.status !== "draft" && <span className="text-[8px] font-black uppercase tracking-widest">Remove</span>}
+                              {event.status !== "draft" && <span className="text-[8px] font-black uppercase tracking-widest">Delete</span>}
                             </div>
                           )}
                         </Button>

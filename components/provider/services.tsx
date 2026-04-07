@@ -435,10 +435,10 @@ export function ProviderServices({ services: initialServices }: ProviderServices
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Catalogue</h2>
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">My Services</h2>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Artisanal Service Inventory</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Manage Your Service Offerings</p>
         </div>
       </div>
 
@@ -446,7 +446,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         <div />
         <Button onClick={handleCreateService} size="lg" className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-lg shadow-[#668c65]/20 px-8 h-12 transition-all duration-300 group">
           <Plus className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
-          <span className="font-bold tracking-tight uppercase text-[10px]">Create New Experience</span>
+          <span className="font-bold tracking-tight uppercase text-[10px]">Add New Service</span>
         </Button>
       </div>
 
@@ -468,7 +468,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-              <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">All Rituals</SelectItem>
+              <SelectItem value="all" className="text-[10px] font-black uppercase tracking-widest">All Services</SelectItem>
               <SelectItem value="active" className="text-[10px] font-black uppercase tracking-widest text-[#668c65]">Active</SelectItem>
               <SelectItem value="draft" className="text-[10px] font-black uppercase tracking-widest">Draft</SelectItem>
             </SelectContent>
@@ -494,20 +494,20 @@ export function ProviderServices({ services: initialServices }: ProviderServices
           <Card className="border-none shadow-none bg-slate-50/50 rounded-[2rem] p-12 text-center">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Search className="h-12 w-12 text-slate-300 mb-4" />
-              <p className="text-slate-900 font-serif italic text-xl mb-2">No artisanal services identified</p>
+              <p className="text-slate-900 font-serif italic text-xl mb-2">No services found</p>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
-                  ? "Refine your parameters or reset the search to discover more."
-                  : "Begin your legacy by documenting your first artisanal offering."}
+                  ? "Try adjusting your search filters"
+                  : "Start by creating your first service"}
               </p>
               {!searchTerm && statusFilter === "all" && categoryFilter === "all" ? (
                 <Button onClick={handleCreateService} size="lg" className="mt-8 rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-xl shadow-[#668c65]/20 px-8 h-12">
                   <Plus className="h-5 w-5 mr-2" />
-                  Manifest Your First Offering
+                  Create Your First Service
                 </Button>
               ) : (
                 <Button variant="ghost" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setCategoryFilter("all"); }} className="mt-8 text-[10px] font-black uppercase tracking-widest text-[#668c65]">
-                  Reset Parameters
+                  Clear Filters
                 </Button>
               )}
             </CardContent>
@@ -586,13 +586,13 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                       </div>
 
                       <p className="text-sm text-slate-500 italic font-light leading-relaxed line-clamp-2 mb-8">
-                        "{service.description || "No specific manifesto provided for this offering."}"
+                        {service.description || "No description provided for this service."}
                       </p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pt-6 border-t border-slate-50">
                       <div className="space-y-1">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Pricing Matrix</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Price Range</p>
                         <p className="text-2xl font-serif italic text-[#668c65]">
                           {service.priceRange}
                         </p>
@@ -605,7 +605,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             size="icon"
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleViewService(service)}
-                            title="Inspect Data"
+                            title="View Details"
                           >
                             <Eye className="h-5 w-5" />
                           </Button>
@@ -614,7 +614,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             size="icon"
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleEditService(service)}
-                            title="Refine Asset"
+                            title="Edit Service"
                           >
                             <Edit className="h-5 w-5" />
                           </Button>
@@ -624,7 +624,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
                             onClick={() => handleDeleteService(service.id)}
                             disabled={isDeleting === service.id}
-                            title="Remove Permanently"
+                            title="Delete Service"
                           >
                             {isDeleting === service.id ? (
                               <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />
@@ -651,7 +651,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                           {isToggling === service.id ? (
                             <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
                           ) : null}
-                          {service.status === "active" ? "Archive Ritual" : "Manifest Ritual"}
+                          {service.status === "active" ? "Deactivate" : "Activate"}
                         </Button>
                       </div>
                     </div>

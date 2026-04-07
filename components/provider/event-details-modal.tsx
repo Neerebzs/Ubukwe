@@ -146,7 +146,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
   };
 
   const modalContent = (
-    <div className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none rounded-[2.5rem] shadow-2xl bg-white relative">
+    <div className="w-full max-h-[92vh] overflow-y-auto p-0 border-none rounded-[2.5rem] bg-white relative">
       {/* Header Section */}
       <div className="bg-[#668c65]/5 p-12 border-b border-[#668c65]/10 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md">
         <div className="flex-1 text-left">
@@ -513,14 +513,12 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
     return modalContent;
   }
 
-  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-4xl p-0 border-none bg-transparent shadow-none"
+        className="w-[92vw] max-w-[1200px] p-0 border-none bg-white shadow-none rounded-[2.5rem] overflow-hidden max-h-[92vh]"
         showCloseButton={false}
       >
         {modalContent}
       </DialogContent>
     </Dialog>
-  );
 }

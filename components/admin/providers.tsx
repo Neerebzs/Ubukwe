@@ -290,10 +290,7 @@ export function AdminProviders() {
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2.5 ${statusFilter === tab.id
-                ? "bg-slate-900 text-white shadow-xl translate-y-[-1px]"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                }`}
+              className="h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2.5 data-[state=active]:!bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:translate-y-[-1px] text-slate-600 hover:text-slate-800 hover:bg-slate-50"
             >
               {tab.icon}
               {tab.label}

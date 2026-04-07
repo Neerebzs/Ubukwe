@@ -225,7 +225,7 @@ export function Bookings() {
                               View Curation
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-[3rem]">
+                          <DialogContent className="w-[90vw] max-w-[1000px] p-0 overflow-hidden border-none shadow-2xl rounded-[3rem] max-h-[92vh]">
                             <DialogHeader className="p-10 bg-[#668c65] text-white relative">
                               <div className="absolute top-0 right-0 p-10 opacity-10">
                                 <Calendar className="h-32 w-32" />

@@ -174,10 +174,7 @@ export function AdminProviderServices() {
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 ${statusFilter === tab.id
-                ? "bg-slate-900 text-white shadow-xl translate-y-[-1px]"
-                : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                }`}
+              className="h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 flex items-center gap-2 data-[state=active]:!bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:translate-y-[-1px] text-slate-600 hover:text-slate-800 hover:bg-slate-50"
             >
               {tab.label}
               {tab.id === "pending" && stats.pending > 0 && (
@@ -344,12 +341,12 @@ export function AdminProviderServices() {
 
       {/* Details Modal - Artisanal Dossier */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="w-[70vw] max-w-[70vw] p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl bg-white max-h-[92vh]">
+        <DialogContent className="w-[92vw] max-w-[1300px] p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl bg-white max-h-[92vh]">
           {selectedService && (
             <div className="flex flex-col h-full overflow-hidden">
 
-              {/* Hero */}
-              <div className="relative h-56 shrink-0">
+              {/* Enhanced Hero Section */}
+              <div className="relative h-72 shrink-0">
                 {selectedService.gallery?.[0] ? (
                   <img
                     src={typeof selectedService.gallery[0] === 'string' ? selectedService.gallery[0] : (selectedService.gallery[0].url || selectedService.gallery[0].image_url)}
@@ -358,120 +355,157 @@ export function AdminProviderServices() {
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Package className="w-16 h-16 text-slate-300" />
+                    <Package className="w-20 h-20 text-slate-300" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent" />
 
                 {/* Status badge top-right */}
-                <div className="absolute top-5 right-5">
-                  <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-none shadow-lg ${
-                    selectedService.status === "approved" ? "bg-[#608d64] text-white" :
-                    selectedService.status === "pending" ? "bg-amber-500 text-white" :
-                    "bg-rose-500 text-white"
-                  }`}>
-                    {selectedService.status}
-                  </Badge>
+                <div className="absolute top-6 right-6 flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                    <div className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+                      selectedService.status === "approved" ? "bg-emerald-400" :
+                      selectedService.status === "pending" ? "bg-amber-400" :
+                      "bg-rose-400"
+                    }`} />
+                    <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">{selectedService.status}</span>
+                  </div>
                 </div>
 
                 {/* Title + category bottom-left */}
-                <div className="absolute bottom-6 left-8 right-8 flex items-end justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      {selectedService.category}
-                    </Badge>
-                    <h2 className="text-3xl font-serif italic text-white leading-tight drop-shadow-sm">
+                <div className="absolute bottom-10 left-10 right-10 flex items-end justify-between gap-10">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Badge className="bg-[#608d64] text-white border-none px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#608d64]/20">
+                        {selectedService.category}
+                      </Badge>
+                      {selectedService.verified && (
+                        <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full border border-white/30 text-[9px] font-black uppercase tracking-widest">
+                          <CheckCircle className="w-3 h-3 text-emerald-400" /> Verified
+                        </div>
+                      )}
+                    </div>
+                    <h2 className="text-5xl font-serif italic text-white leading-tight drop-shadow-lg">
                       {selectedService.name}
                     </h2>
                   </div>
+
                   {selectedService.status === "pending" && (
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-4 mb-2 shrink-0">
                       <Button
-                        size="sm"
+                        size="lg"
                         onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
-                        className="h-10 px-5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-rose-500/80 font-bold uppercase text-[10px] tracking-widest transition-all"
+                        className="h-14 px-8 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-rose-500 hover:border-rose-500 font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-500"
                       >
-                        Decline
+                        Decline Entry
                       </Button>
                       <Button
-                        size="sm"
+                        size="lg"
                         onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
-                        className="h-10 px-5 rounded-xl bg-white text-slate-900 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all"
+                        className="h-14 px-8 rounded-2xl bg-white text-slate-900 hover:scale-105 active:scale-95 font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl transition-all duration-500"
                       >
-                        Authorize
+                        Authorize Service
                       </Button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Body */}
+              {/* Refined Body Layout */}
               <div className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
-                  {/* Left — main content */}
-                  <div className="md:col-span-2 p-8 space-y-8">
+                  {/* Main Editorial Body */}
+                  <div className="lg:col-span-8 p-12 space-y-14">
 
-                    {/* Description */}
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">The Narrative</p>
-                      <p className="text-slate-600 leading-relaxed text-sm font-light">
+                    {/* Narrative Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">The Narrative</p>
+                        <div className="h-[1px] flex-1 bg-slate-100" />
+                      </div>
+                      <p className="text-slate-600 leading-[1.8] text-lg font-light max-w-3xl">
                         {selectedService.description}
                       </p>
                     </div>
 
-                    {/* Specialties */}
+                    {/* Specialties with Modern Chips */}
                     {selectedService.specialties?.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Specialties</p>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="space-y-6">
+                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Distinctive Specialties</p>
+                        <div className="flex flex-wrap gap-3">
                           {selectedService.specialties.map((s, i) => (
-                            <Badge key={i} variant="outline" className="border-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-medium">
-                              {s}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Packages */}
-                    {selectedService.packages?.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Investment Packages</p>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          {selectedService.packages.map((pkg: any, idx: number) => (
-                            <div key={idx} className="bg-slate-50 rounded-2xl p-5 border border-slate-100 hover:border-[#608d64]/20 transition-all">
-                              <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-serif italic text-slate-900 text-base">{pkg.name}</h4>
-                                {pkg.popular && <Badge className="bg-[#608d64]/10 text-[#608d64] border-none text-[9px] font-black uppercase tracking-widest">Popular</Badge>}
-                              </div>
-                              <p className="text-xl font-bold text-[#608d64]">{pkg.price?.toLocaleString()} <span className="text-xs font-black text-slate-400">RWF</span></p>
-                              {pkg.duration && <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Duration: {pkg.duration}</p>}
-                              {pkg.features?.length > 0 && (
-                                <ul className="mt-3 space-y-1">
-                                  {pkg.features.slice(0, 3).map((f: string, fi: number) => (
-                                    <li key={fi} className="text-xs text-slate-500 flex items-center gap-1.5">
-                                      <CheckCircle className="w-3 h-3 text-[#608d64] shrink-0" />{f}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                            <div key={i} className="group flex items-center gap-2 bg-slate-50 border border-slate-100 hover:border-[#608d64]/30 hover:bg-white px-5 py-2.5 rounded-2xl transition-all duration-300">
+                              <Star className="w-3.5 h-3.5 text-[#608d64]/40 group-hover:text-[#608d64] transition-colors" />
+                              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{s}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Gallery grid */}
+                    {/* Investment Packages - Refined Grid */}
+                    {selectedService.packages?.length > 0 && (
+                      <div className="space-y-8">
+                        <div className="flex items-center gap-4">
+                          <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Investment Tiers</p>
+                          <div className="h-[1px] flex-1 bg-slate-100" />
+                        </div>
+                        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                          {selectedService.packages.map((pkg: any, idx: number) => (
+                            <div key={idx} className="group relative bg-white rounded-3xl p-8 border border-slate-100 hover:border-[#608d64]/20 hover:shadow-2xl hover:shadow-[#608d64]/5 transition-all duration-500 overflow-hidden">
+                              {pkg.popular && (
+                                <div className="absolute top-0 right-0">
+                                  <div className="bg-[#608d64] text-white text-[8px] font-black uppercase tracking-widest px-6 py-1 rotate-45 translate-x-4 translate-y-2 shadow-lg">
+                                    Preferred
+                                  </div>
+                                </div>
+                              )}
+                              <div className="space-y-6">
+                                <div>
+                                  <h4 className="font-serif italic text-slate-900 text-xl mb-1">{pkg.name}</h4>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-2xl font-black text-slate-900">{pkg.price?.toLocaleString()}</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RWF</span>
+                                  </div>
+                                </div>
+
+                                {pkg.features?.length > 0 && (
+                                  <div className="space-y-3">
+                                    {pkg.features.slice(0, 4).map((f: string, fi: number) => (
+                                      <div key={fi} className="flex items-center gap-3 text-xs text-slate-500">
+                                        <div className="h-1 w-1 rounded-full bg-[#608d64]" />
+                                        {f}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <div className="pt-2">
+                                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    {pkg.duration ? `Est. Duration: ${pkg.duration}` : 'Standard Engagement'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Modern Gallery Grid */}
                     {selectedService.gallery?.length > 1 && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Gallery ({selectedService.gallery.length})</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {selectedService.gallery.slice(0, 6).map((item: any, i: number) => {
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">Visual Anthology ({selectedService.gallery.length})</p>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {selectedService.gallery.slice(0, 8).map((item: any, i: number) => {
                             const src = typeof item === 'string' ? item : (item.url || item.image_url || item.preview)
                             return src ? (
-                              <div key={i} className="aspect-video rounded-xl overflow-hidden bg-slate-100">
-                                <img src={src} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                              <div key={i} className="group relative aspect-square rounded-[1.8rem] overflow-hidden bg-slate-100 border border-slate-100">
+                                <img src={src} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                               </div>
                             ) : null
                           })}
@@ -480,78 +514,97 @@ export function AdminProviderServices() {
                     )}
                   </div>
 
-                  {/* Right — metadata */}
-                  <div className="p-8 space-y-6 bg-slate-50/50">
+                  {/* Curated Sidebar */}
+                  <div className="lg:col-span-4 bg-slate-50/50 p-12 space-y-12">
 
-                    {/* Provider */}
-                    <div className="space-y-3">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Originator</p>
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-[#608d64]/10 flex items-center justify-center shrink-0">
-                          <UserCircle2 className="w-5 h-5 text-[#608d64]" />
+                    {/* Originator Profile */}
+                    <div className="space-y-6">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">The Originator</p>
+                      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-5">
+                        <div className="flex items-center gap-4">
+                          <div className="h-14 w-14 rounded-2xl bg-[#608d64]/5 border border-[#608d64]/10 flex items-center justify-center shrink-0">
+                            <UserCircle2 className="w-7 h-7 text-[#608d64]" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-serif italic text-slate-900 text-lg truncate leading-none mb-1">{selectedService.provider?.full_name}</p>
+                            <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-widest opacity-70">Verified Artisan</p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-900 text-sm truncate">{selectedService.provider?.full_name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{selectedService.provider?.email}</p>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 text-slate-500">
+                            <Calendar className="w-4 h-4 opacity-50" />
+                            <span className="text-[11px] font-medium tracking-wide">{new Date(selectedService.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-slate-500">
+                            <MessageCircle className="w-4 h-4 opacity-50" />
+                            <span className="text-[11px] font-medium tracking-wide truncate">{selectedService.provider?.email}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <Separator className="bg-slate-100" />
+                    {/* Technical Metadata */}
+                    <div className="space-y-8">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Logistical Details</p>
 
-                    {/* Meta fields */}
-                    {[
-                      { label: "Location", value: selectedService.location, icon: <MapPin className="w-3 h-3" /> },
-                      { label: "Submitted", value: new Date(selectedService.created_at).toLocaleDateString('en-CA') },
-                      { label: "Min Price", value: `${selectedService.price_range_min?.toLocaleString()} RWF` },
-                    ].map((item, i) => (
-                      <div key={i} className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
-                        <p className="text-sm font-medium text-slate-700 flex items-center gap-1">
-                          {item.icon}{item.value}
-                        </p>
+                      <div className="grid grid-cols-1 gap-8">
+                        {[
+                          { label: "Regional Locus", value: selectedService.location, icon: <MapPin className="w-4 h-4 text-[#608d64]" />, detail: "Primary Operation Area" },
+                          { label: "Base Valuation", value: `${selectedService.price_range_min?.toLocaleString()} RWF`, icon: <Star className="w-4 h-4 text-[#608d64]" />, detail: "Starting Price Point" },
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-start gap-5">
+                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center shrink-0 shadow-sm">
+                              {item.icon}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.label}</p>
+                              <p className="text-sm font-bold text-slate-900 uppercase tracking-wider">{item.value}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">{item.detail}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
 
-                    {/* Contact */}
+                    {/* Secured Communication */}
                     {(selectedService.phone || selectedService.email) && (
-                      <>
-                        <Separator className="bg-slate-100" />
-                        {selectedService.phone && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone</p>
-                            <p className="text-sm font-medium text-slate-700">{selectedService.phone}</p>
-                          </div>
-                        )}
-                        {selectedService.email && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</p>
-                            <p className="text-sm font-medium text-slate-700 break-all">{selectedService.email}</p>
-                          </div>
-                        )}
-                      </>
+                      <div className="space-y-6">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Contact Channels</p>
+                        <div className="space-y-4">
+                          {selectedService.phone && (
+                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Direct Line</p>
+                              <p className="text-sm font-bold text-slate-700 tracking-widest">{selectedService.phone}</p>
+                            </div>
+                          )}
+                          {selectedService.email && (
+                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Electronic Mail</p>
+                              <p className="text-sm font-bold text-slate-700 break-all">{selectedService.email}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
 
-                    {/* Action buttons if pending */}
+                    {/* Final Executive Actions */}
                     {selectedService.status === "pending" && (
-                      <>
-                        <Separator className="bg-slate-100" />
-                        <div className="space-y-2 pt-1">
-                          <Button
-                            onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
-                            className="w-full h-11 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-[#608d64]/20"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" /> Authorize
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
-                            className="w-full h-11 rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 font-bold uppercase text-[10px] tracking-widest"
-                          >
-                            <XCircle className="w-4 h-4 mr-2" /> Decline
-                          </Button>
-                        </div>
-                      </>
+                      <div className="space-y-4 pt-4">
+                        <Button
+                          onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "approve") }}
+                          className="w-full h-14 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-[#608d64]/30 group"
+                        >
+                          <CheckCircle className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" /> Authorize Dossier
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => { setIsDetailsModalOpen(false); openActionModal(selectedService!, "reject") }}
+                          className="w-full h-14 rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 font-black uppercase text-[10px] tracking-[0.2em]"
+                        >
+                          <XCircle className="w-4 h-4 mr-3" /> Decline Entry
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
