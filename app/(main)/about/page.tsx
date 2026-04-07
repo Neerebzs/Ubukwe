@@ -19,9 +19,8 @@ export default function AboutPage() {
                 <TranslatedText text="The Heart of VowNest" />
               </span>
             </div>
-            <h1 className="font-serif italic text-6xl md:text-9xl text-slate-900 leading-[0.85] tracking-tight">
-              Honoring <br />
-              <span className="text-slate-300 not-italic font-light">Heritage.</span><br />
+            <h1 className="font-serif italic text-6xl md:text-8xl text-slate-900 leading-[0.9] tracking-tight">
+              Honoring <span className="text-slate-300 not-italic font-light">Heritage.</span><br />
               Crafting <span className="text-[#608d64]">Legacies.</span>
             </h1>
             <p className="font-sans text-slate-500 text-xl md:text-2xl max-w-2xl leading-relaxed font-light mt-12">
