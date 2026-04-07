@@ -243,6 +243,12 @@ export default function ServicesPage() {
                       id={service.id}
                       title={service.business_name || service.name}
                       image={getThumbnail(service)}
+                      images={service.gallery?.filter((item: any) => {
+                        const type = typeof item === 'string' ? 'image' : item.type;
+                        return !type || type === 'image';
+                      }).map((item: any) =>
+                        typeof item === 'string' ? item : (item.url || item.preview)
+                      ).filter(Boolean)}
                       category={categoryName}
                       location={service.location || "Rwanda"}
                       provider={service.business_name || service.name}
