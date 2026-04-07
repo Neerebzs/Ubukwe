@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import {
     MapPin, Star, Phone, Mail, Share2, Heart, ArrowLeft,
     CheckCircle, Users, Clock, Award, Calendar, Tag,
@@ -25,6 +26,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const [activeTab, setActiveTab] = useState("home")
     const [isFavorite, setIsFavorite] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState<any>(null)
+    const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null)
     const router = useRouter()
     const { isAuthenticated } = useAuth()
 
@@ -634,7 +636,11 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         </div>
                                         <div className="columns-1 md:columns-2 gap-6 space-y-6">
                                             {service.gallery.photos.map((photo) => (
-                                                <div key={photo.id} className="relative rounded-[32px] overflow-hidden group cursor-pointer border border-slate-100 shadow-sm break-inside-avoid">
+                                                <div 
+                                                    key={photo.id} 
+                                                    className="relative rounded-[32px] overflow-hidden group cursor-pointer border border-slate-100 shadow-sm break-inside-avoid"
+                                                    onClick={() => setSelectedImage({ url: photo.url, caption: photo.caption })}
+                                                >
                                                     <img
                                                         src={photo.url}
                                                         alt={photo.caption}
@@ -903,6 +909,28 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                     </div>
                 </div>
             </div>
+
+            {/* Image View Modal (Lightbox) */}
+            <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+                <DialogContent className="max-w-[90vw] md:max-w-5xl h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none flex items-center justify-center [&>button]:bg-white/10 [&>button]:text-white [&>button]:rounded-full [&>button]:p-2 [&>button:hover]:bg-white/20">
+                   {selectedImage && (
+                       <div className="relative w-full h-full flex flex-col items-center justify-center">
+                           <img 
+                               src={selectedImage.url} 
+                               alt={selectedImage.caption || "Gallery visual"} 
+                               className="max-w-full max-h-full object-contain rounded-2xl" 
+                           />
+                           {selectedImage.caption && (
+                               <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+                                   <div className="bg-black/60 shadow-xl backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
+                                       <p className="text-white text-sm font-medium italic font-serif">{selectedImage.caption}</p>
+                                   </div>
+                               </div>
+                           )}
+                       </div>
+                   )}
+                </DialogContent>
+            </Dialog>
         </>
     )
 }
