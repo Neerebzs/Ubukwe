@@ -327,10 +327,12 @@ export function Bookings() {
                         </Dialog>
 
                         {booking.provider_confirmed && booking.status !== "completed" && (
-                          <Button className="h-14 px-10 text-white shadow-xl rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
-                            <HandCoins className="h-4 w-4 mr-2 group-hover/pay:-rotate-12 transition-transform" />
-                            Finalize Investment
-                          </Button>
+                          <Link href={`/booking/${booking.service_id}?packageId=${booking.id}&packageName=${encodeURIComponent(booking.service_name || 'Service')}&step=3`}>
+                            <Button className="h-14 px-10 text-white shadow-xl rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
+                              <HandCoins className="h-4 w-4 mr-2 group-hover/pay:-rotate-12 transition-transform" />
+                              Pay Now
+                            </Button>
+                          </Link>
                         )}
 
                         {!booking.provider_confirmed && booking.status === "pending" && (

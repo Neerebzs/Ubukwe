@@ -29,6 +29,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
 
   const packageId = searchParams.get('packageId')
   const packageName = searchParams.get('packageName')
+  const stepParam = searchParams.get('step')
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -39,7 +40,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     }
   }, [isAuthenticated, isAuthLoading, router]);
 
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(stepParam ? parseInt(stepParam) : 1)
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
     time: "",
