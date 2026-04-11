@@ -82,8 +82,8 @@ export function ProviderEarnings() {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div>
-        <h2 className="text-4xl font-serif italic text-slate-900">Earnings</h2>
-        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">Revenue Overview</p>
+        <h2 className="text-4xl font-serif italic text-slate-900">My Earnings</h2>
+        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">See how much you've made so far</p>
       </div>
 
       {/* Stats */}
@@ -131,7 +131,7 @@ export function ProviderEarnings() {
       {(summary?.available_for_withdrawal ?? 0) > 0 && (
         <Card className="border-none shadow-sm rounded-[2rem] bg-white">
           <CardHeader className="p-8 pb-4">
-            <CardTitle className="text-xl font-serif italic text-slate-900">Request Withdrawal</CardTitle>
+            <CardTitle className="text-xl font-serif italic text-slate-900">Withdraw Money</CardTitle>
           </CardHeader>
           <CardContent className="p-8 pt-0 flex items-center gap-4">
             <div className="relative flex-1 max-w-xs">
@@ -159,7 +159,7 @@ export function ProviderEarnings() {
       {/* Recent transactions */}
       <Card className="border-none shadow-sm rounded-[2rem] bg-white">
         <CardHeader className="p-8 pb-4">
-          <CardTitle className="text-xl font-serif italic text-slate-900">Recent Transactions</CardTitle>
+          <CardTitle className="text-xl font-serif italic text-slate-900">Payment History</CardTitle>
         </CardHeader>
         <CardContent className="p-8 pt-0">
           {earningsLoading ? (

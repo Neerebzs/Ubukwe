@@ -857,14 +857,14 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
         <div className="space-y-1">
           <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">
-            {initialData ? "Refine Asset" : "Draft New Entry"}
+            {initialData ? "Edit Service" : "Add New Service"}
           </h2>
           <div className="flex items-center gap-2">
             <div className="h-[1px] w-8 bg-[#668c65]/60" />
             <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">
               {initialData 
-                ? "Adjusting the details of an existing masterpiece" 
-                : "Introducing a regular service to the catalogue"
+                ? "Update your service details" 
+                : "Add a new service for your customers to see"
               }
             </p>
           </div>
@@ -876,7 +876,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
             className="h-12 px-6 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
           >
             <X className="w-4 h-4 mr-2" />
-            {initialData ? "Retreat" : "Discard"}
+            Cancel
           </Button>
         )}
       </div>
@@ -943,7 +943,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
             </div>
             <div className="p-8 space-y-6">
               <div>
-                <Label htmlFor="name" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Service Designation *</Label>
+                <Label htmlFor="name" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Service Name *</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -966,7 +966,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="category" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Classification *</Label>
+                  <Label htmlFor="category" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Category *</Label>
                   <Select 
                     value={formData.categoryId} 
                     onValueChange={(categoryId) => {
@@ -1059,7 +1059,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               </p>
 
               <div>
-                <Label htmlFor="description" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Narrative Description *</Label>
+                <Label htmlFor="description" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Service Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -1069,7 +1069,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                       setValidationErrors({ ...validationErrors, description: "" })
                     }
                   }}
-                  placeholder="Elaborate on the artisanal nature of this service..."
+                  placeholder="Tell us more about what you offer..."
                   rows={6}
                   className={`min-h-[160px] rounded-2xl border-slate-100 focus-visible:ring-1 focus-visible:ring-[#668c65] focus-visible:border-[#668c65] resize-none p-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900 ${validationErrors.description ? "border-red-500" : ""}`}
                 />
@@ -1228,44 +1228,32 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Showcase your service with images, reels, videos, offers, and events</p>
             </div>
             <div className="p-8">
-              <Tabs defaultValue="media" className="space-y-8">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-2xl">
-                  <TabsTrigger value="media" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#668c65] data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest py-3">
-                    <Camera className="w-4 h-4 mr-2" />
-                    Media Content
-                  </TabsTrigger>
-                  <TabsTrigger value="promotional" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#668c65] data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest py-3">
-                    <Tag className="w-4 h-4 mr-2" />
-                    Promotional Content
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* Media Content Tab */}
-                <TabsContent value="media" className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold">Media Type</h3>
-                        <p className="text-sm text-muted-foreground">Choose the type of media you want to upload</p>
-                      </div>
+              {/* Media Content Section */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Media Type</h3>
+                      <p className="text-sm text-muted-foreground">Choose the type of media you want to upload</p>
                     </div>
+                  </div>
 
-                    {/* Media Type Tabs */}
-                    <Tabs value={activeMediaTab} onValueChange={(v) => setActiveMediaTab(v as "image" | "video" | "reel")} className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="image" className="flex items-center gap-2">
-                          <ImageIcon className="w-4 h-4" />
-                          Images
-                        </TabsTrigger>
-                        <TabsTrigger value="reel" className="flex items-center gap-2">
-                          <Film className="w-4 h-4" />
-                          Reels
-                        </TabsTrigger>
-                        <TabsTrigger value="video" className="flex items-center gap-2">
-                          <PlayCircle className="w-4 h-4" />
-                          Videos
-                        </TabsTrigger>
-                      </TabsList>
+                  {/* Media Type Tabs */}
+                  <Tabs value={activeMediaTab} onValueChange={(v) => setActiveMediaTab(v as "image" | "video" | "reel")} className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="image" className="flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" />
+                        Images
+                      </TabsTrigger>
+                      <TabsTrigger value="reel" className="flex items-center gap-2">
+                        <Film className="w-4 h-4" />
+                        Reels
+                      </TabsTrigger>
+                      <TabsTrigger value="video" className="flex items-center gap-2">
+                        <PlayCircle className="w-4 h-4" />
+                        Videos
+                      </TabsTrigger>
+                    </TabsList>
 
                       {/* Image Upload */}
                       <TabsContent value="image" className="space-y-4 mt-6">
@@ -1347,13 +1335,13 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                     </Tabs>
 
                     {/* Display uploaded media */}
-                    {formData.gallery.filter(item => !item.contentType || item.contentType === "offer").length > 0 && (
+                    {formData.gallery.filter(item => !item.contentType).length > 0 && (
                       <div className="space-y-3">
                         <Separator />
                         <h4 className="font-semibold">Uploaded Media</h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                           {formData.gallery
-                            .filter(item => !item.contentType || item.contentType === "offer")
+                            .filter(item => !item.contentType)
                             .map((item) => (
                               <div key={item.id} className="relative aspect-video bg-muted rounded-lg overflow-hidden group border-2 border-border hover:border-primary transition-colors">
                                 {item.type === "image" && item.preview ? (
@@ -1405,246 +1393,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                         </div>
                       </div>
                     )}
-                  </div>
-                </TabsContent>
-
-                {/* Promotional Content Tab */}
-                <TabsContent value="promotional" className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">Special Offers</h3>
-                      <p className="text-sm text-muted-foreground">Create special offers and promotional content to attract customers</p>
-                    </div>
-
-                    {/* Special Offer Form */}
-                    <Card className="border-2 border-primary/20 bg-primary/5">
-                      <CardHeader>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Tag className="w-5 h-5 text-primary" />
-                          Create Special Offer
-                        </CardTitle>
-                        <CardDescription>
-                          Promote discounts, packages, or limited-time deals to attract customers
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <Label htmlFor="offer-title">Offer Title</Label>
-                          <Input
-                            id="offer-title"
-                            value={galleryItemForm.title}
-                            onChange={(e) => setGalleryItemForm({ ...galleryItemForm, title: e.target.value })}
-                            placeholder="e.g., 20% Off Wedding Photography Package"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="offer-description">Offer Description</Label>
-                          <Textarea
-                            id="offer-description"
-                            value={galleryItemForm.description}
-                            onChange={(e) => setGalleryItemForm({ ...galleryItemForm, description: e.target.value })}
-                            placeholder="Describe your special offer, terms, and conditions..."
-                            rows={4}
-                          />
-                        </div>
-                        
-                        {/* Valid Period Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="offer-valid-from">Valid From</Label>
-                            <Input
-                              id="offer-valid-from"
-                              type="date"
-                              value={galleryItemForm.validFrom}
-                              onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validFrom: e.target.value })}
-                              className="w-full"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="offer-valid-to">Valid Until</Label>
-                            <Input
-                              id="offer-valid-to"
-                              type="date"
-                              value={galleryItemForm.validTo}
-                              onChange={(e) => setGalleryItemForm({ ...galleryItemForm, validTo: e.target.value })}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <Label>Upload Offer Media</Label>
-                          <p className="text-sm text-muted-foreground">Choose the type of media to showcase your offer</p>
-                          
-                          {/* Hidden file inputs */}
-                          <input
-                            id="offer-image-input"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, "image", "offer")}
-                          />
-                          <input
-                            id="offer-reel-input"
-                            type="file"
-                            accept="video/*,image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, "reel", "offer")}
-                          />
-                          <input
-                            id="offer-video-input"
-                            type="file"
-                            accept="video/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e, "video", "offer")}
-                          />
-                          
-                          <div className="grid grid-cols-3 gap-3">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                              onClick={() => document.getElementById("offer-image-input")?.click()}
-                            >
-                              <ImageIcon className="w-6 h-6" />
-                              <span className="text-xs font-medium">Upload Image</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                              onClick={() => document.getElementById("offer-reel-input")?.click()}
-                            >
-                              <Film className="w-6 h-6" />
-                              <span className="text-xs font-medium">Upload Reel</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="h-24 flex-col gap-2 hover:bg-primary/10 hover:border-primary transition-all"
-                              onClick={() => document.getElementById("offer-video-input")?.click()}
-                            >
-                              <PlayCircle className="w-6 h-6" />
-                              <span className="text-xs font-medium">Upload Video</span>
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Images: Max 10MB • Videos/Reels: Max 50MB • Multiple files supported
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Display promotional content */}
-                    {formData.gallery.filter(item => item.contentType === "offer").length > 0 && (
-                      <div className="space-y-3">
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold">Your Special Offers</h4>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Edit className="w-3 h-3" />
-                            Click the blue edit button to modify offers
-                          </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {formData.gallery
-                            .filter(item => item.contentType === "offer")
-                            .map((item) => (
-                              <Card key={item.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                                <div className="relative aspect-video bg-muted">
-                                  {item.type === "image" && item.preview ? (
-                                    <img
-                                      src={item.preview}
-                                      alt={item.title || "Special offer"}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (item.type === "video" || item.type === "reel") ? (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/30">
-                                      {item.type === "reel" ? (
-                                        <Film className="w-16 h-16 text-white opacity-75" />
-                                      ) : (
-                                        <PlayCircle className="w-16 h-16 text-white opacity-75" />
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <ImageIcon className="w-16 h-16 opacity-50" />
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => removeGalleryItem(item.id)}
-                                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                    title="Remove"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingGalleryItem(item);
-                                      setGalleryItemForm({
-                                        title: item.title || "",
-                                        description: item.description || "",
-                                        validFrom: item.validFrom || "",
-                                        validTo: item.validTo || ""
-                                      });
-                                      setIsGalleryDialogOpen(true);
-                                    }}
-                                    className="absolute top-2 right-12 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                    title="Edit Offer"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                  <div className="absolute top-2 left-2 flex gap-2">
-                                    <Badge className="capitalize bg-black/70 text-white border-none">
-                                      {item.type}
-                                    </Badge>
-                                    <Badge className="capitalize bg-primary text-primary-foreground border-none">
-                                      Special Offer
-                                    </Badge>
-                                    <Badge className="bg-blue-500/90 text-white border-none text-xs">
-                                      <Edit className="w-3 h-3 mr-1" />
-                                      Editable
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <div className="p-4">
-                                  {item.title && (
-                                    <h5 className="font-semibold mb-1 line-clamp-1">{item.title}</h5>
-                                  )}
-                                  {item.description && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{item.description}</p>
-                                  )}
-                                  {/* Valid Period Display */}
-                                  {(item.validFrom || item.validTo) && (
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                      <Calendar className="w-3 h-3" />
-                                      <span>
-                                        {item.validFrom && item.validTo 
-                                          ? `${new Date(item.validFrom).toLocaleDateString()} - ${new Date(item.validTo).toLocaleDateString()}`
-                                          : item.validFrom 
-                                            ? `From ${new Date(item.validFrom).toLocaleDateString()}`
-                                            : `Until ${new Date(item.validTo!).toLocaleDateString()}`
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
-                                  <Badge variant="secondary" className="bg-[#668c65]/10 text-[#668c65] border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                    Special Offer
-                                  </Badge>
-                                </div>
-                              </Card>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
+              </div>
 
               {formData.gallery.length > 0 && (
                 <div className="mt-8 p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1653,8 +1402,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                     <p className="text-sm text-slate-500">
                       {formData.gallery.filter(i => i.type === "image").length} Images • {" "}
                       {formData.gallery.filter(i => i.type === "reel").length} Reels • {" "}
-                      {formData.gallery.filter(i => i.type === "video").length} Videos • {" "}
-                      {formData.gallery.filter(i => i.contentType === "offer").length} Offers
+                      {formData.gallery.filter(i => i.type === "video").length} Videos
                     </p>
                   </div>
                   <Badge variant="outline" className="border-[#668c65] text-[#668c65] bg-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl">
@@ -1664,6 +1412,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               )}
             </div>
           </div>
+            </div>
         )}
 
         {/* Step 4: Contact Info */}
@@ -1675,7 +1424,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
             </div>
             <div className="p-8 space-y-6 max-w-2xl">
               <div>
-                <Label htmlFor="phone" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Direct Line</Label>
+                <Label htmlFor="phone" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Phone Number</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -1686,7 +1435,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Electronic Mail</Label>
+                <Label htmlFor="email" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Email Address</Label>
                 <Input
                   id="email"
                   type="email"

@@ -30,34 +30,34 @@ export function ProviderTabsSidebar({
 }: ProviderSidebarProps) {
   const navigationGroups = [
     {
-      title: "Overview",
+      title: "How I'm Doing",
       items: [
-        { id: "overview", label: "Dashboard", icon: <Home className="w-4 h-4" /> },
+        { id: "overview", label: "My Hub", icon: <Home className="w-4 h-4" /> },
         // Only show onboarding tab if user is not verified
-        ...(!isVerified ? [{ id: "onboarding", label: "Onboarding", icon: <FileText className="w-4 h-4" /> }] : []),
+        ...(!isVerified ? [{ id: "onboarding", label: "Set Up Profile", icon: <FileText className="w-4 h-4" /> }] : []),
       ]
     },
     {
-      title: "Services",
+      title: "My Listings",
       items: [
         { id: "services", label: "My Services", icon: <Package className="w-4 h-4" /> },
-        { id: "events", label: "Events", icon: <Calendar className="w-4 h-4" /> },
-        { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "events", label: "My Events", icon: <Calendar className="w-4 h-4" /> },
+        { id: "bookings", label: "Orders", icon: <BookOpen className="w-4 h-4" /> },
       ]
     },
     {
-      title: "CRM",
+      title: "My Customers",
       items: [
-        { id: "inquiries", label: "Inquiries", icon: <MessageSquare className="w-4 h-4" /> },
-        { id: "quotes", label: "Quotes", icon: <FileText className="w-4 h-4" /> },
-        { id: "contracts", label: "Contracts", icon: <FileText className="w-4 h-4" /> },
+        { id: "inquiries", label: "New Requests", icon: <MessageSquare className="w-4 h-4" /> },
+        { id: "quotes", label: "Price Offers", icon: <FileText className="w-4 h-4" /> },
+        { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },
       ]
     },
     {
-      title: "Business",
+      title: "Business Setup",
       items: [
-        { id: "earnings", label: "Earnings", icon: <DollarSign className="w-4 h-4" /> },
-        { id: "profile", label: "Profile", icon: <User className="w-4 h-4" /> },
+        { id: "earnings", label: "My Income", icon: <DollarSign className="w-4 h-4" /> },
+        { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
       ]
     }
   ];
@@ -93,10 +93,10 @@ export function ProviderTabsSidebar({
   }, [expandedGroups]);
 
   const groupIconByTitle: Record<string, React.ReactNode> = {
-    "Overview": <Home className="w-4 h-4" />,
-    "Services": <Package className="w-4 h-4" />,
-    "CRM": <MessageSquare className="w-4 h-4" />,
-    "Business": <DollarSign className="w-4 h-4" />,
+    "How I'm Doing": <Home className="w-4 h-4" />,
+    "My Listings": <Package className="w-4 h-4" />,
+    "My Customers": <MessageSquare className="w-4 h-4" />,
+    "Business Setup": <DollarSign className="w-4 h-4" />,
   };
 
   return (
@@ -108,7 +108,7 @@ export function ProviderTabsSidebar({
             <h2 className="font-serif italic text-3xl text-slate-50 tracking-tight">Provider</h2>
             <div className="flex items-center gap-2">
               <div className="h-[1px] w-4 bg-[#668c65]/50" />
-              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em]">Business Sanctuary</p>
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em]">Provider Account</p>
             </div>
           </div>
         )}
@@ -207,7 +207,7 @@ export function ProviderTabsSidebar({
                     {user.full_name}
                   </p>
                   <p className="text-[10px] text-white/50 font-black uppercase tracking-widest truncate">
-                    Artisan Collective
+                    Service Provider
                   </p>
                 </div>
                 <button

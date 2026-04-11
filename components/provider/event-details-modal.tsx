@@ -154,7 +154,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
             {event.title}
           </h2>
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mt-2">
-            Ritual Manifest & Analytical Review
+            Event Details & Analytics
           </p>
         </div>
         {!standalone && (
@@ -173,10 +173,10 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-12 overflow-x-auto no-scrollbar">
             {[
-              { id: "overview", label: "Existential Overview" },
-              { id: "tickets", label: "Allocation Mastery" },
-              { id: "analytics", label: "Strategic Insight" },
-              { id: "attendees", label: "Collective Registry" }
+              { id: "overview", label: "Overview" },
+              { id: "tickets", label: "Tickets" },
+              { id: "analytics", label: "Analytics" },
+              { id: "attendees", label: "Guest List" }
             ].map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -203,7 +203,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                   )}
                   <div className="absolute top-6 left-6">
                     <Badge className="bg-white/90 backdrop-blur-md text-[#668c65] border-none px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                      {event.status} Ritual
+                      {event.status} Event
                     </Badge>
                   </div>
                 </div>
@@ -211,7 +211,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="h-[1px] w-8 bg-[#668c65]/30" />
-                    Narrative Essence
+                    Description
                   </h3>
                   <p className="text-xl font-serif italic text-slate-600 leading-relaxed indent-8">
                     {event.description}
@@ -221,10 +221,10 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
               <div className="md:col-span-4 space-y-6">
                 {[
-                  { icon: Calendar, label: "Alignment Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'long' }), sub: event.event_time },
-                  { icon: MapPin, label: "Venue Coordinates", value: event.location },
-                  { icon: Users, label: "Human Capacity", value: `${event.capacity} Souls`, sub: `${Math.round(occupancyPercentage)}% Manifested` },
-                  { icon: DollarSign, label: "Accumulated Value", value: `${(event.total_revenue).toLocaleString()} RWF`, color: "text-[#668c65]" }
+                  { icon: Calendar, label: "Event Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'long' }), sub: event.event_time },
+                  { icon: MapPin, label: "Location", value: event.location },
+                  { icon: Users, label: "Capacity", value: `${event.capacity} Guests`, sub: `${Math.round(occupancyPercentage)}% Registered` },
+                  { icon: DollarSign, label: "Total Revenue", value: `${(event.total_revenue).toLocaleString()} RWF`, color: "text-[#668c65]" }
                 ].map((item, i) => (
                   <Card key={i} className="border-none shadow-none bg-slate-50/50 rounded-3xl p-6 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-100">
                     <div className="flex items-center gap-4">
@@ -242,14 +242,14 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
                 <div className="pt-6 space-y-3">
                   <Button onClick={() => setIsEditingEvent(true)} className="w-full h-14 bg-slate-900 hover:bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
-                    Refine Manifest
+                    Edit Event
                   </Button>
                   <div className="grid grid-cols-2 gap-3">
                     <Button variant="outline" onClick={handleShareEvent} className="h-12 border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50">
-                      Disseminate
+                      Share
                     </Button>
                     <Button variant="outline" onClick={handleExportAttendees} className="h-12 border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50">
-                      Extract List
+                      Download List
                     </Button>
                   </div>
                 </div>
@@ -261,8 +261,8 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
               <Card className="border-none bg-[#668c65]/5 rounded-[2.5rem] p-10 space-y-8 animate-in zoom-in-95 duration-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="text-2xl font-serif italic text-slate-900">Refine Ritual Details</h4>
-                    <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-1">Adjusting the coordinates of your gathering</p>
+                    <h4 className="text-2xl font-serif italic text-slate-900">Edit Event Details</h4>
+                    <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-1">Update your event information below</p>
                   </div>
                   <Button variant="ghost" onClick={() => setIsEditingEvent(false)} className="h-10 w-10 rounded-full">
                     <X className="h-5 w-5" />
@@ -315,7 +315,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                     Discard
                   </Button>
                   <Button onClick={handleSaveEdit} className="h-14 flex-1 bg-[#668c65] hover:bg-[#5a7b59] text-white rounded-2xl shadow-xl shadow-[#668c65]/20 text-[10px] font-black uppercase tracking-widest">
-                    {updateEventMutation.isPending ? "Synchronizing..." : "Seal Manifest"}
+                    {updateEventMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </Card>
@@ -351,8 +351,8 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                   <Card className="border-none shadow-none bg-slate-50/50 rounded-[2.5rem] p-10 space-y-8">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-2xl font-serif italic text-slate-900 leading-none">Velocity Trend</h4>
-                        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Daily ritual alignment frequency</p>
+                        <h4 className="text-2xl font-serif italic text-slate-900 leading-none">Sales Trend</h4>
+                        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Daily ticket sales frequency</p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-[#668c65]/20" />
                     </div>
@@ -387,8 +387,8 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
                   <Card className="border-none shadow-none bg-slate-900 text-white rounded-[2.5rem] p-10 space-y-8">
                     <div>
-                      <h4 className="text-2xl font-serif italic text-white leading-none">Wealth Distribution</h4>
-                      <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Revenue architecture by offering type</p>
+                      <h4 className="text-2xl font-serif italic text-white leading-none">Revenue Distribution</h4>
+                      <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Revenue by ticket type</p>
                     </div>
                     <div className="h-[300px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -420,10 +420,10 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {[
-                    { label: "Total Manifested", value: analytics?.total_tickets_sold || event.tickets_sold, sub: "Unique Souls" },
-                    { label: "Saturation Rate", value: `${analytics?.occupancy_percentage.toFixed(1) || Math.round(occupancyPercentage)}%`, sub: "Venue Density" },
-                    { label: "Mean Valuation", value: `${(analytics?.average_ticket_price || 0).toLocaleString()} RWF`, sub: "Per Offering" },
-                    { label: "Current Wealth", value: `${((analytics?.total_revenue || event.total_revenue)).toLocaleString()} RWF`, sub: "Aggregated Gross", highlight: true }
+                    { label: "Total Registered", value: analytics?.total_tickets_sold || event.tickets_sold, sub: "Unique Guests" },
+                    { label: "Occupancy Rate", value: `${analytics?.occupancy_percentage.toFixed(1) || Math.round(occupancyPercentage)}%`, sub: "Venue Capacity" },
+                    { label: "Average Price", value: `${(analytics?.average_ticket_price || 0).toLocaleString()} RWF`, sub: "Per Ticket" },
+                    { label: "Total Earnings", value: `${((analytics?.total_revenue || event.total_revenue)).toLocaleString()} RWF`, sub: "Total Sales", highlight: true }
                   ].map((stat, i) => (
                     <Card key={i} className="border-none shadow-none bg-white rounded-[2rem] p-8 border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-100">
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
@@ -443,8 +443,8 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
             <Card className="border-none shadow-none bg-slate-50/50 rounded-[2.5rem] p-10">
               <div className="flex items-center justify-between mb-10">
                 <div>
-                  <h4 className="text-3xl font-serif italic text-slate-900 leading-none">Collective Registry</h4>
-                  <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-3">The assembly of confirmed attendees</p>
+                  <h4 className="text-3xl font-serif italic text-slate-900 leading-none">Guest List</h4>
+                  <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-3">The assembly of confirmed guests</p>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -459,7 +459,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
               ) : tickets.length === 0 ? (
                 <div className="text-center py-20">
                   <Users className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No souls manifested in this ritual registry yet.</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No guests have registered for this event yet.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -486,7 +486,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                             ticket.is_checked_in ? "text-[#668c65]" : "text-amber-500"
                           )}>
                             <CheckCircle className="h-3 w-3" />
-                            {ticket.is_checked_in ? "Manifested (Checked In)" : "Pending Arrival"}
+                            {ticket.is_checked_in ? "Checked In" : "Pending Arrival"}
                           </p>
                         </div>
                         <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl border border-slate-50 opacity-0 group-hover:opacity-100 transition-all">
@@ -501,7 +501,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
             <Button onClick={handleExportAttendees} className="w-full h-20 bg-slate-900 hover:bg-black text-white rounded-[2.5rem] flex items-center justify-center gap-4 transition-all shadow-2xl shadow-slate-900/10">
               <Download className="h-6 w-6 text-[#668c65]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Extract Entire Collective Registry</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Download Guest List</span>
             </Button>
           </TabsContent>
         </Tabs>

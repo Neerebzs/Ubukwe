@@ -95,8 +95,8 @@ export function ProviderDashboardContent() {
     <div className="min-h-screen bg-[#f9fafc]">
       {/* Mobile App Bar - Only on mobile */}
       <MobileAppBar
-        title="Provider Dashboard"
-        subtitle="Manage your services"
+        title="My Business"
+        subtitle="Manage your listings and customers"
         onMenuClick={toggleMobileMenu}
         user={user ? {
           full_name: user.full_name || user.username,
@@ -150,8 +150,8 @@ export function ProviderDashboardContent() {
             onLogout={logout}
             onToggleSidebar={toggleSidebar}
             onToggleMobileMenu={toggleMobileMenu}
-            title="Provider Dashboard"
-            subtitle="Manage your services"
+            title="My Business"
+            subtitle="Manage your listings and customers"
           />
         </div>
 
@@ -162,11 +162,11 @@ export function ProviderDashboardContent() {
               <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
                 <FileText className="w-8 h-8 text-yellow-600" />
               </div>
-              <h2 className="text-2xl font-bold"><TranslatedText text="Verification Required" /></h2>
+              <h2 className="text-2xl font-bold"><TranslatedText text="Account Not Ready" /></h2>
               <p className="text-muted-foreground">
-                <TranslatedText text="Please complete your onboarding and wait for admin approval to access this feature." />
+                <TranslatedText text="Please complete your setup and wait for approval to access this feature." />
               </p>
-              <Button onClick={() => handleTabChange("onboarding")}><TranslatedText text="Go to Onboarding" /></Button>
+              <Button onClick={() => handleTabChange("onboarding")}><TranslatedText text="Finish Setup" /></Button>
             </div>
           ) : (
             renderContent()

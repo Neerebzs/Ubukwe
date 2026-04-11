@@ -438,7 +438,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">My Services</h2>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Manage Your Service Offerings</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Manage what you offer to clients</p>
         </div>
       </div>
 
@@ -446,7 +446,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         <div />
         <Button onClick={handleCreateService} size="lg" className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-lg shadow-[#668c65]/20 px-8 h-12 transition-all duration-300 group">
           <Plus className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
-          <span className="font-bold tracking-tight uppercase text-[10px]">Add New Service</span>
+          <span className="font-bold tracking-tight uppercase text-[10px]">Add Something New</span>
         </Button>
       </div>
 
@@ -455,7 +455,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
         <div className="flex-1 relative group w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#668c65] transition-colors" />
           <Input
-            placeholder="Search experiences..."
+            placeholder="Search services..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-12 h-12 bg-white border-slate-100 rounded-2xl focus-visible:ring-[#668c65] transition-all shadow-sm"
@@ -554,8 +554,8 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                           <h3 className="text-3xl font-serif italic text-slate-900 tracking-tight group-hover:text-[#668c65] transition-colors leading-tight">
                             {service.title}
                             {service.verified && (
-                              <Badge className="ml-3 bg-indigo-50 text-indigo-600 border-none text-[8px] font-black uppercase px-2 py-0.5 rounded-full">
-                                Verified Manifest
+                             <Badge className="ml-3 bg-indigo-50 text-indigo-600 border-none text-[8px] font-black uppercase px-2 py-0.5 rounded-full">
+                                Verified Service
                               </Badge>
                             )}
                           </h3>
@@ -570,17 +570,13 @@ export function ProviderServices({ services: initialServices }: ProviderServices
 
                       <div className="flex flex-wrap gap-y-4 gap-x-8 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-6">
                         <div className="flex items-center group/item">
-                          <MapPin className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
-                          {service.location}
-                        </div>
-                        <div className="flex items-center group/item">
                           <TrendingUp className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
-                          {service.bookings} Engagements
+                          {service.bookings} Times Booked
                         </div>
                         {service.packages && service.packages.length > 0 && (
                           <div className="flex items-center group/item">
                             <Package className="h-4 w-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
-                            {service.packages.length} Tiers
+                            {service.packages.length} Packages
                           </div>
                         )}
                       </div>
@@ -592,7 +588,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
 
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pt-6 border-t border-slate-50">
                       <div className="space-y-1">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Price Range</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Price</p>
                         <p className="text-2xl font-serif italic text-[#668c65]">
                           {service.priceRange}
                         </p>
@@ -605,7 +601,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             size="icon"
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleViewService(service)}
-                            title="View Details"
+                            title="See Details"
                           >
                             <Eye className="h-5 w-5" />
                           </Button>
@@ -614,7 +610,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             size="icon"
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-[#668c65] hover:bg-[#668c65]/5 transition-all"
                             onClick={() => handleEditService(service)}
-                            title="Edit Service"
+                            title="Change Info"
                           >
                             <Edit className="h-5 w-5" />
                           </Button>
@@ -624,7 +620,7 @@ export function ProviderServices({ services: initialServices }: ProviderServices
                             className="h-12 w-12 rounded-xl bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
                             onClick={() => handleDeleteService(service.id)}
                             disabled={isDeleting === service.id}
-                            title="Delete Service"
+                            title="Remove Service"
                           >
                             {isDeleting === service.id ? (
                               <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />

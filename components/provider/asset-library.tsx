@@ -14,7 +14,7 @@ export function AssetLibrary() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Asset Library</CardTitle>
+          <CardTitle>My gallery</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="photos">

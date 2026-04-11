@@ -318,10 +318,10 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
       <div className="bg-[#668c65]/5 p-12 border-b border-[#668c65]/10">
         <div className="text-left">
           <h2 className="text-5xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
-            Inscribe New Ritual
+            Create New Event
           </h2>
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mt-2">
-            Architecting the future of artisanal gatherings
+            Set up your upcoming event details
           </p>
         </div>
       </div>
@@ -330,9 +330,9 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-12 overflow-x-auto no-scrollbar">
             {[
-              { id: "basic", label: "Fundamental Essence" },
-              { id: "details", label: "Temporal Coordinates" },
-              { id: "tickets", label: "Allocation Mastery" }
+              { id: "basic", label: "Basic Information" },
+              { id: "details", label: "Date & Time" },
+              { id: "tickets", label: "Tickets" }
             ].map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -348,7 +348,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-6 md:col-span-2">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ritual Title *</Label>
+                  <Label htmlFor="title" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Name *</Label>
                   <Input
                     id="title"
                     name="title"
@@ -369,11 +369,11 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Philosophical Narrative *</Label>
+                  <Label htmlFor="description" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description *</Label>
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Describe the essence of your ceremony..."
+                    placeholder="Describe your event details..."
                     rows={5}
                     value={formData.description}
                     onChange={handleInputChange}
@@ -393,13 +393,13 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category Archetype *</Label>
+                  <Label htmlFor="category" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Category *</Label>
                   <Select value={formData.category} onValueChange={(value) => handleSelectChange("category", value)}>
                     <SelectTrigger id="category" className={cn(
                       "h-16 rounded-2xl border-slate-50 bg-slate-50/50 focus:bg-white transition-all text-[10px] font-black uppercase tracking-widest",
                       errors.category ? "border-rose-200 bg-rose-50/20" : ""
                     )}>
-                      <SelectValue placeholder="Select Manifest Type" />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-2 max-h-[400px] overflow-y-auto">
                       {/* Wedding-related */}
@@ -508,7 +508,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="image" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Visual Anchor</Label>
+                  <Label htmlFor="image" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Image</Label>
                   <div className="space-y-4">
                     <div className="relative group overflow-hidden rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 hover:bg-white hover:border-[#668c65]/30 transition-all duration-500 aspect-video flex flex-col items-center justify-center p-6 text-center">
                       {formData.image ? (
@@ -535,7 +535,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                           <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-[#668c65] mb-3">
                             <Upload className="h-6 w-6" />
                           </div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Dispatch Visual Asset from Device</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Upload image from device</p>
                           <Button
                             variant="ghost"
                             className="absolute inset-0 w-full h-full hover:bg-transparent"
@@ -556,7 +556,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                       <Input
                         id="image"
                         name="image"
-                        placeholder="Or provide architectural URL..."
+                        placeholder="Or provide image URL..."
                         value={formData.image.startsWith('data:') ? "" : formData.image}
                         onChange={handleInputChange}
                         className="h-16 pl-14 rounded-2xl border-slate-50 bg-slate-50/50 focus:bg-white transition-all text-sm font-serif italic"
@@ -574,7 +574,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                   onClick={() => onOpenChange(false)}
                   className="h-16 px-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all rounded-2xl"
                 >
-                  Retract Manifest
+                  Cancel
                 </Button>
               )}
               <Button
@@ -584,7 +584,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                   standalone ? "flex-1" : "flex-1"
                 )}
               >
-                Proceed to Temporal Details
+                Next: Date & Time
                 <ChevronRight className="w-4 h-4 ml-3" />
               </Button>
             </div>
@@ -593,7 +593,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
           <TabsContent value="details" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alignment Date *</Label>
+                <Label htmlFor="date" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Date *</Label>
                 <div className="relative">
                   <CalendarIcon className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#668c65]" />
                   <Input
@@ -611,7 +611,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="time" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ritual Commencement *</Label>
+                <Label htmlFor="time" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Time *</Label>
                 <div className="relative">
                   <Clock className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#668c65]" />
                   <Input
@@ -629,7 +629,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="location" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Venue Coordinates *</Label>
+                <Label htmlFor="location" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location *</Label>
                 <div className="relative">
                   <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#668c65]" />
                   <Input
@@ -647,7 +647,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="capacity" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Human Collective Capacity *</Label>
+                <Label htmlFor="capacity" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Capacity *</Label>
                 <div className="relative">
                   <Users className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-400" />
                   <Input
@@ -672,7 +672,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ritual Investment (Amount) *</Label>
+                <Label htmlFor="amount" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Budget (Amount) *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#668c65]" />
                   <Input
@@ -696,13 +696,13 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                 onClick={() => setActiveTab("basic")}
                 className="h-16 px-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all rounded-2xl"
               >
-                Back to Essence
+                Previous
               </Button>
               <Button
                 onClick={handleNextFromDetails}
                 className="h-16 flex-1 bg-slate-900 hover:bg-black text-white rounded-2xl shadow-2xl shadow-slate-900/10 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                Curate Allocation Offerings
+                Next: Tickets
                 <ChevronRight className="w-4 h-4 ml-3 text-[#668c65]" />
               </Button>
             </div>
@@ -713,7 +713,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               <div>
                 <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                   <div className="h-[1px] w-8 bg-[#668c65]/30" />
-                  Existing Offerings
+                  Current Tickets
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {ticketTypes.map((ticket) => (
@@ -749,8 +749,8 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
               <Card className="border-slate-50 shadow-none bg-[#668c65]/5 rounded-[2.5rem] overflow-hidden border border-[#668c65]/10">
                 <CardHeader className="p-10 pb-4 flex flex-row items-center justify-between space-y-0">
                   <div>
-                    <CardTitle className="text-2xl font-serif italic text-slate-900">Supplement Offerings</CardTitle>
-                    <CardDescription className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-1">Refine multiple value tiers in parallel</CardDescription>
+                    <CardTitle className="text-2xl font-serif italic text-slate-900">Add Tickets</CardTitle>
+                    <CardDescription className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-1">Create different ticket levels for your event</CardDescription>
                   </div>
                   <Button
                     onClick={addDraftRow}
@@ -758,7 +758,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                     className="h-12 gap-2 text-[#668c65] hover:bg-[#668c65]/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
                   >
                     <Plus className="h-4 w-4" />
-                    New Tier
+                    Add Level
                   </Button>
                 </CardHeader>
                 <CardContent className="p-10 pt-0 space-y-8">
@@ -768,7 +768,7 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                         {index > 0 && <div className="h-[1px] w-full bg-[#668c65]/10 mb-10" />}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                           <div className="md:col-span-5 space-y-2">
-                            <Label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Offering Title</Label>
+                            <Label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Ticket Name</Label>
                             <Input
                               placeholder="e.g., VIP Experience"
                               value={draft.name}

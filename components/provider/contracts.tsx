@@ -55,7 +55,7 @@ export function ProviderContracts() {
     { value: "all", label: "All" },
     { value: "pending", label: "Drafts" },
     { value: "sent", label: "Pending" },
-    { value: "signed", label: "Executed" },
+    { value: "signed", label: "Signed Agreements" },
   ]
 
   if (isLoading) {
@@ -71,8 +71,8 @@ export function ProviderContracts() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Contracts</h2>
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">Agreement Repository</p>
+          <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Agreements</h2>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">All your signed and pending agreements</p>
         </div>
         <Button className="rounded-2xl bg-[#668c65] hover:bg-[#0b7a6f] text-white px-8 h-12">
           <Plus className="w-4 h-4 mr-2" />
@@ -100,8 +100,8 @@ export function ProviderContracts() {
               {filtered.length === 0 ? (
                 <div className="py-20 bg-white rounded-[2rem] border border-dashed border-slate-100 flex items-center justify-center">
                   <EmptyState
-                    title="No contracts"
-                    description="Contracts will appear here once created."
+                    title="No agreements"
+                    description="Agreements will appear here once created."
                     icon={<FileText className="h-12 w-12 mx-auto text-slate-200" />}
                   />
                 </div>
@@ -137,10 +137,10 @@ export function ProviderContracts() {
                         </div>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
-                            <Eye className="w-4 h-4 mr-2" />Inspect
+                            <Eye className="w-4 h-4 mr-2" />See Details
                           </Button>
                           <Button variant="ghost" size="sm" className="rounded-xl hover:bg-slate-50 text-slate-500 font-bold text-[10px] uppercase px-4 h-10">
-                            <Download className="w-4 h-4 mr-2" />Export
+                            <Download className="w-4 h-4 mr-2" />Download
                           </Button>
                         </div>
                       </div>

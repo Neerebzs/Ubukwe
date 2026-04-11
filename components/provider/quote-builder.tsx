@@ -148,10 +148,10 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Create Quote</h2>
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Create Price Offer</h2>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Drafting Professional Service Agreements</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Set up a clear price offer for your client</p>
         </div>
       </div>
 
@@ -164,14 +164,14 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
             className="rounded-2xl border-slate-200 hover:border-[#668c65] hover:bg-[#668c65]/5 text-slate-600 px-6 h-12 transition-all duration-300"
           >
             <Save className="w-4 h-4 mr-2" />
-            <span className="font-bold tracking-tight uppercase text-[10px]">Store Draft</span>
+            <span className="font-bold tracking-tight uppercase text-[10px]">Save Draft</span>
           </Button>
           <Button
             onClick={handleSend}
             className="rounded-2xl bg-[#668c65] hover:bg-[#0b7a6f] text-white shadow-lg shadow-[#668c65]/20 px-8 h-12 transition-all duration-300 group"
           >
             <Send className="w-4 h-4 mr-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            <span className="font-bold tracking-tight uppercase text-[10px]">Dispatch Quote</span>
+            <span className="font-bold tracking-tight uppercase text-[10px]">Send Offer</span>
           </Button>
         </div>
       </div>
@@ -181,8 +181,8 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
             <CardHeader className="p-8 pb-4 border-b border-slate-50">
-              <CardTitle className="text-xl font-serif italic text-slate-900">Quote Context</CardTitle>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Core details for this engagement</p>
+              <CardTitle className="text-xl font-serif italic text-slate-900">Offer Info</CardTitle>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Basic details for this client</p>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               <div className="space-y-2">
@@ -196,7 +196,7 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="validUntil" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Expiration Date</Label>
+                <Label htmlFor="validUntil" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Offer Valid Until</Label>
                 <Input
                   id="validUntil"
                   type="date"
@@ -212,8 +212,8 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
             <CardHeader className="p-8 pb-4 border-b border-slate-50">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl font-serif italic text-slate-900">Service Lineage</CardTitle>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Detailed breakdown of offerings</p>
+                  <CardTitle className="text-xl font-serif italic text-slate-900">Items & Services</CardTitle>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">What you are providing</p>
                 </div>
                 <Button
                   size="sm"
@@ -287,8 +287,8 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
 
           <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
             <CardHeader className="p-8 pb-4 border-b border-slate-50">
-              <CardTitle className="text-xl font-serif italic text-slate-900">Addendum & Terms</CardTitle>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Foundational rules for this proposal</p>
+              <CardTitle className="text-xl font-serif italic text-slate-900">Expert Notes & Terms</CardTitle>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Extra details for your client</p>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               <div className="space-y-2">
@@ -297,12 +297,12 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
                   id="notes"
                   value={quoteData.notes}
                   onChange={(e) => setQuoteData({ ...quoteData, notes: e.target.value })}
-                  placeholder="Articulate additional nuances for your client..."
+                  placeholder="Write any extra notes for your client..."
                   className="rounded-xl border-slate-100 bg-slate-50/50 focus:bg-white transition-colors min-h-[120px]"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="terms" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contractual Terms</Label>
+                <Label htmlFor="terms" className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Terms and Conditions</Label>
                 <Textarea
                   id="terms"
                   value={quoteData.terms}
@@ -322,13 +322,13 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
                 <div className="p-2 rounded-xl bg-[#668c65] text-white">
                   <Calculator className="w-5 h-5" />
                 </div>
-                Fiscal Summary
+                Price Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="space-y-6">
                 <div className="flex justify-between items-center px-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Subtotal</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
                   <span className="font-bold text-slate-900">{subtotal.toLocaleString()} RWF</span>
                 </div>
 
@@ -364,10 +364,10 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
                   )}
                 </div>
 
-                {/* VAT Analysis */}
+                {/* Tax Analysis */}
                 <div className="p-6 rounded-[1.5rem] bg-slate-50/50 border border-slate-50 space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">VAT Exposure</Label>
+                    <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tax (VAT)</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         type="number"
@@ -404,14 +404,14 @@ export function QuoteBuilder({ customerId, inquiryId }: { customerId?: string; i
                     onClick={handleSend}
                   >
                     <Send className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform" />
-                    <span className="font-bold tracking-widest uppercase text-xs">Dispatch Proposal</span>
+                    <span className="font-bold tracking-widest uppercase text-xs">Send Offer to Client</span>
                   </Button>
                   <Button
                     variant="ghost"
                     className="w-full py-6 rounded-2xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all font-bold tracking-widest uppercase text-[10px]"
                     onClick={handleSave}
                   >
-                    Archive for Later
+                    Save for Later
                   </Button>
                 </div>
               </div>

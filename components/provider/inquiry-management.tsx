@@ -99,14 +99,14 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-4xl font-serif italic text-slate-900">Inquiries</h2>
-        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">Customer Engagement Portal</p>
+        <h2 className="text-4xl font-serif italic text-slate-900">Questions & Requests</h2>
+        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em] mt-1">See what clients are asking about your services</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <Input placeholder="Search inquiries..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 rounded-2xl border-slate-100" />
+          <Input placeholder="Search messages or requests..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 rounded-2xl border-slate-100" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px] rounded-2xl border-slate-100">
@@ -115,7 +115,7 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
           </SelectTrigger>
           <SelectContent className="rounded-2xl">
             {["all", "new", "responded", "quoted", "booked", "declined"].map(s => (
-              <SelectItem key={s} value={s}>{s === "all" ? "All Status" : s}</SelectItem>
+              <SelectItem key={s} value={s}>{s === "all" ? "All Messages" : s === "responded" ? "Replied" : s === "quoted" ? "Price Sent" : s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -123,15 +123,15 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard label="New" value={inquiries.filter(i => i.status === "new").length} icon={Clock} color="#668c65" />
-        <StatCard label="Responded" value={inquiries.filter(i => i.status === "responded").length} icon={MessageSquare} color="#668c65" />
-        <StatCard label="Quoted" value={inquiries.filter(i => i.status === "quoted").length} icon={CheckCircle} color="#668c65" />
+        <StatCard label="Replied" value={inquiries.filter(i => i.status === "responded").length} icon={MessageSquare} color="#668c65" />
+        <StatCard label="Price Sent" value={inquiries.filter(i => i.status === "quoted").length} icon={CheckCircle} color="#668c65" />
         <StatCard label="Total" value={inquiries.length} icon={TrendingUp} color="#668c65" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-3 max-h-[700px] overflow-y-auto pr-1">
           {filtered.length === 0 ? (
-            <EmptyState title="No inquiries" description="Inquiries from customers will appear here." icon={<MessageSquare className="h-12 w-12 mx-auto text-slate-300" />} />
+            <EmptyState title="No requests" description="Items from customers will appear here." icon={<MessageSquare className="h-12 w-12 mx-auto text-slate-300" />} />
           ) : (
             filtered.map((inq) => (
               <Card
@@ -164,7 +164,7 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-2xl font-serif italic text-slate-900">
-                      {selectedInquiry.service_name ?? "Service Inquiry"}
+                      {selectedInquiry.service_name ?? "Client Request"}
                     </CardTitle>
                     <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em] mt-1">
                       From {selectedInquiry.customer_name ?? "Customer"}
@@ -229,7 +229,7 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
                     className="flex-1 rounded-2xl bg-slate-900 text-white"
                     onClick={() => onSendQuote ? onSendQuote(selectedInquiry.id, selectedInquiry.customer_id) : undefined}
                   >
-                    <DollarSign className="w-4 h-4 mr-2" />Send Quote
+                    <DollarSign className="w-4 h-4 mr-2" />Send Price Offer
                   </Button>
                   {selectedInquiry.status === "new" && (
                     <Button
@@ -247,7 +247,7 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
             <div className="h-full flex items-center justify-center p-12 border-2 border-dashed border-slate-100 rounded-[2.5rem] bg-white">
               <div className="text-center">
                 <MessageSquare className="h-8 w-8 text-slate-200 mx-auto mb-4" />
-                <h3 className="text-xl font-serif italic text-slate-900">Select an Inquiry</h3>
+                <h3 className="text-xl font-serif italic text-slate-900">Select a Message</h3>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Choose from the list to view details</p>
               </div>
             </div>

@@ -21,10 +21,10 @@ export function ProviderProfile() {
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Identity</h2>
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">My Profile</h2>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Professional Persona & Credentials</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Manage your account and business info</p>
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export function ProviderProfile() {
                 <ShieldCheck className="w-5 h-5 text-[#668c65]" />
               </div>
               <Badge variant="outline" className="bg-[#668c65]/5 border-none text-[#668c65] text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                Verified Artisan
+                Verified Provider
               </Badge>
             </div>
           </CardHeader>
@@ -57,7 +57,7 @@ export function ProviderProfile() {
                   <Star className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Global Merit</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">My Rating</span>
                   <span className="text-sm font-bold text-slate-700">{profile.rating} / 5.0</span>
                 </div>
               </div>
@@ -66,7 +66,7 @@ export function ProviderProfile() {
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Base of Operations</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Business Location</span>
                   <span className="text-sm font-medium text-slate-600">{profile.location}</span>
                 </div>
               </div>
@@ -74,7 +74,7 @@ export function ProviderProfile() {
 
             <Button className="w-full rounded-2xl bg-[#668c65] hover:bg-[#0b7a6f] text-white shadow-lg shadow-[#668c65]/20 h-12 transition-all group">
               <Edit className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-[10px] uppercase tracking-widest">Refine Identity</span>
+              <span className="font-bold text-[10px] uppercase tracking-widest">Edit Profile</span>
             </Button>
           </CardContent>
         </Card>
@@ -83,28 +83,28 @@ export function ProviderProfile() {
         <div className="md:col-span-2 space-y-8">
           <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
             <CardHeader className="p-8 pb-4 border-b border-slate-50">
-              <CardTitle className="text-xl font-serif italic text-slate-900">Communication & Contact</CardTitle>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Foundational access points</p>
+              <CardTitle className="text-xl font-serif italic text-slate-900">Contact Info</CardTitle>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">How clients and partners reach you</p>
             </CardHeader>
             <CardContent className="p-8 grid gap-8 md:grid-cols-2">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Mail className="w-4 h-4 text-slate-300" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Digital Mailbox</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Email Address</span>
                 </div>
                 <p className="text-sm font-bold text-slate-800">{profile.email}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Phone className="w-4 h-4 text-slate-300" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Voice Line</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Phone Number</span>
                 </div>
                 <p className="text-sm font-bold text-slate-800">{profile.phone}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="w-4 h-4 text-slate-300" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Digital Hub</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Website</span>
                 </div>
                 <p className="text-sm font-bold text-[#668c65] hover:underline cursor-pointer">{profile.website}</p>
               </div>
@@ -113,8 +113,8 @@ export function ProviderProfile() {
 
           <Card className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white">
             <CardHeader className="p-8 pb-4 border-b border-slate-50">
-              <CardTitle className="text-xl font-serif italic text-slate-900">Artisanal Domains</CardTitle>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Core service specializations</p>
+              <CardTitle className="text-xl font-serif italic text-slate-900">Service Categories</CardTitle>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">What you offer to your clients</p>
             </CardHeader>
             <CardContent className="p-8 flex flex-wrap gap-3">
               {profile.categories.map((cat, i) => (

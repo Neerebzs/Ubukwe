@@ -222,13 +222,13 @@ export function TicketManagement({
               value="types"
               className="h-10 sm:h-12 flex-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none px-2"
             >
-              Inventory Design
+              Ticket Types
             </TabsTrigger>
             <TabsTrigger
               value="tickets"
               className="h-10 sm:h-12 flex-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-white data-[state=active]:text-[#668c65] shadow-none data-[state=active]:shadow-none px-2"
             >
-              Registered Souls
+              Guest List
             </TabsTrigger>
           </TabsList>
         </TabsList>
@@ -236,9 +236,9 @@ export function TicketManagement({
         <TabsContent value="types" className="space-y-12">
           {/* Stats Bar */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[{ label: "Total Ritual Capacity", value: eventCapacity, color: "text-slate-900" },
-              { label: "Allocated Tiers", value: getTotalTickets(), color: "text-[#668c65]" },
-            { label: "Available Registry", value: getAvailableCapacity(), color: "text-slate-400" },
+            {[{ label: "Total Event Capacity", value: eventCapacity, color: "text-slate-900" },
+              { label: "Total Tickets Sold", value: getTotalTickets(), color: "text-[#668c65]" },
+            { label: "Remaining Capacity", value: getAvailableCapacity(), color: "text-slate-400" },
             ].map((stat, i) => (
               <div key={i} className="flex h-28 sm:h-32 flex-col justify-between rounded-[2rem] border border-slate-100 bg-white p-6 sm:p-8 transition-colors hover:border-[#668c65]/20">
                 <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
@@ -247,7 +247,7 @@ export function TicketManagement({
             ))}
           </div>
 
-          {/* Ticket Tiers Grid */}
+          {/* Ticket Levels */}
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {ticketTypes.map((type) => {
               const soldPct = Math.round((type.sold / type.quantity) * 100);
@@ -288,7 +288,7 @@ export function TicketManagement({
                   <CardContent className="space-y-6 sm:space-y-8 p-6 sm:p-8 pt-0">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                        <span className="text-slate-300">Saturation</span>
+                        <span className="text-slate-300">Tickets Sold</span>
                         <span className="text-[#668c65]">{soldPct}%</span>
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-slate-50">
@@ -297,10 +297,10 @@ export function TicketManagement({
                     </div>
                     <div className="grid grid-cols-2 gap-y-4 sm:gap-y-6">
                       {[
-                        { label: "Exchange Value", value: `${type.price.toLocaleString()} RWF`, color: "text-[#668c65]" },
-                        { label: "Total Supply", value: type.quantity },
-                        { label: "Manifested", value: type.sold },
-                        { label: "In Reserve", value: available, color: available > 0 ? "text-slate-900" : "text-rose-400" },
+                        { label: "Ticket Price", value: `${type.price.toLocaleString()} RWF`, color: "text-[#668c65]" },
+                        { label: "Total Capacity", value: type.quantity },
+                        { label: "Tickets Sold", value: type.sold },
+                        { label: "Remaining", value: available, color: available > 0 ? "text-slate-900" : "text-rose-400" },
                       ].map((d, idx) => (
                         <div key={idx}>
                           <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-300">{d.label}</p>
@@ -313,11 +313,11 @@ export function TicketManagement({
                         onClick={() => { setSelectedTicketType(type); setIsCreatingTicket(type.id); }}
                         className="h-12 w-full rounded-2xl bg-slate-900 text-[9px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
                       >
-                        Issue Entry Manifest
+                        Create Ticket
                       </Button>
                     ) : (
                       <div className="flex h-12 items-center justify-center rounded-2xl bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                        Registry Exhausted
+                        Sold Out
                       </div>
                     )}
                   </CardContent>
@@ -333,7 +333,7 @@ export function TicketManagement({
                 onClick={() => setIsAddingType(true)}
                 className="h-16 rounded-2xl border border-[#668c65]/20 bg-white px-12 text-[10px] font-black uppercase tracking-widest text-[#668c65] transition-all hover:bg-[#668c65] hover:text-white shadow-none"
               >
-                Inscribe New Tier
+                Add Ticket Type
               </Button>
             </div>
           )}
@@ -344,7 +344,7 @@ export function TicketManagement({
           {tickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[3rem] border border-slate-100 bg-white py-32">
               <Ticket className="mb-6 h-12 w-12 text-slate-200" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">Archive is Currently Empty</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">No guests found yet</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -359,12 +359,12 @@ export function TicketManagement({
                       "rounded-full border-none px-2 py-1 sm:px-3 sm:py-1.5 text-[6px] sm:text-[7px] font-black uppercase tracking-widest",
                       t.is_checked_in ? "bg-[#668c65]/10 text-[#668c65]" : "bg-slate-50 text-slate-300"
                     )}>
-                      {t.is_checked_in ? "Verified" : "Pending"}
+                      {t.is_checked_in ? "Checked In" : "Pending"}
                     </Badge>
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="mb-1 text-[7px] font-black uppercase tracking-widest text-slate-300">Ritual Code</p>
+                      <p className="mb-1 text-[7px] font-black uppercase tracking-widest text-slate-300">Ticket ID</p>
                       <p className="font-serif text-[10px] font-bold italic text-slate-600">{t.ticket_number}</p>
                     </div>
                     {!t.is_checked_in && (
@@ -373,7 +373,7 @@ export function TicketManagement({
                         onClick={() => handleCheckIn(t.id)}
                         className="h-10 rounded-xl bg-[#668c65] px-6 text-[9px] font-black uppercase tracking-widest text-white hover:bg-[#5a7b59] shadow-none border-none"
                       >
-                        Verify Entry
+                        Check In
                       </Button>
                     )}
                   </div>
@@ -391,7 +391,7 @@ export function TicketManagement({
             <CardHeader className="border-b border-slate-50 p-6 sm:p-10">
               <div className="flex items-center justify-between">
                 <CardTitle className="font-serif text-2xl sm:text-3xl italic text-slate-900">
-                  {isCreatingTicket ? "Issue Guest Ticket" : isEditingType ? "Edit Ticket Type" : "Create New Ticket Type"}
+                  {isCreatingTicket ? "Create Guest Ticket" : isEditingType ? "Edit Ticket Type" : "Add New Ticket Type"}
                 </CardTitle>
                 <Button
                   variant="ghost"
@@ -418,7 +418,7 @@ export function TicketManagement({
                     onClick={handleCreateTicket}
                     className="h-14 w-full rounded-2xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
                   >
-                    Issue This Ticket
+                    Create Ticket
                   </Button>
                 </>
               ) : (

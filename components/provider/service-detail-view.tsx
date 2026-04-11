@@ -34,6 +34,7 @@ import {
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
+import { AddPromotionModal } from "./add-promotion-modal"
 
 interface GalleryItem {
   id: string
@@ -93,11 +94,17 @@ export function ServiceDetailView({
 }: ServiceDetailViewProps) {
   const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null)
   const [activeTab, setActiveTab] = useState("overview")
+  const [showPromotionModal, setShowPromotionModal] = useState(false)
 
   // Debug logging
 
   if (isLoading) {
     return <ServiceDetailSkeleton />
+  }
+
+  const handlePromotionSuccess = () => {
+    // Refresh the page or refetch service data
+    window.location.reload()
   }
 
   const regularMedia = service.gallery.filter(item => !item.contentType)
@@ -118,20 +125,20 @@ export function ServiceDetailView({
           className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-[#668c65] transition-all group px-2 sm:px-4"
         >
           <ArrowLeft className="h-4 w-4 sm:mr-2 group-hover:-translate-x-1 transition-transform" />
-          <span className="hidden sm:inline">Retreat</span>
+          <span className="hidden sm:inline">Back</span>
         </Button>
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="sm" className="hidden sm:flex rounded-xl text-[10px] font-black uppercase tracking-widest text-[#668c65] bg-[#668c65]/5 hover:bg-[#668c65]/10 h-10 px-5">
             <Share2 className="h-4 w-4 mr-2" />
-            Dispatch
+            Share
           </Button>
           <Button variant="ghost" size="sm" onClick={onEdit} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 h-10 px-3 sm:px-5 transition-all">
             <Edit className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Refine</span>
+            <span className="hidden sm:inline">Edit</span>
           </Button>
           <Button variant="ghost" size="sm" onClick={onDelete} className="rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-400 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 h-10 px-3 sm:px-5 transition-all">
             <Trash2 className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Erase</span>
+            <span className="hidden sm:inline">Delete</span>
           </Button>
         </div>
       </div>
@@ -142,7 +149,7 @@ export function ServiceDetailView({
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <Badge className="bg-[#668c65]/10 text-[#668c65] border-none uppercase tracking-[0.2em] text-[8px] px-3 py-1 font-black rounded-full">
-                {service.category} Ritual
+                {service.category} Service
               </Badge>
               <Badge
                 className={cn(
@@ -150,12 +157,12 @@ export function ServiceDetailView({
                   service.status === "active" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
                 )}
               >
-                {service.status.toUpperCase()} Manifest
+                {service.status.toUpperCase()} Status
               </Badge>
               {service.verified && (
                 <Badge className="bg-indigo-50 text-indigo-600 border-none uppercase tracking-[0.2em] text-[8px] px-3 py-1 font-black rounded-full">
                   <ShieldCheck className="w-3 h-3 mr-1.5" />
-                  Validated Essence
+                  Verified Service
                 </Badge>
               )}
             </div>
@@ -173,14 +180,14 @@ export function ServiceDetailView({
                 <div className="flex items-center group/item">
                   <Star className="w-4 h-4 mr-2 text-amber-400 fill-current group-hover/item:scale-110 transition-transform" />
                   <span className="text-slate-900 mr-2">{service.rating}</span>
-                  Impact Grade
+                  Rating
                 </div>
               )}
               {service.bookings !== undefined && (
                 <div className="flex items-center group/item">
                   <TrendingUp className="w-4 h-4 mr-2 text-[#668c65] group-hover/item:scale-110 transition-transform" />
                   <span className="text-slate-900 mr-2">{service.bookings}</span>
-                  Engagements
+                  Bookings
                 </div>
               )}
             </div>
@@ -206,7 +213,7 @@ export function ServiceDetailView({
                 onClick={() => setActiveTab("gallery")}
               >
                 <ImageIcon className="w-4 h-4 mr-3 group-hover/btn:rotate-12 transition-transform" />
-                Explore Archive
+                View Gallery
               </Button>
             </div>
           </div>
@@ -217,19 +224,19 @@ export function ServiceDetailView({
           <Card className="border-none shadow-none bg-[#668c65]/5 rounded-[2.5rem] p-6 md:p-10 border border-[#668c65]/10 flex flex-col justify-between flex-1">
             <div className="space-y-8">
               <div>
-                <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mb-3">Unit Valuation</p>
+                <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mb-3">Service Pricing</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl md:text-5xl font-serif italic text-slate-900 tracking-tighter">
                     {service.priceRangeMin.toLocaleString()}
                   </span>
-                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">RWF Origin</span>
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">RWF</span>
                 </div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-1">Threshold: {service.priceRangeMax.toLocaleString()} RWF</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-1">Up to: {service.priceRangeMax.toLocaleString()} RWF</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-6 bg-white rounded-3xl border border-slate-50 shadow-sm">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lifecycle</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Current Status</p>
                   <p className="text-[10px] font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-widest">
                     <span className={cn("w-2 h-2 rounded-full", service.status === 'active' ? 'bg-[#668c65]' : 'bg-slate-300')} />
                     {service.status}
@@ -244,11 +251,11 @@ export function ServiceDetailView({
               <div className="space-y-4 pt-4">
                 <Button className="w-full bg-[#668c65] hover:bg-[#5a7b59] text-white text-[10px] font-black uppercase tracking-[0.2em] h-14 rounded-2xl shadow-xl shadow-[#668c65]/20 transition-all active:scale-[0.98]">
                   <Award className="w-4 h-4 mr-3" />
-                  Seal Verification
+                  Verify Service
                 </Button>
                 <Button variant="ghost" className="w-full bg-white text-[#668c65] hover:bg-[#668c65]/5 text-[10px] font-black uppercase tracking-[0.2em] h-14 rounded-2xl border border-[#668c65]/10 shadow-sm">
                   <Calendar className="w-4 h-4 mr-3" />
-                  Chronicle Manifest
+                  View History
                 </Button>
               </div>
             </div>
@@ -257,7 +264,7 @@ export function ServiceDetailView({
           <Card className="border-none shadow-none bg-white rounded-[2rem] p-6 md:p-8 border border-slate-50 shadow-sm">
             <h4 className="text-[10px] font-black text-slate-900 mb-6 flex items-center uppercase tracking-widest group">
               <Mail className="w-4 h-4 mr-3 text-[#668c65] group-hover:rotate-12 transition-transform" />
-              Contact Coordinates
+              Contact Details
             </h4>
             <div className="space-y-6">
               {service.phone && (
@@ -266,7 +273,7 @@ export function ServiceDetailView({
                     <Phone className="w-4 h-4" />
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Vocal Line</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Phone Number</p>
                     <p className="text-sm font-serif italic text-slate-900 truncate">{service.phone}</p>
                   </div>
                 </div>
@@ -277,7 +284,7 @@ export function ServiceDetailView({
                     <Mail className="w-4 h-4" />
                   </div>
                   <div className="overflow-hidden">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Digital Dispatch</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Email Address</p>
                     <p className="text-sm font-serif italic text-slate-900 truncate">{service.email}</p>
                   </div>
                 </div>
@@ -292,10 +299,10 @@ export function ServiceDetailView({
         <div className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-8 overflow-x-auto scrollbar-hide">
           <TabsList className="bg-transparent h-auto p-0 flex rounded-none gap-6 sm:gap-12 min-w-max">
             {[
-              { id: "overview", label: "Manifest Overview" },
-              { id: "packages", label: `Allocation Matrix (${service.packages.length})` },
-              { id: "gallery", label: `Artifact Archive (${regularMedia.length})` },
-              { id: "promotional", label: `Incentive Tiers (${offers.length + events.length})` },
+              { id: "overview", label: "Overview" },
+              { id: "packages", label: `Packages (${service.packages.length})` },
+              { id: "gallery", label: `Gallery (${regularMedia.length})` },
+              { id: "promotional", label: `Promotions & Events (${offers.length + events.length})` },
             ].map((tab) => (
               <TabsTrigger
                 key={tab.id}
@@ -313,9 +320,9 @@ export function ServiceDetailView({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="md:col-span-2 space-y-12">
               <section className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+               <div className="flex items-center gap-2 mb-2">
                   <div className="h-[1px] w-6 bg-[#668c65]/40" />
-                  <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Service Manifesto</h3>
+                  <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Description</h3>
                 </div>
                 <p className="text-slate-600 leading-[1.6] text-xl font-light italic whitespace-pre-wrap">
                   "{service.description}"
@@ -326,7 +333,7 @@ export function ServiceDetailView({
                 <section className="space-y-6">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="h-[1px] w-6 bg-[#668c65]/40" />
-                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Artisanal Specialties</h3>
+                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Service Specialties</h3>
                   </div>
                   <div className="flex flex-wrap gap-4">
                     {service.specialties.map((specialty, index) => (
@@ -345,11 +352,11 @@ export function ServiceDetailView({
                 <div className="absolute -top-4 -right-4 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000">
                   <Package className="w-40 h-40" />
                 </div>
-                <h4 className="text-[10px] font-black text-[#668c65] mb-4 uppercase tracking-widest">Allocation Intelligence</h4>
-                <p className="text-slate-500 font-light italic text-sm mb-6 leading-relaxed">Discover our curated tiers evolved for artistic excellence.</p>
+                <h4 className="text-[10px] font-black text-[#668c65] mb-4 uppercase tracking-widest">About Packages</h4>
+                <p className="text-slate-500 font-light italic text-sm mb-6 leading-relaxed">Choose the perfect tier that fits your special day.</p>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-slate-900">Active Tiers</span>
+                    <span className="text-slate-900">Available Packages</span>
                     <span className="bg-white px-3 py-1 rounded-full text-[#668c65] border border-[#668c65]/10 shadow-sm">{service.packages.length}</span>
                   </div>
                   <div className="h-[1px] w-full bg-[#668c65]/10" />
@@ -365,12 +372,12 @@ export function ServiceDetailView({
               <Card className="border-none shadow-none bg-slate-900 text-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-900/10">
                 <h4 className="text-[10px] font-black mb-6 flex items-center uppercase tracking-[0.2em] text-slate-500">
                   <TrendingUp className="w-4 h-4 mr-3 text-[#668c65]" />
-                  Impact Metrics
+                  Performance Metrics
                 </h4>
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-1">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Valuation Grade</p>
-                    <p className="text-xl font-serif italic text-white leading-tight">Premium Essence</p>
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Price Tier</p>
+                    <p className="text-xl font-serif italic text-white leading-tight">Premium</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Audience Rating</p>
@@ -387,8 +394,8 @@ export function ServiceDetailView({
           {service.packages.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
               <Package className="w-16 h-16 mx-auto mb-6 text-slate-100" />
-              <h4 className="text-xl font-serif italic text-slate-900 mb-2">The allocation matrix is vacant</h4>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Construct your first tier to manifest value</p>
+              <h4 className="text-xl font-serif italic text-slate-900 mb-2">No packages added yet</h4>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Create your first package to show pricing options</p>
             </div>
           ) : (
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
@@ -400,7 +407,7 @@ export function ServiceDetailView({
                   {pkg.popular && (
                     <div className="absolute top-0 right-0">
                       <div className="bg-[#668c65] text-white text-[8px] font-black px-4 py-1.5 rounded-bl-[1.5rem] uppercase tracking-[0.2em]">
-                        Ascended Tier
+                        Popular Choice
                       </div>
                     </div>
                   )}
@@ -409,7 +416,7 @@ export function ServiceDetailView({
                       {pkg.name}
                     </CardTitle>
                     <CardDescription className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">
-                      Manifest: {pkg.description.slice(0, 60)}...
+                      {pkg.description.slice(0, 60)}...
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col p-10 pt-0 space-y-8">
@@ -421,7 +428,7 @@ export function ServiceDetailView({
                     <div className="h-[1px] w-full bg-slate-100" />
 
                     <div className="space-y-4 flex-1">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">Core Inclusions</p>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">What's Included</p>
                       <ul className="space-y-3">
                         {pkg.features.map((feature, index) => (
                           <li key={index} className="flex items-start gap-3 text-[10px] font-black text-slate-600 uppercase tracking-widest">
@@ -438,7 +445,7 @@ export function ServiceDetailView({
                       "w-full h-14 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95",
                       pkg.popular ? "bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-xl shadow-[#668c65]/20" : "bg-slate-50 hover:bg-slate-100 text-slate-900"
                     )}>
-                      {pkg.popular ? "Manifest Selection" : "Adopt Tier"}
+                      {pkg.popular ? "Select Plan" : "Choose Package"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -453,8 +460,8 @@ export function ServiceDetailView({
             regularMedia.length === 0 ? (
               <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
                 <ImageIcon className="w-16 h-16 mx-auto mb-6 text-slate-100" />
-                <h4 className="text-xl font-serif italic text-slate-900 mb-2">The artifact archive is quiet</h4>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Deposit your visual evidence to inspire</p>
+                <h4 className="text-xl font-serif italic text-slate-900 mb-2">No photos found</h4>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Add some images to showcase your work</p>
               </div>
             ) : (
               <div className="space-y-20">
@@ -463,7 +470,7 @@ export function ServiceDetailView({
                   <section>
                     <div className="flex items-center gap-3 mb-10">
                       <div className="h-[1px] w-6 bg-[#668c65]/40" />
-                      <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Still Artifacts</h3>
+                      <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Photos</h3>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                       {images.map((item) => (
@@ -505,7 +512,7 @@ export function ServiceDetailView({
                                 <PlayCircle className="w-16 h-16 text-white/40" />
                               </div>
                               <div className="absolute bottom-6 left-6 right-6">
-                                <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title || "Ritual Highlight"}</p>
+                                <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title || "Highlight"}</p>
                               </div>
                             </div>
                           ))}
@@ -517,7 +524,7 @@ export function ServiceDetailView({
                       <section className="space-y-10">
                         <div className="flex items-center gap-3">
                           <div className="h-[1px] w-6 bg-emerald-400/40" />
-                          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Full Narratives</h3>
+                          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Full Videos</h3>
                         </div>
                         <div className="space-y-6">
                           {videos.map((item) => (
@@ -527,7 +534,7 @@ export function ServiceDetailView({
                                 <PlayCircle className="w-20 h-20 text-white/40" />
                               </div>
                               <div className="absolute bottom-8 left-8 right-8">
-                                <h4 className="text-white font-serif italic text-2xl drop-shadow-xl">{item.title || "Ritual Archive"}</h4>
+                                <h4 className="text-white font-serif italic text-2xl drop-shadow-xl">{item.title || "Video Archive"}</h4>
                                 <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mt-2">{item.description}</p>
                               </div>
                             </div>
@@ -544,11 +551,34 @@ export function ServiceDetailView({
 
         {/* Promotional Tab */}
         < TabsContent value="promotional" className="space-y-12 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-700" >
+          {/* Add Promotion/Offer Button */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-[1px] w-6 bg-[#668c65]/40" />
+              <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Manage Promotions</h3>
+            </div>
+            <Button 
+              onClick={() => setShowPromotionModal(true)}
+              className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-lg shadow-[#668c65]/20 px-6 h-12 transition-all duration-300 group"
+            >
+              <Tag className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
+              <span className="font-bold tracking-tight uppercase text-[10px]">Add Promotion</span>
+            </Button>
+          </div>
+
           {(offers.length === 0 && events.length === 0) ? (
             <div className="text-center py-24 bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem]">
               <Tag className="w-16 h-16 mx-auto mb-6 text-slate-100" />
-              <h4 className="text-xl font-serif italic text-slate-900 mb-2">No active incentives manifested</h4>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Create exclusive rituals to beckon new patrons</p>
+              <h4 className="text-xl font-serif italic text-slate-900 mb-2">No active promotions found</h4>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-8">Create special offers to attract new clients</p>
+              <Button 
+                onClick={() => setShowPromotionModal(true)}
+                size="lg"
+                className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-xl shadow-[#668c65]/20 px-8 h-12"
+              >
+                <Tag className="h-5 w-5 mr-2" />
+                Create First Promotion
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -557,7 +587,7 @@ export function ServiceDetailView({
                 <section className="space-y-10">
                   <div className="flex items-center gap-3">
                     <div className="h-[1px] w-6 bg-amber-400/40" />
-                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Privileged Offers</h3>
+                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Special Offers</h3>
                   </div>
                   <div className="space-y-6">
                     {offers.map((item) => (
@@ -566,7 +596,7 @@ export function ServiceDetailView({
                           <div className="relative w-full sm:w-48 aspect-square sm:aspect-auto overflow-hidden">
                             <img src={item.url} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
                             <div className="absolute top-4 left-4">
-                              <Badge className="bg-amber-100 text-amber-700 border-none text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md">Tier I Advantage</Badge>
+                              <Badge className="bg-amber-100 text-amber-700 border-none text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md">Special Offer</Badge>
                             </div>
                           </div>
                           <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
@@ -575,7 +605,7 @@ export function ServiceDetailView({
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 leading-relaxed">{item.description}</p>
                             </div>
                             <Button variant="ghost" className="text-[#668c65] p-0 h-auto text-[10px] font-black uppercase tracking-[0.2em] self-start group/btn">
-                              Examine Details <ChevronRight className="w-3 h-3 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                              View Details <ChevronRight className="w-3 h-3 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                             </Button>
                           </div>
                         </div>
@@ -590,7 +620,7 @@ export function ServiceDetailView({
                 <section className="space-y-10">
                   <div className="flex items-center gap-3">
                     <div className="h-[1px] w-6 bg-indigo-400/40" />
-                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Upcoming Rituals</h3>
+                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Upcoming Events</h3>
                   </div>
                   <div className="space-y-6">
                     {events.map((item) => (
@@ -599,7 +629,7 @@ export function ServiceDetailView({
                           <div className="relative w-full sm:w-48 aspect-square sm:aspect-auto overflow-hidden">
                             <img src={item.url} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
                             <div className="absolute top-4 left-4">
-                              <Badge className="bg-indigo-100 text-indigo-700 border-none text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md">Chronicle</Badge>
+                              <Badge className="bg-indigo-100 text-indigo-700 border-none text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full backdrop-blur-md">Event</Badge>
                             </div>
                           </div>
                           <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
@@ -608,7 +638,7 @@ export function ServiceDetailView({
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 leading-relaxed">{item.description}</p>
                             </div>
                             <Button variant="ghost" className="text-[#668c65] p-0 h-auto text-[10px] font-black uppercase tracking-[0.2em] self-start group/btn">
-                              Event Schedule <ChevronRight className="w-3 h-3 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                              View Event <ChevronRight className="w-3 h-3 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                             </Button>
                           </div>
                         </div>
@@ -627,8 +657,8 @@ export function ServiceDetailView({
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="p-6 md:p-12 space-y-10">
                 <div>
-                  <h3 className="text-3xl font-serif italic text-slate-900 mb-4">Direct Resonance</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Establish a connection to manifest bespoke rituals and curated alignments.</p>
+                  <h3 className="text-3xl font-serif italic text-slate-900 mb-4">Contact Information</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">Get in touch to discuss your requirements and book your event.</p>
                 </div>
 
                 <div className="space-y-8">
@@ -638,7 +668,7 @@ export function ServiceDetailView({
                         <Phone className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Ritual Line</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Phone Number</p>
                         <p className="text-xl font-serif italic text-slate-900">{service.phone}</p>
                       </div>
                     </div>
@@ -650,7 +680,7 @@ export function ServiceDetailView({
                         <Mail className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Ethereal Mail</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Email Address</p>
                         <p className="text-xl font-serif italic text-slate-900">{service.email}</p>
                       </div>
                     </div>
@@ -660,11 +690,11 @@ export function ServiceDetailView({
                 <div className="flex gap-4 pt-4">
                   <Button className="flex-1 bg-[#668c65] hover:bg-[#5a7b59] h-16 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[#668c65]/20">
                     <Phone className="w-4 h-4 mr-3" />
-                    Commence Call
+                    Call Now
                   </Button>
                   <Button variant="ghost" className="flex-1 bg-white border border-slate-100 h-16 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-50">
                     <Mail className="w-4 h-4 mr-3" />
-                    Dispatch Message
+                    Send Message
                   </Button>
                 </div>
               </div>
@@ -678,14 +708,14 @@ export function ServiceDetailView({
                     <ShieldCheck className="w-10 h-10" />
                   </div>
                   <div>
-                    <h4 className="text-3xl font-serif italic mb-4">Consensus Validated</h4>
-                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-[1.8]">This provider has achieved a state of verified excellence, audited by the Ubukwe collective for artisanal resonance and structural integrity.</p>
+                    <h4 className="text-3xl font-serif italic mb-4">Verified Provider</h4>
+                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-[1.8]">This provider has been verified by Ubukwe for their quality and reliable service.</p>
                   </div>
                   <ul className="space-y-4">
                     {[
-                      "Essence Verification Complete",
-                      "Artisanal Portfolio Audited",
-                      "Operational Integrity Manifested"
+                      "Service Verified",
+                      "Portfolio Reviewed",
+                      "Reliability Confirmed"
                     ].map((check, i) => (
                       <li key={i} className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
                         <div className="w-5 h-5 rounded-full bg-[#668c65]/20 flex items-center justify-center text-[#668c65] border border-[#668c65]/20">
@@ -711,13 +741,13 @@ export function ServiceDetailView({
               {service.createdAt && (
                 <span className="flex items-center gap-2">
                   <Calendar className="w-3 h-3" />
-                  Origin: {new Date(service.createdAt).toLocaleDateString()}
+                  Created: {new Date(service.createdAt).toLocaleDateString()}
                 </span>
               )}
               {service.updatedAt && (
                 <span className="flex items-center gap-2">
                   <Clock className="w-3 h-3" />
-                  Synchronized: {new Date(service.updatedAt).toLocaleDateString()}
+                  Updated: {new Date(service.updatedAt).toLocaleDateString()}
                 </span>
               )}
             </div>
@@ -725,6 +755,19 @@ export function ServiceDetailView({
           </div>
         )
       }
+
+      {/* Add Promotion Modal */}
+      <AddPromotionModal
+        isOpen={showPromotionModal}
+        onClose={() => setShowPromotionModal(false)}
+        serviceId={service.id}
+        servicePackages={service.packages.map(pkg => ({
+          id: pkg.id,
+          name: pkg.name,
+          price: pkg.price
+        }))}
+        onSuccess={handlePromotionSuccess}
+      />
     </div>
   )
 }

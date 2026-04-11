@@ -131,24 +131,23 @@ export function ProviderOverview() {
   });
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-8">
-      {/* Editorial Header Section */}
       <div className="flex flex-col gap-1 mb-8">
-        <h1 className="text-4xl font-serif italic text-slate-900 tracking-tight">Business Intel</h1>
+        <h1 className="text-4xl font-serif italic text-slate-900 tracking-tight">My Dashboard</h1>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Real-time Performance Narrative</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">How you're doing right now</p>
         </div>
       </div>
 
       {/* Primary Stat Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          label="Cumulative Bookings"
+          label="Total Bookings"
           value={totalBookings}
           icon={Calendar}
           trend="+12%"
           color="#668c65"
-          subtitle={`${stats?.pending || 0} pending review`}
+          subtitle={`${stats?.pending || 0} waiting for review`}
         />
         <StatCard
           label="Monthly Revenue"
@@ -159,18 +158,18 @@ export function ProviderOverview() {
           subtitle={`From ${stats?.completed || 0} completions`}
         />
         <StatCard
-          label="Artisan Merit"
+          label="My Rating"
           value={averageRating}
           icon={Star}
           color="#f59e0b"
-          subtitle="Customer satisfaction index"
+          subtitle="Customer satisfaction"
         />
         <StatCard
-          label="Active Domain"
+          label="My Services"
           value={serviceCount}
           icon={Briefcase}
           color="#0ea5e9"
-          subtitle="Services currently live"
+          subtitle="Listings currently live"
         />
       </div>
 
@@ -180,8 +179,8 @@ export function ProviderOverview() {
           <CardHeader className="p-8 pb-0">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-serif italic text-slate-900">Revenue Trajectory</CardTitle>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Provider growth & booking performance</p>
+                <CardTitle className="text-xl font-serif italic text-slate-900">My Earnings</CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Your recent growth and stats</p>
               </div>
               <Badge variant="outline" className="text-[10px] rounded-full px-4 border-[#668c65]/20 text-[#668c65] font-black tracking-widest uppercase">Last 7 Days</Badge>
             </div>
@@ -239,15 +238,15 @@ export function ProviderOverview() {
             <div>
               <h4 className="text-2xl font-serif italic mb-2 flex items-center">
                 <Activity className="w-5 h-5 mr-3 text-[#608d64]" />
-                Artisan Velocity
+                My Growth
               </h4>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Growth Analytics Summary</p>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">How quickly you're growing</p>
             </div>
 
             <div className="space-y-8">
               <div className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Booking Conversion</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Success Rate</span>
                   <span className="font-black text-[#608d64]">68%</span>
                 </div>
                 <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
@@ -257,7 +256,7 @@ export function ProviderOverview() {
 
               <div className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Profile Resonance</span>
+                  <span className="text-slate-400 font-bold uppercase tracking-widest text-[8px]">Profile Visits</span>
                   <span className="font-black text-blue-400">+1,420</span>
                 </div>
                 <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
@@ -270,7 +269,7 @@ export function ProviderOverview() {
               <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
                 <div className="flex items-center gap-3 mb-3">
                   <CheckCircle2 className="w-4 h-4 text-[#668c65]" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Sage Wisdom</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Helpful Tip</p>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed font-light italic">"Update your portfolio with 3 new cultural reels to increase engagement by 25%."</p>
               </div>
@@ -285,11 +284,11 @@ export function ProviderOverview() {
           <CardHeader className="p-8 border-b border-slate-50">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl font-serif italic text-slate-900">Artisan Narrative</CardTitle>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">The Recent Evolution of Your Services</p>
+                <CardTitle className="text-2xl font-serif italic text-slate-900">Recent Activity</CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Latest updates on your bookings</p>
               </div>
               <button className="text-[10px] font-black text-[#668c65] uppercase tracking-widest hover:translate-x-1 transition-transform">
-                View Entire Ledger &rarr;
+                View All &rarr;
               </button>
             </div>
           </CardHeader>
@@ -316,7 +315,7 @@ export function ProviderOverview() {
                     <div className="flex items-center gap-8">
                       <div className="text-right hidden sm:block">
                         <p className="text-sm font-black text-slate-900">{booking.total_amount.toLocaleString()} RWF</p>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Honorarium</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">Earnings</p>
                       </div>
                       <Badge className={cn(
                         "rounded-full px-4 text-[10px] font-black uppercase tracking-widest border-none shadow-none",
@@ -332,7 +331,7 @@ export function ProviderOverview() {
                 ))
               ) : (
                 <div className="p-16 text-center">
-                  <p className="text-sm text-slate-300 font-serif italic">Awaiting the next movement in your artisanal journey...</p>
+                  <p className="text-sm text-slate-300 font-serif italic">Waiting for your first bookings to show up here!</p>
                 </div>
               )}
             </div>

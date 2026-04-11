@@ -181,10 +181,10 @@ export function ProviderBookings() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Booking Management</h2>
+        <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">Orders & Bookings</h2>
         <div className="flex items-center gap-2">
           <div className="h-[1px] w-8 bg-[#668c65]/60" />
-          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Client Engagement Ledger</p>
+          <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.4em]">Review and manage your customer orders</p>
         </div>
       </div>
 
@@ -201,7 +201,7 @@ export function ProviderBookings() {
             onClick={() => setViewMode("list")}
           >
             <List className="h-3.5 w-3.5 mr-2" />
-            Ledger View
+            List View
           </Button>
           <Button
             variant={viewMode === "calendar" ? "default" : "ghost"}
@@ -213,7 +213,7 @@ export function ProviderBookings() {
             onClick={() => setViewMode("calendar")}
           >
             <CalendarIcon className="h-3.5 w-3.5 mr-2" />
-            Chronicle
+            Calendar View
           </Button>
         </div>
       </div>
@@ -222,10 +222,10 @@ export function ProviderBookings() {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: "Awaiting Action", value: stats.pending.toString(), icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
-            { label: "Active Cycles", value: stats.in_progress.toString(), icon: Activity, color: "text-blue-500", bg: "bg-blue-50" },
-            { label: "Confirmed Ties", value: stats.confirmed.toString(), icon: CheckCircle2, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
-            { label: "Realized Value", value: stats.completed.toString(), icon: DollarSign, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
+            { label: "Pending Requests", value: stats.pending.toString(), icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
+            { label: "In Progress", value: stats.in_progress.toString(), icon: Activity, color: "text-blue-500", bg: "bg-blue-50" },
+            { label: "Confirmed", value: stats.confirmed.toString(), icon: CheckCircle2, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
+            { label: "Completed", value: stats.completed.toString(), icon: DollarSign, color: "text-[#668c65]", bg: "bg-[#668c65]/5" },
           ].map((stat, i) => (
             <Card key={i} className="border-slate-100 shadow-none rounded-[2rem] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
               <CardContent className="p-8">
@@ -290,7 +290,7 @@ export function ProviderBookings() {
               <h3 className="text-xl font-serif italic text-slate-900">
                 {selectedDate
                   ? `Bookings for ${selectedDate.toLocaleDateString()}`
-                  : "Upcoming Engagements"}
+                  : "Upcoming Bookings"}
               </h3>
               {selectedDate && (
                 <Button variant="ghost" size="sm" onClick={() => setSelectedDate(undefined)}>
@@ -325,8 +325,8 @@ export function ProviderBookings() {
           <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
             <CardContent className="p-20 text-center">
               <Package className="h-16 w-16 text-slate-100 mx-auto mb-6" />
-              <h3 className="text-2xl font-serif italic text-slate-900 mb-2">Workspace Vacant</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting the next artisanal movement</p>
+              <h3 className="text-2xl font-serif italic text-slate-900 mb-2">No bookings yet</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Waiting for your first order</p>
             </CardContent>
           </Card>
         ) : (
@@ -405,13 +405,13 @@ function BookingCard({
               </div>
               <div className="text-right">
                 <p className="text-2xl font-serif italic text-slate-900">{booking.total_amount.toLocaleString()} <span className="text-[10px] font-black uppercase not-italic text-slate-400 ml-1">RWF</span></p>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Contractual Honorarium</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Total Amount</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Engaged Date</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Booking Date</p>
                 <div className="flex items-center gap-4">
                   {/* Visual Calendar Block */}
                   <div className="flex flex-col w-12 h-14 rounded-xl overflow-hidden border border-slate-100 bg-white shadow-sm flex-shrink-0">
@@ -428,13 +428,13 @@ function BookingCard({
                   </div>
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-700">{new Date(booking.booking_date + 'T00:00:00').getFullYear()}</span>
-                    <span className="text-[9px] font-black text-[#668c65] uppercase tracking-widest leading-none">Wedding Ritual</span>
+                    <span className="text-[9px] font-black text-[#668c65] uppercase tracking-widest leading-none">Event Date</span>
                   </div>
                 </div>
               </div>
               {booking.preferred_time && (
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Temporal Window</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Time</p>
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <Clock className="h-3.5 w-3.5 text-[#668c65]" />
                     <span>{booking.preferred_time}</span>
@@ -443,7 +443,7 @@ function BookingCard({
               )}
               {booking.event_location && (
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Designated Venue</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Location</p>
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <CheckCircle className="h-3.5 w-3.5 text-[#668c65]" />
                     <span className="truncate">{booking.event_location}</span>
@@ -452,10 +452,10 @@ function BookingCard({
               )}
               {booking.guest_count && (
                 <div className="space-y-1">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Attendee Scale</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Guest Count</p>
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                     <Users className="h-3.5 w-3.5 text-[#668c65]" />
-                    <span>{booking.guest_count} Souls</span>
+                    <span>{booking.guest_count} Guest(s)</span>
                   </div>
                 </div>
               )}
@@ -469,13 +469,13 @@ function BookingCard({
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/note:rotate-12 transition-transform">
                       <MessageCircle className="w-12 h-12 text-[#668c65]" />
                     </div>
-                    <p className="text-[8px] font-black text-[#668c65] uppercase tracking-widest mb-2">Artisan Specifications</p>
+                    <p className="text-[8px] font-black text-[#668c65] uppercase tracking-widest mb-2">Customer Request</p>
                     <p className="text-xs text-slate-600 leading-relaxed font-light italic">"{booking.special_requests}"</p>
                   </div>
                 ) : (
                   <div className="flex items-center gap-4 text-slate-400">
                     <div className="h-[1px] w-8 bg-slate-100" />
-                    <p className="text-[8px] font-black uppercase tracking-widest">No Special Requests Lodged</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest">No Special Requests</p>
                   </div>
                 )}
               </div>
@@ -490,7 +490,7 @@ function BookingCard({
                       onClick={() => handleReject(booking.id)}
                       disabled={actionLoading === booking.id}
                     >
-                      Refuse
+                      Decline
                     </Button>
                     <Button
                       size="sm"
@@ -499,20 +499,20 @@ function BookingCard({
                       disabled={actionLoading === booking.id}
                     >
                       <CheckCircle className="h-3.5 w-3.5 mr-2" />
-                      Approve Request
+                      Accept Request
                     </Button>
                   </>
                 )}
                 {(booking.status === "in_progress" || booking.status === "confirmed") && (
                   <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
                     <MessageCircle className="h-3.5 w-3.5 mr-2" />
-                    Initiate Contact
+                    Contact Customer
                   </Button>
                 )}
                 {booking.status === "completed" && (
                   <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
                     <Eye className="h-3.5 w-3.5 mr-2" />
-                    Inspect Details
+                    See Details
                   </Button>
                 )}
               </div>

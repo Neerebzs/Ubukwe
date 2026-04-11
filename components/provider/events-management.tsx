@@ -192,7 +192,7 @@ export function EventsManagement() {
             My Events
           </h1>
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mt-2">
-            Manage & Track Your Events
+            See what&apos;s happening with your events
           </p>
         </div>
         <Button
@@ -251,9 +251,9 @@ export function EventsManagement() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
               { label: "Total Events", value: stats.totalEvents, icon: Calendar, sub: "All Events" },
-              { label: "Published", value: stats.publishedEvents, icon: TrendingUp, sub: "Live Events" },
-              { label: "Tickets Sold", value: stats.totalTicketsSold, icon: Users, sub: "Total Attendees" },
-              { label: "Total Revenue", value: `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`, icon: DollarSign, sub: "Earnings" }
+              { label: "Live", value: stats.publishedEvents, icon: TrendingUp, sub: "Live Events" },
+              { label: "Sold", value: stats.totalTicketsSold, icon: Users, sub: "Total Attendees" },
+              { label: "Income", value: `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`, icon: DollarSign, sub: "Total Earnings" }
             ].map((stat, i) => (
               <StatCard
                 key={i}
@@ -279,13 +279,13 @@ export function EventsManagement() {
             </div>
             <Select value={statusFilter || "all"} onValueChange={(val) => setStatusFilter(val === "all" ? "" : val)}>
               <SelectTrigger className="w-56 h-14 rounded-2xl border-slate-100 bg-white shadow-sm text-[10px] font-black uppercase tracking-widest focus:ring-0 focus:border-[#668c65]/30">
-                <SelectValue placeholder="Filter by Status" />
+              <SelectValue placeholder="Show Status" />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-2">
                 {[
                   { value: "all", label: "All Events" },
                   { value: "draft", label: "Draft" },
-                  { value: "published", label: "Published" },
+                  { value: "published", label: "Live" },
                   { value: "ongoing", label: "Ongoing" },
                   { value: "completed", label: "Completed" },
                   { value: "cancelled", label: "Cancelled" }
@@ -354,10 +354,10 @@ export function EventsManagement() {
                     {/* Event Details Grid */}
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { label: "Event Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) },
-                        { label: "Capacity", value: event.capacity },
-                        { label: "Tickets Sold", value: event.tickets_sold },
-                        { label: "Revenue", value: `${(event.total_revenue / 1000).toFixed(0)}k`, color: "text-[#668c65]" }
+                        { label: "Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'medium' }) },
+                        { label: "Space", value: event.capacity },
+                        { label: "Sold", value: event.tickets_sold },
+                        { label: "Income", value: `${(event.total_revenue / 1000).toFixed(0)}k`, color: "text-[#668c65]" }
                       ].map((detail, idx) => (
                         <div key={idx}>
                           <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">{detail.label}</p>
@@ -396,7 +396,7 @@ export function EventsManagement() {
                             handleViewDetails(event);
                           }}
                         >
-                          View Details
+                          See Details
                         </Button>
 
                         <Button
@@ -427,7 +427,7 @@ export function EventsManagement() {
                             {publishEventMutation.isPending ? (
                               <Loader className="h-4 w-4 animate-spin text-white" />
                             ) : (
-                              "Publish Event"
+                              "Make Event Live"
                             )}
                           </Button>
                         )}
