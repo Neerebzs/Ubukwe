@@ -29,23 +29,32 @@ export interface PublicTicketType {
 }
 
 export interface PurchaseTicketRequest {
-  holder_name: string;
   holder_email: string;
+  holder_name?: string;
   holder_phone?: string;
-  quantity: number;
 }
 
 export interface TicketPurchaseResponse {
-  id: string;
+  purchase_id: string;
+  customer_id: string;
   event_id: string;
-  ticket_type_id: string;
-  holder_name: string;
-  holder_email: string;
-  holder_phone?: string;
-  ticket_number: string;
+  event_title: string;
+  event_date: string;
+  event_location: string;
+  ticket_type: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  payment_reference?: string;
+  tickets: Array<{
+    ticket_id: string;
+    ticket_number: string;
+    holder_name: string;
+    holder_email: string;
+    status: string;
+  }>;
+  purchase_date: string;
   status: string;
-  is_checked_in: boolean;
-  created_at: string;
 }
 
 // Helper function to get auth token
@@ -106,16 +115,22 @@ export const customerEventAPI = {
     return apiCall(`/api/v1/public/events${query}`, "GET");
   },
 
-  // Purchase ticket
+  // Purchase ticket (public endpoint - no auth required)
   purchaseTicket: async (
     eventId: string,
     ticketTypeId: string,
-    ticketData: PurchaseTicketRequest
+    tickets: PurchaseTicketRequest[],
+    paymentReference?: string
   ): Promise<TicketPurchaseResponse> => {
     return apiCall(
-      `/api/v1/provider/events/${eventId}/tickets?ticket_type_id=${ticketTypeId}`,
+      `/api/v1/tickets/purchase`,
       "POST",
-      ticketData
+      {
+        event_id: eventId,
+        ticket_type_id: ticketTypeId,
+        tickets: tickets,
+        payment_reference: paymentReference,
+      }
     );
   },
 

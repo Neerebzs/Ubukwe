@@ -30,14 +30,17 @@ export const usePurchaseTicket = () => {
     mutationFn: ({
       eventId,
       ticketTypeId,
-      ticketData,
+      tickets,
+      paymentReference,
     }: {
       eventId: string;
       ticketTypeId: string;
-      ticketData: any;
-    }) => customerEventAPI.purchaseTicket(eventId, ticketTypeId, ticketData),
-    onSuccess: () => {
+      tickets: any[];
+      paymentReference?: string;
+    }) => customerEventAPI.purchaseTicket(eventId, ticketTypeId, tickets, paymentReference),
+    onSuccess: (_, { eventId }) => {
       queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
+      queryClient.invalidateQueries({ queryKey: ["public-event", eventId] });
       queryClient.invalidateQueries({ queryKey: ["public-events"] });
     },
   });

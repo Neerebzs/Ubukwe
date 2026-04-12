@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { StatCard } from "@/components/admin/stat-card";
 import { Event } from "@/lib/api/events";
 import { CreateEventModal } from "./create-event-modal";
+import { EventDetailsModal } from "./event-details-modal";
 
 export function EventsManagement() {
   const router = useRouter();
@@ -128,56 +129,14 @@ export function EventsManagement() {
           <ChevronLeft className="h-4 w-4" />
           Back to Events List
         </Button>
-        <Card className="border-none shadow-lg rounded-2xl overflow-hidden">
-          <CardHeader className="bg-slate-50 border-b">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-3xl">{selectedEvent.title}</CardTitle>
-                <CardDescription className="flex items-center gap-2 mt-2">
-                  <MapPin className="h-4 w-4" />
-                  {selectedEvent.location}
-                </CardDescription>
-              </div>
-              <Badge className={cn(
-                "px-4 py-2 rounded-full text-sm font-semibold",
-                selectedEvent.status === "published" ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-800"
-              )}>
-                {selectedEvent.status}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-2">Description</h3>
-              <p className="text-slate-600">{selectedEvent.description || "No description provided"}</p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Date</p>
-                <p className="font-semibold">{new Date(selectedEvent.event_date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Capacity</p>
-                <p className="font-semibold">{selectedEvent.capacity}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Sold</p>
-                <p className="font-semibold">{selectedEvent.tickets_sold}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Revenue</p>
-                <p className="font-semibold">{(selectedEvent.total_revenue / 1000).toFixed(0)}k RWF</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={handleBackToList}>
-                Close
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <EventDetailsModal
+          event={selectedEvent}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) handleBackToList();
+          }}
+          standalone={true}
+        />
       </div>
     );
   }
@@ -253,7 +212,14 @@ export function EventsManagement() {
               { label: "Total Events", value: stats.totalEvents, icon: Calendar, sub: "All Events" },
               { label: "Live", value: stats.publishedEvents, icon: TrendingUp, sub: "Live Events" },
               { label: "Sold", value: stats.totalTicketsSold, icon: Users, sub: "Total Attendees" },
-              { label: "Income", value: `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`, icon: DollarSign, sub: "Total Earnings" }
+              { 
+                label: "Income", 
+                value: stats.totalRevenue >= 1000000 
+                  ? `${(stats.totalRevenue / 1000000).toFixed(1)}M RWF`
+                  : `${stats.totalRevenue.toLocaleString()} RWF`, 
+                icon: DollarSign, 
+                sub: "Total Earnings" 
+              }
             ].map((stat, i) => (
               <StatCard
                 key={i}

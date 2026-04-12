@@ -14,8 +14,10 @@ interface PaymentUIProps {
   amount: number;
   eventTitle: string;
   ticketCount: number;
+  ticketBreakdown?: Array<{ name: string; quantity: number; price: number }>;
   onPaymentSubmit: (paymentData: {
     method: "card" | "mobile_money";
+    reference: string;
     cardNumber?: string;
     cardHolder?: string;
     expiryDate?: string;
@@ -30,6 +32,7 @@ export function PaymentUI({
   amount,
   eventTitle,
   ticketCount,
+  ticketBreakdown,
   onPaymentSubmit,
   isLoading = false,
   error,
@@ -115,10 +118,14 @@ export function PaymentUI({
       return;
     }
 
+    // Generate payment reference
+    const paymentReference = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
     if (paymentMethod === "card") {
       if (!validateCardForm()) return;
       onPaymentSubmit({
         method: "card",
+        reference: paymentReference,
         cardNumber: cardNumber.replace(/\s/g, ""),
         cardHolder,
         expiryDate,
@@ -128,6 +135,7 @@ export function PaymentUI({
       if (!validateMobileMoneyForm()) return;
       onPaymentSubmit({
         method: "mobile_money",
+        reference: paymentReference,
         phoneNumber,
       });
     }
@@ -150,6 +158,18 @@ export function PaymentUI({
               <span className="text-slate-600">{eventTitle}</span>
               <span className="font-medium">{ticketCount} ticket(s)</span>
             </div>
+            
+            {ticketBreakdown && ticketBreakdown.length > 0 && (
+              <div className="space-y-2 py-3 border-t border-slate-200">
+                {ticketBreakdown.map((item, index) => (
+                  <div key={index} className="flex justify-between text-xs text-slate-600">
+                    <span>{item.name} × {item.quantity}</span>
+                    <span>{(item.price * item.quantity).toLocaleString()} RWF</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="pt-3 border-t border-slate-200 flex justify-between">
               <span className="font-semibold text-slate-900">Total Amount</span>
               <span className="text-2xl font-bold text-primary">

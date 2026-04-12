@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { TranslatedText } from "@/components/translated-text";
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle, Mail, Ticket } from "lucide-react";
 import { usePublicEvent, usePurchaseTicket } from "@/hooks/useCustomerEvents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PaymentUI } from "@/components/customer/payment-ui";
@@ -15,7 +17,7 @@ import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { toast } from "sonner";
 
-type Step = "selection" | "payment" | "success";
+type Step = "selection" | "information" | "payment" | "success";
 
 export default function EventTicketingPage() {
   const params = useParams();
@@ -28,6 +30,10 @@ export default function EventTicketingPage() {
   const [currentStep, setCurrentStep] = useState<Step>("selection");
   const [tickets, setTickets] = useState<Record<string, number>>({});
   const [purchaseData, setPurchaseData] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState({
+    holderEmail: "",
+  });
+  const [userInfoErrors, setUserInfoErrors] = useState<Record<string, string>>({});
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -121,7 +127,7 @@ export default function EventTicketingPage() {
     }
   };
 
-  const handleContinueToPayment = () => {
+  const handleContinueToInformation = () => {
     const selectedTickets = Object.keys(tickets)
       .filter(id => tickets[id] > 0)
       .map(id => {
@@ -141,52 +147,100 @@ export default function EventTicketingPage() {
     setPurchaseData({
       selectedTickets,
       totalAmount,
-      // Placeholders
-      holderName: "Attendee",
-      holderEmail: "guest@example.com",
-      holderPhone: "0000000000"
     });
+    setCurrentStep("information");
+  };
+
+  const validateUserInfo = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!userInfo.holderEmail.trim()) {
+      errors.holderEmail = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInfo.holderEmail)) {
+      errors.holderEmail = "Invalid email format";
+    }
+    
+    setUserInfoErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleContinueToPayment = () => {
+    if (!validateUserInfo()) return;
+    
+    setPurchaseData((prev: any) => ({
+      ...prev,
+      holderEmail: userInfo.holderEmail,
+      holderName: "Guest", // Default name
+      holderPhone: "", // Optional
+    }));
     setCurrentStep("payment");
   };
 
   const handlePaymentSubmit = async (paymentData: any) => {
     if (!purchaseData) return;
 
+    console.log("=== TICKET PURCHASE DEBUG ===");
+    console.log("Payment Data:", paymentData);
+    console.log("Purchase Data:", purchaseData);
+    console.log("Event ID:", eventId);
+
     try {
       const results = [];
+      
+      // Process each ticket type separately (backend accepts one ticket type per request)
       for (const item of purchaseData.selectedTickets) {
-        // Issue each ticket individually to get unique numbers/QR codes
-        for (let i = 0; i < item.quantity; i++) {
-          const response = await purchaseTicketMutation.mutateAsync({
-            eventId,
-            ticketTypeId: item.ticketTypeId,
-            ticketData: {
-              holder_name: purchaseData.holderName,
-              holder_email: purchaseData.holderEmail,
-              holder_phone: purchaseData.holderPhone,
-              quantity: 1, // Single ticket per call
-            },
-          });
+        console.log(`Processing ticket type: ${item.name} (${item.ticketTypeId})`);
+        console.log(`Quantity: ${item.quantity}, Price: ${item.price}`);
+        
+        // Create array of ticket holders (all with same email for now)
+        const ticketHolders = Array(item.quantity).fill(null).map(() => ({
+          holder_email: purchaseData.holderEmail,
+          holder_name: purchaseData.holderName || "Guest",
+          holder_phone: purchaseData.holderPhone || "",
+        }));
 
-          // Generate QR code and barcode for each unique ticket
-          const qrCodeUrl = await generateQRCode(response.ticket_number);
-          const barcodeUrl = await generateBarcode(response.ticket_number);
+        const payload = {
+          eventId,
+          ticketTypeId: item.ticketTypeId,
+          tickets: ticketHolders,
+          paymentReference: paymentData.reference,
+        };
+        
+        console.log("API Payload:", JSON.stringify(payload, null, 2));
+
+        // Purchase all tickets of this type in one call
+        const response = await purchaseTicketMutation.mutateAsync(payload);
+        
+        console.log("API Response:", response);
+
+        // Generate QR codes and barcodes for each ticket
+        for (const ticket of response.tickets) {
+          const qrCodeUrl = await generateQRCode(ticket.ticket_number);
+          const barcodeUrl = await generateBarcode(ticket.ticket_number);
 
           results.push({
-            ...response,
+            id: ticket.ticket_id,
+            ticket_number: ticket.ticket_number,
+            holder_name: ticket.holder_name,
+            holder_email: ticket.holder_email,
             qrCode: qrCodeUrl,
             barcode: barcodeUrl,
-            totalPrice: item.price, // Price for one ticket
+            totalPrice: item.price,
             ticketTypeName: item.name,
           });
         }
       }
 
+      console.log("All tickets purchased successfully:", results.length);
       setPurchasedTickets(results);
       setCurrentStep("success");
-      toast.success(`Successfully issued ${results.length} tickets!`);
+      toast.success(`Successfully purchased ${results.length} ticket${results.length > 1 ? 's' : ''}!`);
     } catch (error: any) {
-      toast.error(error.message || "Failed to process all ticket requests");
+      console.error("=== PURCHASE ERROR ===");
+      console.error("Error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error details:", error.response?.data || error);
+      toast.error(error.message || "Failed to purchase tickets");
     }
   };
 
@@ -383,7 +437,7 @@ export default function EventTicketingPage() {
 
                   <div className="pt-12">
                     <Button
-                      onClick={handleContinueToPayment}
+                      onClick={handleContinueToInformation}
                       className={`w-full h-20 rounded-full text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl ${
                         totalTickets > 0
                           ? "bg-[#608d64] text-white shadow-[#608d64]/20 hover:bg-slate-900 hover:shadow-black/20"
@@ -391,7 +445,7 @@ export default function EventTicketingPage() {
                       }`}
                       disabled={totalTickets === 0}
                     >
-                      <TranslatedText text="Continue to Payment" />
+                      <TranslatedText text="Continue" />
                       <ArrowRight className="ml-4 h-6 w-6" />
                     </Button>
                     <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8">
@@ -402,6 +456,101 @@ export default function EventTicketingPage() {
               </>
             )}
 
+            {currentStep === "information" && purchaseData && (
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom duration-700">
+                <div className="flex items-center gap-3 pb-8 border-b border-slate-100">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCurrentStep("selection")}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <h2 className="font-serif italic text-4xl text-slate-900">Your Email</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                      We'll send your tickets to this email address
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-8 p-12 bg-[#fdfcf9] rounded-[40px] border border-slate-100">
+                  {/* Order Summary */}
+                  <div className="space-y-4 pb-6 border-b border-slate-200">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Order Summary</h3>
+                    <div className="space-y-3">
+                      {purchaseData.selectedTickets.map((item: any) => (
+                        <div key={item.ticketTypeId} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#608d64]/10 flex items-center justify-center">
+                              <Ticket className="h-5 w-5 text-[#608d64]" />
+                            </div>
+                            <div>
+                              <p className="font-serif italic text-lg text-slate-900">{item.name}</p>
+                              <p className="text-xs text-slate-500">Quantity: {item.quantity}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-serif italic text-lg text-slate-900">
+                              {(item.price * item.quantity).toLocaleString()} RWF
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {item.price.toLocaleString()} × {item.quantity}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                        <Input
+                          type="email"
+                          value={userInfo.holderEmail}
+                          onChange={(e) => {
+                            setUserInfo({ holderEmail: e.target.value });
+                            setUserInfoErrors({});
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleContinueToPayment();
+                          }}
+                          placeholder="your.email@example.com"
+                          className="h-16 pl-16 pr-6 rounded-2xl border-slate-200 bg-white focus:ring-0 focus:border-[#608d64]/30 transition-all font-serif italic text-lg"
+                        />
+                      </div>
+                      {userInfoErrors.holderEmail && (
+                        <p className="text-xs text-red-500 ml-1">{userInfoErrors.holderEmail}</p>
+                      )}
+                      <p className="text-xs text-slate-400 ml-1">
+                        Your tickets and confirmation will be sent to this email
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 border-t border-slate-200">
+                    <div className="flex items-center justify-between mb-6">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</span>
+                      <span className="font-serif italic text-3xl text-[#608d64]">
+                        {purchaseData.totalAmount.toLocaleString()} <span className="text-sm">RWF</span>
+                      </span>
+                    </div>
+                    <Button
+                      onClick={handleContinueToPayment}
+                      className="w-full h-20 rounded-full bg-[#608d64] text-white hover:bg-slate-900 text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl shadow-[#608d64]/20"
+                    >
+                      <TranslatedText text="Continue to Payment" />
+                      <ArrowRight className="ml-4 h-6 w-6" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
 
             {currentStep === "payment" && purchaseData && (
               <div className="space-y-6">
@@ -409,7 +558,7 @@ export default function EventTicketingPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setCurrentStep("selection")}
+                    onClick={() => setCurrentStep("information")}
                     className="h-10 w-10"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -420,6 +569,7 @@ export default function EventTicketingPage() {
                   amount={purchaseData.totalAmount}
                   eventTitle={event.title}
                   ticketCount={totalTickets}
+                  ticketBreakdown={purchaseData.selectedTickets}
                   onPaymentSubmit={handlePaymentSubmit}
                   isLoading={purchaseTicketMutation.isPending}
                   error={purchaseTicketMutation.error ? (purchaseTicketMutation.error as any).message : undefined}
@@ -429,19 +579,49 @@ export default function EventTicketingPage() {
 
             {currentStep === "success" && purchasedTickets.length > 0 && (
               <div className="space-y-12">
-                <div className="text-center space-y-4">
-                  <h2 className="font-serif italic text-5xl text-slate-900">Your Registry Manifests</h2>
-                  <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-[0.4em]">
-                    {purchasedTickets.length} Gateways Authorized
-                  </p>
+                <div className="text-center space-y-6">
+                  <div className="w-20 h-20 rounded-full bg-[#608d64]/10 flex items-center justify-center mx-auto">
+                    <Ticket className="h-10 w-10 text-[#608d64]" />
+                  </div>
+                  <div className="space-y-4">
+                    <h2 className="font-serif italic text-5xl text-slate-900">Purchase Complete!</h2>
+                    <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-[0.4em]">
+                      {purchasedTickets.length} Ticket{purchasedTickets.length > 1 ? 's' : ''} Confirmed
+                    </p>
+                    <div className="max-w-md mx-auto space-y-3">
+                      <p className="text-slate-600 text-sm">
+                        Your tickets have been sent to <span className="font-semibold text-slate-900">{purchaseData.holderEmail}</span>
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        You can retrieve your tickets anytime by entering your email on the My Tickets page
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button
+                    onClick={() => router.push("/my-tickets")}
+                    className="h-14 px-8 bg-[#608d64] text-white hover:bg-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-[#608d64]/20"
+                  >
+                    <Ticket className="mr-2 h-4 w-4" />
+                    View My Tickets
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/events")}
+                    className="h-14 px-8 rounded-full border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50"
+                  >
+                    Browse More Events
+                  </Button>
                 </div>
                 
-                <div className="space-y-16">
+                <div className="space-y-16 pt-8">
                   {purchasedTickets.map((ticket, index) => (
                     <div key={ticket.id} className="animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: `${index * 200}ms` }}>
                       <div className="flex items-center gap-4 mb-6">
                         <div className="h-px flex-1 bg-slate-100" />
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Manifest {index + 1}</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ticket {index + 1}</span>
                         <div className="h-px flex-1 bg-slate-100" />
                       </div>
                       <TicketDownload

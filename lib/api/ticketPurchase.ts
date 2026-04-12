@@ -180,8 +180,13 @@ export const ticketPurchaseAPI = {
   },
 
   // Get customer's tickets
-  getMyTickets: async (): Promise<CustomerTicket[]> => {
-    return apiCall("/api/v1/tickets/my-tickets", "GET");
+  getMyTickets: async (email?: string): Promise<CustomerTicket[]> => {
+    const url = email 
+      ? `/api/v1/tickets/my-tickets?email=${encodeURIComponent(email)}` 
+      : "/api/v1/tickets/my-tickets";
+    // For email-based generic access without token, we can just use normal fetch avoiding strict Authorization if no token. 
+    // apiCall does this automatically.
+    return apiCall(url, "GET");
   },
 
   // Validate ticket for check-in

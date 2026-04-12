@@ -57,6 +57,7 @@ interface EditFormData {
   description: string;
   location: string;
   capacity: string;
+  event_date: string;
 }
 
 interface EditErrors {
@@ -64,6 +65,7 @@ interface EditErrors {
   description?: string;
   location?: string;
   capacity?: string;
+  event_date?: string;
 }
 
 export function EventDetailsModal({ event, open, onOpenChange, standalone }: EventDetailsModalProps) {
@@ -74,29 +76,13 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
     description: event.description || "",
     location: event.location,
     capacity: event.capacity.toString(),
+    event_date: event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : "",
   });
   const [editErrors, setEditErrors] = useState<EditErrors>({});
 
   const updateEventMutation = useUpdateEvent();
   const { data: analytics, isLoading: analyticsLoading } = useEventAnalytics(event.id);
   const { data: tickets = [], isLoading: ticketsLoading } = useTickets(event.id);
-
-  // Mock data for charts
-  const ticketSalesData = [
-    { day: "Mon", sales: 45 },
-    { day: "Tue", sales: 52 },
-    { day: "Wed", sales: 48 },
-    { day: "Thu", sales: 61 },
-    { day: "Fri", sales: 55 },
-    { day: "Sat", sales: 67 },
-    { day: "Sun", sales: 72 },
-  ];
-
-  const revenueData = [
-    { type: "Standard", revenue: 1000000 },
-    { type: "VIP", revenue: 800000 },
-    { type: "Premium", revenue: 600000 },
-  ];
 
   const occupancyPercentage = analytics
     ? analytics.occupancy_percentage
@@ -110,6 +96,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
     if (!editFormData.location.trim()) errors.location = "Location is required";
     if (!editFormData.capacity) errors.capacity = "Capacity is required";
     if (Number(editFormData.capacity) <= 0) errors.capacity = "Capacity must be greater than 0";
+    if (!editFormData.event_date) errors.event_date = "Event date is required";
 
     setEditErrors(errors);
     return Object.keys(errors).length === 0;
@@ -146,11 +133,15 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
   };
 
   const modalContent = (
-    <div className="w-full max-h-[92vh] overflow-y-auto p-0 border-none rounded-[2.5rem] bg-white relative">
+    <div className={cn(
+      "w-full p-0 border-none rounded-[2.5rem] bg-white relative shadow-sm",
+      !standalone && "max-h-[92vh] overflow-y-auto"
+    )}>
       {/* Header Section */}
-      <div className="bg-[#668c65]/5 p-12 border-b border-[#668c65]/10 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md">
-        <div className="flex-1 text-left">
-          <h2 className="text-5xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
+      <div className="bg-gradient-to-r from-slate-50 to-[#668c65]/5 p-10 md:p-14 border-b border-slate-100 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl shadow-sm">
+        <div className="flex-1 text-left relative">
+           <div className="absolute -left-10 md:-left-14 top-1/2 -translate-y-1/2 w-2 h-16 bg-[#668c65] rounded-r-lg" />
+          <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
             {event.title}
           </h2>
           <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mt-2">
@@ -162,16 +153,16 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-12 w-12 rounded-full hover:bg-white transition-all text-slate-400"
+            className="h-12 w-12 rounded-full hover:bg-white hover:text-slate-900 hover:shadow-lg transition-all duration-300 text-slate-400"
           >
             <X className="h-6 w-6" />
           </Button>
         )}
       </div>
 
-      <div className="p-12">
+      <div className="p-8 md:p-14">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex w-full bg-transparent border-b border-slate-100 rounded-none h-auto p-0 mb-12 overflow-x-auto no-scrollbar">
+          <TabsList className="inline-flex w-full md:w-auto bg-slate-50/80 backdrop-blur-xl border border-slate-100/50 rounded-3xl p-2 mb-12 shadow-sm gap-2 overflow-x-auto no-scrollbar">
             {[
               { id: "overview", label: "Overview" },
               { id: "tickets", label: "Tickets" },
@@ -181,7 +172,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="flex-1 bg-transparent data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[#668c65] data-[state=active]:text-[#668c65] rounded-none py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 transition-all border-b-2 border-transparent whitespace-nowrap"
+                className="flex-1 md:flex-none px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 data-[state=active]:bg-white data-[state=active]:text-[#668c65] data-[state=active]:shadow-lg data-[state=active]:shadow-slate-200/50 transition-all duration-500 whitespace-nowrap"
               >
                 {tab.label}
               </TabsTrigger>
@@ -193,7 +184,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
             {/* Event Hero */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
               <div className="md:col-span-8 space-y-8">
-                <div className="aspect-[16/7] bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative group">
+                <div className="aspect-[16/7] bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 relative group shadow-2xl shadow-slate-200/40">
                   {event.image_url ? (
                     <img src={event.image_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
                   ) : (
@@ -201,35 +192,37 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                       <Calendar className="h-20 w-20" />
                     </div>
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                   <div className="absolute top-6 left-6">
-                    <Badge className="bg-white/90 backdrop-blur-md text-[#668c65] border-none px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                    <Badge className="bg-white/95 backdrop-blur-md text-[#668c65] border-none px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
                       {event.status} Event
                     </Badge>
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 bg-white rounded-[2.5rem] p-10 border border-slate-50 shadow-xl shadow-slate-100/50">
                   <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] flex items-center gap-3">
                     <div className="h-[1px] w-8 bg-[#668c65]/30" />
                     Description
                   </h3>
-                  <p className="text-xl font-serif italic text-slate-600 leading-relaxed indent-8">
+                  <p className="text-xl font-serif text-slate-600 leading-relaxed">
                     {event.description}
                   </p>
                 </div>
               </div>
 
-              <div className="md:col-span-4 space-y-6">
+              <div className="md:col-span-4 space-y-4">
                 {[
                   { icon: Calendar, label: "Event Date", value: new Date(event.event_date).toLocaleDateString(undefined, { dateStyle: 'long' }), sub: event.event_time },
                   { icon: MapPin, label: "Location", value: event.location },
                   { icon: Users, label: "Capacity", value: `${event.capacity} Guests`, sub: `${Math.round(occupancyPercentage)}% Registered` },
                   { icon: DollarSign, label: "Total Revenue", value: `${(event.total_revenue).toLocaleString()} RWF`, color: "text-[#668c65]" }
                 ].map((item, i) => (
-                  <Card key={i} className="border-none shadow-none bg-slate-50/50 rounded-3xl p-6 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-[#668c65]">
-                        <item.icon className="h-5 w-5" />
+                  <Card key={i} className="border-none shadow-sm bg-white border border-slate-50 rounded-3xl p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#668c65]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <div className="flex items-center gap-5 relative z-10">
+                      <div className="h-14 w-14 rounded-2xl bg-slate-50 group-hover:bg-[#668c65] group-hover:text-white transition-colors duration-500 flex items-center justify-center text-[#668c65] shadow-inner">
+                        <item.icon className="h-6 w-6" />
                       </div>
                       <div>
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
@@ -258,7 +251,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
 
             {/* Edit Event Form */}
             {isEditingEvent && (
-              <Card className="border-none bg-[#668c65]/5 rounded-[2.5rem] p-10 space-y-8 animate-in zoom-in-95 duration-500">
+              <Card className="border border-[#668c65]/10 bg-gradient-to-br from-[#668c65]/5 to-white rounded-[2.5rem] p-10 space-y-8 animate-in zoom-in-95 duration-500 shadow-2xl shadow-[#668c65]/5 mt-12">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-2xl font-serif italic text-slate-900">Edit Event Details</h4>
@@ -278,6 +271,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                       onChange={handleEditChange}
                       className="h-14 rounded-2xl border-slate-100 bg-white focus:ring-0 focus:border-[#668c65]/30 transition-all font-serif italic text-lg"
                     />
+                    {editErrors.title && <p className="text-xs text-red-500 ml-1">{editErrors.title}</p>}
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</Label>
@@ -288,6 +282,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                       rows={4}
                       className="rounded-2xl border-slate-100 bg-white focus:ring-0 focus:border-[#668c65]/30 transition-all font-serif italic text-base resize-none"
                     />
+                    {editErrors.description && <p className="text-xs text-red-500 ml-1">{editErrors.description}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Location</Label>
@@ -297,8 +292,20 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                       onChange={handleEditChange}
                       className="h-14 rounded-2xl border-slate-100 bg-white focus:ring-0 focus:border-[#668c65]/30 transition-all font-serif italic text-lg"
                     />
+                    {editErrors.location && <p className="text-xs text-red-500 ml-1">{editErrors.location}</p>}
                   </div>
                   <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Event Date</Label>
+                    <Input
+                      name="event_date"
+                      type="date"
+                      value={editFormData.event_date}
+                      onChange={handleEditChange}
+                      className="h-14 rounded-2xl border-slate-100 bg-white focus:ring-0 focus:border-[#668c65]/30 transition-all font-serif italic text-lg"
+                    />
+                    {editErrors.event_date && <p className="text-xs text-red-500 ml-1">{editErrors.event_date}</p>}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Capacity</Label>
                     <Input
                       name="capacity"
@@ -307,6 +314,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                       onChange={handleEditChange}
                       className="h-14 rounded-2xl border-slate-100 bg-white focus:ring-0 focus:border-[#668c65]/30 transition-all font-serif italic text-lg"
                     />
+                    {editErrors.capacity && <p className="text-xs text-red-500 ml-1">{editErrors.capacity}</p>}
                   </div>
                 </div>
 
@@ -323,7 +331,52 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
           </TabsContent>
 
           {/* Tickets Tab */}
-          <TabsContent value="tickets" className="space-y-4">
+          <TabsContent value="tickets" className="space-y-8">
+            {/* Real Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-slate-50/50 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-slate-50 group-hover:bg-[#668c65] group-hover:text-white transition-colors duration-500 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-[#668c65] group-hover:text-white transition-colors" />
+                  </div>
+                  <Badge className="bg-slate-50 text-slate-600 border-none px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                    Total
+                  </Badge>
+                </div>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Event Capacity</p>
+                <p className="text-4xl font-serif italic font-bold text-slate-900">{event.capacity.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 font-medium italic mt-1">Maximum Guests</p>
+              </Card>
+
+              <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-[#668c65]/5 to-white rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-[#668c65]/10 group-hover:bg-[#668c65] group-hover:text-white transition-colors duration-500 flex items-center justify-center">
+                    <Ticket className="h-6 w-6 text-[#668c65] group-hover:text-white transition-colors" />
+                  </div>
+                  <Badge className="bg-[#668c65]/10 text-[#668c65] border-none px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                    Sold
+                  </Badge>
+                </div>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Tickets Sold</p>
+                <p className="text-4xl font-serif italic font-bold text-[#668c65]">{event.tickets_sold.toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 font-medium italic mt-1">Confirmed Purchases</p>
+              </Card>
+
+              <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-amber-50/50 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-amber-50 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-500 flex items-center justify-center">
+                    <AlertCircle className="h-6 w-6 text-amber-500 group-hover:text-white transition-colors" />
+                  </div>
+                  <Badge className="bg-amber-50 text-amber-600 border-none px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                    Available
+                  </Badge>
+                </div>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Remaining Capacity</p>
+                <p className="text-4xl font-serif italic font-bold text-amber-600">{(event.capacity - event.tickets_sold).toLocaleString()}</p>
+                <p className="text-[10px] text-slate-400 font-medium italic mt-1">{Math.round(((event.capacity - event.tickets_sold) / event.capacity) * 100)}% Still Available</p>
+              </Card>
+            </div>
+
             <TicketManagement
               eventId={event.id}
               eventCapacity={event.capacity}
@@ -345,96 +398,172 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
                 <Loader className="h-12 w-12 text-[#668c65] animate-spin" />
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Extracting Strategic Data...</p>
               </div>
-            ) : (
+            ) : analytics ? (
               <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <Card className="border-none shadow-none bg-slate-50/50 rounded-[2.5rem] p-10 space-y-8">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-2xl font-serif italic text-slate-900 leading-none">Sales Trend</h4>
-                        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Daily ticket sales frequency</p>
-                      </div>
-                      <TrendingUp className="h-8 w-8 text-[#668c65]/20" />
-                    </div>
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={ticketSalesData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                          <XAxis
-                            dataKey="day"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 900 }}
-                            dy={20}
-                          />
-                          <YAxis hide />
-                          <Tooltip
-                            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', padding: '15px' }}
-                            itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="sales"
-                            stroke="#668c65"
-                            strokeWidth={4}
-                            dot={{ fill: "#668c65", r: 6, strokeWidth: 4, stroke: "#fff" }}
-                            activeDot={{ r: 8, strokeWidth: 0 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Card>
-
-                  <Card className="border-none shadow-none bg-slate-900 text-white rounded-[2.5rem] p-10 space-y-8">
-                    <div>
-                      <h4 className="text-2xl font-serif italic text-white leading-none">Revenue Distribution</h4>
-                      <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Revenue by ticket type</p>
-                    </div>
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={revenueData}>
-                          <XAxis
-                            dataKey="type"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#475569', fontSize: 10, fontWeight: 900 }}
-                            dy={20}
-                          />
-                          <YAxis hide />
-                          <Tooltip
-                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                            contentStyle={{ backgroundColor: '#1E293B', borderRadius: '20px', border: 'none', padding: '15px' }}
-                            itemStyle={{ color: '#668c65', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                          />
-                          <Bar
-                            dataKey="revenue"
-                            fill="#668c65"
-                            radius={[12, 12, 12, 12]}
-                            barSize={40}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </Card>
-                </div>
-
+                {/* Real Statistics Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {[
-                    { label: "Total Registered", value: analytics?.total_tickets_sold || event.tickets_sold, sub: "Unique Guests" },
-                    { label: "Occupancy Rate", value: `${analytics?.occupancy_percentage.toFixed(1) || Math.round(occupancyPercentage)}%`, sub: "Venue Capacity" },
-                    { label: "Average Price", value: `${(analytics?.average_ticket_price || 0).toLocaleString()} RWF`, sub: "Per Ticket" },
-                    { label: "Total Earnings", value: `${((analytics?.total_revenue || event.total_revenue)).toLocaleString()} RWF`, sub: "Total Sales", highlight: true }
+                    { label: "Total Registered", value: analytics.total_tickets_sold, sub: "Unique Guests" },
+                    { label: "Occupancy Rate", value: `${analytics.occupancy_percentage.toFixed(1)}%`, sub: "Venue Capacity" },
+                    { label: "Average Price", value: `${(analytics.average_ticket_price || 0).toLocaleString()} RWF`, sub: "Per Ticket" },
+                    { label: "Total Earnings", value: `${analytics.total_revenue.toLocaleString()} RWF`, sub: "Total Sales", highlight: true }
                   ].map((stat, i) => (
-                    <Card key={i} className="border-none shadow-none bg-white rounded-[2rem] p-8 border border-slate-50 transition-all hover:shadow-2xl hover:shadow-slate-100">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
-                      <p className={cn("text-2xl font-serif italic font-bold", stat.highlight ? "text-[#668c65]" : "text-slate-900")}>
+                    <Card key={i} className="border border-white shadow-sm bg-gradient-to-b from-white to-slate-50/50 rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 group">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 group-hover:text-[#668c65] transition-colors">{stat.label}</p>
+                      <p className={cn("text-3xl font-serif italic font-bold", stat.highlight ? "text-[#668c65]" : "text-slate-900")}>
                         {stat.value}
                       </p>
                       <p className="text-[10px] text-slate-400 font-medium italic mt-1">{stat.sub}</p>
                     </Card>
                   ))}
                 </div>
+
+                {/* Ticket Types Breakdown */}
+                {analytics.ticket_types_breakdown && analytics.ticket_types_breakdown.length > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    {/* Revenue Distribution Chart */}
+                    <Card className="border-none shadow-none bg-slate-900 text-white rounded-[2.5rem] p-10 space-y-8">
+                      <div>
+                        <h4 className="text-2xl font-serif italic text-white leading-none">Revenue Distribution</h4>
+                        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Revenue by ticket type</p>
+                      </div>
+                      <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analytics.ticket_types_breakdown}>
+                            <XAxis
+                              dataKey="name"
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fill: '#475569', fontSize: 10, fontWeight: 900 }}
+                              dy={20}
+                            />
+                            <YAxis hide />
+                            <Tooltip
+                              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                              contentStyle={{ backgroundColor: '#1E293B', borderRadius: '20px', border: 'none', padding: '15px' }}
+                              itemStyle={{ color: '#668c65', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}
+                              formatter={(value: number) => `${value.toLocaleString()} RWF`}
+                            />
+                            <Bar
+                              dataKey="revenue"
+                              fill="#668c65"
+                              radius={[12, 12, 12, 12]}
+                              barSize={40}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+
+                    {/* Ticket Types Table */}
+                    <Card className="border border-white/50 shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-slate-50/50 rounded-[2.5rem] p-10 space-y-6">
+                      <div>
+                        <h4 className="text-2xl font-serif italic text-slate-900 leading-none">Ticket Types Performance</h4>
+                        <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Sales breakdown by type</p>
+                      </div>
+                      <div className="space-y-4">
+                        {analytics.ticket_types_breakdown.map((type, index) => (
+                          <div key={index} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-50 hover:shadow-lg transition-all group">
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 rounded-xl bg-[#668c65]/10 group-hover:bg-[#668c65] transition-colors flex items-center justify-center">
+                                <Ticket className="h-5 w-5 text-[#668c65] group-hover:text-white transition-colors" />
+                              </div>
+                              <div>
+                                <p className="font-serif italic text-lg text-slate-900">{type.name}</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                  {type.sold} / {type.quantity} Sold
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-serif italic text-lg text-[#668c65] font-bold">
+                                {type.revenue.toLocaleString()} RWF
+                              </p>
+                              <p className="text-[8px] text-slate-400">
+                                @ {type.price.toLocaleString()} RWF
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Check-in Statistics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-slate-50/50 rounded-[2rem] p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 rounded-xl bg-[#668c65]/10 flex items-center justify-center">
+                        <CheckCircle className="h-6 w-6 text-[#668c65]" />
+                      </div>
+                      <Badge className="bg-[#668c65]/10 text-[#668c65] border-none px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                        Checked In
+                      </Badge>
+                    </div>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Guests Checked In</p>
+                    <p className="text-4xl font-serif italic font-bold text-[#668c65]">{analytics.checked_in_count}</p>
+                    <p className="text-[10px] text-slate-400 font-medium italic mt-1">
+                      {analytics.check_in_percentage.toFixed(1)}% of total tickets
+                    </p>
+                  </Card>
+
+                  <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-amber-50/50 rounded-[2rem] p-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                        <AlertCircle className="h-6 w-6 text-amber-500" />
+                      </div>
+                      <Badge className="bg-amber-50 text-amber-600 border-none px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                        Pending
+                      </Badge>
+                    </div>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Awaiting Check-in</p>
+                    <p className="text-4xl font-serif italic font-bold text-amber-600">
+                      {analytics.total_tickets_sold - analytics.checked_in_count}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium italic mt-1">
+                      {(100 - analytics.check_in_percentage).toFixed(1)}% not yet arrived
+                    </p>
+                  </Card>
+                </div>
+
+                {/* Capacity Overview */}
+                <Card className="border border-white shadow-xl shadow-slate-200/30 bg-gradient-to-br from-white to-slate-50/50 rounded-[2.5rem] p-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h4 className="text-2xl font-serif italic text-slate-900 leading-none">Capacity Overview</h4>
+                      <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest mt-2">Event occupancy status</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-4xl font-serif italic font-bold text-[#668c65]">
+                        {analytics.occupancy_percentage.toFixed(1)}%
+                      </p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-widest">Occupied</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-600">Tickets Sold</span>
+                      <span className="font-bold text-slate-900">{analytics.total_tickets_sold} / {event.capacity}</span>
+                    </div>
+                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#668c65] to-[#5a7b59] transition-all duration-1000"
+                        style={{ width: `${analytics.occupancy_percentage}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{analytics.available_tickets} tickets remaining</span>
+                      <span>{analytics.occupancy_count} occupied</span>
+                    </div>
+                  </div>
+                </Card>
               </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-40 space-y-6">
+                <AlertCircle className="h-12 w-12 text-slate-300" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">No Analytics Data Available</p>
+              </div>
             )}
           </TabsContent>
 
@@ -464,10 +593,11 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
               ) : (
                 <div className="space-y-4">
                   {tickets.map((ticket: any) => (
-                    <div key={ticket.id} className="flex items-center justify-between p-6 bg-white rounded-[2rem] border border-slate-50 hover:shadow-xl hover:shadow-slate-100 transition-all duration-500 group">
-                      <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-[#668c65]/5 flex items-center justify-center relative overflow-hidden">
-                          <span className="text-xl font-serif italic text-[#668c65] z-10">
+                    <div key={ticket.id} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white rounded-[2rem] border border-slate-50 hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-500 group relative overflow-hidden gap-6 md:gap-0">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#668c65]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                      <div className="flex items-center gap-6 relative z-10">
+                        <div className="w-16 h-16 rounded-2xl bg-[#668c65]/5 group-hover:bg-[#668c65] transition-colors duration-500 flex items-center justify-center relative overflow-hidden">
+                          <span className="text-xl font-serif italic text-[#668c65] group-hover:text-white transition-colors duration-500 z-10">
                             {ticket.holder_name.charAt(0)}
                           </span>
                           <div className="absolute inset-0 bg-[#668c65]/10 scale-0 group-hover:scale-150 transition-transform duration-700 rounded-full" />
@@ -499,8 +629,8 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
               )}
             </Card>
 
-            <Button onClick={handleExportAttendees} className="w-full h-20 bg-slate-900 hover:bg-black text-white rounded-[2.5rem] flex items-center justify-center gap-4 transition-all shadow-2xl shadow-slate-900/10">
-              <Download className="h-6 w-6 text-[#668c65]" />
+            <Button onClick={handleExportAttendees} className="w-full h-20 bg-slate-900 hover:bg-black hover:scale-[1.01] active:scale-[0.99] text-white rounded-[2.5rem] flex items-center justify-center gap-4 transition-all duration-500 shadow-2xl shadow-slate-900/20 group">
+              <Download className="h-6 w-6 text-[#668c65] group-hover:-translate-y-1 transition-transform duration-500" />
               <span className="text-[10px] font-black uppercase tracking-[0.3em]">Download Guest List</span>
             </Button>
           </TabsContent>
@@ -513,6 +643,7 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
     return modalContent;
   }
 
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="w-[92vw] max-w-[1200px] sm:max-w-[1200px] p-0 border-none bg-white shadow-none rounded-[2.5rem] overflow-hidden max-h-[92vh]"
@@ -521,4 +652,5 @@ export function EventDetailsModal({ event, open, onOpenChange, standalone }: Eve
         {modalContent}
       </DialogContent>
     </Dialog>
+  );
 }

@@ -234,19 +234,6 @@ export function TicketManagement({
         </TabsList>
 
         <TabsContent value="types" className="space-y-12">
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[{ label: "Total Event Capacity", value: eventCapacity, color: "text-slate-900" },
-              { label: "Total Tickets Sold", value: getTotalTickets(), color: "text-[#668c65]" },
-            { label: "Remaining Capacity", value: getAvailableCapacity(), color: "text-slate-400" },
-            ].map((stat, i) => (
-              <div key={i} className="flex h-28 sm:h-32 flex-col justify-between rounded-[2rem] border border-slate-100 bg-white p-6 sm:p-8 transition-colors hover:border-[#668c65]/20">
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
-                <p className={cn("text-3xl sm:text-4xl font-serif italic", stat.color)}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-
           {/* Ticket Levels */}
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {ticketTypes.map((type) => {
