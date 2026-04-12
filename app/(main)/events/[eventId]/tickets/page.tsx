@@ -97,13 +97,13 @@ export default function EventTicketingPage() {
   // Generate QR code
   const generateQRCode = async (data: string): Promise<string> => {
     try {
-      return await QRCode.toDataURL(data, {
+      return await (QRCode.toDataURL(data, {
         errorCorrectionLevel: "H",
         type: "image/png",
         quality: 0.95,
         margin: 1,
         width: 300,
-      });
+      }) as unknown as Promise<string>);
     } catch (error) {
       console.error("Error generating QR code:", error);
       return "";

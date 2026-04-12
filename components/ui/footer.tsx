@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 
@@ -12,9 +13,15 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Section */}
           <div className="space-y-6">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">V</span>
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden">
+                <Image 
+                  src="/logo.png" 
+                  alt="VowNest Logo" 
+                  width={48} 
+                  height={48}
+                  className="object-contain"
+                />
               </div>
               <span className="text-2xl font-serif italic text-slate-900 font-medium">VowNest</span>
             </Link>

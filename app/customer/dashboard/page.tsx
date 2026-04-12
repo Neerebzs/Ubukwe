@@ -29,6 +29,8 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { CustomerBookingWizard } from "@/components/customer/booking-wizard";
 import { CustomerContractSign } from "@/components/customer/contract-sign";
 import { WeddingTasks } from "@/components/customer/wedding-tasks";
+import { CustomerProfileSettings } from "@/components/customer/profile-settings";
+import { CustomerPreferencesSettings } from "@/components/customer/preferences-settings";
 import { AIAssistantDashboard } from "@/components/customer/ai-assistant-dashboard";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
@@ -184,6 +186,12 @@ function CustomerDashboardContent() {
       case "booking":
         return <CustomerBookingWizard />;
 
+      case "profile":
+        return <CustomerProfileSettings />;
+
+      case "preferences":
+        return <CustomerPreferencesSettings />;
+
       default:
         return null;
     }
@@ -253,7 +261,7 @@ function CustomerDashboardContent() {
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Customer",
-              role: "Event Owner",
+              role: "event_owner",
               profile_image_url: user?.profile_image_url
             }}
             onLogout={logout}

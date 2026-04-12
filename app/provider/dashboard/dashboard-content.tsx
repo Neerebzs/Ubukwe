@@ -15,6 +15,8 @@ import { ProviderServices } from "@/components/provider/services"
 import { ProviderBookings } from "@/components/provider/bookings"
 import { ProviderEarnings } from "@/components/provider/earnings"
 import { ProviderProfile } from "@/components/provider/profile"
+import { ProviderProfileSettings } from "@/components/provider/profile-settings"
+import { ProviderPreferencesSettings } from "@/components/provider/preferences-settings"
 import { InquiryManagement } from "@/components/provider/inquiry-management"
 import { QuoteBuilder } from "@/components/provider/quote-builder"
 import { AvailabilityCalendar } from "@/components/provider/availability-calendar"
@@ -86,7 +88,8 @@ export function ProviderDashboardContent() {
       case "contracts": return <ProviderContracts />
       case "onboarding": return <ProviderOnboardingForm />
       case "earnings": return <ProviderEarnings />
-      case "profile": return <ProviderProfile />
+      case "profile": return <ProviderProfileSettings />
+      case "preferences": return <ProviderPreferencesSettings />
       default: return null
     }
   }
@@ -144,7 +147,7 @@ export function ProviderDashboardContent() {
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Provider",
-              role: "Service Provider",
+              role: "service_provider",
               profile_image_url: user?.profile_image_url
             }}
             onLogout={logout}

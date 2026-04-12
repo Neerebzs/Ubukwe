@@ -14,6 +14,7 @@ import {
   Home
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,11 +47,27 @@ export function DashboardHeader({
   title,
   subtitle
 }: DashboardHeaderProps) {
+  const router = useRouter();
+  
   const initials = user.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
     : "U";
 
   const { language, setLanguage } = useTranslation();
+
+  const getProfilePath = () => {
+    if (user.role === 'admin') return '/admin/dashboard?tab=profile';
+    if (user.role === 'service_provider') return '/provider/dashboard?tab=profile';
+    if (user.role === 'event_owner') return '/customer/dashboard?tab=profile';
+    return '/customer/dashboard?tab=profile';
+  };
+
+  const getPreferencesPath = () => {
+    if (user.role === 'admin') return '/admin/dashboard?tab=preferences';
+    if (user.role === 'service_provider') return '/provider/dashboard?tab=preferences';
+    if (user.role === 'event_owner') return '/customer/dashboard?tab=preferences';
+    return '/customer/dashboard?tab=preferences';
+  };
 
   const LANGUAGES = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -170,14 +187,22 @@ export function DashboardHeader({
             <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-slate-100 bg-white/95 backdrop-blur-xl">
               <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Your Sanctuary</DropdownMenuLabel>
               <DropdownMenuSeparator className="my-1 bg-slate-50" />
-              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer">
-                <User className="mr-3 h-4 w-4 text-slate-400" />
-                <span className="font-medium tracking-tight">Profile Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer">
-                <Settings className="mr-3 h-4 w-4 text-slate-400" />
-                <span className="font-medium tracking-tight">Preferences</span>
-              </DropdownMenuItem>
+              <Link href={getProfilePath()}>
+                <DropdownMenuItem 
+                  className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer"
+                >
+                  <User className="mr-3 h-4 w-4 text-slate-400" />
+                  <span className="font-medium tracking-tight">Profile Settings</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href={getPreferencesPath()}>
+                <DropdownMenuItem 
+                  className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer"
+                >
+                  <Settings className="mr-3 h-4 w-4 text-slate-400" />
+                  <span className="font-medium tracking-tight">Preferences</span>
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator className="my-1 bg-slate-50" />
               <DropdownMenuItem
                 variant="destructive"

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { MenuIcon, XIcon, Home, Briefcase, Info, LogIn, UserPlus, Calendar, Search, LogOut, LayoutDashboard } from "lucide-react";
+import Image from "next/image";
+import { MenuIcon, XIcon, Home, Briefcase, Info, Calendar, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "./button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
@@ -21,13 +21,16 @@ export function Navbar() {
     <>
       <header className="w-full bg-white/70 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-100/50">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
-            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#668c65] flex flex-shrink-0 items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
-              <span className="text-white font-serif italic text-lg sm:text-xl">V</span>
-            </div>
-            <div className="hidden sm:flex flex-col flex-shrink-0">
-              <span className="text-xl sm:text-2xl font-serif italic tracking-tight text-[#668c65] leading-none">VowNest</span>
-              <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mt-1">Collective</span>
+          <Link href="/" className="flex items-center group flex-shrink-0 py-1">
+            <div className="relative flex flex-shrink-0 items-center justify-center">
+              <Image 
+                src="/logo.png" 
+                alt="VowNest Collective Logo" 
+                width={200} 
+                height={70}
+                className="object-contain h-12 sm:h-16 w-auto drop-shadow-sm group-hover:scale-[1.05] origin-left transition-transform duration-500"
+                priority
+              />
             </div>
           </Link>
 
@@ -125,9 +128,16 @@ export function Navbar() {
             <div className="p-8 space-y-10 flex-1">
               {/* Brand Header */}
               <div className="flex items-center justify-between pb-8 border-b border-slate-50">
-                <div className="flex flex-col">
-                  <span className="font-serif italic text-3xl text-[#668c65]">Ubukwe</span>
-                  <span className="text-[8px] font-bold uppercase tracking-[0.4em] text-slate-400 mt-1">Rwanda Collective</span>
+                <div className="flex items-center py-2">
+                  <div className="flex items-center justify-center">
+                    <Image 
+                      src="/logo.png" 
+                      alt="VowNest Collective Logo" 
+                      width={200} 
+                      height={70}
+                      className="object-contain h-12 sm:h-14 w-auto drop-shadow-sm origin-left"
+                    />
+                  </div>
                 </div>
                 <button
                   onClick={toggleMenu}

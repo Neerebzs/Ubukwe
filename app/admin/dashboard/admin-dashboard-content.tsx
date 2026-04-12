@@ -20,6 +20,8 @@ import { MobileAppBar } from "@/components/ui/mobile-app-bar"
 import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
 import { CategoriesManagement } from "@/components/admin/categories";
 import { AdminEvents } from "@/components/admin/events";
+import { AdminProfileSettings } from "@/components/admin/profile-settings";
+import { AdminPreferencesSettings } from "@/components/admin/preferences-settings";
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -117,6 +119,10 @@ export function AdminDashboardContent() {
         return <AdminAnalytics />
       case "events":
         return <AdminEvents />
+      case "profile":
+        return <AdminProfileSettings />
+      case "preferences":
+        return <AdminPreferencesSettings />
       default:
         return null
     }
@@ -173,7 +179,7 @@ export function AdminDashboardContent() {
           <DashboardHeader
             user={{
               full_name: user?.full_name || user?.username || "Admin",
-              role: "Administrator",
+              role: "admin",
               profile_image_url: user?.profile_image_url
             }}
             onLogout={logout}

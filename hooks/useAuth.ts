@@ -197,6 +197,22 @@ export const useAuth = () => {
     },
   });
 
+  // Refresh user data
+  const refreshUser = async () => {
+    try {
+      const response = await authApi.getMe();
+      const updatedUser = response.data;
+      if (updatedUser) {
+        userManager.setUser(updatedUser);
+        queryClient.setQueryData(authKeys.user(), updatedUser);
+      }
+      return updatedUser;
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      throw error;
+    }
+  };
+
   return {
     // State
     user,
@@ -220,6 +236,9 @@ export const useAuth = () => {
     isChangingPassword: changePasswordMutation.isPending,
     isSendingResetEmail: forgotPasswordMutation.isPending,
     isResettingPassword: resetPasswordMutation.isPending,
+
+    // Utility functions
+    refreshUser,
   };
 };
 
