@@ -69,11 +69,11 @@ export function ProviderOverview() {
         setLoading(true);
 
         // Fetch booking statistics
-        const statsResponse = await apiClient.get<BookingStats>("/api/v1/bookings/provider/bookings/statistics/summary");
+        const statsResponse = await apiClient.get<BookingStats>("/api/v1/bookings/provider/statistics/summary");
         setStats(statsResponse.data || null);
 
         // Fetch recent bookings (limit to 5)
-        const bookingsResponse = await apiClient.get<RecentBooking[]>("/api/v1/bookings/provider/bookings");
+        const bookingsResponse = await apiClient.get<RecentBooking[]>("/api/v1/bookings/provider");
         const bookings = bookingsResponse.data || [];
         setRecentBookings(bookings.slice(0, 5));
 

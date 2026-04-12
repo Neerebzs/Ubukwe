@@ -84,8 +84,6 @@ export function TicketManagement({
   const [activeTab, setActiveTab] = useState("types");
   const [isAddingType, setIsAddingType] = useState(false);
   const [isEditingType, setIsEditingType] = useState<string | null>(null);
-  const [isCreatingTicket, setIsCreatingTicket] = useState<string | null>(null);
-  const [selectedTicketType, setSelectedTicketType] = useState<TicketType | null>(null);
 
   // Form states
   const [typeFormData, setTypeFormData] = useState<TicketTypeFormData>({
@@ -95,19 +93,12 @@ export function TicketManagement({
     quantity: "",
   });
 
-  const [ticketFormData, setTicketFormData] = useState<TicketFormData>({
-    holder_name: "",
-    holder_email: "",
-    holder_phone: "",
-  });
-
   const [errors, setErrors] = useState<FormErrors>({});
 
   // Mutations
   const createTypeMutation = useCreateTicketType();
   const updateTypeMutation = useUpdateTicketType();
   const deleteTypeMutation = useDeleteTicketType();
-  const createTicketMutation = useCreateTicket();
   const checkInMutation = useCheckInTicket();
 
   // Validation
@@ -124,17 +115,6 @@ export function TicketManagement({
       newErrors.quantity = `Capacity exceeded (${totalTickets}/${eventCapacity})`;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateTicketForm = (): boolean => {
-    const newErrors: FormErrors = {};
-    if (!ticketFormData.holder_name.trim()) newErrors.holder_name = "Name is required";
-    if (!ticketFormData.holder_email.trim()) newErrors.holder_email = "Email is required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ticketFormData.holder_email)) {
-      newErrors.holder_email = "Invalid email format";
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -184,24 +164,6 @@ export function TicketManagement({
     } catch (e) { console.error(e); }
   };
 
-  const handleCreateTicket = async () => {
-    if (!validateTicketForm() || !selectedTicketType) return;
-    try {
-      await createTicketMutation.mutateAsync({
-        eventId,
-        ticketTypeId: selectedTicketType.id,
-        data: {
-          holder_name: ticketFormData.holder_name,
-          holder_email: ticketFormData.holder_email,
-          holder_phone: ticketFormData.holder_phone || undefined,
-        },
-      });
-      setTicketFormData({ holder_name: "", holder_email: "", holder_phone: "" });
-      setIsCreatingTicket(null);
-      onTicketCreated?.();
-    } catch (e) { console.error(e); }
-  };
-
   const handleCheckIn = async (id: string) => {
     try {
       await checkInMutation.mutateAsync({ eventId, ticketId: id });
@@ -234,6 +196,19 @@ export function TicketManagement({
         </TabsList>
 
         <TabsContent value="types" className="space-y-12">
+          {/* Add Ticket Type Button - Moved to Top */}
+          {!isAddingType && !isEditingType && (
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setIsAddingType(true)}
+                className="h-16 rounded-2xl border border-[#668c65]/20 bg-white px-12 text-[10px] font-black uppercase tracking-widest text-[#668c65] transition-all hover:bg-[#668c65] hover:text-white shadow-none"
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Add Ticket Type
+              </Button>
+            </div>
+          )}
+
           {/* Ticket Levels */}
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {ticketTypes.map((type) => {
@@ -295,35 +270,11 @@ export function TicketManagement({
                         </div>
                       ))}
                     </div>
-                    {available > 0 ? (
-                      <Button
-                        onClick={() => { setSelectedTicketType(type); setIsCreatingTicket(type.id); }}
-                        className="h-12 w-full rounded-2xl bg-slate-900 text-[9px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
-                      >
-                        Create Ticket
-                      </Button>
-                    ) : (
-                      <div className="flex h-12 items-center justify-center rounded-2xl bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-300">
-                        Sold Out
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-
-          {/* Add Tier Button */}
-          {!isAddingType && !isEditingType && (
-            <div className="flex justify-center pt-8">
-              <Button
-                onClick={() => setIsAddingType(true)}
-                className="h-16 rounded-2xl border border-[#668c65]/20 bg-white px-12 text-[10px] font-black uppercase tracking-widest text-[#668c65] transition-all hover:bg-[#668c65] hover:text-white shadow-none"
-              >
-                Add Ticket Type
-              </Button>
-            </div>
-          )}
         </TabsContent>
 
         {/* Guest List Tab */}
@@ -372,18 +323,18 @@ export function TicketManagement({
       </Tabs>
 
       {/* Forms Overlay */}
-      {(isAddingType || isEditingType || isCreatingTicket) && (
+      {(isAddingType || isEditingType) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/10 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-lg overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white shadow-none">
             <CardHeader className="border-b border-slate-50 p-6 sm:p-10">
               <div className="flex items-center justify-between">
                 <CardTitle className="font-serif text-2xl sm:text-3xl italic text-slate-900">
-                  {isCreatingTicket ? "Create Guest Ticket" : isEditingType ? "Edit Ticket Type" : "Add New Ticket Type"}
+                  {isEditingType ? "Edit Ticket Type" : "Add New Ticket Type"}
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => { setIsAddingType(false); setIsEditingType(null); setIsCreatingTicket(null); setErrors({}); }}
+                  onClick={() => { setIsAddingType(false); setIsEditingType(null); setErrors({}); }}
                   className="rounded-full hover:bg-slate-50"
                 >
                   <X className="h-5 w-5 text-slate-400" />
@@ -391,56 +342,35 @@ export function TicketManagement({
               </div>
             </CardHeader>
             <CardContent className="space-y-6 sm:space-y-8 p-6 sm:p-10">
-              {isCreatingTicket ? (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Guest Name</Label>
-                    <Input placeholder="Enter guest's full name" value={ticketFormData.holder_name} onChange={(e) => setTicketFormData({...ticketFormData, holder_name: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Guest Email Address</Label>
-                    <Input placeholder="Enter guest's email" value={ticketFormData.holder_email} onChange={(e) => setTicketFormData({...ticketFormData, holder_email: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300" />
-                  </div>
-                  <Button
-                    onClick={handleCreateTicket}
-                    className="h-14 w-full rounded-2xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
-                  >
-                    Create Ticket
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Ticket Title</Label>
-                    <Input placeholder="e.g. VIP Access, Early Bird..." value={typeFormData.name} onChange={(e) => setTypeFormData({...typeFormData, name: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Description</Label>
-                    <Textarea 
-                      placeholder="Briefly describe what this ticket includes..." 
-                      value={typeFormData.description} 
-                      onChange={(e) => setTypeFormData({...typeFormData, description: e.target.value})} 
-                      className="min-h-[100px] rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300 resize-none p-4" 
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Price (RWF)</Label>
-                      <Input type="number" value={typeFormData.price} onChange={(e) => setTypeFormData({...typeFormData, price: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Available</Label>
-                      <Input type="number" value={typeFormData.quantity} onChange={(e) => setTypeFormData({...typeFormData, quantity: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest" />
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => isEditingType ? handleUpdateTicketType(isEditingType) : handleAddTicketType()}
-                    className="h-14 w-full rounded-2xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
-                  >
-                    {isEditingType ? "Update Ticket Type" : "Create Ticket Type"}
-                  </Button>
-                </>
-              )}
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Ticket Title</Label>
+                <Input placeholder="e.g. VIP Access, Early Bird..." value={typeFormData.name} onChange={(e) => setTypeFormData({...typeFormData, name: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Description</Label>
+                <Textarea 
+                  placeholder="Briefly describe what this ticket includes..." 
+                  value={typeFormData.description} 
+                  onChange={(e) => setTypeFormData({...typeFormData, description: e.target.value})} 
+                  className="min-h-[100px] rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest placeholder:text-slate-300 resize-none p-4" 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Price (RWF)</Label>
+                  <Input type="number" value={typeFormData.price} onChange={(e) => setTypeFormData({...typeFormData, price: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Available</Label>
+                  <Input type="number" value={typeFormData.quantity} onChange={(e) => setTypeFormData({...typeFormData, quantity: e.target.value})} className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest" />
+                </div>
+              </div>
+              <Button
+                onClick={() => isEditingType ? handleUpdateTicketType(isEditingType) : handleAddTicketType()}
+                className="h-14 w-full rounded-2xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-black shadow-none border-none"
+              >
+                {isEditingType ? "Update Ticket Type" : "Create Ticket Type"}
+              </Button>
             </CardContent>
           </Card>
         </div>

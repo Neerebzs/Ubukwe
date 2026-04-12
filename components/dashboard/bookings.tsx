@@ -66,7 +66,7 @@ export function Bookings() {
   const { data: bookingsData, isLoading, error } = useQuery({
     queryKey: ["customer-bookings"],
     queryFn: async () => {
-      const response = await apiClient.get("/api/v1/bookings/bookings");
+      const response = await apiClient.get("/api/v1/bookings");
       return response.data as Booking[];
     },
   });
@@ -326,8 +326,8 @@ export function Bookings() {
                           </DialogContent>
                         </Dialog>
 
-                        {booking.provider_confirmed && booking.status !== "completed" && (
-                          <Link href={`/booking/${booking.service_id}?packageId=${booking.id}&packageName=${encodeURIComponent(booking.service_name || 'Service')}&step=3`}>
+                        {booking.status === "in_progress" && (
+                          <Link href={`/booking/${booking.service_id}?bookingId=${booking.id}&packageId=${booking.package_id || ''}&packageName=${encodeURIComponent(booking.service_name || 'Service')}&step=3`}>
                             <Button className="h-14 px-10 text-white shadow-xl rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
                               <HandCoins className="h-4 w-4 mr-2 group-hover/pay:-rotate-12 transition-transform" />
                               Pay Now
@@ -335,7 +335,7 @@ export function Bookings() {
                           </Link>
                         )}
 
-                        {!booking.provider_confirmed && booking.status === "pending" && (
+                        {booking.status === "pending" && (
                           <div className="flex items-center gap-3 px-6 h-14 rounded-2xl bg-amber-50/50 border border-amber-100 text-amber-900 text-[10px] font-bold uppercase tracking-widest flex-1 sm:flex-initial">
                             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                             Awaiting Manifest

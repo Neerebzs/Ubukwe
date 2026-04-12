@@ -81,16 +81,18 @@ export function TicketGraphic({
       });
 
       const imgData = canvas.toDataURL("image/png");
+      
+      const widthMm = element.clientWidth * 0.264583;
+      const heightMm = element.clientHeight * 0.264583;
+      const orientation = widthMm >= heightMm ? "landscape" : "portrait";
+
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: orientation,
         unit: "mm",
-        format: [ticketRef.current.clientWidth * 0.264583, ticketRef.current.clientHeight * 0.264583] // Convert px to mm strictly
+        format: [widthMm, heightMm] 
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "PNG", 0, 0, widthMm, heightMm);
       pdf.save(`ubukwe-ticket-${ticketNumber}.pdf`);
     } catch (error) {
       console.error("Error generating PDF", error);
@@ -120,96 +122,98 @@ export function TicketGraphic({
       {/* Actual Ticket graphic to be captured */}
       <div
         ref={ticketRef}
-        className="relative flex flex-col sm:flex-row w-[800px] h-[300px] bg-slate-900 text-white rounded-2xl overflow-hidden shadow-2xl"
+        className="relative flex flex-col md:flex-row w-full max-w-[800px] md:h-[300px] bg-slate-900 text-white rounded-2xl md:rounded-[32px] overflow-hidden shadow-2xl transition-all"
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* Left Main Section */}
-        <div className="relative w-[550px] h-full flex flex-col justify-between p-8 z-10 isolate">
+        <div className="relative w-full md:w-[550px] md:h-full flex flex-col justify-between p-6 sm:p-8 z-10 isolate min-h-[250px]">
           {/* Background Image overlay */}
-          <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 -z-10 bg-slate-900">
             {/* The image */}
             <div 
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"
               style={{ backgroundImage: `url(${eventImage})` }}
             />
             {/* Dark gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-900/40" />
-            <div className="absolute inset-0 bg-slate-900/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900/60" />
+            <div className="absolute inset-0 bg-slate-900/30" />
           </div>
 
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8 md:mb-0">
             <div>
-              <div className="text-emerald-400 font-bold tracking-widest text-sm mb-2 uppercase">
+              <div className="text-emerald-400 font-bold tracking-widest text-xs md:text-sm mb-2 uppercase">
                 Event Ticket
               </div>
-              <h1 className="text-4xl font-extrabold uppercase line-clamp-2 leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase line-clamp-2 leading-tight">
                 {eventTitle}
               </h1>
-              <p className="text-slate-300 font-medium tracking-wider text-sm mt-1">
+              <p className="text-slate-300 font-medium tracking-wider text-xs md:text-sm mt-1">
                 UBUKWE HUB EXCLUSIVE
               </p>
             </div>
             {price && (
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 px-4 py-2 rounded-xl shadow-lg border border-white/10">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 px-4 py-2 rounded-xl shadow-lg border border-white/10 shrink-0">
                 <span className="text-xl font-bold">{price} RWF</span>
               </div>
             )}
           </div>
 
-          <div className="flex justify-between items-end">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 sm:gap-4 mt-auto">
             <div className="space-y-4">
               <div>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                <p className="text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1">
                   Location
                 </p>
-                <p className="font-medium text-lg leading-snug max-w-[200px] truncate">
+                <p className="font-medium text-base sm:text-lg leading-snug sm:max-w-[200px] truncate">
                   {eventLocation}
                 </p>
               </div>
               <div>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
+                <p className="text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1">
                   Date
                 </p>
-                <p className="font-medium">{formattedDate}</p>
+                <p className="font-medium text-sm sm:text-base">{formattedDate}</p>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-3 text-right">
-              <div>
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-3 sm:text-right border-t border-slate-700 border-dashed sm:border-none pt-4 sm:pt-0">
+              <div className="order-2 sm:order-1 sm:ml-auto">
+                <p className="text-slate-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-1 sm:mb-0">
                   Holder
                 </p>
-                <p className="font-medium max-w-[150px] truncate">{holderName}</p>
+                <p className="font-medium max-w-[150px] truncate text-sm sm:text-base">{holderName}</p>
               </div>
-              <div className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-5 py-2 rounded-full font-bold shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+              <div className="order-1 sm:order-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full font-bold text-xs sm:text-sm shadow-[0_0_15px_rgba(16,185,129,0.2)] whitespace-nowrap">
                 {ticketType}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Separator */}
-        <div className="relative w-0 h-full flex flex-col justify-between items-center bg-slate-900 z-20">
-          <div className="absolute -top-4 w-8 h-8 rounded-full bg-[#f3f4f6]" />
-          <div className="w-[2px] h-full border-l-2 border-dashed border-slate-700 mx-auto" />
-          <div className="absolute -bottom-4 w-8 h-8 rounded-full bg-[#f3f4f6]" />
+        {/* Separator - Horizontal on Mobile, Vertical on MD */}
+        <div className="relative flex-none w-full md:w-0 h-6 md:h-full flex flex-row md:flex-col justify-between items-center bg-slate-900 z-20">
+          <div className="absolute -left-3 md:left-auto md:-top-4 w-6 h-6 md:w-8 md:h-8 rounded-full bg-white hidden sm:block shadow-inner" />
+          <div className="w-full md:w-0 h-0 md:h-full border-t-[2px] md:border-t-0 md:border-l-[3px] border-dashed border-slate-700/60" />
+          <div className="absolute -right-3 md:right-auto md:-bottom-4 w-6 h-6 md:w-8 md:h-8 rounded-full bg-white hidden sm:block shadow-inner" />
         </div>
 
         {/* Right Stub Section */}
-        <div className="w-[250px] h-full bg-[#1e2335] p-6 flex flex-col justify-center items-center relative custom-stub">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-800/50 to-[#1e2335] pointer-events-none" />
+        <div className="w-full md:w-[250px] md:h-full bg-[#1e2335] p-6 sm:p-8 flex flex-col sm:flex-row md:flex-col justify-center items-center gap-6 relative custom-stub">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-800/80 to-[#1e2335] pointer-events-none mix-blend-soft-light" />
           
-          <div className="z-10 w-full flex flex-col items-center gap-4">
-            <div className="bg-white p-2 rounded-xl shadow-lg">
+          <div className="z-10 w-full flex flex-col sm:flex-row md:flex-col items-center justify-between sm:justify-center gap-6">
+            <div className="bg-white p-2 rounded-xl shadow-lg shrink-0 transition-transform hover:scale-105">
               <canvas ref={canvasQRef} />
             </div>
             
-            <p className="text-xs text-slate-400 font-mono tracking-widest text-center uppercase">
-              {ticketNumber}
-            </p>
+            <div className="flex flex-col items-center gap-3 w-full">
+              <p className="text-xs md:text-[10px] text-slate-400 font-mono tracking-widest text-center uppercase break-all px-2">
+                {ticketNumber}
+              </p>
 
-            <div className="w-full max-w-[200px] bg-white px-2 py-1 flex flex-col items-center justify-center rounded">
-              <svg ref={canvasBRef} className="max-w-full h-auto" preserveAspectRatio="xMidYMid meet"></svg>
+              <div className="w-full max-w-[200px] bg-white px-2 py-1.5 flex flex-col items-center justify-center rounded-md shadow-sm">
+                <svg ref={canvasBRef} className="max-w-full h-auto" preserveAspectRatio="xMidYMid meet"></svg>
+              </div>
             </div>
           </div>
         </div>

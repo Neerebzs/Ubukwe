@@ -78,7 +78,7 @@ export function ProviderBookings() {
 
   const fetchBookings = async () => {
     try {
-      const response = await apiClient.get<BookingData[]>("/api/v1/bookings/provider/bookings");
+      const response = await apiClient.get<BookingData[]>("/api/v1/bookings/provider");
       setBookings(response.data || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -88,7 +88,7 @@ export function ProviderBookings() {
 
   const fetchStats = async () => {
     try {
-      const response = await apiClient.get<BookingStats>("/api/v1/bookings/provider/bookings/statistics/summary");
+      const response = await apiClient.get<BookingStats>("/api/v1/bookings/provider/statistics/summary");
       setStats(response.data || null);
     } catch (error) {
       console.error("Error fetching statistics:", error);
@@ -109,7 +109,7 @@ export function ProviderBookings() {
   const handleConfirm = async (bookingId: string) => {
     setActionLoading(bookingId);
     try {
-      await apiClient.post(`/api/v1/bookings/provider/bookings/${bookingId}/confirm`, {
+      await apiClient.post(`/api/v1/bookings/provider/${bookingId}/confirm`, {
         provider_notes: "Booking confirmed. Looking forward to serving you!",
       });
 
@@ -127,7 +127,7 @@ export function ProviderBookings() {
   const handleReject = async (bookingId: string) => {
     setActionLoading(bookingId);
     try {
-      await apiClient.post(`/api/v1/bookings/provider/bookings/${bookingId}/reject`, {
+      await apiClient.post(`/api/v1/bookings/provider/${bookingId}/reject`, {
         rejection_reason: "Unfortunately, we are not available on this date.",
       });
 

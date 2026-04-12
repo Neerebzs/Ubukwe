@@ -30,6 +30,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   const packageId = searchParams.get('packageId')
   const packageName = searchParams.get('packageName')
   const stepParam = searchParams.get('step')
+  const bookingIdParam = searchParams.get('bookingId') // Get booking ID from URL
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -41,6 +42,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   }, [isAuthenticated, isAuthLoading, router]);
 
   const [currentStep, setCurrentStep] = useState(stepParam ? parseInt(stepParam) : 1)
+  const [bookingId, setBookingId] = useState<string | null>(bookingIdParam || null)
   const [bookingData, setBookingData] = useState({
     date: undefined as Date | undefined,
     time: "",
@@ -109,7 +111,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     }
   }, [wedding]);
 
-  // Create booking mutation
+  // Create booking mutation (Step 2 - Request only)
   const createBookingMutation = useMutation({
     mutationFn: async (bookingPayload: any) => {
       const response = await apiClient.post('/api/v1/bookings/bookings', bookingPayload);
@@ -117,7 +119,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     },
     onSuccess: (data) => {
       toast.success('Booking request sent successfully!');
-      setCurrentStep(4); // Go to confirmation
+      // Store booking ID for later payment
+      const bookingResponse = (data as any).data || data;
+      setBookingId(bookingResponse.id);
+      setCurrentStep(4); // Skip payment, go directly to confirmation
       // Navigate to customer dashboard bookings tab after 3 seconds
       setTimeout(() => {
         router.push('/customer/dashboard?tab=bookings');
@@ -126,6 +131,40 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     onError: (error: any) => {
       console.error('❌ Booking error:', error);
       toast.error(error.response?.data?.detail || 'Failed to create booking request');
+    }
+  })
+
+  // Confirm booking with payment mutation (Step 3 - Only after provider approval)
+  const confirmBookingMutation = useMutation({
+    mutationFn: async (paymentPayload: any) => {
+      console.log('=== PAYMENT MUTATION DEBUG ===');
+      console.log('Booking ID:', bookingId);
+      console.log('Payment Payload:', paymentPayload);
+      console.log('Full URL:', `/api/v1/bookings/${bookingId}/payment`);
+      
+      const response = await apiClient.post(`/api/v1/bookings/${bookingId}/payment`, paymentPayload);
+      return response;
+    },
+    onSuccess: (data) => {
+      console.log('✅ Payment success:', data);
+      toast.success('Payment processed successfully! Booking confirmed.');
+      setCurrentStep(4); // Go to confirmation
+      // Navigate to customer dashboard bookings tab after 3 seconds
+      setTimeout(() => {
+        router.push('/customer/dashboard?tab=bookings');
+      }, 3000);
+    },
+    onError: (error: any) => {
+      console.error('❌ Payment error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error detail:', error.response?.data?.detail);
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to process payment';
+      toast.error(errorMessage, {
+        description: 'Please check the console for more details'
+      });
     }
   })
 
@@ -173,6 +212,41 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     };
 
     createBookingMutation.mutate(bookingPayload);
+  }
+
+  const handlePaymentConfirmation = () => {
+    if (!bookingId) {
+      toast.error('Booking ID not found. Please try again.');
+      return;
+    }
+
+    // Generate payment reference
+    const paymentReference = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+    // Prepare payment payload with all details
+    const paymentPayload = {
+      payment_method: bookingData.paymentMethod, // "card" or "momo"
+      payment_reference: paymentReference,
+      payment_amount: pricing.total,
+      // Mobile Money details
+      ...(bookingData.paymentMethod === "momo" && {
+        momo_provider: bookingData.momoProvider,
+        momo_phone: bookingData.contactPhone,
+      }),
+      // Card details
+      ...(bookingData.paymentMethod === "card" && {
+        card_holder: bookingData.cardHolder,
+        card_number: bookingData.cardNumber,
+        card_expiry: bookingData.cardExpiry,
+        card_cvv: bookingData.cardCvv,
+      }),
+    };
+
+    console.log('=== PAYMENT CONFIRMATION DEBUG ===');
+    console.log('Booking ID:', bookingId);
+    console.log('Payment Payload:', paymentPayload);
+
+    confirmBookingMutation.mutate(paymentPayload);
   }
 
   const availableTimeslots = ["09:00", "11:00", "13:00", "15:00", "17:00"]
@@ -592,12 +666,25 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   <Button variant="outline" onClick={handlePrevStep} className="h-12 px-8">
                     Back
                   </Button>
-                  <Button onClick={handleBookingSubmit} className="flex-1 h-12 text-lg font-bold" disabled={
-                    !bookingData.acceptedContract ||
-                    (bookingData.paymentMethod === "momo" && (!bookingData.momoProvider || !bookingData.contactPhone)) ||
-                    (bookingData.paymentMethod === "card" && (!bookingData.cardHolder || !bookingData.cardNumber || !bookingData.cardExpiry || !bookingData.cardCvv))
-                  }>
-                    Confirm Booking • {pricing.total.toLocaleString()} RWF
+                  <Button 
+                    onClick={handlePaymentConfirmation} 
+                    className="flex-1 h-12 text-lg font-bold shadow-md shadow-primary/20" 
+                    disabled={
+                      !bookingId ||
+                      !bookingData.acceptedContract ||
+                      (bookingData.paymentMethod === "momo" && (!bookingData.momoProvider || !bookingData.contactPhone)) ||
+                      (bookingData.paymentMethod === "card" && (!bookingData.cardHolder || !bookingData.cardNumber || !bookingData.cardExpiry || !bookingData.cardCvv)) ||
+                      confirmBookingMutation.isPending
+                    }
+                  >
+                    {confirmBookingMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing Payment...
+                      </>
+                    ) : (
+                      <>Confirm Booking • {pricing.total.toLocaleString()} RWF</>
+                    )}
                   </Button>
                 </div>
               </CardContent>

@@ -217,7 +217,10 @@ class ApiClient {
       return axiosInstance.post<any>(`/api/v1/bookings/${id}/cancel`);
     },
     getProviderBookings: async (params?: { status?: string }) => {
-      return axiosInstance.get<any[]>('/api/v1/bookings/provider/bookings', { params });
+      return axiosInstance.get<any[]>('/api/v1/bookings/provider', { params });
+    },
+    getProviderBookingStats: async () => {
+      return axiosInstance.get<any>('/api/v1/bookings/provider/statistics/summary');
     },
   };
 
