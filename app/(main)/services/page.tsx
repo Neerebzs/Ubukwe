@@ -108,7 +108,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col md:pl-10 mx-auto px-4">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col md:pl-10 mx-auto px-4 pt-20">
       <div className="flex flex-1 flex-col md:flex-row">
 
         {/* Main Content Area */}

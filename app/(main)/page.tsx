@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePublicEvents } from "@/hooks/useCustomerEvents";
 import { useOffers } from "@/hooks/useOffers";
+import { SupportWidget } from "@/components/SupportWidget";
 
 export default function HomePage() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -616,6 +617,9 @@ export default function HomePage() {
 
       {/* Mobile Bottom Navigation - Only on mobile */}
       <PublicBottomNav />
+
+      {/* Support Widget */}
+      <SupportWidget />
 
       <style jsx>{`
         .scrollbar-hide::-webkit-scrollbar {
