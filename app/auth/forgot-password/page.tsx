@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth"
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("")
     const [error, setError] = useState<string | undefined>()
+    const [isSent, setIsSent] = useState(false)
     const { forgotPassword, isSendingResetEmail } = useAuth()
     const router = useRouter()
 
@@ -32,12 +33,48 @@ export default function ForgotPasswordPage() {
         }
 
         try {
-            await forgotPassword(email)
-            // Transition to OTP verification
+            const response = await forgotPassword(email)
+            const resetToken = response?.data?.reset_token
+            if (resetToken && typeof window !== "undefined") {
+                sessionStorage.setItem("resetPasswordToken", resetToken)
+            }
             router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}`)
         } catch (err: any) {
             setError(err.message || "Failed to send reset email")
         }
+    }
+
+    if (isSent) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
+                <div className="w-full max-w-md text-center">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Check Your Email</CardTitle>
+                            <CardDescription>
+                                We sent a password reset link to <span className="font-medium text-foreground">{email}</span>.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                                The link expires in 15 minutes. If you do not see the email, check your spam folder.
+                            </p>
+                            <Button asChild className="w-full">
+                                <Link href="/auth/signin">Back to Sign In</Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => setIsSent(false)}
+                            >
+                                Send to a different email
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        )
     }
 
     return (

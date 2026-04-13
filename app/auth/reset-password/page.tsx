@@ -27,13 +27,13 @@ export default function ResetPasswordPage() {
     const searchParams = useSearchParams()
 
     const email = searchParams.get("email")
-    const otp = searchParams.get("otp")
+    const token = searchParams.get("token")
 
     useEffect(() => {
-        if (!email || !otp) {
+        if (!email || !token) {
             router.push("/auth/forgot-password")
         }
-    }, [email, otp, router])
+    }, [email, token, router])
 
     const validateForm = (): boolean => {
         const newErrors: { password?: string; confirmPassword?: string } = {}
@@ -62,10 +62,8 @@ export default function ResetPasswordPage() {
         if (!validateForm()) return
 
         try {
-            // In this context, we use the OTP as the token for the reset API
-            // In a real app, the backend might handle this differently
             await resetPassword({
-                token: otp || "",
+                token: token || "",
                 password: formData.password,
             })
 

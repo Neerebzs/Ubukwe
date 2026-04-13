@@ -16,6 +16,7 @@ export default function VerifyOtpPage() {
     const [isVerifying, setIsVerifying] = useState(false)
     const [isResending, setIsResending] = useState(false)
     const [timer, setTimer] = useState(60)
+    const [resetToken, setResetToken] = useState("")
     const router = useRouter()
     const searchParams = useSearchParams()
     const email = searchParams.get("email") || ""
@@ -25,6 +26,19 @@ export default function VerifyOtpPage() {
     useEffect(() => {
         if (!email) {
             router.push("/auth/forgot-password")
+        }
+    }, [email, router])
+
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            return
+        }
+
+        const storedToken = sessionStorage.getItem("resetPasswordToken") || ""
+        setResetToken(storedToken)
+
+        if (!storedToken && email) {
+            router.push(`/auth/forgot-password?email=${encodeURIComponent(email)}`)
         }
     }, [email, router])
 
@@ -72,7 +86,12 @@ export default function VerifyOtpPage() {
         setIsResending(true)
         try {
             const { apiClient } = await import('@/lib/api')
-            await apiClient.post(`/api/v1/auth/forgot-password`, { email })
+            const response = await apiClient.post(`/api/v1/auth/forgot-password`, { email })
+            const newToken = response.data?.reset_token
+            if (newToken && typeof window !== "undefined") {
+                sessionStorage.setItem("resetPasswordToken", newToken)
+                setResetToken(newToken)
+            }
             setTimer(60)
             toast.success("Code resent successfully!")
         } catch (err) {
@@ -92,10 +111,14 @@ export default function VerifyOtpPage() {
 
         setIsVerifying(true)
         try {
+            if (!resetToken) {
+                throw new Error("Verification session expired. Please request a new code.")
+            }
+
             const { apiClient } = await import('@/lib/api')
-            await apiClient.post(`/api/v1/auth/verify-otp`, { email, otp: otpValue })
+            await apiClient.post(`/api/v1/auth/verify-otp`, { email, otp: otpValue, reset_token: resetToken })
             toast.success("OTP verified successfully!")
-            router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&otp=${otpValue}`)
+            router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(resetToken)}`)
         } catch (err: any) {
             toast.error(err.message || "Invalid or expired code")
         } finally {

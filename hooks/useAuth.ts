@@ -220,13 +220,13 @@ export const useAuth = () => {
     isLoading: isUserLoading,
 
     // Mutations
-    login: loginMutation.mutate,
-    register: registerMutation.mutate,
-    logout: logoutMutation.mutate,
-    updateProfile: updateProfileMutation.mutate,
-    changePassword: changePasswordMutation.mutate,
-    forgotPassword: forgotPasswordMutation.mutate,
-    resetPassword: resetPasswordMutation.mutate,
+    login: loginMutation.mutateAsync,
+    register: registerMutation.mutateAsync,
+    logout: logoutMutation.mutateAsync,
+    updateProfile: updateProfileMutation.mutateAsync,
+    changePassword: changePasswordMutation.mutateAsync,
+    forgotPassword: forgotPasswordMutation.mutateAsync,
+    resetPassword: resetPasswordMutation.mutateAsync,
 
     // Mutation states
     isLoggingIn: loginMutation.isPending,
