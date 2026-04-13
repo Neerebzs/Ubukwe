@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { apiClient, API_ENDPOINTS } from "@/lib/api";
 
 export interface ProfileUpdateData {
   full_name?: string;
@@ -19,12 +19,10 @@ export interface ChangePasswordData {
  */
 export async function updateProfile(data: ProfileUpdateData) {
   try {
-    const response = await apiClient.put("/auth/update-profile", data);
+    const response = await apiClient.put(API_ENDPOINTS.AUTH.UPDATE_PROFILE, data);
     return response.data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to update profile"
-    );
+    throw new Error(error?.message || "Failed to update profile");
   }
 }
 
@@ -33,12 +31,10 @@ export async function updateProfile(data: ProfileUpdateData) {
  */
 export async function changePassword(data: ChangePasswordData) {
   try {
-    const response = await apiClient.put("/auth/change-password", data);
+    const response = await apiClient.put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, data);
     return response.data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to change password"
-    );
+    throw new Error(error?.message || "Failed to change password");
   }
 }
 
@@ -47,11 +43,9 @@ export async function changePassword(data: ChangePasswordData) {
  */
 export async function getCurrentProfile() {
   try {
-    const response = await apiClient.get("/auth/me");
+    const response = await apiClient.get(API_ENDPOINTS.AUTH.GET_ME);
     return response.data;
   } catch (error: any) {
-    throw new Error(
-      error.response?.data?.detail || "Failed to fetch profile"
-    );
+    throw new Error(error?.message || "Failed to fetch profile");
   }
 }
