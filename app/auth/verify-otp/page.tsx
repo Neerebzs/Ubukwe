@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, ArrowLeft, RefreshCw, Home } from "lucide-react"
@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
-export default function VerifyOtpPage() {
+function VerifyOtpForm() {
     const [otp, setOtp] = useState(["", "", "", "", "", ""])
     const [isVerifying, setIsVerifying] = useState(false)
     const [isResending, setIsResending] = useState(false)
@@ -124,6 +124,91 @@ export default function VerifyOtpPage() {
     }
 
     return (
+        <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
+            {/* Header */}
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Authentication</p>
+                    <h1 className="text-5xl font-serif italic text-white leading-tight">Verification</h1>
+                </div>
+                <p className="text-slate-400 text-sm font-medium tracking-wide">
+                    We've sent a 6-digit code to <span className="text-white">{email}</span>
+                </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-6">
+                    <div className="flex justify-between gap-2">
+                        {otp.map((digit, index) => (
+                            <Input
+                                key={index}
+                                ref={(el) => {
+                                    inputRefs.current[index] = el
+                                }}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="\d*"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) => handleChange(index, e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(index, e)}
+                                className="h-14 w-12 text-center text-xl font-bold bg-white/5 border-white/10 text-white rounded-xl focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium"
+                                disabled={isVerifying}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="text-center space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                            Didn't receive the code?{" "}
+                            {timer > 0 ? (
+                                <span className="text-white/60">Resend in {timer}s</span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleResend}
+                                    disabled={isResending}
+                                    className="text-[#608d64] hover:text-white transition-colors inline-flex items-center"
+                                >
+                                    {isResending && <RefreshCw className="mr-1 h-3 w-3 animate-spin" />}
+                                    Resend Now
+                                </button>
+                            )}
+                        </p>
+                    </div>
+                </div>
+
+                <Button
+                    type="submit"
+                    className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+                    disabled={isVerifying || otp.join("").length < 6}
+                >
+                    {isVerifying ? (
+                        <div className="flex items-center gap-3">
+                            <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+                            <span>Verifying</span>
+                        </div>
+                    ) : (
+                        'Verify Code'
+                    )}
+                </Button>
+
+                <div className="pt-8 border-t border-white/5 text-center">
+                    <Link
+                        href="/auth/forgot-password"
+                        className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Try a different email
+                    </Link>
+                </div>
+            </form>
+        </div>
+    )
+}
+
+export default function VerifyOtpPage() {
+    return (
         <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
             {/* Visual Narrative Side - Desktop only */}
             <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
@@ -173,86 +258,9 @@ export default function VerifyOtpPage() {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
-                    {/* Header */}
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Authentication</p>
-                            <h1 className="text-5xl font-serif italic text-white leading-tight">Verification</h1>
-                        </div>
-                        <p className="text-slate-400 text-sm font-medium tracking-wide">
-                            We've sent a 6-digit code to <span className="text-white">{email}</span>
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        <div className="space-y-6">
-                            <div className="flex justify-between gap-2">
-                                {otp.map((digit, index) => (
-                                    <Input
-                                        key={index}
-                                        ref={(el) => {
-                                            inputRefs.current[index] = el
-                                        }}
-                                        type="text"
-                                        inputMode="numeric"
-                                        pattern="\d*"
-                                        maxLength={1}
-                                        value={digit}
-                                        onChange={(e) => handleChange(index, e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="h-14 w-12 text-center text-xl font-bold bg-white/5 border-white/10 text-white rounded-xl focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium"
-                                        disabled={isVerifying}
-                                    />
-                                ))}
-                            </div>
-
-                            <div className="text-center space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                    Didn't receive the code?{" "}
-                                    {timer > 0 ? (
-                                        <span className="text-white/60">Resend in {timer}s</span>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={handleResend}
-                                            disabled={isResending}
-                                            className="text-[#608d64] hover:text-white transition-colors inline-flex items-center"
-                                        >
-                                            {isResending && <RefreshCw className="mr-1 h-3 w-3 animate-spin" />}
-                                            Resend Now
-                                        </button>
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button
-                            type="submit"
-                            className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
-                            disabled={isVerifying || otp.join("").length < 6}
-                        >
-                            {isVerifying ? (
-                                <div className="flex items-center gap-3">
-                                    <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
-                                    <span>Verifying</span>
-                                </div>
-                            ) : (
-                                'Verify Code'
-                            )}
-                        </Button>
-
-                        <div className="pt-8 border-t border-white/5 text-center">
-                            <Link
-                                href="/auth/forgot-password"
-                                className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
-                            >
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Try a different email
-                            </Link>
-                        </div>
-                    </form>
-                </div>
+                <Suspense fallback={<div className="flex justify-center items-center w-full max-w-sm mx-auto min-h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-[#608d64]" /></div>}>
+                    <VerifyOtpForm />
+                </Suspense>
             </div>
         </div>
     )

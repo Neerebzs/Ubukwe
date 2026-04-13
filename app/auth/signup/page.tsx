@@ -132,10 +132,10 @@ export default function SignUpPage() {
       </div>
 
       {/* Interaction Side */}
-      <div className="flex-1 flex flex-col bg-slate-900 justify-center px-8 lg:px-24 py-20 relative overflow-y-auto">
+      <div className="flex-1 flex flex-col bg-slate-900 justify-center px-6 md:px-8 lg:px-24 py-12 md:py-20 relative overflow-x-hidden overflow-y-auto">
         {/* Subtle background texture */}
-        <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+        <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48 pointer-events-none" />
 
         <div className="w-full max-w-xl mx-auto relative z-10 space-y-12">
           {/* Header */}

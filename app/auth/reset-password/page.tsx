@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const [formData, setFormData] = useState({
         password: "",
         confirmPassword: "",
@@ -78,6 +78,129 @@ export default function ResetPasswordPage() {
     }
 
     return (
+        <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
+            {isSuccess ? (
+                <div className="space-y-8">
+                    <div className="flex justify-center">
+                        <div className="h-20 w-20 bg-[#608d64]/10 rounded-full flex items-center justify-center border border-[#608d64]/30">
+                            <CheckCircle2 className="h-10 w-10 text-[#608d64]" />
+                        </div>
+                    </div>
+                    <div className="space-y-4 text-center">
+                        <h2 className="text-3xl font-serif italic text-white leading-tight">Password Reset</h2>
+                        <p className="text-slate-400 text-sm font-medium tracking-wide">
+                            Your secure password has been updated successfully.
+                        </p>
+                    </div>
+                    <Button
+                        asChild
+                        className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+                    >
+                        <Link href="/auth/signin">Sign In Now</Link>
+                    </Button>
+                    <p className="text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                        Redirecting automatically...
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-12">
+                    {/* Header */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Security</p>
+                            <h1 className="text-5xl font-serif italic text-white leading-tight">New Password</h1>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium tracking-wide">
+                            Create a secure password for your account.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">New Password</Label>
+                                </div>
+                                <div className="relative group">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={formData.password}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, password: e.target.value })
+                                            if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
+                                        }}
+                                        className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.password ? 'border-red-500/50 bg-red-500/5' : ''}`}
+                                        disabled={isResettingPassword}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        disabled={isResettingPassword}
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                {errors.password && <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.password}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center px-1">
+                                    <Label htmlFor="confirmPassword" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Confirm Password</Label>
+                                </div>
+                                <div className="relative group">
+                                    <Input
+                                        id="confirmPassword"
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        placeholder="••••••••"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, confirmPassword: e.target.value })
+                                            if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                                        }}
+                                        className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.confirmPassword ? 'border-red-500/50 bg-red-500/5' : ''}`}
+                                        disabled={isResettingPassword}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        disabled={isResettingPassword}
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                {errors.confirmPassword && (
+                                    <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.confirmPassword}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <Button
+                            type="submit"
+                            className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+                            disabled={isResettingPassword}
+                        >
+                            {isResettingPassword ? (
+                                <div className="flex items-center gap-3">
+                                    <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+                                    <span>Resetting</span>
+                                </div>
+                            ) : (
+                                'Reset Password'
+                            )}
+                        </Button>
+                    </form>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default function ResetPasswordPage() {
+    return (
         <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
             {/* Visual Narrative Side - Desktop only */}
             <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
@@ -127,124 +250,9 @@ export default function ResetPasswordPage() {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
-                    {isSuccess ? (
-                        <div className="space-y-8">
-                            <div className="flex justify-center">
-                                <div className="h-20 w-20 bg-[#608d64]/10 rounded-full flex items-center justify-center border border-[#608d64]/30">
-                                    <CheckCircle2 className="h-10 w-10 text-[#608d64]" />
-                                </div>
-                            </div>
-                            <div className="space-y-4 text-center">
-                                <h2 className="text-3xl font-serif italic text-white leading-tight">Password Reset</h2>
-                                <p className="text-slate-400 text-sm font-medium tracking-wide">
-                                    Your secure password has been updated successfully.
-                                </p>
-                            </div>
-                            <Button
-                                asChild
-                                className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
-                            >
-                                <Link href="/auth/signin">Sign In Now</Link>
-                            </Button>
-                            <p className="text-center text-[9px] font-bold uppercase tracking-widest text-slate-500">
-                                Redirecting automatically...
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-12">
-                            {/* Header */}
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Security</p>
-                                    <h1 className="text-5xl font-serif italic text-white leading-tight">New Password</h1>
-                                </div>
-                                <p className="text-slate-400 text-sm font-medium tracking-wide">
-                                    Create a secure password for your account.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-8">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center px-1">
-                                            <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">New Password</Label>
-                                        </div>
-                                        <div className="relative group">
-                                            <Input
-                                                id="password"
-                                                type={showPassword ? "text" : "password"}
-                                                placeholder="••••••••"
-                                                value={formData.password}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, password: e.target.value })
-                                                    if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
-                                                }}
-                                                className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.password ? 'border-red-500/50 bg-red-500/5' : ''}`}
-                                                disabled={isResettingPassword}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                disabled={isResettingPassword}
-                                            >
-                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                            </button>
-                                        </div>
-                                        {errors.password && <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.password}</p>}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center px-1">
-                                            <Label htmlFor="confirmPassword" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Confirm Password</Label>
-                                        </div>
-                                        <div className="relative group">
-                                            <Input
-                                                id="confirmPassword"
-                                                type={showConfirmPassword ? "text" : "password"}
-                                                placeholder="••••••••"
-                                                value={formData.confirmPassword}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, confirmPassword: e.target.value })
-                                                    if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }))
-                                                }}
-                                                className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.confirmPassword ? 'border-red-500/50 bg-red-500/5' : ''}`}
-                                                disabled={isResettingPassword}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                disabled={isResettingPassword}
-                                            >
-                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                            </button>
-                                        </div>
-                                        {errors.confirmPassword && (
-                                            <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.confirmPassword}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
-                                    disabled={isResettingPassword}
-                                >
-                                    {isResettingPassword ? (
-                                        <div className="flex items-center gap-3">
-                                            <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
-                                            <span>Resetting</span>
-                                        </div>
-                                    ) : (
-                                        'Reset Password'
-                                    )}
-                                </Button>
-                            </form>
-                        </div>
-                    )}
-                </div>
+                <Suspense fallback={<div className="flex justify-center items-center w-full max-w-sm mx-auto min-h-[50vh]"><Loader2 className="h-8 w-8 animate-spin text-[#608d64]" /></div>}>
+                    <ResetPasswordForm />
+                </Suspense>
             </div>
         </div>
     )

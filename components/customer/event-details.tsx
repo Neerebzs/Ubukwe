@@ -27,7 +27,7 @@ import { TicketPurchaseForm } from "./ticket-purchase-form";
 import { PaymentUI } from "./payment-ui";
 import { TicketDownload } from "./ticket-download";
 import { usePurchaseTicket } from "@/hooks/useCustomerEvents";
-import QRCode from "qrcode.react";
+import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { useEffect, useRef } from "react";
 
@@ -81,20 +81,24 @@ export function EventDetails({ event }: EventDetailsProps) {
       const response = await purchaseTicketMutation.mutateAsync({
         eventId: event.id,
         ticketTypeId: purchaseData.ticketTypeId,
-        ticketData: {
-          holder_name: purchaseData.holderName,
-          holder_email: purchaseData.holderEmail,
-          holder_phone: purchaseData.holderPhone,
-          quantity: purchaseData.quantity,
-        },
+        tickets: [
+          {
+            holder_name: purchaseData.holderName,
+            holder_email: purchaseData.holderEmail,
+            holder_phone: purchaseData.holderPhone,
+          },
+        ],
+        quantity: purchaseData.quantity,
       });
 
-      // Generate QR code and barcode
-      const qrCodeUrl = await generateQRCode(response.ticket_number);
-      const barcodeUrl = await generateBarcode(response.ticket_number);
+      // Generate QR code and barcode using first ticket number
+      const ticketNumber = response.tickets?.[0]?.ticket_number || response.purchase_id;
+      const qrCodeUrl = await generateQRCode(ticketNumber);
+      const barcodeUrl = await generateBarcode(ticketNumber);
 
       setPurchasedTicket({
         ...response,
+        ticket_number: ticketNumber,
         qrCode: qrCodeUrl,
         barcode: barcodeUrl,
       });
@@ -109,9 +113,7 @@ export function EventDetails({ event }: EventDetailsProps) {
   // Generate QR code
   const generateQRCode = async (data: string): Promise<string> => {
     try {
-      const canvas = document.createElement("canvas");
-      const qr = QRCode.render(data, { canvas });
-      return canvas.toDataURL("image/png");
+      return await QRCode.toDataURL(data, { width: 200, margin: 1 });
     } catch (error) {
       console.error("Error generating QR code:", error);
       return "";
