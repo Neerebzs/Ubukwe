@@ -2,11 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, RefreshCw } from "lucide-react"
+import { Loader2, ArrowLeft, RefreshCw, Home } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -87,7 +84,7 @@ export default function VerifyOtpPage() {
         try {
             const { apiClient } = await import('@/lib/api')
             const response = await apiClient.post(`/api/v1/auth/forgot-password`, { email })
-            const newToken = response.data?.reset_token
+            const newToken = (response.data as any)?.reset_token
             if (newToken && typeof window !== "undefined") {
                 sessionStorage.setItem("resetPasswordToken", newToken)
                 setResetToken(newToken)
@@ -127,32 +124,69 @@ export default function VerifyOtpPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-                        <div className="h-8 w-8 rounded-full bg-primary"></div>
-                        <span className="text-xl font-bold text-foreground">Ubukwe</span>
-                        <Badge variant="secondary" className="text-xs">
-                            Rwanda
-                        </Badge>
+        <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
+            {/* Visual Narrative Side - Desktop only */}
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
+                <img
+                    src="/grom.jpg"
+                    alt="Editorial Wedding Scape"
+                    className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] hover:scale-105 transition-transform duration-[3s] ease-out"
+                />
+                <div className="absolute inset-0 bg-slate-900/10" />
+                <div className="relative z-10 w-full h-full p-20 flex flex-col justify-between text-white drop-shadow-2xl">
+                    <Link href="/" className="flex items-center space-x-3 group">
+                        <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center">
+                            <span className="font-serif italic text-2xl">V</span>
+                        </div>
+                        <span className="text-3xl font-serif italic tracking-tight">VowNest</span>
                     </Link>
-                    <h1 className="text-2xl font-bold mb-2">Verify Account</h1>
-                    <p className="text-muted-foreground">
-                        We've sent a code to <span className="font-medium text-foreground">{email}</span>
-                    </p>
+
+                    <div className="max-w-md space-y-6">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-60">The Collective Spirit</p>
+                        <h2 className="text-6xl font-serif italic leading-[1.1]">Where Artistry Meets Your Eternal Story.</h2>
+                        <div className="h-[2px] w-24 bg-[#608d64]" />
+                    </div>
+
+                    <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                        <span>© 2024 Rwanda</span>
+                        <span>Est. Traditions</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Interaction Side */}
+            <div className="flex-1 flex flex-col bg-slate-900 justify-center px-8 lg:px-24 py-20 relative overflow-hidden">
+                {/* Subtle background texture */}
+                <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
+                <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+
+                {/* Return to Home - Mobile/Desktop */}
+                <div className="absolute top-8 left-8 lg:left-24 z-20">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 text-[10px] font-black text-white/40 hover:text-[#608d64] uppercase tracking-[0.3em] transition-all group"
+                    >
+                        <div className="h-8 w-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-[#608d64]/30 group-hover:bg-[#608d64]/5 transition-all">
+                            <Home className="h-3 w-3" />
+                        </div>
+                        <span>Return Home</span>
+                    </Link>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Enter Code</CardTitle>
-                        <CardDescription>
-                            Please enter the 6-digit verification code sent to your email.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
+                    {/* Header */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Authentication</p>
+                            <h1 className="text-5xl font-serif italic text-white leading-tight">Verification</h1>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium tracking-wide">
+                            We've sent a 6-digit code to <span className="text-white">{email}</span>
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="space-y-6">
                             <div className="flex justify-between gap-2">
                                 {otp.map((digit, index) => (
                                     <Input
@@ -167,23 +201,23 @@ export default function VerifyOtpPage() {
                                         value={digit}
                                         onChange={(e) => handleChange(index, e.target.value)}
                                         onKeyDown={(e) => handleKeyDown(index, e)}
-                                        className="w-12 h-12 text-center text-xl font-bold"
+                                        className="h-14 w-12 text-center text-xl font-bold bg-white/5 border-white/10 text-white rounded-xl focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium"
                                         disabled={isVerifying}
                                     />
                                 ))}
                             </div>
 
                             <div className="text-center space-y-2">
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     Didn't receive the code?{" "}
                                     {timer > 0 ? (
-                                        <span className="font-medium">Resend in {timer}s</span>
+                                        <span className="text-white/60">Resend in {timer}s</span>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={handleResend}
                                             disabled={isResending}
-                                            className="text-primary hover:underline font-medium inline-flex items-center"
+                                            className="text-[#608d64] hover:text-white transition-colors inline-flex items-center"
                                         >
                                             {isResending && <RefreshCw className="mr-1 h-3 w-3 animate-spin" />}
                                             Resend Now
@@ -191,30 +225,34 @@ export default function VerifyOtpPage() {
                                     )}
                                 </p>
                             </div>
+                        </div>
 
-                            <Button type="submit" className="w-full" disabled={isVerifying || otp.join("").length < 6}>
-                                {isVerifying ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Verifying...
-                                    </>
-                                ) : (
-                                    "Verify Code"
-                                )}
-                            </Button>
+                        <Button
+                            type="submit"
+                            className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+                            disabled={isVerifying || otp.join("").length < 6}
+                        >
+                            {isVerifying ? (
+                                <div className="flex items-center gap-3">
+                                    <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+                                    <span>Verifying</span>
+                                </div>
+                            ) : (
+                                'Verify Code'
+                            )}
+                        </Button>
 
-                            <div className="text-center">
-                                <Link
-                                    href="/auth/forgot-password"
-                                    className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                                >
-                                    <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Try a different email
-                                </Link>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+                        <div className="pt-8 border-t border-white/5 text-center">
+                            <Link
+                                href="/auth/forgot-password"
+                                className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                            >
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Try a different email
+                            </Link>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     )

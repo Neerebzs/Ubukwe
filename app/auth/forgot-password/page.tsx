@@ -2,11 +2,9 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowLeft, Home } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
@@ -14,7 +12,6 @@ import { useAuth } from "@/hooks/useAuth"
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("")
     const [error, setError] = useState<string | undefined>()
-    const [isSent, setIsSent] = useState(false)
     const { forgotPassword, isSendingResetEmail } = useAuth()
     const router = useRouter()
 
@@ -44,104 +41,118 @@ export default function ForgotPasswordPage() {
         }
     }
 
-    if (isSent) {
-        return (
-            <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
-                <div className="w-full max-w-md text-center">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Check Your Email</CardTitle>
-                            <CardDescription>
-                                We sent a password reset link to <span className="font-medium text-foreground">{email}</span>.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                The link expires in 15 minutes. If you do not see the email, check your spam folder.
-                            </p>
-                            <Button asChild className="w-full">
-                                <Link href="/auth/signin">Back to Sign In</Link>
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => setIsSent(false)}
-                            >
-                                Send to a different email
-                            </Button>
-                        </CardContent>
-                    </Card>
+    return (
+        <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
+            {/* Visual Narrative Side - Desktop only */}
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
+                <img
+                    src="/grom.jpg"
+                    alt="Editorial Wedding Scape"
+                    className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] hover:scale-105 transition-transform duration-[3s] ease-out"
+                />
+                <div className="absolute inset-0 bg-slate-900/10" />
+                <div className="relative z-10 w-full h-full p-20 flex flex-col justify-between text-white drop-shadow-2xl">
+                    <Link href="/" className="flex items-center space-x-3 group">
+                        <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center">
+                            <span className="font-serif italic text-2xl">V</span>
+                        </div>
+                        <span className="text-3xl font-serif italic tracking-tight">VowNest</span>
+                    </Link>
+
+                    <div className="max-w-md space-y-6">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-60">The Collective Spirit</p>
+                        <h2 className="text-6xl font-serif italic leading-[1.1]">Where Artistry Meets Your Eternal Story.</h2>
+                        <div className="h-[2px] w-24 bg-[#608d64]" />
+                    </div>
+
+                    <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
+                        <span>© 2024 Rwanda</span>
+                        <span>Est. Traditions</span>
+                    </div>
                 </div>
             </div>
-        )
-    }
 
-    return (
-        <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-                        <div className="h-8 w-8 rounded-full bg-primary"></div>
-                        <span className="text-xl font-bold text-foreground">Ubukwe</span>
-                        <Badge variant="secondary" className="text-xs">
-                            Rwanda
-                        </Badge>
+            {/* Interaction Side */}
+            <div className="flex-1 flex flex-col bg-slate-900 justify-center px-8 lg:px-24 py-20 relative overflow-hidden">
+                {/* Subtle background texture */}
+                <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
+                <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+
+                {/* Return to Home - Mobile/Desktop */}
+                <div className="absolute top-8 left-8 lg:left-24 z-20">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 text-[10px] font-black text-white/40 hover:text-[#608d64] uppercase tracking-[0.3em] transition-all group"
+                    >
+                        <div className="h-8 w-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-[#608d64]/30 group-hover:bg-[#608d64]/5 transition-all">
+                            <Home className="h-3 w-3" />
+                        </div>
+                        <span>Return Home</span>
                     </Link>
-                    <h1 className="text-2xl font-bold mb-2">Forgot Password</h1>
-                    <p className="text-muted-foreground">Enter your email to receive a reset code</p>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Reset Password</CardTitle>
-                        <CardDescription>
+                <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
+                    {/* Header */}
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Recovery</p>
+                            <h1 className="text-5xl font-serif italic text-white leading-tight">Reset Password</h1>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium tracking-wide">
                             We'll send a 6-digit verification code to your email address.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
+                                <div className="flex justify-between items-center px-1">
+                                    <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Email Address</Label>
+                                    {error ? (
+                                        <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">{error}</span>
+                                    ) : null}
+                                </div>
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="your@email.com"
+                                    placeholder="name@artistry.com"
                                     value={email}
                                     onChange={(e) => {
                                         setEmail(e.target.value)
                                         if (error) setError(undefined)
                                     }}
-                                    className={error ? "border-red-500" : ""}
+                                    className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${error ? 'border-red-500/50 bg-red-500/5' : ''}`}
                                     disabled={isSendingResetEmail}
                                 />
-                                {error && <p className="text-sm text-red-500">{error}</p>}
                             </div>
+                        </div>
 
-                            <Button type="submit" className="w-full" disabled={isSendingResetEmail}>
-                                {isSendingResetEmail ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Sending Code...
-                                    </>
-                                ) : (
-                                    "Send Code"
-                                )}
-                            </Button>
+                        <Button
+                            type="submit"
+                            className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
+                            disabled={isSendingResetEmail}
+                        >
+                            {isSendingResetEmail ? (
+                                <div className="flex items-center gap-3">
+                                    <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+                                    <span>Sending Code</span>
+                                </div>
+                            ) : (
+                                'Send Code'
+                            )}
+                        </Button>
 
-                            <div className="text-center mt-4">
-                                <Link
-                                    href="/auth/signin"
-                                    className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                                >
-                                    <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Back to Sign In
-                                </Link>
-                            </div>
-                        </form>
-                    </CardContent>
-                </Card>
+                        <div className="pt-8 border-t border-white/5 text-center">
+                            <Link
+                                href="/auth/signin"
+                                className="inline-flex items-center text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+                            >
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back to Sign In
+                            </Link>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     )
