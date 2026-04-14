@@ -75,18 +75,12 @@ export function ProviderDashboardContent() {
     switch (activeTab) {
       case "overview": return <ProviderOverview />
       case "services": return <ProviderServices />
+      case "bookings": return <ProviderBookings />
       case "events": return <EventsManagement />
       case "tickets": return <TicketManagementWrapper />
-      case "bookings": return <ProviderBookings />
-      case "inquiries": return (
-        <InquiryManagement
-          onSendQuote={(inqId, custId) => {
-            // Logic for sending quote (previously redirected to quotes tab)
-            console.log("Send quote for inquiry", inqId, "to customer", custId);
-          }}
-        />
-      )
-
+      case "availability": return <AvailabilityCalendar />
+      case "gallery": return <AssetLibrary />
+      case "inquiries": return <ProviderReviewsView />
       case "contracts": return <ProviderContracts />
       case "messages": return <MessagesHub />
       case "onboarding": return <ProviderOnboardingForm />

@@ -33,7 +33,6 @@ export function ProviderTabsSidebar({
       title: "How I'm Doing",
       items: [
         { id: "overview", label: "My Hub", icon: <Home className="w-4 h-4" /> },
-        { id: "reviews", label: "Reviews & Testimonials", icon: <Star className="w-4 h-4" /> },
         // Only show onboarding tab if user is not verified
         ...(!isVerified ? [{ id: "onboarding", label: "Set Up Profile", icon: <FileText className="w-4 h-4" /> }] : []),
       ]
@@ -50,7 +49,7 @@ export function ProviderTabsSidebar({
       title: "My Customers",
       items: [
         { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
-        { id: "inquiries", label: "New Requests", icon: <MessageSquare className="w-4 h-4" /> },
+        { id: "inquiries", label: "Customer Feedback", icon: <Star className="w-4 h-4" /> },
         { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },
       ]
     },

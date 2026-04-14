@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewDialog } from "@/components/reviews/review-dialog"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
 
 export function CustomerReviewsView() {
   const [selectedBooking, setSelectedBooking] = useState<{ id: string, serviceName: string, providerName: string } | null>(null)
@@ -46,8 +47,8 @@ export function CustomerReviewsView() {
     }
   })
 
-  const pendingReviews = bookings?.filter((b: any) => 
-    b.status === 'completed' && 
+  const pendingReviews = (bookings as any[])?.filter((b: any) => 
+    (b.status === 'completed' || b.status === 'confirmed') && 
     !reviews?.some((r: any) => r.booking_id === b.id)
   ) || []
 
@@ -68,15 +69,35 @@ export function CustomerReviewsView() {
           </p>
         </div>
         
-        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm">
-           <div className="px-6 py-3 text-center border-r border-slate-100">
-              <p className="text-2xl font-black text-slate-900 leading-none">{publishedReviews.length}</p>
-              <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">Reviews Given</p>
-           </div>
-           <div className="px-6 py-3 text-center">
-              <p className="text-2xl font-black text-[#668c65] leading-none">{pendingReviews.length}</p>
-              <p className="text-[8px] font-black uppercase tracking-widest text-[#668c65]/60 mt-1">Awaiting Flow</p>
-           </div>
+        <div className="flex items-center gap-4">
+          <div className="bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm flex items-center gap-4">
+             <div className="px-6 py-3 text-center border-r border-slate-100">
+                <p className="text-2xl font-black text-slate-900 leading-none">{publishedReviews.length}</p>
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">Reviews Given</p>
+             </div>
+             <div className="px-6 py-3 text-center">
+                <p className="text-2xl font-black text-[#668c65] leading-none">{pendingReviews.length}</p>
+                <p className="text-[8px] font-black uppercase tracking-widest text-[#668c65]/60 mt-1">Awaiting Flow</p>
+             </div>
+          </div>
+          <Button 
+            className="rounded-[1.5rem] bg-[#668c65] hover:bg-slate-900 text-white px-8 h-14 text-[10px] font-black uppercase tracking-widest shadow-xl transition-all gap-3"
+            onClick={() => {
+              if (pendingReviews.length > 0) {
+                const b = pendingReviews[0];
+                setSelectedBooking({
+                  id: b.id,
+                  serviceName: b.service_name || 'Wedding Service',
+                  providerName: b.provider_name || 'Verified Artisan'
+                });
+              } else {
+                toast.info("No bookings available for review at the moment.");
+              }
+            }}
+          >
+            <Star className="w-4 h-4" />
+            Write a Review
+          </Button>
         </div>
       </div>
 

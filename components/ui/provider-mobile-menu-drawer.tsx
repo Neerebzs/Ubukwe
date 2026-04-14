@@ -67,7 +67,6 @@ export function ProviderMobileMenuDrawer({
       icon: <Home className="w-4 h-4" />,
       items: [
         { id: "overview", label: "Dashboard", icon: Home },
-        { id: "reviews", label: "Reviews & Testimonials", icon: Star },
         ...(!user?.is_verified ? [{ id: "onboarding", label: "Onboarding", icon: FileText }] : []),
       ]
     },
@@ -83,11 +82,11 @@ export function ProviderMobileMenuDrawer({
     },
     {
       id: "crm",
-      title: "CRM",
+      title: "My Relationships",
       icon: <MessageSquare className="w-4 h-4" />,
       items: [
         { id: "messages", label: "Messages", icon: MessageSquare },
-        { id: "inquiries", label: "Inquiries", icon: MessageSquare },
+        { id: "inquiries", label: "Customer Feedback", icon: Star },
         { id: "contracts", label: "Contracts", icon: FileText },
       ]
     },
