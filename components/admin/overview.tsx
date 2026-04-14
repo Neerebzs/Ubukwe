@@ -211,9 +211,11 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
           </CardHeader>
           <CardContent className="p-8">
             <div className="h-[280px]">
-              {isMounted ? (
+              {isMounted && (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
+                  <AreaChart data={chartData.length > 0 ? chartData : [
+                    { name: "—", users: 0, revenue: 0 }
+                  ]}>
                     <defs>
                       <linearGradient id="usersGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#608d64" stopOpacity={0.15} />
@@ -228,7 +230,8 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
                     <Line type="monotone" dataKey="revenue" stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : (
+              )}
+              {!isMounted && (
                 <div className="h-full bg-slate-50 rounded-2xl animate-pulse" />
               )}
             </div>
@@ -249,16 +252,17 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
                 <ArrowRight className="w-4 h-4 text-[#608d64] opacity-50" />
               </div>
               <div className="text-5xl font-serif italic text-[#608d64] mb-1">
-                {stats.pendingApprovals}
+                {statsLoading ? <Skeleton className="h-12 w-16 rounded-xl" /> : stats.pendingApprovals}
               </div>
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                 Pending Approvals
               </p>
-              {stats.pendingOnboarding > 0 && (
-                <p className="text-[9px] text-[#608d64] font-bold mt-1">
-                  {stats.pendingOnboarding} onboarding · {stats.pendingApprovals - stats.pendingOnboarding} verifications
-                </p>
-              )}
+              <p className="text-[9px] text-[#608d64] font-bold mt-1">
+                {statsLoading ? "Loading..." : stats.pendingOnboarding > 0
+                  ? `${stats.pendingOnboarding} onboarding · ${stats.pendingApprovals - stats.pendingOnboarding} verifications`
+                  : "Click to review applications"
+                }
+              </p>
             </CardContent>
           </Card>
 
@@ -284,79 +288,85 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
         </div>
       </div>
 
-      {/* Pending Onboarding Requests */}
-      {(pendingOnboarding.length > 0 || onboardingLoading) && (
-        <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
-          <CardHeader className="p-8 border-b border-slate-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-serif italic text-slate-900">
-                  Pending Onboarding
-                </CardTitle>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
-                  Provider Applications Awaiting Review
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                className="text-[10px] font-black text-[#608d64] uppercase tracking-widest rounded-full hover:bg-[#608d64]/5"
-                onClick={() => onTabChange?.("providers")}
-              >
-                View All <ArrowRight className="w-3 h-3 ml-2" />
-              </Button>
+      {/* Pending Onboarding Requests — always shown */}
+      <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
+        <CardHeader className="p-8 border-b border-slate-50">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-serif italic text-slate-900">
+                Pending Onboarding
+              </CardTitle>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
+                Provider Applications Awaiting Review
+              </p>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {onboardingLoading ? (
-              <div className="p-8 space-y-4">
-                {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {pendingOnboarding.map((app: any) => (
-                  <div
-                    key={app.id}
-                    className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-2xl bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-black text-sm flex-shrink-0">
-                        {(app.business_name || app.provider_name || "P")[0].toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">
-                          {app.business_name || app.provider_name || "Provider Application"}
-                        </p>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                            {app.business_type || app.service_category || "Service Provider"}
-                          </p>
-                          <span className="text-slate-200">·</span>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                            {app.created_at ? new Date(app.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
-                          </p>
-                        </div>
-                      </div>
+            <Button
+              variant="ghost"
+              className="text-[10px] font-black text-[#608d64] uppercase tracking-widest rounded-full hover:bg-[#608d64]/5"
+              onClick={() => onTabChange?.("providers")}
+            >
+              View All <ArrowRight className="w-3 h-3 ml-2" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {onboardingLoading ? (
+            <div className="p-8 space-y-4">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-2xl" />)}
+            </div>
+          ) : pendingOnboarding.length > 0 ? (
+            <div className="divide-y divide-slate-50">
+              {pendingOnboarding.map((app: any) => (
+                <div
+                  key={app.id}
+                  className="p-6 flex items-center justify-between group hover:bg-slate-50/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-2xl bg-[#608d64]/10 flex items-center justify-center text-[#608d64] font-black text-sm flex-shrink-0">
+                      {(app.business_name || app.provider_name || "P")[0].toUpperCase()}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className="bg-amber-50 text-amber-700 border-amber-100 border rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest">
-                        Pending
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[9px] font-black uppercase tracking-widest h-8 px-4 transition-all"
-                        onClick={() => onTabChange?.("providers")}
-                      >
-                        Review
-                      </Button>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">
+                        {app.business_name || app.provider_name || "Provider Application"}
+                      </p>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          {app.business_type || app.service_category || "Service Provider"}
+                        </p>
+                        <span className="text-slate-200">·</span>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          {app.created_at ? new Date(app.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  <div className="flex items-center gap-3">
+                    <Badge className="bg-amber-50 text-amber-700 border-amber-100 border rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest">
+                      Pending
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[9px] font-black uppercase tracking-widest h-8 px-4 transition-all"
+                      onClick={() => onTabChange?.("providers")}
+                    >
+                      Review
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <CheckCircle className="w-10 h-10 text-emerald-200 mx-auto mb-3" />
+              <p className="font-serif italic text-slate-400 text-lg">No pending applications</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mt-1">
+                All onboarding requests have been reviewed
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Activity Feed */}
       <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
