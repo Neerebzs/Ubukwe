@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe } from "lucide-react";
+import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -201,7 +201,7 @@ export function ProviderTabsSidebar({
             {!isCollapsed ? (
               <div className="p-4 rounded-3xl bg-white/5 border border-white/5 shadow-2xl flex items-center gap-4 group">
                 <div className="w-12 h-12 rounded-2xl bg-[#668c65]/20 flex items-center justify-center text-sm font-black text-[#668c65] flex-shrink-0 border border-[#668c65]/10">
-                  {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+                  {user.full_name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || (user.email?.[0] || '?').toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-sm font-bold text-white truncate">
@@ -222,7 +222,7 @@ export function ProviderTabsSidebar({
             ) : (
               <div className="flex flex-col items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-[#668c65]/20 flex items-center justify-center text-xs font-black text-[#668c65] border border-[#668c65]/10">
-                  {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+                  {user.full_name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || (user.email?.[0] || '?').toUpperCase()}
                 </div>
                 <button
                   onClick={onLogout}

@@ -16,7 +16,8 @@ import {
   LogOut,
   Ticket,
   Calendar,
-  Globe
+  Globe,
+  Star
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
@@ -218,7 +219,7 @@ export function ProviderMobileMenuDrawer({
           <div className="p-8 bg-black/20 border-t border-white/5 space-y-4">
             <div className="p-4 rounded-3xl bg-white/5 border border-white/5 shadow-2xl flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#668c65]/20 flex items-center justify-center text-sm font-black text-[#668c65] flex-shrink-0 border border-[#668c65]/10">
-                {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || user.email[0].toUpperCase()}
+                {user.full_name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase() || (user.email?.[0] || '?').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0 overflow-hidden">
                 <p className="text-sm font-bold text-white truncate">
