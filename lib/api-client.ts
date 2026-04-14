@@ -795,6 +795,11 @@ class ApiClient {
       getStats: async () => {
         return axiosInstance.get<any>('/api/v1/admin/payments/stats');
       },
+      // Platform earnings — 10% commission from bookings + ticket sales
+      getPlatformEarnings: async (period?: string) => {
+        const params = period ? { period } : {};
+        return axiosInstance.get<any>('/api/v1/admin/payments/earnings', { params });
+      },
       updateWithdrawalStatus: async (id: string, status: string, notes?: string) => {
         return axiosInstance.put<any>(`/api/v1/admin/payments/withdrawals/${id}`, { status, admin_notes: notes });
       },
