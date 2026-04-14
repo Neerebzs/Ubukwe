@@ -224,6 +224,78 @@ class ApiClient {
     },
   };
 
+  // Disputes API
+  disputes = {
+    // Customer: get my disputes
+    getMyDisputes: async () => {
+      return axiosInstance.get<any[]>('/api/v1/disputes/my');
+    },
+    // Customer: get dispute details + messages
+    getDetails: async (disputeId: string) => {
+      return axiosInstance.get<any>(`/api/v1/disputes/${disputeId}`);
+    },
+    // Customer: file a new dispute (multipart with optional proof image)
+    create: async (data: {
+      booking_id: string;
+      respondent_id: string;
+      title: string;
+      description: string;
+      category: string;
+      priority?: string;
+      proof_image?: File | null;
+    }) => {
+      const formData = new FormData();
+      formData.append('booking_id', data.booking_id);
+      formData.append('respondent_id', data.respondent_id);
+      formData.append('title', data.title);
+      formData.append('description', data.description);
+      formData.append('category', data.category);
+      formData.append('priority', data.priority || 'medium');
+      if (data.proof_image) {
+        formData.append('proof_image', data.proof_image);
+      }
+      return axiosInstance.post<any>('/api/v1/disputes', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    // Customer: send message in dispute thread
+    sendMessage: async (disputeId: string, message: string) => {
+      const formData = new FormData();
+      formData.append('message', message);
+      return axiosInstance.post<any>(`/api/v1/disputes/${disputeId}/message`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    // Admin: get all disputes
+    adminGetAll: async (params?: { status?: string; priority?: string; page?: number; limit?: number }) => {
+      return axiosInstance.get<any>('/api/v1/admin/disputes', { params });
+    },
+    // Admin: get dispute stats
+    adminGetStats: async () => {
+      return axiosInstance.get<any>('/api/v1/admin/disputes/stats');
+    },
+    // Admin: get dispute details
+    adminGetDetails: async (disputeId: string) => {
+      return axiosInstance.get<any>(`/api/v1/admin/disputes/${disputeId}`);
+    },
+    // Admin: start investigation
+    adminInvestigate: async (disputeId: string, notes?: string) => {
+      return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/investigate`, { notes });
+    },
+    // Admin: resolve dispute
+    adminResolve: async (disputeId: string, resolution_type: string, resolution_notes: string) => {
+      return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/resolve`, { resolution_type, resolution_notes });
+    },
+    // Admin: reject dispute
+    adminReject: async (disputeId: string, reason: string) => {
+      return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/reject`, { reason });
+    },
+    // Admin: send message
+    adminSendMessage: async (disputeId: string, message: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/message`, { message });
+    },
+  };
+
   // Reviews API
   reviews = {
     // Get reviews written by the current logged-in user
