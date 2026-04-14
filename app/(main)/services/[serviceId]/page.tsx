@@ -104,22 +104,33 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         queryFn: async () => {
             try {
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
-
-                // The backend returns the service directly (not wrapped in ApiResponse)
-                // Cast to ProviderService since apiClient returns it directly for this endpoint
                 const serviceData = response as unknown as ProviderService;
-
                 if (!serviceData || !serviceData.id) {
                     throw new Error('Service not found or not available');
                 }
-
                 return serviceData;
             } catch (error: any) {
-                // If it's a 404 or other error, throw it so React Query can handle it
                 throw error;
             }
         },
-        retry: false, // Don't retry on 404s
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+
+    // Fetch featured testimonials for this service
+    const { data: serviceReviews } = useQuery({
+        queryKey: ["service-reviews-featured", params.serviceId],
+        queryFn: async () => {
+            try {
+                const { apiClient: ac } = await import("@/lib/api-client")
+                const response = await ac.reviews.getFeaturedByService(params.serviceId)
+                const data = response.data as any
+                return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+            } catch {
+                return []
+            }
+        },
+        enabled: !!params.serviceId,
         refetchOnWindowFocus: false,
     });
 
@@ -331,16 +342,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 total: serviceData.bookings_count || 0,
                 breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
             },
-            items: [] as Array<{
-                id: string;
-                author: string;
-                avatar: string;
-                rating: number;
-                date: string;
-                comment: string;
-                verified: boolean;
-                helpful: number;
-            }>
+            items: (serviceReviews || []).map((r: any) => ({
+                id: r.id,
+                author: r.reviewer_name || r.author || 'Verified Customer',
+                avatar: r.reviewer_avatar || '/placeholder.svg',
+                rating: r.overall_rating ?? r.rating ?? 5,
+                date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '',
+                comment: r.review_text || r.comment || '',
+                verified: true,
+                helpful: 0,
+            }))
         }
     };
 
@@ -830,7 +841,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                             <div className="space-y-10">
                                 {service.reviews.items.length > 0 ? (
-                                    service.reviews.items.slice(0, 2).map((review) => (
+                                    service.reviews.items.slice(0, 2).map((review: { id: string; author: string; avatar: string; rating: number; date: string; comment: string; verified: boolean; helpful: number }) => (
                                         <div key={review.id} className="space-y-6 animate-in fade-in duration-1000">
                                             <div className="flex items-center gap-6">
                                                 <div className="text-[#668c65]/20">

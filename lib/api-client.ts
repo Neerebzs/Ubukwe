@@ -226,11 +226,21 @@ class ApiClient {
 
   // Reviews API
   reviews = {
+    // Get reviews written by the current logged-in user
+    getMyReviews: async () => {
+      return axiosInstance.get<any[]>('/api/v1/reviews/me');
+    },
+    // Get reviews received by a user (as the reviewed party)
+    getByUser: async (userId: string, reviewType?: string) => {
+      return axiosInstance.get<any[]>(`/api/v1/reviews/user/${userId}`, { params: { review_type: reviewType } });
+    },
+    // Get all reviews for a service
     getByService: async (serviceId: string) => {
       return axiosInstance.get<any[]>(`/api/v1/reviews/service/${serviceId}`);
     },
-    getByUser: async (userId: string, reviewType?: string) => {
-      return axiosInstance.get<any[]>(`/api/v1/reviews/user/${userId}`, { params: { review_type: reviewType } });
+    // Get only featured/published testimonials for a service
+    getFeaturedByService: async (serviceId: string) => {
+      return axiosInstance.get<any[]>(`/api/v1/reviews/service/${serviceId}/featured`);
     },
     getUserRating: async (userId: string) => {
       return axiosInstance.get<any>(`/api/v1/reviews/user/${userId}/rating`);
@@ -240,6 +250,10 @@ class ApiClient {
     },
     update: async (id: string, data: any) => {
       return axiosInstance.put<any>(`/api/v1/reviews/${id}`, data);
+    },
+    // Provider toggles a review as featured testimonial
+    toggleFeatured: async (reviewId: string, isFeatured: boolean) => {
+      return axiosInstance.put<any>(`/api/v1/reviews/${reviewId}/feature?is_featured=${isFeatured}`);
     },
     delete: async (id: string) => {
       return axiosInstance.delete(`/api/v1/reviews/${id}`);

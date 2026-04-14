@@ -80,7 +80,16 @@ export function ProviderDashboardContent() {
       case "tickets": return <TicketManagementWrapper />
       case "availability": return <AvailabilityCalendar />
       case "gallery": return <AssetLibrary />
-      case "inquiries": return <ProviderReviewsView />
+      case "inquiries": return (
+        <div className="space-y-12">
+          <InquiryManagement
+            onSendQuote={(inqId, custId) => {
+              console.log("Send quote for inquiry", inqId, "to customer", custId);
+            }}
+          />
+          <ProviderReviewsView />
+        </div>
+      )
       case "contracts": return <ProviderContracts />
       case "messages": return <MessagesHub />
       case "onboarding": return <ProviderOnboardingForm />
