@@ -63,6 +63,8 @@ export function AdminDashboardContent() {
     refetchInterval: 30_000,
   })
 
+  const isLoadingOverall = !statsData || !activityData
+
   const platformStats = {
     totalUsers:       statsData?.totalUsers       ?? 0,
     activeProviders:  statsData?.activeProviders  ?? 0,
@@ -90,7 +92,7 @@ export function AdminDashboardContent() {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
-        return <AdminOverview platformStats={platformStats} recentActivity={recentActivity} />
+        return <AdminOverview onTabChange={handleTabChange} />
       case "users":
         return <AdminUsers />
       case "providers":
