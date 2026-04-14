@@ -78,7 +78,9 @@ function PayoutSettings() {
     bank_account_name: "",
     bank_branch: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // React Query v5 — no onSuccess in useQuery, use useEffect on data instead
   const { data: config, isLoading } = useQuery<PayoutConfig>({
     queryKey: ["payout-config"],
     queryFn: async () => {
@@ -86,44 +88,89 @@ function PayoutSettings() {
       const data = res.data as any;
       return data?.data ?? data ?? { configured: false };
     },
-    onSuccess: (data: PayoutConfig) => {
-      if (data.configured && data.payout_method) {
-        setMethod(data.payout_method);
-        setForm({
-          momo_phone: data.momo_phone ?? "",
-          momo_name: data.momo_name ?? "",
-          bank_name: data.bank_name ?? "",
-          bank_account_number: data.bank_account_number ?? "",
-          bank_account_name: data.bank_account_name ?? "",
-          bank_branch: data.bank_branch ?? "",
-        });
-      }
-    },
-  } as any);
+  });
+
+  // Populate form when config loads
+  const [hydrated, setHydrated] = useState(false);
+  if (config?.configured && config.payout_method && !hydrated) {
+    setHydrated(true);
+    setMethod(config.payout_method);
+    setForm({
+      momo_phone: config.momo_phone ?? "",
+      momo_name: config.momo_name ?? "",
+      bank_name: config.bank_name ?? "",
+      bank_account_number: config.bank_account_number ?? "",
+      bank_account_name: config.bank_account_name ?? "",
+      bank_branch: config.bank_branch ?? "",
+    });
+  }
+
+  // Client-side validation — returns error map or null if valid
+  const validate = (): Record<string, string> | null => {
+    const errors: Record<string, string> = {};
+    if (method === "mtn_momo" || method === "airtel_money") {
+      if (!form.momo_phone.trim())
+        errors.momo_phone = "Phone number is required";
+      else if (!/^0[0-9]{9}$/.test(form.momo_phone.replace(/\s/g, "")))
+        errors.momo_phone = "Enter a valid Rwandan phone number (e.g. 0781234567)";
+      if (!form.momo_name.trim())
+        errors.momo_name = "Account holder name is required";
+    } else if (method === "bank_transfer") {
+      if (!form.bank_name.trim())
+        errors.bank_name = "Bank name is required";
+      if (!form.bank_account_number.trim())
+        errors.bank_account_number = "Account number is required";
+      if (!form.bank_account_name.trim())
+        errors.bank_account_name = "Account holder name is required";
+    }
+    return Object.keys(errors).length > 0 ? errors : null;
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload: any = { payout_method: method };
       if (method === "mtn_momo" || method === "airtel_money") {
-        payload.momo_phone = form.momo_phone;
-        payload.momo_name = form.momo_name;
+        payload.momo_phone = form.momo_phone.replace(/\s/g, "");
+        payload.momo_name = form.momo_name.trim();
       } else {
-        payload.bank_name = form.bank_name;
-        payload.bank_account_number = form.bank_account_number;
-        payload.bank_account_name = form.bank_account_name;
-        payload.bank_branch = form.bank_branch;
+        payload.bank_name = form.bank_name.trim();
+        payload.bank_account_number = form.bank_account_number.trim();
+        payload.bank_account_name = form.bank_account_name.trim();
+        if (form.bank_branch.trim()) payload.bank_branch = form.bank_branch.trim();
       }
       return apiClient.provider.earnings.savePayoutConfig(payload);
     },
     onSuccess: () => {
       toast.success("Payout method saved successfully");
+      setFieldErrors({});
       queryClient.invalidateQueries({ queryKey: ["payout-config"] });
     },
-    onError: (err: any) => toast.error(err.message || "Failed to save payout method"),
+    onError: (err: any) => {
+      // err.message is already the extracted `detail` string from the interceptor
+      const msg = err.message || "Failed to save payout method";
+      toast.error(msg);
+    },
   });
 
-  const f = (field: keyof typeof form, value: string) =>
+  const handleSave = () => {
+    const errors = validate();
+    if (errors) {
+      setFieldErrors(errors);
+      // Show the first error as a toast too
+      toast.error(Object.values(errors)[0]);
+      return;
+    }
+    setFieldErrors({});
+    saveMutation.mutate();
+  };
+
+  const f = (field: keyof typeof form, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
+    // Clear field error on change
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -164,9 +211,9 @@ function PayoutSettings() {
             <button
               key={m.id}
               type="button"
-              onClick={() => setMethod(m.id)}
+              onClick={() => { setMethod(m.id); setFieldErrors({}); }}
               className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all text-sm font-bold",
+                "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all",
                 method === m.id
                   ? "border-[#668c65] bg-[#668c65]/5 text-[#668c65]"
                   : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
@@ -195,11 +242,18 @@ function PayoutSettings() {
               <Input
                 value={form.momo_phone}
                 onChange={e => f("momo_phone", e.target.value)}
-                placeholder="078 XXX XXXX"
-                className="pl-11 h-12 rounded-2xl bg-slate-50 border-none"
+                placeholder="0781234567"
+                className={cn(
+                  "pl-11 h-12 rounded-2xl bg-slate-50 border-none",
+                  fieldErrors.momo_phone && "ring-2 ring-rose-300 bg-rose-50"
+                )}
               />
             </div>
+            {fieldErrors.momo_phone && (
+              <p className="text-xs text-rose-500 font-medium px-1">{fieldErrors.momo_phone}</p>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Account Holder Name <span className="text-rose-400">*</span>
@@ -208,13 +262,20 @@ function PayoutSettings() {
               value={form.momo_name}
               onChange={e => f("momo_name", e.target.value)}
               placeholder="Full name as registered on MoMo"
-              className="h-12 rounded-2xl bg-slate-50 border-none"
+              className={cn(
+                "h-12 rounded-2xl bg-slate-50 border-none",
+                fieldErrors.momo_name && "ring-2 ring-rose-300 bg-rose-50"
+              )}
             />
+            {fieldErrors.momo_name && (
+              <p className="text-xs text-rose-500 font-medium px-1">{fieldErrors.momo_name}</p>
+            )}
           </div>
+
           <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
             <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700">
-              Make sure the name matches your registered {METHOD_LABELS[method]} account exactly.
+              The name must match your registered {METHOD_LABELS[method]} account exactly.
             </p>
           </div>
         </div>
@@ -233,10 +294,17 @@ function PayoutSettings() {
                 value={form.bank_name}
                 onChange={e => f("bank_name", e.target.value)}
                 placeholder="e.g. Bank of Kigali"
-                className="pl-11 h-12 rounded-2xl bg-slate-50 border-none"
+                className={cn(
+                  "pl-11 h-12 rounded-2xl bg-slate-50 border-none",
+                  fieldErrors.bank_name && "ring-2 ring-rose-300 bg-rose-50"
+                )}
               />
             </div>
+            {fieldErrors.bank_name && (
+              <p className="text-xs text-rose-500 font-medium px-1">{fieldErrors.bank_name}</p>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Account Number <span className="text-rose-400">*</span>
@@ -245,9 +313,16 @@ function PayoutSettings() {
               value={form.bank_account_number}
               onChange={e => f("bank_account_number", e.target.value)}
               placeholder="Account number"
-              className="h-12 rounded-2xl bg-slate-50 border-none"
+              className={cn(
+                "h-12 rounded-2xl bg-slate-50 border-none",
+                fieldErrors.bank_account_number && "ring-2 ring-rose-300 bg-rose-50"
+              )}
             />
+            {fieldErrors.bank_account_number && (
+              <p className="text-xs text-rose-500 font-medium px-1">{fieldErrors.bank_account_number}</p>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Account Holder Name <span className="text-rose-400">*</span>
@@ -256,12 +331,19 @@ function PayoutSettings() {
               value={form.bank_account_name}
               onChange={e => f("bank_account_name", e.target.value)}
               placeholder="Full name as on bank account"
-              className="h-12 rounded-2xl bg-slate-50 border-none"
+              className={cn(
+                "h-12 rounded-2xl bg-slate-50 border-none",
+                fieldErrors.bank_account_name && "ring-2 ring-rose-300 bg-rose-50"
+              )}
             />
+            {fieldErrors.bank_account_name && (
+              <p className="text-xs text-rose-500 font-medium px-1">{fieldErrors.bank_account_name}</p>
+            )}
           </div>
+
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Branch (optional)
+              Branch <span className="text-slate-300">(optional)</span>
             </Label>
             <Input
               value={form.bank_branch}
@@ -274,9 +356,9 @@ function PayoutSettings() {
       )}
 
       <Button
-        onClick={() => saveMutation.mutate()}
+        onClick={handleSave}
         disabled={saveMutation.isPending}
-        className="h-12 px-10 rounded-2xl bg-[#668c65] hover:bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest transition-all"
+        className="h-12 px-10 rounded-2xl bg-[#668c65] hover:bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest transition-all disabled:opacity-50"
       >
         {saveMutation.isPending ? (
           <div className="flex items-center gap-2">

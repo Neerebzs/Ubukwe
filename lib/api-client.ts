@@ -104,10 +104,11 @@ axiosInstance.interceptors.response.use(
 
     console.error('Extracted Error Message:', errorMessage);
 
-    // Create a new error with the extracted message or modify the existing one
+    // Create a new error preserving the extracted message
     const enhancedError = new Error(errorMessage);
-    // Copy original error properties if needed, e.g., response, request, config
-    Object.assign(enhancedError, error);
+    // Copy axios error properties (response, request, config) but NOT message
+    const { message: _ignored, ...rest } = error as any;
+    Object.assign(enhancedError, rest);
 
     return Promise.reject(enhancedError);
   }
