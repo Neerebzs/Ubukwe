@@ -511,6 +511,21 @@ class ApiClient {
       requestWithdrawal: async (amount: number) => {
         return axiosInstance.post<any>('/api/v1/provider/earnings/withdraw', { amount });
       },
+      // Payout configuration
+      getPayoutConfig: async () => {
+        return axiosInstance.get<any>('/api/v1/provider/earnings/payout-config');
+      },
+      savePayoutConfig: async (data: {
+        payout_method: string;
+        momo_phone?: string;
+        momo_name?: string;
+        bank_name?: string;
+        bank_account_number?: string;
+        bank_account_name?: string;
+        bank_branch?: string;
+      }) => {
+        return axiosInstance.post<any>('/api/v1/provider/earnings/payout-config', data);
+      },
     },
     // Messages
     messages: {
