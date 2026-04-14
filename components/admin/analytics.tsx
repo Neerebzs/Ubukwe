@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { axiosInstance } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "./stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,36 +11,57 @@ export function AdminAnalytics() {
     queryKey: ["admin-analytics-stats"],
     queryFn: async () => {
       const [platformRes, bookingRes] = await Promise.all([
-        axiosInstance.get<any>("/api/v1/admin/stats"),
-        axiosInstance.get<any>("/api/v1/admin/bookings/stats"),
-      ])
-      return { platform: platformRes.data, bookings: bookingRes.data }
+        apiClient.admin.stats.get(),
+        apiClient.admin.bookings.getStats(),
+      ]);
+      return { platform: platformRes.data as any, bookings: bookingRes.data as any };
     },
     staleTime: 5 * 60_000,
-  })
+  });
 
-  const { data: providerServices = [] } = useQuery({
+  const { data: providerServicesStats } = useQuery({
     queryKey: ["admin-provider-services-stats"],
     queryFn: async () => {
-      const res = await axiosInstance.get<any>("/api/v1/admin/provider-services/stats")
-      return res.data?.data ?? []
+      const res = await apiClient.admin.providerServices.getStats();
+      const data = res.data as any;
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
     },
     staleTime: 5 * 60_000,
-  })
+  });
 
   // Build category vitality from real provider service stats
-  const categories: { label: string; value: number; color: string }[] = Array.isArray(providerServices)
-    ? providerServices.slice(0, 4).map((s: any, i: number) => ({
-        label: s.service_type ?? s.category ?? s.name ?? `Category ${i + 1}`,
-        value: Math.min(100, Math.round((s.count ?? s.total ?? 0) / Math.max(1, providerServices.reduce((sum: number, x: any) => sum + (x.count ?? x.total ?? 0), 0)) * 100)),
-        color: ["#608d64", "#0d182b", "#94a3b8", "#cbd5e1"][i] ?? "#94a3b8",
-      }))
-    : []
+  const providerServices = Array.isArray(providerServicesStats) ? providerServicesStats : [];
+  const categories: { label: string; value: number; color: string }[] = providerServices
+    .slice(0, 4).map((s: any, i: number) => ({
+      label: s.service_type ?? s.category ?? s.name ?? `Category ${i + 1}`,
+      value: Math.min(100, Math.round((s.count ?? s.total ?? 0) / Math.max(1, providerServices.reduce((sum: number, x: any) => sum + (x.count ?? x.total ?? 0), 0)) * 100)),
+      color: ["#608d64", "#0d182b", "#94a3b8", "#cbd5e1"][i] ?? "#94a3b8",
+    }));
 
   const totalBookings = stats?.bookings?.total ?? stats?.platform?.totalBookings ?? 0
   const completedBookings = stats?.bookings?.completed ?? 0
   const successRate = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 0
   const monthlyRevenue = stats?.platform?.monthlyRevenue ?? 0
+
+  if (!stats) {
+    return (
+      <div className="space-y-12 animate-in fade-in duration-700">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-48 rounded-xl" />
+          <Skeleton className="h-4 w-32 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          <Skeleton className="md:col-span-2 h-[400px] rounded-[2.5rem]" />
+          <Skeleton className="h-[400px] rounded-[2.5rem]" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-12 pb-12">

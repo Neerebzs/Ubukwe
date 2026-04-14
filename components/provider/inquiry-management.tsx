@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
+import { apiClient } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -48,14 +48,15 @@ export function InquiryManagement({ onSendQuote }: InquiryManagementProps) {
   const { data: inquiries = [], isLoading } = useQuery<Inquiry[]>({
     queryKey: ["provider-inquiries"],
     queryFn: async () => {
-      const res = await axiosInstance.get<Inquiry[]>("/api/v1/provider/inquiries/")
-      return res.data ?? []
+      const res = await apiClient.provider.inquiries.getAll()
+      const data = res.data as any
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
     },
   })
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: string; notes?: string }) => {
-      return axiosInstance.put(`/api/v1/provider/inquiries/${id}`, { status, provider_notes: notes })
+      return apiClient.provider.inquiries.update(id, { status, provider_notes: notes })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["provider-inquiries"] })

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
+import { apiClient } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -44,14 +44,15 @@ export function CustomerQuotes() {
   const { data: quotes = [], isLoading } = useQuery<Quote[]>({
     queryKey: ["customer-quotes"],
     queryFn: async () => {
-      const res = await axiosInstance.get<Quote[]>("/api/v1/provider/quotes/customer/my-quotes")
-      return res.data ?? []
+      const res = await apiClient.provider.quotes.getAll()
+      const data = res.data as any
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
     },
   })
 
   const respondMutation = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: string }) => {
-      return axiosInstance.post(`/api/v1/provider/quotes/customer/${id}/respond?action=${action}`)
+      return apiClient.provider.quotes.send(id)
     },
     onSuccess: (_, { action }) => {
       toast.success(action === "accept" ? "Quote accepted!" : "Quote declined.")

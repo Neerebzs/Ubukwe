@@ -2,27 +2,26 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useQuery } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AdminTabsSidebar } from "@/components/ui/admin-tabs-sidebar";
-import { AdminOverview } from "@/components/admin/overview";
-import { AdminUsers } from "@/components/admin/users";
-import { AdminProviders } from "@/components/admin/providers";
-import { AdminProviderServices } from "@/components/admin/provider-services";
-import { AdminBookingsMetrics } from "@/components/admin/bookings";
-import { AdminDisputes } from "@/components/admin/disputes";
-import { AdminAnalytics } from "@/components/admin/analytics";
-import { useAuth } from "@/hooks/useAuth";
+import { AdminTabsSidebar } from "@/components/ui/admin-tabs-sidebar"
+import { AdminOverview } from "@/components/admin/overview"
+import { AdminUsers } from "@/components/admin/users"
+import { AdminProviders } from "@/components/admin/providers"
+import { AdminProviderServices } from "@/components/admin/provider-services"
+import { AdminBookingsMetrics } from "@/components/admin/bookings"
+import { AdminDisputes } from "@/components/admin/disputes"
+import { AdminAnalytics } from "@/components/admin/analytics"
+import { useAuth } from "@/hooks/useAuth"
 import { DashboardHeader } from "@/components/ui/dashboard-header"
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
 import { MobileAppBar } from "@/components/ui/mobile-app-bar"
 import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
-import { CategoriesManagement } from "@/components/admin/categories";
-import { AdminEvents } from "@/components/admin/events";
-import { AdminProfileSettings } from "@/components/admin/profile-settings";
-import { AdminPreferencesSettings } from "@/components/admin/preferences-settings";
-import { AdminSupportTickets } from "@/components/admin/support-tickets";
+import { CategoriesManagement } from "@/components/admin/categories"
+import { AdminEvents } from "@/components/admin/events"
+import { AdminProfileSettings } from "@/components/admin/profile-settings"
+import { AdminPreferencesSettings } from "@/components/admin/preferences-settings"
+import { AdminSupportTickets } from "@/components/admin/support-tickets"
+import { AdminPayments } from "@/components/admin/payments"
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -44,92 +43,34 @@ export function AdminDashboardContent() {
     router.push(`/admin/dashboard?tab=${tab}`, { scroll: false })
   }
 
-  // ── Real API data ──────────────────────────────────────────────────────────
-  const { data: statsData } = useQuery({
-    queryKey: ["admin-platform-stats"],
-    queryFn: async () => {
-      const res = await axiosInstance.get<any>("/api/v1/admin/stats")
-      return res.data
-    },
-    refetchInterval: 60_000,
-  })
-
-  const { data: activityData = [] } = useQuery({
-    queryKey: ["admin-recent-activity"],
-    queryFn: async () => {
-      const res = await axiosInstance.get<any>("/api/v1/admin/recent-activity?limit=10")
-      return res.data ?? []
-    },
-    refetchInterval: 30_000,
-  })
-
-  const isLoadingOverall = !statsData || !activityData
-
-  const platformStats = {
-    totalUsers:       statsData?.totalUsers       ?? 0,
-    activeProviders:  statsData?.activeProviders  ?? 0,
-    totalBookings:    statsData?.totalBookings     ?? 0,
-    monthlyRevenue:   statsData?.monthlyRevenue    ?? 0,
-    pendingApprovals: statsData?.pendingApprovals  ?? 0,
-    activeDisputes:   statsData?.activeDisputes    ?? 0,
-  }
-
-  const recentActivity = Array.isArray(activityData)
-    ? activityData.map((a: any, i: number) => ({
-        id: a.entityId ?? i,
-        type: a.type ?? "activity",
-        user: a.userId ? a.userId.slice(0, 8) : "System",
-        action: a.action ?? "",
-        time: a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
-        status: a.status ?? "completed",
-      }))
-    : []
-  // ──────────────────────────────────────────────────────────────────────────
-
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed)
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
 
   const renderContent = () => {
     switch (activeTab) {
-      case "overview":
-        return <AdminOverview onTabChange={handleTabChange} />
-      case "users":
-        return <AdminUsers />
-      case "providers":
-        return <AdminProviders />
+      case "overview":    return <AdminOverview onTabChange={handleTabChange} />
+      case "users":       return <AdminUsers />
+      case "providers":   return <AdminProviders />
       case "services":
         return (
-          <div className="space-y-6">
-            <Tabs defaultValue="provider-services" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="provider-services">Provider Services</TabsTrigger>
-                <TabsTrigger value="categories">Categories Management</TabsTrigger>
-              </TabsList>
-              <TabsContent value="provider-services">
-                <AdminProviderServices />
-              </TabsContent>
-              <TabsContent value="categories">
-                <CategoriesManagement />
-              </TabsContent>
-            </Tabs>
-          </div>
+          <Tabs defaultValue="provider-services" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="provider-services">Provider Services</TabsTrigger>
+              <TabsTrigger value="categories">Categories Management</TabsTrigger>
+            </TabsList>
+            <TabsContent value="provider-services"><AdminProviderServices /></TabsContent>
+            <TabsContent value="categories"><CategoriesManagement /></TabsContent>
+          </Tabs>
         )
-      case "bookings":
-        return <AdminBookingsMetrics />
-      case "disputes":
-        return <AdminDisputes disputes={[]} />
-      case "support":
-        return <AdminSupportTickets />
-      case "analytics":
-        return <AdminAnalytics />
-      case "events":
-        return <AdminEvents />
-      case "profile":
-        return <AdminProfileSettings />
-      case "preferences":
-        return <AdminPreferencesSettings />
-      default:
-        return null
+      case "bookings":    return <AdminBookingsMetrics />
+      case "disputes":    return <AdminDisputes disputes={[]} />
+      case "support":     return <AdminSupportTickets />
+      case "analytics":   return <AdminAnalytics />
+      case "events":      return <AdminEvents />
+      case "payments":    return <AdminPayments />
+      case "profile":     return <AdminProfileSettings />
+      case "preferences": return <AdminPreferencesSettings />
+      default:            return null
     }
   }
 

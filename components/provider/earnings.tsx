@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { axiosInstance } from "@/lib/api-client";
+import { axiosInstance, apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,16 +36,17 @@ export function ProviderEarnings() {
   const { data: summary, isLoading: summaryLoading } = useQuery<EarningSummary>({
     queryKey: ["earnings-summary"],
     queryFn: async () => {
-      const res = await axiosInstance.get<EarningSummary>("/api/v1/provider/earnings/summary");
-      return res.data;
+      const res = await apiClient.provider.earnings.getSummary();
+      return res.data as any;
     },
   });
 
   const { data: earnings = [], isLoading: earningsLoading } = useQuery<Earning[]>({
     queryKey: ["earnings-details"],
     queryFn: async () => {
-      const res = await axiosInstance.get<Earning[]>("/api/v1/provider/earnings/details");
-      return res.data ?? [];
+      const res = await apiClient.provider.earnings.getDetails();
+      const data = res.data as any;
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
     },
   });
 
@@ -53,7 +54,7 @@ export function ProviderEarnings() {
 
   const withdrawMutation = useMutation({
     mutationFn: async (amount: number) => {
-      return axiosInstance.post("/api/v1/provider/earnings/withdraw", { amount });
+      return apiClient.provider.earnings.requestWithdrawal(amount);
     },
     onSuccess: () => {
       toast.success("Withdrawal request submitted");

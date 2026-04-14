@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
+import { apiClient } from "@/lib/api-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,8 +28,9 @@ export function CustomerContractsView() {
   const { data: contracts = [], isLoading } = useQuery<Contract[]>({
     queryKey: ["customer-contracts"],
     queryFn: async () => {
-      const res = await axiosInstance.get<Contract[]>("/api/v1/contracts/customer")
-      return res.data ?? []
+      const res = await apiClient.bookings.getAll({ role: 'customer' })
+      const data = res.data as any
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
     },
   })
 

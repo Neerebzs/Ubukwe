@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
+import { apiClient, axiosInstance } from "@/lib/api-client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Mail, MessageSquare, Clock, CheckCircle, Loader2, Send, User, RefreshCw } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Ticket {
   id: string
@@ -40,16 +41,17 @@ export function AdminSupportTickets() {
   const { data: tickets = [], isLoading, refetch } = useQuery<Ticket[]>({
     queryKey: ["support-tickets", statusFilter],
     queryFn: async () => {
-      const params = statusFilter !== "all" ? `?status=${statusFilter}` : ""
-      const res = await axiosInstance.get(`/api/v1/admin/support/tickets${params}`)
-      return res.data
+      const params = statusFilter !== "all" ? { status: statusFilter } : {};
+      const res = await axiosInstance.get(`/api/v1/admin/support/tickets`, { params });
+      const data = res.data as any;
+      return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
     },
     refetchInterval: 30_000,
-  })
+  });
 
   const replyMutation = useMutation({
     mutationFn: async ({ ticketId, reply }: { ticketId: string; reply: string }) => {
-      await axiosInstance.post(`/api/v1/admin/support/tickets/${ticketId}/reply`, { reply })
+      await axiosInstance.post(`/api/v1/admin/support/tickets/${ticketId}/reply`, { reply });
     },
     onSuccess: () => {
       toast.success("Reply sent to user via email")
@@ -123,8 +125,17 @@ export function AdminSupportTickets() {
 
       {/* Ticket List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+        <div className="space-y-6 animate-in fade-in duration-700">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl w-full" />
+            ))}
+          </div>
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 rounded-2xl w-full" />
+            ))}
+          </div>
         </div>
       ) : tickets.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
