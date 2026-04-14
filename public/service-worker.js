@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ubukwe-v1';
+const CACHE_NAME = 'ubukwe-v2';
 const urlsToCache = [
   '/',
   '/services',
@@ -39,8 +39,20 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
-  // Skip caching for chrome-extension and other non-http(s) requests
-  if (!event.request.url.startsWith('http')) {
+  const url = event.request.url;
+
+  // Skip non-http(s) requests
+  if (!url.startsWith('http')) {
+    return;
+  }
+
+  // Skip API requests entirely - let them go straight to network
+  if (url.includes('/api/')) {
+    return;
+  }
+
+  // Only cache same-origin navigation/asset requests
+  if (event.request.method !== 'GET') {
     return;
   }
 
@@ -54,30 +66,29 @@ self.addEventListener('fetch', (event) => {
 
         return fetch(event.request).then(
           (response) => {
-            // Check if valid response
+            // Only cache valid same-origin responses
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
 
-            // Clone the response
             const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
 
             return response;
           }
         ).catch(() => {
-          // Return a fallback response if fetch fails
-          return new Response('Offline - content not available', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
+          // Only return offline fallback for navigation requests (HTML pages)
+          if (event.request.mode === 'navigate') {
+            return caches.match('/') || new Response('Offline', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({ 'Content-Type': 'text/plain' }),
+            });
+          }
+          // For other requests (assets etc), just fail silently
+          return new Response('', { status: 503 });
         });
       })
   );

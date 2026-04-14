@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Menu, Search, MoreVertical, ArrowLeft } from "lucide-react";
+import { Bell, Menu, Search, MoreVertical, ArrowLeft, User, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import Link from "next/link";
 
 interface MobileAppBarProps {
   title: string;
@@ -24,6 +25,7 @@ interface MobileAppBarProps {
     full_name?: string;
     email: string;
     profile_image_url?: string;
+    role?: string;
   };
   onLogout?: () => void;
   notificationCount?: number;
@@ -39,6 +41,21 @@ export function MobileAppBar({
   onLogout,
   notificationCount = 0,
 }: MobileAppBarProps) {
+  
+  const getProfilePath = () => {
+    if (user?.role === 'admin') return '/admin/dashboard?tab=profile';
+    if (user?.role === 'service_provider') return '/provider/dashboard?tab=profile';
+    if (user?.role === 'event_owner') return '/customer/dashboard?tab=profile';
+    return '/customer/dashboard?tab=profile';
+  };
+
+  const getPreferencesPath = () => {
+    if (user?.role === 'admin') return '/admin/dashboard?tab=preferences';
+    if (user?.role === 'service_provider') return '/provider/dashboard?tab=preferences';
+    if (user?.role === 'event_owner') return '/customer/dashboard?tab=preferences';
+    return '/customer/dashboard?tab=preferences';
+  };
+  
   return (
     <header className="sticky top-0 z-40 w-full bg-[#fdfcfb] border-b border-slate-100 md:hidden shadow-sm">
       <div className="flex items-center justify-between h-20 px-6">
@@ -92,21 +109,35 @@ export function MobileAppBar({
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.full_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-                <DropdownMenuItem>Notifications</DropdownMenuItem>
-                <DropdownMenuItem>Help & Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-2xl border-slate-100 bg-white/95 backdrop-blur-xl">
+                <DropdownMenuLabel className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Your Sanctuary</DropdownMenuLabel>
+                <DropdownMenuSeparator className="my-1 bg-slate-50" />
+                <DropdownMenuItem 
+                  asChild
+                  className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer"
+                >
+                  <Link href={getProfilePath()}>
+                    <User className="mr-3 h-4 w-4 text-slate-400" />
+                    <span className="font-medium tracking-tight">Profile Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  asChild
+                  className="rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:bg-[#668c65]/5 focus:text-[#668c65] transition-all cursor-pointer"
+                >
+                  <Link href={getPreferencesPath()}>
+                    <Settings className="mr-3 h-4 w-4 text-slate-400" />
+                    <span className="font-medium tracking-tight">Preferences</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 bg-slate-50" />
                 {onLogout && (
-                  <DropdownMenuItem onClick={onLogout} className="text-red-600">
-                    Logout
+                  <DropdownMenuItem
+                    onClick={onLogout}
+                    className="text-red-500 rounded-xl px-3 py-2.5 text-sm focus:bg-red-50 focus:text-red-600 transition-all cursor-pointer"
+                  >
+                    <LogOut className="mr-3 h-4 w-4" />
+                    <span className="font-bold tracking-tight">Logout of Collective</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

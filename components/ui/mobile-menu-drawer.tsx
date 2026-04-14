@@ -74,17 +74,8 @@ export function MobileMenuDrawer({
       items: [
         { id: "bookings", label: "My Bookings", icon: BookOpen },
         { id: "messages", label: "Messages", icon: MessageCircle },
-        { id: "quotes", label: "Quotes", icon: FileText },
-        { id: "contracts", label: "Contracts", icon: FileText },
         { id: "disputes", label: "Disputes", icon: ShieldAlert },
         { id: "reviews", label: "Reviews", icon: Star },
-      ]
-    },
-    {
-      id: "inspiration",
-      title: "Inspiration",
-      items: [
-        { id: "inspiration", label: "Wedding Ideas", icon: Heart },
       ]
     }
   ];

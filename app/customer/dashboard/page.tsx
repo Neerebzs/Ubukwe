@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MessageCircle, Search, Menu, Home, CheckCircle, Star, BookOpen, DollarSign, ChevronLeft, Users, Clock, MapPin, Camera, FileText, ShieldAlert, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { DashboardSidebar } from "@/components/ui/dashboard-sidebar";
 import { DashboardHeader } from "@/components/ui/dashboard-header";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
@@ -19,13 +20,10 @@ import { ComprehensivePlanning } from "@/components/dashboard/comprehensive-plan
 import { VendorMarketplace } from "@/components/dashboard/vendor-marketplace";
 import { GuestManagement } from "@/components/dashboard/guest-management";
 import { MessagesHub } from "@/components/dashboard/messages-hub";
-import { WeddingInspiration } from "@/components/dashboard/wedding-inspiration";
 import { ComingSoon } from "@/components/ui/coming-soon";
 import { useAuth } from "@/hooks/useAuth";
-import { CustomerQuotes } from "@/components/customer/quotes";
-import { CustomerContractsView } from "@/components/customer/contracts-view";
 import { CustomerDisputesView } from "@/components/customer/disputes-view";
-import { ReviewForm } from "@/components/reviews/review-form";
+import { CustomerReviewsView } from "@/components/customer/reviews-view";
 import { CustomerBookingWizard } from "@/components/customer/booking-wizard";
 import { CustomerContractSign } from "@/components/customer/contract-sign";
 import { WeddingTasks } from "@/components/customer/wedding-tasks";
@@ -165,23 +163,11 @@ function CustomerDashboardContent() {
       case "messages":
         return <MessagesHub />;
 
-      case "inspiration":
-        return <WeddingInspiration />;
-
-      case "quotes":
-        return <CustomerQuotes />;
-
-      case "contracts":
-        return <CustomerContractsView />;
-
-      case "contract-sign":
-        return <CustomerContractSign />;
-
       case "disputes":
         return <CustomerDisputesView />;
 
       case "reviews":
-        return <ReviewForm bookingId="" serviceName="" providerName="" />;
+        return <CustomerReviewsView />;
 
       case "booking":
         return <CustomerBookingWizard />;
@@ -219,7 +205,8 @@ function CustomerDashboardContent() {
         user={user ? {
           full_name: user.full_name || user.username,
           email: user.email,
-          profile_image_url: user.profile_image_url
+          profile_image_url: user.profile_image_url,
+          role: user.role
         } : undefined}
         onLogout={logout}
         notificationCount={0}
@@ -277,7 +264,10 @@ function CustomerDashboardContent() {
         </div>
 
         {/* Content Area with mobile padding */}
-        <div className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto pb-20 md:pb-4">
+        <div className={cn(
+          "flex-1 p-3 md:p-4 lg:p-6 xl:p-8 pb-20 md:pb-4",
+          activeTab === "messages" ? "overflow-hidden" : "overflow-y-auto"
+        )}>
           {renderContent()}
         </div>
       </div>

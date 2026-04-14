@@ -141,7 +141,8 @@ export function AdminDashboardContent() {
         user={user ? {
           full_name: user.full_name || user.username,
           email: user.email,
-          profile_image_url: user.profile_image_url
+          profile_image_url: user.profile_image_url,
+          role: user.role
         } : undefined}
         onLogout={logout}
         notificationCount={0}

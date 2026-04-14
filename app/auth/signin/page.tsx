@@ -46,7 +46,7 @@ export default function SignInPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
@@ -58,7 +58,11 @@ export default function SignInPage() {
       password,
     }
 
-    login(loginData)
+    try {
+      await login(loginData)
+    } catch {
+      // Error is handled by useAuth's onError (toast)
+    }
   }
 
   return (

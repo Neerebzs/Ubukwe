@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Search, Send, ShieldCheck, Clock, Wifi, WifiOff } from "lucide-react";
+import { MessageCircle, Search, Send, ShieldCheck, Clock, Wifi, WifiOff, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -211,6 +211,7 @@ export function MessagesHub() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
+  const [showChatOnMobile, setShowChatOnMobile] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Deep-link: ?with=<userId> from the "chat unlocked" notification
@@ -218,7 +219,10 @@ export function MessagesHub() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const withId = params.get("with");
-    if (withId) setSelectedId(withId);
+    if (withId) {
+      setSelectedId(withId);
+      setShowChatOnMobile(true);
+    }
   }, []);
 
   const { data: conversations = [], isLoading: convsLoading } = useConversations();
@@ -238,6 +242,7 @@ export function MessagesHub() {
   const selectConversation = (id: string) => {
     setSelectedId(id);
     markConversationRead(id);
+    setShowChatOnMobile(true);
   };
 
   const handleSend = () => {
@@ -257,11 +262,11 @@ export function MessagesHub() {
   const current = conversations.find((c) => c.conversation_with === selectedId);
 
   return (
-    <div className="h-[calc(100vh-200px)] flex gap-6 p-2">
+    <div className="h-[calc(100dvh-130px)] md:h-[calc(100vh-180px)] xl:h-[calc(100vh-200px)] flex gap-4 md:gap-6 overflow-hidden">
 
       {/* ── Sidebar ── */}
-      <div className="w-1/3 flex flex-col bg-white rounded-[2.5rem] shadow-sm border border-slate-50 overflow-hidden">
-        <div className="p-8 pb-4">
+      <div className={`w-full md:w-80 shrink-0 flex-col bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden ${showChatOnMobile ? 'hidden md:flex' : 'flex'}`}>
+        <div className="p-6 pb-4">
           <h2 className="text-2xl font-serif italic text-slate-800 mb-1">Messages</h2>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-900 mb-6">
             Provider Communications
@@ -305,7 +310,7 @@ export function MessagesHub() {
       </div>
 
       {/* ── Chat area ── */}
-      <div className="flex-1 flex flex-col bg-white rounded-[2.5rem] shadow-sm border border-slate-50 overflow-hidden">
+      <div className={`w-full md:flex-1 flex-col bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden ${!showChatOnMobile ? 'hidden md:flex' : 'flex'}`}>
         {!selectedId ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center max-w-sm">
@@ -323,16 +328,24 @@ export function MessagesHub() {
         ) : (
           <>
             {/* Header */}
-            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-12 h-12 rounded-2xl">
+            <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-white/50">
+              <div className="flex items-center gap-3 md:gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="md:hidden shrink-0 h-10 w-10 text-slate-500 rounded-full hover:bg-slate-100" 
+                  onClick={() => setShowChatOnMobile(false)}
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </Button>
+                <Avatar className="w-10 h-10 md:w-12 md:h-12 rounded-2xl">
                   <AvatarImage src={current?.partner_avatar} />
                   <AvatarFallback className="bg-sage-600 text-white font-bold">
                     {current ? initials(current.partner_name) : "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-serif italic text-slate-800 text-lg">
+                  <h3 className="font-serif italic text-slate-800 text-base md:text-lg truncate max-w-[120px] sm:max-w-xs">
                     {current?.partner_name}
                   </h3>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
@@ -428,10 +441,10 @@ export function MessagesHub() {
                   <Button
                     onClick={handleSend}
                     disabled={!draft.trim() || !connected}
-                    className={`h-12 w-12 rounded-2xl mb-0.5 transition-all ${
+                    className={`h-12 w-12 rounded-2xl mb-0.5 transition-all shrink-0 ${
                       draft.trim() && connected
-                        ? "bg-sage-600 text-white shadow-lg hover:bg-sage-700 active:scale-95"
-                        : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        ? "bg-[#668c65] text-white shadow-lg hover:bg-sage-700 active:scale-95"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
                     }`}
                   >
                     <Send className="w-5 h-5" />

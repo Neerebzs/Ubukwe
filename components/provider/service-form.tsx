@@ -852,11 +852,11 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
   ]
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-10">
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-10">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0">
-        <div className="space-y-1">
-          <h2 className="text-4xl font-serif italic text-slate-900 tracking-tight">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 shrink-0">
+        <div className="space-y-1 mt-2 md:mt-0">
+          <h2 className="text-3xl md:text-4xl font-serif italic text-slate-900 tracking-tight">
             {initialData ? "Edit Service" : "Add New Service"}
           </h2>
           <div className="flex items-center gap-2">
@@ -873,7 +873,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
           <Button 
             variant="outline" 
             onClick={onCancel}
-            className="h-12 px-6 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
+            className="w-full md:w-auto h-12 px-6 rounded-2xl border-slate-100 text-slate-700 hover:bg-slate-50 font-bold uppercase text-[10px] tracking-widest transition-all"
           >
             <X className="w-4 h-4 mr-2" />
             Cancel
@@ -882,7 +882,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       </div>
 
       {/* Progress Indicator */}
-      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8">
+      <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-4 md:p-8 min-w-0">
           <div className="space-y-4">
             {/* Progress Bar */}
             <Progress value={(currentStep / totalSteps) * 100} className="h-1 bg-slate-100 [&>div]:bg-[#668c65]" />
@@ -901,7 +901,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                       onClick={() => setCurrentStep(stepNum)}
                       className="flex flex-col items-center flex-1 group cursor-pointer hover:scale-105 transition-transform duration-200"
                     >
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                      <div className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 transition-all duration-300 ${
                         isCompleted
                           ? "bg-[#668c65] border-[#668c65] text-white shadow-md shadow-[#668c65]/20 group-hover:shadow-lg group-hover:shadow-[#668c65]/30"
                           : isCurrent
@@ -909,21 +909,21 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                             : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-slate-200 group-hover:bg-slate-100"
                         }`}>
                         {isCompleted ? (
-                          <CheckCircle className="w-5 h-5" />
+                          <CheckCircle className="w-4 h-4 md:w-5 md:h-5" />
                         ) : (
-                          <span className="font-semibold text-sm">{stepNum}</span>
+                          <span className="font-semibold text-xs md:text-sm">{stepNum}</span>
                         )}
                       </div>
                       <span className={`text-[9px] font-black uppercase tracking-widest mt-3 text-center transition-colors ${
-                        isCurrent ? "text-slate-900" : isCompleted ? "text-[#668c65]" : "text-slate-400 group-hover:text-slate-600"
+                        isCurrent ? "text-slate-900" : isCompleted ? "text-[#668c65] hidden sm:block" : "text-slate-400 group-hover:text-slate-600 hidden sm:block"
                         }`}>
                         {label}
                       </span>
                     </button>
                     {stepNum < totalSteps && (
-                      <ChevronRight className={`w-4 h-4 mx-2 transition-colors ${
+                      <ChevronRight className={`w-3 h-3 md:w-4 md:h-4 mx-1 md:mx-2 transition-colors ${
                         isCompleted ? "text-[#668c65]/50" : "text-slate-200"
-                        }`} />
+                        } hidden sm:block`} />
                     )}
                   </div>
                 )
@@ -936,12 +936,12 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       <div className="space-y-6">
         {/* Step 1: Basic Information */}
         {currentStep === 1 && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50">
-              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Service Details</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Basic information customers will see</p>
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="p-6 md:p-8 border-b border-slate-50">
+              <h3 className="text-xl md:text-2xl font-serif italic text-slate-900 tracking-tight">Service Details</h3>
+              <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Basic information customers will see</p>
             </div>
-            <div className="p-8 space-y-6">
+            <div className="p-6 md:p-8 space-y-6">
               <div>
                 <Label htmlFor="name" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Service Name *</Label>
                 <Input
@@ -1123,18 +1123,18 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
         {/* Step 2: Packages & Pricing */}
         {currentStep === 2 && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Service Packages</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Create pricing tiers for your offering</p>
+                <h3 className="text-xl md:text-2xl font-serif italic text-slate-900 tracking-tight">Service Packages</h3>
+                <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Create pricing tiers for your offering</p>
               </div>
               <Button onClick={handleAddPackage} className="h-12 rounded-2xl bg-[#668c65] hover:bg-[#5a7c59] text-white shadow-xl shadow-[#668c65]/20 font-bold uppercase text-[10px] tracking-widest border-none shrink-0">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Package
               </Button>
             </div>
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               {formData.packages.length === 0 ? (
                 <div className="text-center py-16 bg-slate-50 rounded-3xl border border-slate-100 border-dashed">
                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -1222,12 +1222,12 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
         {/* Step 3: Gallery */}
         {currentStep === 3 && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50">
-              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Visual Portfolio</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Showcase your service with images, reels, videos, offers, and events</p>
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="p-6 md:p-8 border-b border-slate-50">
+              <h3 className="text-xl md:text-2xl font-serif italic text-slate-900 tracking-tight">Visual Portfolio</h3>
+              <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Showcase your service with images, reels, videos, offers, and events</p>
             </div>
-            <div className="p-8">
+            <div className="p-6 md:p-8">
               {/* Media Content Section */}
               <div className="space-y-6">
                 <div className="space-y-4">
@@ -1417,12 +1417,12 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
         {/* Step 4: Contact Info */}
         {currentStep === 4 && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50">
-              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Contact Details</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Information visible on your service's "About" section</p>
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="p-6 md:p-8 border-b border-slate-50">
+              <h3 className="text-xl md:text-2xl font-serif italic text-slate-900 tracking-tight">Contact Details</h3>
+              <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Information visible on your service's "About" section</p>
             </div>
-            <div className="p-8 space-y-6 max-w-2xl">
+            <div className="p-6 md:p-8 space-y-6 max-w-2xl">
               <div>
                 <Label htmlFor="phone" className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 mb-2 block">Phone Number</Label>
                 <Input
@@ -1451,12 +1451,12 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
         {/* Step 5: Review & Publish */}
         {currentStep === 5 && (
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50">
-              <h3 className="text-2xl font-serif italic text-slate-900 tracking-tight">Final Review</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Verify all details before presenting to the world</p>
+          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="p-6 md:p-8 border-b border-slate-50">
+              <h3 className="text-xl md:text-2xl font-serif italic text-slate-900 tracking-tight">Final Review</h3>
+              <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Verify all details before presenting to the world</p>
             </div>
-            <div className="p-8 space-y-10">
+            <div className="p-6 md:p-8 space-y-8 md:space-y-10">
               {/* Basic Info Review */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Basic Information</h3>

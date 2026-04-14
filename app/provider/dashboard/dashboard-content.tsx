@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, ChevronLeft, Home, Package, BookOpen, MessageSquare, FileText, DollarSign, User, LogOut } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { ProviderTabsSidebar } from "@/components/ui/provider-tabs-sidebar"
 import { useAuth } from "@/hooks/useAuth"
 import { DashboardHeader } from "@/components/ui/dashboard-header"
@@ -18,10 +19,10 @@ import { ProviderProfile } from "@/components/provider/profile"
 import { ProviderProfileSettings } from "@/components/provider/profile-settings"
 import { ProviderPreferencesSettings } from "@/components/provider/preferences-settings"
 import { InquiryManagement } from "@/components/provider/inquiry-management"
-import { QuoteBuilder } from "@/components/provider/quote-builder"
 import { AvailabilityCalendar } from "@/components/provider/availability-calendar"
 import { AssetLibrary } from "@/components/provider/asset-library"
 import { ProviderOnboardingForm } from "@/components/provider/onboarding-form"
+import { ProviderReviewsView } from "@/components/provider/reviews-view"
 import { ProviderContracts } from "@/components/provider/contracts"
 import { EventsManagement } from "@/components/provider/events-management"
 import { TicketManagementWrapper } from "@/components/provider/ticket-management-wrapper"
@@ -80,15 +81,16 @@ export function ProviderDashboardContent() {
       case "inquiries": return (
         <InquiryManagement
           onSendQuote={(inqId, custId) => {
-            router.push(`/provider/dashboard?tab=quotes&inquiryId=${inqId}&customerId=${custId}`, { scroll: false })
+            // Logic for sending quote (previously redirected to quotes tab)
+            console.log("Send quote for inquiry", inqId, "to customer", custId);
           }}
         />
       )
-      case "quotes": return <QuoteBuilder customerId={customerId || undefined} inquiryId={inquiryId || undefined} />
 
       case "contracts": return <ProviderContracts />
       case "messages": return <MessagesHub />
       case "onboarding": return <ProviderOnboardingForm />
+      case "reviews": return <ProviderReviewsView />
       case "earnings": return <ProviderEarnings />
       case "profile": return <ProviderProfileSettings />
       case "preferences": return <ProviderPreferencesSettings />
@@ -106,7 +108,8 @@ export function ProviderDashboardContent() {
         user={user ? {
           full_name: user.full_name || user.username,
           email: user.email,
-          profile_image_url: user.profile_image_url
+          profile_image_url: user.profile_image_url,
+          role: user.role
         } : undefined}
         onLogout={logout}
         notificationCount={0}
@@ -161,7 +164,13 @@ export function ProviderDashboardContent() {
         </div>
 
         {/* Content Area with mobile padding */}
-        <main className="flex-1 p-3 md:p-4 lg:p-6 xl:p-8 overflow-y-auto pb-20 md:pb-4" role="main">
+        <main 
+          className={cn(
+            "flex-1 p-3 md:p-4 lg:p-6 xl:p-8 pb-20 md:pb-4",
+            activeTab === "messages" ? "overflow-hidden" : "overflow-y-auto"
+          )} 
+          role="main"
+        >
           {!user?.is_verified && activeTab !== "onboarding" && activeTab !== "overview" ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4 max-w-md mx-auto">
               <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">

@@ -47,16 +47,8 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
       items: [
         { id: "bookings", label: "My Bookings", icon: <BookOpen className="w-4 h-4" /> },
         { id: "messages", label: "Messages", icon: <MessageCircle className="w-4 h-4" /> },
-        { id: "quotes", label: "Quotes", icon: <FileText className="w-4 h-4" /> },
-        { id: "contracts", label: "Contracts", icon: <FileText className="w-4 h-4" /> },
         { id: "disputes", label: "Disputes", icon: <ShieldAlert className="w-4 h-4" /> },
         { id: "reviews", label: "Reviews", icon: <Star className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "Inspiration",
-      items: [
-        { id: "inspiration", label: "Wedding Ideas", icon: <Heart className="w-4 h-4" /> },
       ]
     }
   ];

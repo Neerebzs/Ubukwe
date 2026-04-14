@@ -1,4 +1,4 @@
-import { apiClient, API_ENDPOINTS } from "@/lib/api";
+import { apiClient, API_ENDPOINTS } from "../api";
 
 export interface ProfileUpdateData {
   full_name?: string;
