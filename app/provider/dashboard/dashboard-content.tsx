@@ -25,6 +25,7 @@ import { ProviderOnboardingForm } from "@/components/provider/onboarding-form"
 import { ProviderContracts } from "@/components/provider/contracts"
 import { EventsManagement } from "@/components/provider/events-management"
 import { TicketManagementWrapper } from "@/components/provider/ticket-management-wrapper"
+import { MessagesHub } from "@/components/dashboard/messages-hub"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Plus } from "lucide-react"
 import { TranslatedText } from "@/components/translated-text"
@@ -86,6 +87,7 @@ export function ProviderDashboardContent() {
       case "quotes": return <QuoteBuilder customerId={customerId || undefined} inquiryId={inquiryId || undefined} />
 
       case "contracts": return <ProviderContracts />
+      case "messages": return <MessagesHub />
       case "onboarding": return <ProviderOnboardingForm />
       case "earnings": return <ProviderEarnings />
       case "profile": return <ProviderProfileSettings />

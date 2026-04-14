@@ -68,28 +68,48 @@ export function NotificationItem({ notification, showDivider }: NotificationItem
       markAsRead(notification.id);
     }
 
+    const userRaw = localStorage.getItem('user');
+    const currentUser = userRaw ? JSON.parse(userRaw) : null;
+
+    if (notification.notification_type === 'message') {
+      let withUserId: string | null = null;
+      if (notification.extra_data) {
+        try {
+          const payload = typeof notification.extra_data === 'string'
+            ? JSON.parse(notification.extra_data)
+            : notification.extra_data;
+          withUserId = payload?.from_user_id || null;
+        } catch {
+          withUserId = null;
+        }
+      }
+
+      if (currentUser?.role === 'service_provider') {
+        router.push(`/provider/dashboard?tab=messages${withUserId ? `&with=${withUserId}` : ''}`);
+      } else if (currentUser?.role === 'event_owner') {
+        router.push(`/customer/dashboard?tab=messages${withUserId ? `&with=${withUserId}` : ''}`);
+      }
+      return;
+    }
+
     // Navigate based on notification type
     if (notification.related_booking_id) {
       // Navigate to bookings tab
-      const userRole = localStorage.getItem('user');
-      if (userRole) {
-        const user = JSON.parse(userRole);
-        if (user.role === 'service_provider') {
+      if (currentUser) {
+        if (currentUser.role === 'service_provider') {
           router.push('/provider/dashboard?tab=bookings');
-        } else if (user.role === 'event_owner') {
+        } else if (currentUser.role === 'event_owner') {
           router.push('/customer/dashboard?tab=bookings');
-        } else if (user.role === 'admin') {
+        } else if (currentUser.role === 'admin') {
           router.push('/admin/dashboard?tab=bookings');
         }
       }
     } else if (notification.related_event_id) {
       // Navigate to events tab
-      const userRole = localStorage.getItem('user');
-      if (userRole) {
-        const user = JSON.parse(userRole);
-        if (user.role === 'service_provider') {
+      if (currentUser) {
+        if (currentUser.role === 'service_provider') {
           router.push('/provider/dashboard?tab=events');
-        } else if (user.role === 'admin') {
+        } else if (currentUser.role === 'admin') {
           router.push('/admin/dashboard?tab=events');
         } else {
           // For customers, navigate to public events page

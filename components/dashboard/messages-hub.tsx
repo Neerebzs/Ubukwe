@@ -25,13 +25,96 @@ function initials(name: string) {
   return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 }
 
+function parseBackendTimestamp(raw: string) {
+  // If backend sends naive timestamps, treat them as UTC and convert for display.
+  const hasZone = /([zZ]|[+\-]\d{2}:\d{2})$/.test(raw);
+  return new Date(hasZone ? raw : `${raw}Z`);
+}
+
 function formatTime(iso: string) {
-  const d = new Date(iso);
+  const d = parseBackendTimestamp(iso);
   const diffMins = Math.floor((Date.now() - d.getTime()) / 60000);
   if (diffMins < 1) return "Just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-  return d.toLocaleDateString();
+  return d.toLocaleDateString("en-GB", { timeZone: "Africa/Kigali" });
+}
+
+function formatMessageTime(iso: string) {
+  const d = parseBackendTimestamp(iso);
+  const tz = "Africa/Kigali";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
+function getKigaliDayKey(iso: string) {
+  const d = parseBackendTimestamp(iso);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Kigali",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+function isTodayInKigali(iso: string) {
+  return getKigaliDayKey(iso) === new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Kigali",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function formatDateSeparator(iso: string) {
+  const d = parseBackendTimestamp(iso);
+  const tz = "Africa/Kigali";
+
+  const dateKey = getKigaliDayKey(iso);
+  const now = new Date();
+  const todayKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+
+  if (dateKey === todayKey) {
+    return "Today";
+  }
+
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayKey = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(yesterday);
+
+  if (dateKey === yesterdayKey) {
+    return "Yesterday";
+  }
+
+  const msgDate = parseBackendTimestamp(iso);
+  const daysBehind = Math.floor((now.getTime() - msgDate.getTime()) / (24 * 60 * 60 * 1000));
+  if (daysBehind >= 2 && daysBehind <= 4) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      weekday: "long",
+    }).format(msgDate);
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(msgDate);
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -48,10 +131,10 @@ function ConversationItem({
   return (
     <div
       onClick={onClick}
-      className={`p-5 rounded-[2rem] cursor-pointer transition-all duration-200 ${
+      className={`p-5 rounded-[2rem] cursor-pointer transition-all duration-200 border ${
         selected
-          ? "bg-sage-600 text-white shadow-xl scale-[1.02]"
-          : "hover:bg-slate-50"
+          ? "bg-sage-600 text-white shadow-xl scale-[1.02] border-sage-700"
+          : "bg-white border-slate-300 hover:bg-slate-50 hover:border-slate-400"
       }`}
     >
       <div className="flex items-start gap-4">
@@ -68,12 +151,12 @@ function ConversationItem({
             <span className={`font-bold text-sm truncate ${selected ? "text-white" : "text-slate-800"}`}>
               {conv.partner_name}
             </span>
-            <span className="text-[9px] text-slate-400 shrink-0 ml-2">
+            <span className="text-[9px] text-slate-900 shrink-0 ml-2">
               {formatTime(conv.last_message_time)}
             </span>
           </div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-slate-900">
               {conv.partner_role?.replace("_", " ")}
             </span>
             {conv.unread_count > 0 && (
@@ -82,7 +165,7 @@ function ConversationItem({
               </span>
             )}
           </div>
-          <p className={`text-xs truncate ${selected ? "text-slate-300" : "text-slate-500"}`}>
+          <p className={`text-xs truncate ${selected ? "text-white" : "text-slate-900"}`}>
             {conv.last_message}
           </p>
         </div>
@@ -97,21 +180,25 @@ function MessageBubble({ msg, isMe }: { msg: ChatMessage; isMe: boolean }) {
       <div
         className={`max-w-[70%] px-5 py-4 shadow-sm ${
           isMe
-            ? "bg-sage-600 text-white rounded-[2rem] rounded-tr-sm"
-            : "bg-slate-50 text-slate-700 rounded-[2rem] rounded-tl-sm border border-slate-100"
+            ? "bg-[#9DC183] text-black rounded-[2rem] rounded-tr-sm"
+            : "bg-white text-black rounded-[2rem] rounded-tl-sm border border-slate-200"
         }`}
       >
-        <p className="text-[13px] leading-relaxed font-medium">{msg.message}</p>
-      </div>
-      <div className={`flex items-center gap-1.5 mt-1.5 ${isMe ? "flex-row-reverse" : ""}`}>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
-          {formatTime(msg.created_at)}
-        </span>
-        {isMe && (
-          msg.read
-            ? <ShieldCheck className="w-3 h-3 text-sage-400" />
-            : <Clock className="w-3 h-3 text-slate-300" />
-        )}
+        <p className="text-[13px] leading-relaxed font-medium text-black">{msg.message}</p>
+        <div className={`flex items-center gap-1.5 mt-2 ${isMe ? "justify-end" : "justify-end"}`}>
+          <span
+            className={`text-[9px] font-bold uppercase tracking-widest ${
+              isMe ? "text-black/70" : "text-black/70"
+            }`}
+          >
+            {formatMessageTime(msg.created_at)}
+          </span>
+          {isMe && (
+            msg.read
+              ? <ShieldCheck className="w-3 h-3 text-black/70" />
+              : <Clock className="w-3 h-3 text-black/50" />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -176,7 +263,7 @@ export function MessagesHub() {
       <div className="w-1/3 flex flex-col bg-white rounded-[2.5rem] shadow-sm border border-slate-50 overflow-hidden">
         <div className="p-8 pb-4">
           <h2 className="text-2xl font-serif italic text-slate-800 mb-1">Messages</h2>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-900 mb-6">
             Provider Communications
           </p>
           <div className="relative">
@@ -185,7 +272,7 @@ export function MessagesHub() {
               placeholder="Search conversations…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-12 h-12 rounded-2xl bg-slate-50 border-none text-sm"
+              className="pl-12 h-12 rounded-2xl bg-slate-50 border-none text-sm text-slate-900 placeholder:text-slate-700"
             />
           </div>
         </div>
@@ -203,7 +290,7 @@ export function MessagesHub() {
             ))}
 
           {!convsLoading && filtered.length === 0 && (
-            <p className="text-center py-12 text-slate-400 text-sm">No conversations yet</p>
+            <p className="text-center py-12 text-slate-900 text-sm">No conversations yet</p>
           )}
 
           {filtered.map((conv) => (
@@ -228,7 +315,7 @@ export function MessagesHub() {
               <h3 className="text-2xl font-serif italic text-slate-800 mb-3">
                 Select a conversation
               </h3>
-              <p className="text-slate-400 text-sm">
+              <p className="text-slate-900 text-sm">
                 Choose a provider from the list to start messaging.
               </p>
             </div>
@@ -248,7 +335,7 @@ export function MessagesHub() {
                   <h3 className="font-serif italic text-slate-800 text-lg">
                     {current?.partner_name}
                   </h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
                     {current?.partner_role?.replace("_", " ")}
                   </span>
                 </div>
@@ -285,18 +372,30 @@ export function MessagesHub() {
                 ))}
 
               {!historyLoading && history.length === 0 && (
-                <p className="text-center text-slate-400 text-sm py-12">
+                <p className="text-center text-slate-900 text-sm py-12">
                   No messages yet — say hello!
                 </p>
               )}
 
-              {history.map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  isMe={msg.sender_id === user?.id}
-                />
-              ))}
+              {history.map((msg, index) => {
+                const previous = history[index - 1];
+                const currentDay = getKigaliDayKey(msg.created_at);
+                const previousDay = previous ? getKigaliDayKey(previous.created_at) : null;
+                const showDateSeparator = !previous || previousDay !== currentDay;
+
+                return (
+                  <div key={msg.id} className="space-y-4">
+                    {showDateSeparator && (
+                      <div className="flex justify-center">
+                        <span className="rounded-full bg-slate-100 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 shadow-sm border border-slate-200">
+                          {formatDateSeparator(msg.created_at)}
+                        </span>
+                      </div>
+                    )}
+                    <MessageBubble msg={msg} isMe={msg.sender_id === user?.id} />
+                  </div>
+                );
+              })}
               <div ref={bottomRef} />
             </div>
 
@@ -313,12 +412,12 @@ export function MessagesHub() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-end gap-3 p-2 pl-4 bg-slate-50 rounded-3xl border border-transparent focus-within:border-sage-500/30 focus-within:bg-white transition-all">
+                <div className="flex items-end gap-3 p-2 pl-4 bg-white rounded-3xl border border-slate-300 focus-within:border-sage-600/60 focus-within:bg-white transition-all shadow-sm">
                   <Textarea
                     placeholder="Type a message…"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm"
+                    className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm text-slate-900 placeholder:text-slate-700"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();

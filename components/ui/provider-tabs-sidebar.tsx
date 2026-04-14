@@ -48,6 +48,7 @@ export function ProviderTabsSidebar({
     {
       title: "My Customers",
       items: [
+        { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
         { id: "inquiries", label: "New Requests", icon: <MessageSquare className="w-4 h-4" /> },
         { id: "quotes", label: "Price Offers", icon: <FileText className="w-4 h-4" /> },
         { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },

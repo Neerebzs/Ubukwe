@@ -84,6 +84,7 @@ export function ProviderMobileMenuDrawer({
       title: "CRM",
       icon: <MessageSquare className="w-4 h-4" />,
       items: [
+        { id: "messages", label: "Messages", icon: MessageSquare },
         { id: "inquiries", label: "Inquiries", icon: MessageSquare },
         { id: "quotes", label: "Quotes", icon: FileText },
         { id: "contracts", label: "Contracts", icon: FileText },
