@@ -787,6 +787,18 @@ class ApiClient {
         return axiosInstance.put<any>(`/api/v1/admin/events/${id}/reject`, { rejection_reason: reason });
       },
     },
+    payments: {
+      getWithdrawals: async (status?: string) => {
+        const params = status ? { status } : {};
+        return axiosInstance.get<any[]>('/api/v1/admin/payments/withdrawals', { params });
+      },
+      getStats: async () => {
+        return axiosInstance.get<any>('/api/v1/admin/payments/stats');
+      },
+      updateWithdrawalStatus: async (id: string, status: string, notes?: string) => {
+        return axiosInstance.put<any>(`/api/v1/admin/payments/withdrawals/${id}`, { status, admin_notes: notes });
+      },
+    },
   };
 }
 

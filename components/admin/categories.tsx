@@ -35,6 +35,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Separator } from "@/components/ui/separator"
 import { StatCard } from "./stat-card"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Types
 interface Category {
@@ -364,11 +365,12 @@ export function CategoriesManagement() {
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-64 text-center">
-                                        <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="w-8 h-8 border-2 border-[#608d64]/20 border-t-[#608d64] rounded-full animate-spin" />
-                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Retrieving Taxonomies</p>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell colSpan={4} className="p-8">
+                                        <div className="space-y-6 animate-in fade-in duration-700">
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <Skeleton key={i} className="h-20 rounded-2xl w-full" />
+                                            ))}
                                         </div>
                                     </TableCell>
                                 </TableRow>

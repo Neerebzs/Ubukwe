@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProviderData {
   id: string;
@@ -306,9 +307,17 @@ export function AdminProviders() {
 
         <TabsContent value={statusFilter} className="mt-0 focus-visible:outline-none">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-              <div className="w-8 h-8 border-2 border-[#608d64]/20 border-t-[#608d64] rounded-full animate-spin" />
-              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Retrieving Credentials</p>
+            <div className="space-y-10 animate-in fade-in duration-700">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 rounded-2xl" />
+                ))}
+              </div>
+              <div className="space-y-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-40 rounded-[2.5rem]" />
+                ))}
+              </div>
             </div>
           ) : filteredProviders.length === 0 ? (
             <div className="text-center py-32 rounded-[3rem] border border-dashed border-slate-200 bg-slate-50/50">

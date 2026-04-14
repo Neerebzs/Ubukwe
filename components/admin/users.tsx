@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdminUser {
   id: string;
@@ -140,9 +141,17 @@ export function AdminUsers() {
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-4">
-          <div className="w-8 h-8 border-2 border-[#608d64]/20 border-t-[#608d64] rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Retrieving Records</p>
+        <div className="space-y-10 animate-in fade-in duration-700">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
+          </div>
+          <div className="space-y-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-40 rounded-[2.5rem]" />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="grid gap-6">

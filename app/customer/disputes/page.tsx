@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { axiosInstance } from "@/lib/api-client"
+import { axiosInstance, apiClient } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,8 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, AlertCircle, Clock, CheckCircle, MessageSquare, FileText, Search, ShieldCheck } from "lucide-react"
+import { Upload, AlertCircle, Clock, CheckCircle, MessageSquare, FileText, Search, ShieldCheck, Camera, X } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface Dispute {
   id: string
@@ -38,8 +39,11 @@ export default function DisputesPage() {
     title: "",
     category: "",
     description: "",
-    resolution_request: "",
   })
+  const [proofImage, setProofImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [triedToSubmit, setTriedToSubmit] = useState(false)
+  const [selectedBookingName, setSelectedBookingName] = useState<string>("")
 
   const { data: disputes = [], isLoading } = useQuery<Dispute[]>({
     queryKey: ["my-disputes"],
@@ -49,23 +53,73 @@ export default function DisputesPage() {
     },
   })
 
+  const { data: completedBookings = [] } = useQuery({
+    queryKey: ["completed-bookings"],
+    queryFn: async () => {
+      const res = await apiClient.bookings.getAll({ role: "customer", status: "completed" })
+      // Some API returns { data: [...] }, others raw array. lib/api-client handles some, 
+      // but let's be safe based on the dashboard patterns.
+      const bookings = Array.isArray((res as any).data) ? (res as any).data : (Array.isArray(res) ? res : [])
+      return bookings
+    }
+  })
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setProofImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleBookingSelect = (bookingId: string) => {
+    const booking = completedBookings.find((b: any) => b.id === bookingId)
+    if (booking) {
+      setForm({
+        ...form,
+        booking_id: bookingId,
+        respondent_id: booking.provider_id || booking.service?.provider_id || "",
+      })
+      setSelectedBookingName(booking.service_name || booking.service?.name || "Premium Service")
+    }
+  }
+
   const submitMutation = useMutation({
     mutationFn: async () => {
-      return axiosInstance.post("/api/v1/disputes", {
-        booking_id: form.booking_id,
-        respondent_id: form.respondent_id,
-        title: form.title || form.category,
-        description: form.description,
-        category: form.category,
-        priority: "medium",
+      const formData = new FormData()
+      formData.append("booking_id", form.booking_id)
+      formData.append("respondent_id", form.respondent_id)
+      formData.append("title", form.title || form.category)
+      formData.append("description", form.description)
+      formData.append("category", form.category)
+      formData.append("priority", "medium")
+      if (proofImage) {
+        formData.append("proof_image", proofImage)
+      }
+
+      return axiosInstance.post("/api/v1/disputes", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       })
     },
     onSuccess: () => {
       toast.success("Dispute filed successfully. Our team will review it within 1 business day.")
       queryClient.invalidateQueries({ queryKey: ["my-disputes"] })
-      setForm({ booking_id: "", respondent_id: "", title: "", category: "", description: "", resolution_request: "" })
+      setForm({ booking_id: "", respondent_id: "", title: "", category: "", description: "" })
+      setProofImage(null)
+      setImagePreview(null)
+      setTriedToSubmit(false)
+      setSelectedBookingName("")
     },
-    onError: (err: any) => toast.error(err.message || "Failed to file dispute"),
+    onError: (err: any) => {
+      const msg = err.response?.data?.detail || err.response?.data?.message || err.message || "Failed to file dispute"
+      toast.error(msg)
+    },
   })
 
   const getStatusBadge = (status: string) => {
@@ -199,21 +253,33 @@ export default function DisputesPage() {
               <CardContent className="p-10 space-y-8">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Booking ID</Label>
-                    <Input
-                      value={form.booking_id}
-                      onChange={(e) => setForm({ ...form, booking_id: e.target.value })}
-                      placeholder="Booking UUID"
-                      className="h-14 rounded-2xl bg-slate-50 border-none"
-                    />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Booking</Label>
+                    <Select value={form.booking_id} onValueChange={handleBookingSelect}>
+                      <SelectTrigger className={cn(
+                        "h-14 rounded-2xl bg-slate-50 border-none transition-all",
+                        triedToSubmit && !form.booking_id && "bg-rose-50 ring-2 ring-rose-200"
+                      )}>
+                        <SelectValue placeholder="Chose a completed booking" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl">
+                        {completedBookings.length === 0 && (
+                          <div className="p-4 text-xs text-slate-400 text-center">No completed bookings found</div>
+                        )}
+                        {completedBookings.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            {b.service_name || b.service?.name || "Service"} ({new Date(b.booking_date).toLocaleDateString()})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Provider ID</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Provider</Label>
                     <Input
-                      value={form.respondent_id}
-                      onChange={(e) => setForm({ ...form, respondent_id: e.target.value })}
-                      placeholder="Provider UUID"
-                      className="h-14 rounded-2xl bg-slate-50 border-none"
+                      value={selectedBookingName || form.respondent_id}
+                      readOnly
+                      placeholder="Provider will be auto-filled"
+                      className="h-14 rounded-2xl bg-slate-100 border-none opacity-70 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -245,21 +311,66 @@ export default function DisputesPage() {
                   />
                 </div>
 
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                    Evidence Proof <span className="text-rose-500 text-[8px] font-bold bg-rose-50 px-2 py-0.5 rounded-full">Required</span>
+                  </Label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <label className={cn(
+                      "aspect-video rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-slate-50",
+                      triedToSubmit && !proofImage ? "border-rose-300 bg-rose-50" : "border-slate-100 bg-slate-50/50"
+                    )}>
+                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                      <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:bg-[#668c65] transition-all">
+                        <Camera className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600">Upload Visual Proof</p>
+                        <p className="text-[8px] text-slate-400 mt-1 uppercase tracking-widest leading-relaxed">Required for investigation</p>
+                      </div>
+                    </label>
+
+                    {imagePreview ? (
+                      <div className="relative aspect-video rounded-[2rem] overflow-hidden shadow-lg group">
+                        <img src={imagePreview} alt="Evidence Preview" className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => { setProofImage(null); setImagePreview(null); }}
+                          className="absolute top-4 right-4 p-2 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-[2rem] bg-slate-50/30 border border-slate-100 flex items-center justify-center italic text-slate-300 text-xs">
+                        Preview will appear here
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="p-6 rounded-[2rem] bg-sage-500/5 border border-sage-500/10">
                   <div className="flex gap-3">
                     <ShieldCheck className="w-5 h-5 text-sage-600 shrink-0 mt-0.5" />
                     <p className="text-sm text-slate-700">
-                      Our team reviews disputes within 1 business day and aims for resolution within 7 days.
+                      Our integrity team reviews disputes within 1 business day. We require visual proof to effectively mitigate conflicts.
                     </p>
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => submitMutation.mutate()}
-                  disabled={!form.booking_id || !form.category || !form.description || submitMutation.isPending}
-                  className="h-16 px-12 rounded-2xl bg-[#668c65] hover:bg-sage-700 text-white text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl"
+                 <Button
+                  onClick={() => {
+                    setTriedToSubmit(true)
+                    if (form.booking_id && form.category && form.description && proofImage) {
+                      submitMutation.mutate()
+                    } else {
+                      toast.error("Please fill in all required fields and upload evidence.")
+                    }
+                  }}
+                  disabled={submitMutation.isPending}
+                  className="h-16 px-12 rounded-full bg-[#668c65] hover:bg-sage-700 text-white text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl disabled:opacity-50"
                 >
-                  {submitMutation.isPending ? "Filing..." : "File Dispute"}
+                  {submitMutation.isPending ? "Filing Case..." : "Establish Dispute Case"}
                 </Button>
               </CardContent>
             </Card>

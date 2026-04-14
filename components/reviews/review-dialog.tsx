@@ -23,7 +23,7 @@ export function ReviewDialog({
 }: ReviewDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden border-none bg-transparent shadow-none">
+      <DialogContent className="w-[95vw] md:max-w-4xl p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto rounded-[2rem] md:rounded-[2.5rem] scrollbar-hide focus:outline-none translate-y-[-50%]">
         <ReviewForm 
           bookingId={bookingId}
           serviceName={serviceName}

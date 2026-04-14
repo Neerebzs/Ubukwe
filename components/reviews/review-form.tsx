@@ -34,6 +34,7 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
   const [showPhotos, setShowPhotos] = useState(false)
   const [isTestimonialVisible, setIsTestimonialVisible] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [triedToSubmit, setTriedToSubmit] = useState(false)
 
   const updateRating = (category: keyof typeof ratings, value: number) => {
     setRatings(prev => ({ ...prev, [category]: value }))
@@ -53,12 +54,14 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
   }
 
   const handleSubmit = async () => {
+    setTriedToSubmit(true)
+    
     if (ratings.overall === 0) {
       toast.error("Please give an overall rating before submitting.")
       return
     }
     if (!reviewText.trim()) {
-      toast.error("Please write your review before submitting.")
+      toast.error("Please write your narrative before submitting.")
       return
     }
 
@@ -85,7 +88,8 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
 
       onSubmit?.({ bookingId, ratings, reviewText, isTestimonialVisible })
     } catch (err: any) {
-      toast.error(err.message || "Failed to submit review. Please try again.")
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || "Failed to submit review. Please try again."
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -142,6 +146,8 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
   }
 
   const isValid = ratings.overall > 0 && reviewText.trim().length > 0
+  const isOverallMissing = triedToSubmit && ratings.overall === 0
+  const isTextMissing = triedToSubmit && !reviewText.trim()
 
   return (
     <Card className="border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-xl">
@@ -166,6 +172,46 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
       </CardHeader>
 
       <CardContent className="p-4 md:p-10 space-y-6 md:space-y-10">
+        {/* Overall Rating — required */}
+        <motion.section 
+          animate={isOverallMissing ? { x: [-4, 4, -4, 4, 0] } : {}}
+          transition={{ duration: 0.4 }}
+          className={cn(
+            "space-y-6 p-6 rounded-[2rem] transition-all duration-300",
+            isOverallMissing 
+              ? "bg-rose-50 border-2 border-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.1)]" 
+              : "bg-[#668c65]/5 border border-[#668c65]/10"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#668c65]">
+              Overall Reflection
+            </Label>
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#668c65] bg-[#668c65]/10 px-2 py-0.5 rounded-full">
+              Required
+            </span>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-8">
+            <RatingStars category="overall" value={ratings.overall} size="lg" />
+            {ratings.overall > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#668c65] text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#668c65]/20"
+              >
+                <CheckCircle className="w-3 h-3" />
+                {ratings.overall === 5
+                  ? "Exquisite Experience"
+                  : ratings.overall === 4
+                  ? "Beautiful Service"
+                  : ratings.overall === 3
+                  ? "Good Experience"
+                  : "Verified Review"}
+              </motion.div>
+            )}
+          </div>
+        </motion.section>
+
         {/* Phase 1: Booking & Planning */}
         <section className="space-y-6 p-5 md:p-8 rounded-[2rem] bg-slate-50 border border-slate-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#668c65]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
@@ -228,44 +274,39 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
           </div>
         </section>
 
-        {/* Overall Rating — required */}
-        <section className="space-y-6">
+        {/* Review text — required */}
+        <motion.section 
+          animate={isTextMissing ? { x: [-4, 4, -4, 4, 0] } : {}}
+          transition={{ duration: 0.4 }}
+          className={cn(
+            "space-y-4 p-6 rounded-[2rem] transition-all duration-300",
+            isTextMissing && "bg-rose-50 border-2 border-rose-200"
+          )}
+        >
           <div className="flex items-center gap-2">
             <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-              Overall Rating
+              Your Narrative
             </Label>
-            <span className="text-[9px] font-black uppercase tracking-widest text-rose-400 bg-rose-50 px-2 py-0.5 rounded-full">
+            <span className={cn(
+              "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full transition-colors",
+              isTextMissing ? "bg-rose-500 text-white" : "text-rose-400 bg-rose-50"
+            )}>
               Required
             </span>
           </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-8">
-            <RatingStars category="overall" value={ratings.overall} size="lg" />
-            {ratings.overall > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#668c65] text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#668c65]/20"
-              >
-                <CheckCircle className="w-3 h-3" />
-                {ratings.overall === 5
-                  ? "Exquisite Experience"
-                  : ratings.overall === 4
-                  ? "Beautiful Service"
-                  : ratings.overall === 3
-                  ? "Good Experience"
-                  : "Verified Review"}
-              </motion.div>
-            )}
-          </div>
-
-          {/* Review text — required */}
           <div className="relative">
             <Textarea
               value={reviewText}
-              onChange={(e) => setReviewText(e.target.value.slice(0, 1000))}
+              onChange={(e) => {
+                setReviewText(e.target.value.slice(0, 1000))
+                if (triedToSubmit) setTriedToSubmit(false)
+              }}
               placeholder="Share the narrative of your experience... What moments stood out?"
               rows={6}
-              className="w-full bg-slate-50 border-slate-100 rounded-2xl md:rounded-3xl p-4 md:p-6 focus:ring-[#668c65] focus:border-[#668c65] transition-all resize-none shadow-inner"
+              className={cn(
+                "w-full bg-slate-50 border-slate-100 rounded-2xl md:rounded-3xl p-4 md:p-6 focus:ring-[#668c65] focus:border-[#668c65] transition-all resize-none shadow-inner",
+                isTextMissing && "border-rose-300"
+              )}
             />
             <div className="absolute bottom-4 right-6">
               <span
@@ -278,7 +319,7 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
               </span>
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Visual Testimony — collapsible optional section */}
         <section className="rounded-[2rem] border border-slate-100 overflow-hidden">
@@ -406,7 +447,7 @@ export function ReviewForm({ bookingId, serviceName, providerName, onSubmit }: R
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!isValid || isSubmitting}
+            disabled={isSubmitting}
             className="h-16 px-12 rounded-full bg-slate-900 hover:bg-[#668c65] text-white font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl hover:shadow-[#668c65]/20 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
