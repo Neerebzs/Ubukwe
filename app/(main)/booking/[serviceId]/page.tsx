@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   MapPin, Star, CreditCard, Shield, CheckCircle,
   ArrowLeft, Phone, Mail, Heart, Calendar as CalendarIcon,
-  ChevronRight, Loader2, Info
+  ChevronRight, Loader2
 } from "lucide-react"
 import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
 import { Calendar } from "@/components/ui/calendar"
@@ -201,8 +201,8 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       package_id: packageId || null,
       package_name: packageName || null,
       booking_amount: pricing.basePrice,
-      total_amount: pricing.total,
-      deposit_amount: pricing.platformFee,
+      total_amount: pricing.basePrice,
+      deposit_amount: null,
       customer_name: bookingData.contactName,
       customer_email: bookingData.contactEmail,
       customer_phone: bookingData.contactPhone,
@@ -251,14 +251,16 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
 
   const availableTimeslots = ["09:00", "11:00", "13:00", "15:00", "17:00"]
 
-  // Calculating pricing
+  // Pricing — customer pays package price only, no visible fees
   const pricing = useMemo(() => {
-    const basePrice = service?.price_range_min || 0
-    const platformFee = basePrice * 0.05
-    const vat = basePrice * 0.18 // 18% VAT in Rwanda
-    const total = basePrice + platformFee + vat
-    return { basePrice, platformFee, vat, total }
-  }, [service])
+    // Use selected package price if available, otherwise service min price
+    const pkgArray = Array.isArray(service?.packages) ? service.packages : []
+    const selectedPkg = pkgArray.find((p: any) =>
+      String(p.id) === String(packageId) || p.name === packageName
+    )
+    const basePrice = selectedPkg?.price ?? service?.price_range_min ?? 0
+    return { basePrice, total: basePrice }
+  }, [service, packageId, packageName])
 
   if (isAuthLoading || (isAuthLoading && !user)) {
     return (
@@ -768,22 +770,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Base Price</span>
-                    <span>{pricing.basePrice.toLocaleString()} RWF</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="text-muted-foreground">Service Fee (5%)</span>
-                      <Popover>
-                        <PopoverTrigger><Info className="h-3 w-3 text-muted-foreground cursor-help" /></PopoverTrigger>
-                        <PopoverContent className="text-xs p-2">This helps us run the platform and provide support.</PopoverContent>
-                      </Popover>
-                    </div>
-                    <span>{pricing.platformFee.toLocaleString()} RWF</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">VAT (18%)</span>
-                    <span>{pricing.vat.toLocaleString()} RWF</span>
+                    <span className="text-muted-foreground">
+                      {packageName ? `Package: ${packageName}` : "Service Price"}
+                    </span>
+                    <span className="font-medium">{pricing.basePrice.toLocaleString()} RWF</span>
                   </div>
                 </div>
 
