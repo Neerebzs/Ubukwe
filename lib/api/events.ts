@@ -56,6 +56,16 @@ export interface EventAnalytics {
   check_in_percentage: number;
 }
 
+export interface TicketInspector {
+  id: string;
+  name: string;
+  email?: string;
+  phone_number?: string;
+  identification_number: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 // Helper function to get auth token
 const getAuthToken = () => {
   if (typeof window !== "undefined") {
@@ -280,5 +290,26 @@ export const eventAPI = {
   // Analytics
   getEventAnalytics: async (eventId: string): Promise<EventAnalytics> => {
     return apiCall(`/api/v1/provider/events/${eventId}/analytics`, "GET");
+  },
+
+  // Ticket Inspectors
+  getInspectors: async (eventId: string): Promise<TicketInspector[]> => {
+    return apiCall(`/api/v1/provider/events/${eventId}/inspectors`, "GET");
+  },
+
+  createInspector: async (eventId: string, data: { name: string; email: string; phone_number: string }): Promise<TicketInspector> => {
+    return apiCall(`/api/v1/provider/events/${eventId}/inspectors`, "POST", data);
+  },
+
+  deleteInspector: async (eventId: string, inspectorId: string): Promise<void> => {
+    return apiCall(`/api/v1/provider/events/${eventId}/inspectors/${inspectorId}`, "DELETE");
+  },
+
+  verifyInspector: async (identificationNumber: string): Promise<{ event: Event; inspector: TicketInspector }> => {
+    return apiCall(`/api/v1/provider/events/inspectors/verify`, "POST", { identification_number: identificationNumber });
+  },
+
+  checkInByInspector: async (data: { ticket_number: string; identification_number: string }): Promise<any> => {
+    return apiCall(`/api/v1/provider/events/inspectors/check-in`, "POST", data);
   },
 };

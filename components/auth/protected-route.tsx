@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
@@ -14,10 +14,16 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles, redirectTo = "/auth/signin" }: ProtectedRouteProps) {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    // Wait for auth state to load
-    if (isLoading) return;
+    // Wait for component to mount and auth state to load
+    if (!mounted || isLoading) return;
 
     // If not authenticated, redirect to login
     if (!user) {
@@ -39,10 +45,10 @@ export function ProtectedRoute({ children, allowedRoles, redirectTo = "/auth/sig
         router.push(redirectTo);
       }
     }
-  }, [user, isLoading, allowedRoles, router, redirectTo]);
+  }, [user, isLoading, allowedRoles, router, redirectTo, mounted]);
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  // Show loading state during SSR and initial mount
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen bg-[#f9fafc] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

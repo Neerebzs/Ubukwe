@@ -194,3 +194,50 @@ export const useEventAnalytics = (eventId: string) => {
     enabled: !!eventId,
   });
 };
+
+// Inspectors
+export const useInspectors = (eventId: string) => {
+  return useQuery({
+    queryKey: ["inspectors", eventId],
+    queryFn: () => eventAPI.getInspectors(eventId),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!eventId,
+  });
+};
+
+export const useCreateInspector = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, data }: { eventId: string; data: { name: string; email: string; phone_number: string } }) =>
+      eventAPI.createInspector(eventId, data),
+    onSuccess: (_, { eventId }) => {
+      queryClient.invalidateQueries({ queryKey: ["inspectors", eventId] });
+    },
+  });
+};
+
+export const useDeleteInspector = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, inspectorId }: { eventId: string; inspectorId: string }) =>
+      eventAPI.deleteInspector(eventId, inspectorId),
+    onSuccess: (_, { eventId }) => {
+      queryClient.invalidateQueries({ queryKey: ["inspectors", eventId] });
+    },
+  });
+};
+
+export const useVerifyInspector = () => {
+  return useMutation({
+    mutationFn: (identificationNumber: string) => eventAPI.verifyInspector(identificationNumber),
+  });
+};
+
+export const useCheckInByInspector = () => {
+  return useMutation({
+    mutationFn: (data: { ticket_number: string; identification_number: string }) =>
+      eventAPI.checkInByInspector(data),
+  });
+};

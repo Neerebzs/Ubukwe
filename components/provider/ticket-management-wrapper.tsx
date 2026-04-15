@@ -1,12 +1,21 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEvent, useTicketTypes, useTickets } from "@/hooks/useEvents";
+import { 
+  useEvent, 
+  useTicketTypes, 
+  useTickets, 
+  useInspectors, 
+  useCreateInspector, 
+  useDeleteInspector,
+  useEventAnalytics,
+} from "@/hooks/useEvents";
 import { TicketManagement } from "./ticket-management";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader, AlertCircle, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function TicketManagementWrapper() {
   const searchParams = useSearchParams();
@@ -16,6 +25,31 @@ export function TicketManagementWrapper() {
   const { data: event, isLoading: eventLoading, error: eventError } = useEvent(eventId || "");
   const { data: ticketTypes = [], isLoading: typesLoading } = useTicketTypes(eventId || "");
   const { data: tickets = [], isLoading: ticketsLoading } = useTickets(eventId || "");
+  const { data: inspectors = [], isLoading: inspectorsLoading } = useInspectors(eventId || "");
+  const { data: analytics } = useEventAnalytics(eventId || "");
+
+  const createInspectorMutation = useCreateInspector();
+  const deleteInspectorMutation = useDeleteInspector();
+
+  const handleAddInspector = async (data: { name: string; email: string; phone_number: string }) => {
+    if (!eventId) return;
+    try {
+      await createInspectorMutation.mutateAsync({ eventId, data });
+      toast.success("Inspector added successfully");
+    } catch (error) {
+      toast.error("Failed to add inspector");
+    }
+  };
+
+  const handleDeleteInspector = async (inspectorId: string) => {
+    if (!eventId || !confirm("Are you sure you want to remove this inspector?")) return;
+    try {
+      await deleteInspectorMutation.mutateAsync({ eventId, inspectorId });
+      toast.success("Inspector removed successfully");
+    } catch (error) {
+      toast.error("Failed to remove inspector");
+    }
+  };
 
   if (!eventId) {
     return (
@@ -37,7 +71,7 @@ export function TicketManagementWrapper() {
     );
   }
 
-  if (eventLoading || typesLoading || ticketsLoading) {
+  if (eventLoading || typesLoading || ticketsLoading || inspectorsLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] border border-slate-100 bg-white rounded-[2.5rem] p-12 text-center">
         <Loader className="h-8 w-8 animate-spin text-[#668c65] mx-auto mb-6" />
@@ -95,6 +129,10 @@ export function TicketManagementWrapper() {
         eventCapacity={event.capacity}
         ticketTypes={ticketTypes}
         tickets={tickets}
+        inspectors={inspectors}
+        analytics={analytics}
+        onInspectorAdded={handleAddInspector}
+        onInspectorDeleted={handleDeleteInspector}
       />
     </div>
   );
