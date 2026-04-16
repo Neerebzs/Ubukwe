@@ -375,6 +375,13 @@ export interface ProviderService {
   address?: string;
   city?: string;
   country?: string;
+  // Provider profile fields
+  provider_logo?: string;
+  provider_full_name?: string;
+  provider_business_type?: string;
+  provider_years_experience?: number;
+  provider_team_size?: number;
+  provider_bio?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -547,8 +554,17 @@ export const apiClient = {
       }
 
       // Handle flat responses vs wrapped responses
+      // Only treat as a wrapped ApiResponse if it has BOTH 'status' (string 'success'/'error')
+      // AND a 'data' key — not just any object that happens to have a 'status' field
+      // (e.g. a service object with status: "active" would otherwise be misidentified).
       const responseData = response.data;
-      if (responseData && typeof responseData === 'object' && ('status' in responseData || 'data' in responseData)) {
+      if (
+        responseData &&
+        typeof responseData === 'object' &&
+        'data' in responseData &&
+        'status' in responseData &&
+        (responseData.status === 'success' || responseData.status === 'error')
+      ) {
         return responseData as ApiResponse<T>;
       }
 
