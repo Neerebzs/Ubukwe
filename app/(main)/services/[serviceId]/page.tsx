@@ -24,6 +24,8 @@ import { toast } from "sonner"
 import { TranslatedText } from "@/components/translated-text"
 import { cn } from "@/lib/utils"
 import React, { useRef, useEffect } from "react"
+import { AuthModal } from "@/components/auth-modal"
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function ServiceDetailsPage({ params }: { params: { serviceId: string } }) {
     // All hooks must be called before any conditional returns
@@ -31,6 +33,9 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const [isFavorite, setIsFavorite] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState<any>(null)
     const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null)
+    const [showAuthModal, setShowAuthModal] = useState(false)
+    const [pendingBookingUrl, setPendingBookingUrl] = useState("")
+    const [authModalContext, setAuthModalContext] = useState("")
     const router = useRouter()
     const { isAuthenticated } = useAuth()
     
@@ -73,30 +78,62 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         }
     };
 
-    // Auth check handler
+    // Auth check handler — package must be selected before auth check
     const handleBookingClick = (e: React.MouseEvent, targetUrl: string) => {
-        if (!isAuthenticated) {
-            e.preventDefault();
-            toast.info("Authentication Required", {
-                description: "Please login to book this service.",
-                action: {
-                    label: "Login",
-                    onClick: () => router.push("/auth/signin"),
-                },
-            });
-            return;
-        }
+        e.preventDefault();
 
+        // Step 1: Package must be selected first (regardless of auth state)
         if (!selectedPackage && targetUrl.includes('/booking/')) {
-            e.preventDefault();
             document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' });
-            toast.info("Selection Required", {
-                description: "Please select an artisan collection to proceed with your booking."
+            toast.info("Choose a Collection First", {
+                description: "Please select an artisan collection below before proceeding to booking."
             });
             return;
         }
 
+        // Step 2: Must be authenticated
+        if (!isAuthenticated) {
+            // Store the full URL (with valid packageId already embedded by the caller)
+            setPendingBookingUrl(targetUrl);
+            setAuthModalContext("Sign in or create a free account to continue booking this service. After logging in, you'll be taken directly to the booking details page.");
+            setShowAuthModal(true);
+            return;
+        }
+
+        // Step 3: All good — navigate
         router.push(targetUrl);
+    };
+
+    // Inquiry handler — Gates messaging behind the AuthModal
+    const handleInquiryClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        const inquiryUrl = `/customer/dashboard?tab=messages&providerId=${serviceRes?.provider_id || ""}`;
+        
+        if (!isAuthenticated) {
+            setPendingBookingUrl(inquiryUrl);
+            setAuthModalContext("Sign in or register to message this artisan directly. Your conversation will be saved in your dashboard.");
+            setShowAuthModal(true);
+            return;
+        }
+        
+        router.push(inquiryUrl);
+    };
+
+    // Favorite handler — Gates favoriting behind the AuthModal
+    const handleFavoriteClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        
+        if (!isAuthenticated) {
+            setPendingBookingUrl(window.location.pathname + window.location.search);
+            setAuthModalContext("Join VowNest to save your favorite artisans and create your dream wedding collection.");
+            setShowAuthModal(true);
+            return;
+        }
+
+        setIsFavorite(!isFavorite);
+        toast.success(isFavorite ? "Removed from favorites" : "Added to favorites", {
+            description: serviceRes?.business_name || serviceRes?.name
+        });
     };
 
     const { data: serviceRes, isLoading, error } = useQuery({
@@ -104,7 +141,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         queryFn: async () => {
             try {
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
-                const serviceData = response as unknown as ProviderService;
+                const serviceData = response.data;
                 if (!serviceData || !serviceData.id) {
                     throw new Error('Service not found or not available');
                 }
@@ -370,7 +407,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         variant="outline"
                         size="icon"
                         className="rounded-full bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all group/heart"
-                        onClick={() => setIsFavorite(!isFavorite)}
+                        onClick={handleFavoriteClick}
                     >
                         <Heart className={cn("h-4 w-4 transition-colors", isFavorite ? "fill-white text-white" : "text-white")} />
                     </Button>
@@ -389,67 +426,82 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 <div className="container mx-auto px-6 md:px-12 relative z-10">
                     <div className="grid lg:grid-cols-12 gap-12 items-center">
                         <div className="lg:col-span-6 space-y-10 animate-in fade-in slide-in-from-left duration-1000">
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-[1px] w-12 bg-[#668c65]/30" />
-                                    <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">
-                                        {service.category} • {service.location}
-                                    </span>
-                                </div>
-
-                                <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.1] md:leading-[1] tracking-tight">
-                                    <span className="block font-light whitespace-normal">
-                                        {service.title.split(' ').length > 2 
-                                            ? service.title.split(' ').slice(0, 2).join(' ') 
-                                            : service.title.split(' ')[0]}
-                                    </span>
-                                    <span className="block italic font-medium ml-4 md:ml-12 text-[#668c65] whitespace-normal">
-                                        {service.title.split(' ').length > 2 
-                                            ? service.title.split(' ').slice(2).join(' ') 
-                                            : service.title.split(' ').slice(1).join(' ')}
-                                    </span>
-                                </h1>
-
-                                <div className="flex items-center gap-6 pt-4">
-                                    <div className="flex items-center gap-1">
-                                        {[1, 2, 3, 4, 5].map((s) => (
-                                            <Star key={s} className={`h-4 w-4 ${s <= Math.round(service.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                                        ))}
-                                        <span className="ml-2 font-bold text-slate-900">{service.rating.toFixed(1)}</span>
-                                    </div>
-                                    <div className="h-4 w-[1px] bg-slate-200" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {service.reviews.summary.total} Verified Reviews
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-6">
-                                <Button 
-                                    size="lg" 
-                                    className="h-16 px-10 rounded-full bg-[#668c65] hover:bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
-                                    onClick={() => document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' })}
+                                <motion.div 
+                                    className="space-y-6"
+                                    initial={{ opacity: 0, x: -30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
                                 >
-                                    View Collections
-                                    <ArrowRight className="ml-2 h-5 w-5" />
-                                </Button>
-                                <div className="flex -space-x-4">
-                                  {[1, 2, 3].map(i => (
-                                    <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden bg-slate-100 italic font-serif flex items-center justify-center text-slate-300 text-xs">
-                                        P
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-[1px] w-12 bg-[#668c65]/30" />
+                                        <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">
+                                            {service.category} • {service.location}
+                                        </span>
                                     </div>
-                                  ))}
-                                  <div className="w-12 h-12 rounded-full border-4 border-white bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-xs">
-                                    +{service.stats.eventsCompleted}
-                                  </div>
-                                </div>
-                                <p className="text-sm font-bold text-slate-400 font-outfit uppercase tracking-widest">
-                                  Trusted for {service.stats.yearsExperience}+ Years
-                                </p>
-                            </div>
+
+                                    <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.1] md:leading-[1] tracking-tight">
+                                        <span className="block font-light whitespace-normal">
+                                            {service.title.split(' ').length > 2 
+                                                ? service.title.split(' ').slice(0, 2).join(' ') 
+                                                : service.title.split(' ')[0]}
+                                        </span>
+                                        <span className="block italic font-medium ml-4 md:ml-12 text-[#668c65] whitespace-normal">
+                                            {service.title.split(' ').length > 2 
+                                                ? service.title.split(' ').slice(2).join(' ') 
+                                                : service.title.split(' ').slice(1).join(' ')}
+                                        </span>
+                                    </h1>
+
+                                    <div className="flex items-center gap-6 pt-4">
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <Star key={s} className={`h-4 w-4 ${s <= Math.round(service.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                                            ))}
+                                            <span className="ml-2 font-bold text-slate-900">{service.rating.toFixed(1)}</span>
+                                        </div>
+                                        <div className="h-4 w-[1px] bg-slate-200" />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            {service.reviews.summary.total} Verified Reviews
+                                        </p>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div 
+                                    className="flex flex-wrap items-center gap-6"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.8, delay: 0.4 }}
+                                >
+                                    <Button 
+                                        size="lg" 
+                                        className="h-16 px-10 rounded-full bg-[#668c65] hover:bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+                                        onClick={() => document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' })}
+                                    >
+                                        View Collections
+                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Button>
+                                    <div className="flex -space-x-4">
+                                      {[1, 2, 3].map(i => (
+                                        <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden bg-slate-100 italic font-serif flex items-center justify-center text-slate-300 text-xs">
+                                            P
+                                        </div>
+                                      ))}
+                                      <div className="w-12 h-12 rounded-full border-4 border-white bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-xs">
+                                        +{service.stats.eventsCompleted}
+                                      </div>
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-400 font-outfit uppercase tracking-widest">
+                                      Trusted for {service.stats.yearsExperience}+ Years
+                                    </p>
+                                </motion.div>
                         </div>
 
-                        <div className="lg:col-span-6 relative h-[600px] flex items-center justify-center px-4">
+                        <motion.div 
+                            className="lg:col-span-6 relative h-[600px] flex items-center justify-center px-4"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 1, delay: 0.2 }}
+                        >
                             <div className="relative w-full max-w-[450px] aspect-[4/5] z-20 group mx-auto">
                                 <div className="absolute inset-0 border-[1px] border-slate-200 rounded-[200px] -m-6 group-hover:m-0 transition-all duration-700 pointer-events-none" />
                                 <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white">
@@ -461,18 +513,26 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 </div>
                                 
                                 {/* Floating Badge */}
-                                <div className="absolute right-0 lg:-right-8 top-1/4 bg-white p-3 md:p-6 rounded-3xl shadow-2xl animate-float z-30 border border-slate-50 text-center">
+                                <motion.div 
+                                    className="absolute right-0 lg:-right-8 top-1/4 bg-white p-3 md:p-6 rounded-3xl shadow-2xl z-30 border border-slate-50 text-center"
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                >
                                     <Heart className="w-4 h-4 md:w-6 md:h-6 text-rose-500 fill-rose-500 mx-auto mb-1 md:mb-2" />
                                     <p className="font-serif italic text-sm md:text-lg text-slate-900">Premium</p>
                                     <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selection</p>
-                                </div>
+                                </motion.div>
 
                                 {/* Experience Badge */}
-                                <div className="absolute left-0 lg:-left-12 bottom-1/4 bg-[#668c65] p-3 md:p-6 rounded-3xl shadow-2xl animate-float-reverse z-30 text-white text-center">
+                                <motion.div 
+                                    className="absolute left-0 lg:-left-12 bottom-1/4 bg-[#668c65] p-3 md:p-6 rounded-3xl shadow-2xl z-30 text-white text-center"
+                                    animate={{ y: [0, 10, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                                >
                                     <Award className="w-4 h-4 md:w-6 md:h-6 text-white mx-auto mb-1 md:mb-2" />
                                     <p className="font-serif italic text-sm md:text-lg leading-tight">Expert</p>
                                     <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest opacity-70">Experience</p>
-                                </div>
+                                </motion.div>
                             </div>
 
                             {/* Text Accent Background */}
@@ -481,7 +541,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 {service.category.substring(0, 4)}
                               </span>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -747,66 +807,86 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                             <span className="font-bold tracking-[0.4em] uppercase text-[10px]">The Investment</span>
                         </div>
                         <h2 className="text-5xl md:text-6xl font-serif text-slate-900 italic">Artisan Collections.</h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                        {service.packages.map((pkg, i) => (
-                            <div 
-                                key={pkg.id || i}
-                                className={cn(
-                                    "relative rounded-[60px] p-12 flex flex-col h-full transition-all duration-700 cursor-pointer group",
-                                    selectedPackage?.id === (pkg.id || i)
-                                        ? "bg-slate-900 text-white shadow-2xl scale-105"
-                                        : "bg-white border border-slate-100 hover:border-[#668c65]/30 hover:shadow-2xl"
-                                )}
-                                onClick={() => setSelectedPackage({ ...pkg, id: pkg.id || i })}
-                            >
-                                {pkg.popular && (
-                                    <div className="absolute top-10 right-10">
-                                        <Badge className="bg-[#668c65] text-white border-none px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-widest">
-                                            Signature
-                                        </Badge>
-                                    </div>
-                                )}
-
-                                <div className="space-y-8 flex-1">
-                                    <div className="space-y-2">
-                                        <h3 className="font-serif italic text-3xl leading-tight">{pkg.name}</h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{pkg.duration}</p>
-                                    </div>
-                                    
-                                    <div className="flex items-baseline gap-2">
-                                        <span className={cn("text-4xl font-black", selectedPackage?.id === (pkg.id || i) ? "text-white" : "text-slate-900")}>
-                                            {pkg.price.toLocaleString()}
-                                        </span>
-                                        <span className="text-xs font-bold opacity-40 uppercase tracking-widest">RWF</span>
-                                    </div>
-
-                                    <div className={cn("h-[1px] w-full", selectedPackage?.id === (pkg.id || i) ? "bg-white/10" : "bg-slate-100")} />
-
-                                    <ul className="space-y-5">
-                                        {pkg.features.map((feature: string, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-4">
-                                                <div className={cn("mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0", selectedPackage?.id === (pkg.id || i) ? "bg-[#668c65]" : "bg-slate-200")} />
-                                                <span className="text-[11px] font-bold uppercase tracking-widest opacity-80 leading-relaxed">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                <Button 
-                                    className={cn(
-                                        "w-full h-16 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] mt-12 transition-all duration-500 shadow-lg",
-                                        selectedPackage?.id === (pkg.id || i)
-                                            ? "bg-white text-slate-900 hover:bg-[#668c65] hover:text-white"
-                                            : "bg-[#668c65] text-white hover:bg-slate-900"
-                                    )}
+                                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+                        {service.packages.map((pkg: any, i: number) => {
+                            const isSelected = selectedPackage?.id === (pkg.id || i);
+                            return (
+                                <motion.div
+                                    key={pkg.id || i}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: i * 0.1 }}
+                                    whileHover={{ y: -10 }}
                                 >
-                                    {selectedPackage?.id === (pkg.id || i) ? 'Collection Selected' : 'Select Collection'}
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
+                                    <div 
+                                        className={cn(
+                                            "relative rounded-[60px] p-10 flex flex-col h-full transition-all duration-700 cursor-pointer group",
+                                            isSelected 
+                                                ? "bg-slate-900 text-white shadow-2xl scale-[1.03] z-10" 
+                                                : "bg-white border border-slate-100 hover:border-[#668c65]/30 hover:shadow-2xl"
+                                        )}
+                                        onClick={() => setSelectedPackage({ ...pkg, id: pkg.id || i })}
+                                    >
+                                        {/* Selection Badge */}
+                                        <AnimatePresence>
+                                            {isSelected && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.8 }}
+                                                    className="absolute top-10 right-10 z-20"
+                                                >
+                                                    <div className="bg-[#668c65] text-white p-2.5 rounded-full shadow-lg">
+                                                        <CheckCircle className="h-5 w-5" />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <div className="space-y-8 flex-1">
+                                            <div className="space-y-2">
+                                                <h3 className={cn("font-serif italic text-3xl leading-tight transition-colors", isSelected ? "text-white" : "group-hover:text-[#668c65]")}>{pkg.name}</h3>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{pkg.duration}</p>
+                                            </div>
+                                            
+                                            <div className="flex items-baseline gap-2">
+                                                <span className={cn("text-4xl font-serif transition-colors", isSelected ? "text-white" : "text-slate-900")}>
+                                                    {(pkg.price / 1000).toLocaleString()}k
+                                                </span>
+                                                <span className="text-slate-400 font-bold text-xs uppercase tracking-tighter">RWF</span>
+                                            </div>
+
+                                            <div className={cn("h-[1px] w-full", isSelected ? "bg-white/10" : "bg-slate-100")} />
+                                            
+                                            <ul className="space-y-4">
+                                                {(pkg.features || service.features.slice(0, 4)).map((feature: string, idx: number) => (
+                                                    <li key={idx} className="flex gap-4 items-start">
+                                                        <Sparkles className={cn("h-4 w-4 shrink-0 transition-colors", isSelected ? "text-white/40" : "text-[#668c65]")} />
+                                                        <span className={cn("text-[11px] font-bold uppercase tracking-widest leading-relaxed", isSelected ? "text-white/70" : "text-slate-600")}>
+                                                            {feature}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <Button 
+                                            variant={isSelected ? "default" : "outline"}
+                                            className={cn(
+                                                "w-full h-16 rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-500 mt-10",
+                                                isSelected 
+                                                    ? "bg-[#668c65] text-white hover:bg-white hover:text-slate-900" 
+                                                    : "border-slate-200 hover:bg-slate-900 hover:text-white"
+                                            )}
+                                        >
+                                            {isSelected ? "Collection Selected" : "Select Collection"}
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
+                    </div>      </div>
                 </div>
             </section>
 
@@ -954,7 +1034,11 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         >
                             Confirm Booking
                         </Button>
-                        <Button variant="outline" className="h-14 md:h-16 px-8 rounded-2xl border-white/10 bg-transparent text-white hover:bg-white/5 font-bold uppercase tracking-[0.2em] text-[10px] transition-all hidden sm:flex">
+                        <Button 
+                            variant="outline" 
+                            className="h-14 md:h-16 px-8 rounded-2xl border-white/10 bg-transparent text-white hover:bg-white/5 font-bold uppercase tracking-[0.2em] text-[10px] transition-all hidden sm:flex"
+                            onClick={handleInquiryClick}
+                        >
                            Inquiry
                         </Button>
                     </div>
@@ -973,6 +1057,14 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                     </Link>
                 </div>
             </section>
+
+            {/* Auth Modal — shown when unauthenticated user clicks Gated Actions */}
+            <AuthModal
+                open={showAuthModal}
+                onOpenChange={setShowAuthModal}
+                callbackUrl={pendingBookingUrl}
+                contextMessage={authModalContext || "Sign in or create a free account to continue booking this service. After logging in, you'll be taken directly to the booking details page."}
+            />
 
             {/* Lightbox Dialog (Keep Existing) */}
             <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>

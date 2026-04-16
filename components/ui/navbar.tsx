@@ -4,7 +4,7 @@ import * as React from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import Image from "next/image";
-import { MenuIcon, XIcon, Home, Briefcase, Info, Calendar, LogOut, LayoutDashboard } from "lucide-react";
+import { MenuIcon, XIcon, Home, Briefcase, Info, Calendar, LogOut, LayoutDashboard, ChevronDown, Ticket } from "lucide-react";
 import { Button } from "./button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { TranslatedText } from "@/components/translated-text";
@@ -16,6 +16,23 @@ export function Navbar() {
   const isMobile = useIsMobile();
   const { isMenuOpen, toggleMenu } = useMobileMenu();
   const { user, isAuthenticated, logout } = useAuth();
+  const [eventsDropdownOpen, setEventsDropdownOpen] = React.useState(false);
+  const [mobileEventsOpen, setMobileEventsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setEventsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -48,10 +65,40 @@ export function Navbar() {
                   <TranslatedText text="Services" />
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
                 </a>
-                <a href="/events" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
-                  <TranslatedText text="Events" />
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
-                </a>
+                
+                {/* Events Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setEventsDropdownOpen(!eventsDropdownOpen)}
+                    className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2 flex items-center space-x-1"
+                  >
+                    <TranslatedText text="Events" />
+                    <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${eventsDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
+                  </button>
+                  
+                  {eventsDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                      <Link
+                        href="/events"
+                        className="flex items-center px-4 py-3 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        onClick={() => setEventsDropdownOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4 mr-3 text-slate-400" />
+                        <TranslatedText text="Browse Events" />
+                      </Link>
+                      <Link
+                        href="/my-tickets"
+                        className="flex items-center px-4 py-3 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
+                        onClick={() => setEventsDropdownOpen(false)}
+                      >
+                        <Ticket className="h-4 w-4 mr-3 text-slate-400" />
+                        <TranslatedText text="My Tickets" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+                
                 <a href="/about" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="About" />
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#668c65] group-hover:w-full transition-all duration-500" />
@@ -154,7 +201,6 @@ export function Navbar() {
                   {[
                     { href: "/", label: "Home", icon: Home },
                     { href: "/services", label: "Services", icon: Briefcase },
-                    { href: "/events", label: "Events", icon: Calendar },
                     { href: "/about", label: "About", icon: Info },
                   ].map((item) => (
                     <a
@@ -172,6 +218,47 @@ export function Navbar() {
                       <div className="h-1 w-1 rounded-full bg-slate-200 group-hover:bg-[#668c65] transition-colors" />
                     </a>
                   ))}
+                  
+                  {/* Events Dropdown for Mobile */}
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => setMobileEventsOpen(!mobileEventsOpen)}
+                      className="w-full flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-600 group-hover:text-slate-900">
+                          <TranslatedText text="Events" />
+                        </span>
+                      </div>
+                      <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${mobileEventsOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {mobileEventsOpen && (
+                      <div className="ml-6 space-y-1 border-l border-slate-100 pl-6">
+                        <a
+                          href="/events"
+                          onClick={toggleMenu}
+                          className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-all group"
+                        >
+                          <Calendar className="h-3 w-3 text-slate-400 group-hover:text-[#668c65] transition-colors" />
+                          <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                            <TranslatedText text="Browse Events" />
+                          </span>
+                        </a>
+                        <a
+                          href="/my-tickets"
+                          onClick={toggleMenu}
+                          className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-all group"
+                        >
+                          <Ticket className="h-3 w-3 text-slate-400 group-hover:text-[#668c65] transition-colors" />
+                          <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                            <TranslatedText text="My Tickets" />
+                          </span>
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </nav>
               </div>
 
