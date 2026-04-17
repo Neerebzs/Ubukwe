@@ -17,6 +17,7 @@ interface ProviderSidebarProps {
   };
   onLogout?: () => void;
   isVerified?: boolean;
+  isOnboardingApproved?: boolean; // true only when onboarding status === "approved"
 }
 
 export function ProviderTabsSidebar({
@@ -27,40 +28,52 @@ export function ProviderTabsSidebar({
   user,
   onLogout,
   isVerified = false,
+  isOnboardingApproved = false,
 }: ProviderSidebarProps) {
-  const navigationGroups = [
-    {
-      title: "How I'm Doing",
-      items: [
-        { id: "overview", label: "My Hub", icon: <Home className="w-4 h-4" /> },
-        // Only show onboarding tab if user is not verified
-        ...(!isVerified ? [{ id: "onboarding", label: "Set Up Profile", icon: <FileText className="w-4 h-4" /> }] : []),
+  // When onboarding is not approved, only show the onboarding tab so the
+  // provider can complete their registration. All other tabs are hidden.
+  const navigationGroups = isOnboardingApproved
+    ? [
+        {
+          title: "How I'm Doing",
+          items: [
+            { id: "overview", label: "My Hub", icon: <Home className="w-4 h-4" /> },
+          ]
+        },
+        {
+          title: "My Listings",
+          items: [
+            { id: "services", label: "My Services", icon: <Package className="w-4 h-4" /> },
+            { id: "events", label: "My Events", icon: <Calendar className="w-4 h-4" /> },
+            { id: "bookings", label: "Orders", icon: <BookOpen className="w-4 h-4" /> },
+          ]
+        },
+        {
+          title: "My Customers",
+          items: [
+            { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
+            { id: "inquiries", label: "Customer Feedback", icon: <Star className="w-4 h-4" /> },
+            { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },
+          ]
+        },
+        {
+          title: "Business Setup",
+          items: [
+            { id: "earnings", label: "My Income", icon: <DollarSign className="w-4 h-4" /> },
+            { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
+          ]
+        }
       ]
-    },
-    {
-      title: "My Listings",
-      items: [
-        { id: "services", label: "My Services", icon: <Package className="w-4 h-4" /> },
-        { id: "events", label: "My Events", icon: <Calendar className="w-4 h-4" /> },
-        { id: "bookings", label: "Orders", icon: <BookOpen className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "My Customers",
-      items: [
-        { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
-        { id: "inquiries", label: "Customer Feedback", icon: <Star className="w-4 h-4" /> },
-        { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "Business Setup",
-      items: [
-        { id: "earnings", label: "My Income", icon: <DollarSign className="w-4 h-4" /> },
-        { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
-      ]
-    }
-  ];
+    : [
+        // Unapproved: only allow access to onboarding
+        {
+          title: "Get Started",
+          items: [
+            { id: "overview", label: "My Hub", icon: <Home className="w-4 h-4" /> },
+            { id: "onboarding", label: "Complete Onboarding", icon: <FileText className="w-4 h-4" /> },
+          ]
+        }
+      ];
 
   const initialExpanded = React.useMemo(() => {
     const state: Record<string, boolean> = {};
@@ -149,21 +162,17 @@ export function ProviderTabsSidebar({
             <div className="space-y-2">
               {group.items.map((tab) => {
                 const isActive = activeTab === tab.id;
-                const isTabDisabled = !isVerified && !['overview', 'onboarding'].includes(tab.id);
 
                 const content = (
                   <button
                     key={tab.id}
-                    onClick={() => !isTabDisabled && onTabChange(tab.id)}
-                    disabled={isTabDisabled}
+                    onClick={() => onTabChange(tab.id)}
                     className={`relative group w-full text-left text-sm px-4 py-3 rounded-2xl transition-all duration-500 flex items-center ${isCollapsed ? 'justify-center' : 'gap-4'
                       } ${isActive
                         ? 'bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10'
-                        : isTabDisabled
-                          ? 'opacity-20 cursor-not-allowed text-white/50'
-                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
                       }`}
-                    title={isTabDisabled ? "Verify your account to access this tab" : isCollapsed ? tab.label : undefined}
+                    title={isCollapsed ? tab.label : undefined}
                   >
                     <span className={`h-5 w-5 flex-shrink-0 transition-colors duration-500 ${isActive ? 'text-[#668c65]' : 'group-hover:text-white'}`}>{tab.icon}</span>
                     {!isCollapsed && <span className={`font-medium tracking-tight ${isActive ? 'font-bold' : 'font-light'}`}>{tab.label}</span>}

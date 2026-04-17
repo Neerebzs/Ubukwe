@@ -50,7 +50,7 @@ export function AdminDashboardContent() {
     switch (activeTab) {
       case "overview":    return <AdminOverview onTabChange={handleTabChange} />
       case "users":       return <AdminUsers />
-      case "providers":   return <AdminProviders />
+      case "onboarding":  return <AdminProviders />
       case "services":
         return (
           <Tabs defaultValue="provider-services" className="w-full">

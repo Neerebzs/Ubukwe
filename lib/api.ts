@@ -147,6 +147,7 @@ export interface User {
   address?: string;
   city?: string;
   country?: string;
+  location?: string;
 }
 
 // Wedding & Planning Types

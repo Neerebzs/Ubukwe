@@ -80,25 +80,36 @@ export function AdminProviders() {
   const fetchProviders = async () => {
     setIsLoading(true);
     try {
-
       if (statusFilter === "pending") {
+        // Pending onboarding applications
         const response: any = await apiClient.admin.onboarding.getAll('pending');
-        const data = Array.isArray(response) ? response : (response?.data?.data || response?.data || []);
+        const data = Array.isArray(response) ? response
+          : (response?.data?.data || response?.data || []);
         setProviders(data);
-      } else if (statusFilter === "all") {
-        const response: any = await apiClient.admin.onboarding.getAll();
-        const data = Array.isArray(response) ? response : (response?.data?.data || response?.data || []);
+      } else if (statusFilter === "active") {
+        // Approved onboarding applications = active providers
+        const response: any = await apiClient.admin.onboarding.getAll('approved');
+        const data = Array.isArray(response) ? response
+          : (response?.data?.data || response?.data || []);
         setProviders(data);
-      } else {
-        // Fetch providers with specific status filter (active, suspended)
-        const response = await apiClient.admin.providers.getAll(statusFilter);
-        const formattedProviders = response.data.map((provider: any) => ({
-          provider: provider,
-          verification: null, // Will be fetched individually if needed
+      } else if (statusFilter === "suspended") {
+        // Suspended = user-level flag; fetch from providers endpoint and wrap to match shape
+        const response = await apiClient.admin.providers.getAll("suspended");
+        const raw = Array.isArray(response?.data) ? response.data
+          : Array.isArray(response) ? response : [];
+        const formatted = raw.map((provider: any) => ({
+          provider,
           onboarding: null,
-          bookingsCount: 0
+          verification: null,
+          bookingsCount: 0,
         }));
-        setProviders(formattedProviders);
+        setProviders(formatted);
+      } else {
+        // Full registry — all onboarding records regardless of status
+        const response: any = await apiClient.admin.onboarding.getAll();
+        const data = Array.isArray(response) ? response
+          : (response?.data?.data || response?.data || []);
+        setProviders(data);
       }
     } catch (error) {
       toast.error(`Failed to fetch ${statusFilter || "all"} providers`);
@@ -110,8 +121,17 @@ export function AdminProviders() {
 
   const fetchProviderDetails = async (id: string) => {
     try {
-      const response = await apiClient.admin.onboarding.getDetails(id);
-      setProviderDetail(response.data.data);
+      let data: any;
+      if (statusFilter === "suspended") {
+        // Suspended tab uses provider user IDs — use providers endpoint
+        const response = await apiClient.admin.providers.getDetails(id);
+        data = response.data;
+      } else {
+        // All other tabs (pending, active, all) use onboarding IDs
+        const response = await apiClient.admin.onboarding.getDetails(id);
+        data = response.data?.data ?? response.data;
+      }
+      setProviderDetail(data);
       setIsDetailsModalOpen(true);
     } catch (error) {
       toast.error("Failed to fetch provider details");
@@ -152,6 +172,16 @@ export function AdminProviders() {
     setIsActionModalOpen(true);
   };
 
+  // Returns the correct ID to use for actions depending on the tab
+  const getActionId = (item: any) => {
+    if (statusFilter === "suspended") {
+      // Suspended tab: actions target the provider user id
+      return item.provider?.id;
+    }
+    // All other tabs: actions target the onboarding record id
+    return item.onboarding?.id || item.id;
+  };
+
   const getStatusBadgeVariant = (status: string, isVerified: boolean) => {
     if (status === "pending") return "secondary";
     if (status === "approved" || isVerified) return "default";
@@ -160,10 +190,13 @@ export function AdminProviders() {
   };
 
   const getStatusText = (item: any) => {
-    if (statusFilter === "pending") {
-      return item.onboarding?.status || "pending";
+    if (statusFilter === "suspended") {
+      return "suspended";
     }
-    return item.provider?.is_verified ? "active" : "inactive";
+    if (statusFilter === "active") {
+      return "approved";
+    }
+    return item.onboarding?.status || item.status || "pending";
   };
 
   const getProviderActions = (item: any) => {
@@ -331,21 +364,28 @@ export function AdminProviders() {
                 const provider = item.user || item.provider;
                 const verification = item.verification;
                 const onboarding = item.onboarding;
-                const providerId = onboarding?.id || provider?.id;
+                // For suspended tab: use provider.id; for all others: use onboarding.id
+                const actionId = getActionId(item);
+                const displayId = actionId;
                 const status = getStatusText(item);
 
                 return (
-                  <Card key={providerId} className="border-slate-100 bg-white shadow-none rounded-[2.5rem] overflow-hidden hover:border-[#608d64]/20 transition-all duration-500 group">
+                  <Card key={displayId} className="border-slate-100 bg-white shadow-none rounded-[2.5rem] overflow-hidden hover:border-[#608d64]/20 transition-all duration-500 group">
                     <CardContent className="p-8">
                       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
                         {/* Provider Essence */}
                         <div className="flex items-center gap-6">
                           <div className="relative">
                             <div className="h-20 w-20 rounded-[1.5rem] bg-slate-50 border-2 border-slate-50 flex items-center justify-center group-hover:border-[#608d64]/10 transition-colors">
-                              <Building2 className="w-8 h-8 text-[#608d64]/40" />
+                              {onboarding?.business_logo_url ? (
+                                <img src={onboarding.business_logo_url} alt="logo" className="w-full h-full object-contain rounded-[1.5rem] p-1" />
+                              ) : (
+                                <Building2 className="w-8 h-8 text-[#608d64]/40" />
+                              )}
                             </div>
                             <div className={`absolute -bottom-1 -right-1 h-6 w-6 rounded-lg border-4 border-white flex items-center justify-center shadow-sm ${status === 'active' || status === 'approved' ? 'bg-[#608d64]' :
-                              status === 'pending' ? 'bg-amber-500' : 'bg-rose-500'
+                              status === 'pending' ? 'bg-amber-500' :
+                              status === 'suspended' ? 'bg-rose-500' : 'bg-rose-500'
                               }`}>
                               {status === 'active' || status === 'approved' ? <ShieldCheck className="w-3 h-3 text-white" /> :
                                 status === 'pending' ? <Clock className="w-3 h-3 text-white" /> : <ShieldAlert className="w-3 h-3 text-white" />}
@@ -360,10 +400,17 @@ export function AdminProviders() {
                               <Badge variant="outline" className="bg-[#608d64]/5 border-[#608d64]/20 text-[#608d64] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-none">
                                 {onboarding?.business_type?.replace("_", " ") || provider?.business_type?.replace("_", " ") || "Boutique"}
                               </Badge>
-                              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                {providerId?.split("-")[0].toUpperCase()}
-                              </span>
+                              {status && (
+                                <Badge variant="outline" className={`px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-none ${
+                                  status === 'approved' || status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                                  status === 'pending' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                  status === 'rejected' ? 'bg-rose-50 border-rose-200 text-rose-700' :
+                                  status === 'suspended' ? 'bg-rose-50 border-rose-200 text-rose-700' :
+                                  'bg-slate-50 border-slate-200 text-slate-600'
+                                }`}>
+                                  {status}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -371,39 +418,41 @@ export function AdminProviders() {
                         {/* Architectural Metadata */}
                         <div className="grid grid-cols-2 md:grid-cols-3 xl:flex xl:items-center gap-8 xl:gap-14">
                           <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Global Location</p>
+                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Location</p>
                             <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
                               <MapPin className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                              {(onboarding?.city && onboarding?.country) ? `${onboarding.city}` :
-                                (provider?.city && provider?.country) ? `${provider.city}` : "Kigali"}
+                              {onboarding?.city || provider?.city || "—"}
                             </p>
                           </div>
 
                           <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Legacy</p>
+                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Experience</p>
                             <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5">
                               <Briefcase className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                              {(onboarding?.years_experience || provider?.years_experience) ?
-                                `${onboarding?.years_experience || provider?.years_experience} Yrs` : "N/A"}
+                              {(onboarding?.years_experience ?? provider?.years_experience) != null
+                                ? `${onboarding?.years_experience ?? provider?.years_experience} Yrs`
+                                : "N/A"}
                             </p>
                           </div>
 
                           <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{statusFilter === "pending" ? "Applied" : "Presence"}</p>
+                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                              {statusFilter === "pending" ? "Applied" : "Date"}
+                            </p>
                             <p className="text-sm font-medium text-slate-600 flex items-center gap-1.5 leading-none">
                               <Calendar className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                              {new Date(onboarding?.submitted_at || provider?.created_at).toLocaleDateString('en-CA', { day: 'numeric', month: 'short' })}
+                              {new Date(onboarding?.submitted_at || provider?.created_at || Date.now()).toLocaleDateString('en-CA', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                           </div>
 
-                          {/* Refined Actions */}
+                          {/* Actions */}
                           <div className="col-span-2 md:col-span-1 flex items-center gap-2 ml-auto">
                             {statusFilter === "pending" ? (
                               <>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => fetchProviderDetails(providerId)}
+                                  onClick={() => fetchProviderDetails(actionId)}
                                   className="h-11 px-5 rounded-2xl border-slate-100 hover:border-[#608d64] hover:bg-[#608d64]/5 text-slate-600 hover:text-[#608d64] transition-all duration-300 flex items-center gap-2"
                                 >
                                   <Eye className="h-4 w-4" />
@@ -411,7 +460,7 @@ export function AdminProviders() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => openActionModal(providerId, "approve")}
+                                  onClick={() => openActionModal(actionId, "approve")}
                                   className="h-11 px-5 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white shadow-lg shadow-[#608d64]/10 transition-all duration-300 flex items-center gap-2 border-none"
                                 >
                                   <CheckCircle className="h-4 w-4" />
@@ -420,17 +469,58 @@ export function AdminProviders() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openActionModal(providerId, "reject")}
+                                  onClick={() => openActionModal(actionId, "reject")}
                                   className="h-11 w-11 p-0 rounded-2xl border-rose-50 text-rose-500 hover:bg-rose-50 transition-all duration-300 flex items-center justify-center outline-none"
                                 >
                                   <XCircle className="h-5 w-5" />
+                                </Button>
+                              </>
+                            ) : statusFilter === "active" ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => fetchProviderDetails(actionId)}
+                                  className="h-11 px-5 rounded-2xl border-slate-100 hover:border-[#608d64] hover:bg-[#608d64]/5 text-slate-600 hover:text-[#608d64] transition-all duration-300 flex items-center gap-2"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="text-[11px] font-bold uppercase tracking-wider">View</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openActionModal(provider?.id, "suspend")}
+                                  className="h-11 px-5 rounded-2xl border-rose-100 text-rose-500 hover:bg-rose-50 transition-all duration-300 flex items-center gap-2"
+                                >
+                                  <Ban className="h-4 w-4" />
+                                  <span className="text-[11px] font-bold uppercase tracking-wider">Suspend</span>
+                                </Button>
+                              </>
+                            ) : statusFilter === "suspended" ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => fetchProviderDetails(actionId)}
+                                  className="h-11 px-5 rounded-2xl border-slate-100 hover:border-[#608d64] hover:bg-[#608d64]/5 text-slate-600 hover:text-[#608d64] transition-all duration-300 flex items-center gap-2"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="text-[11px] font-bold uppercase tracking-wider">View</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => openActionModal(actionId, "activate")}
+                                  className="h-11 px-5 rounded-2xl bg-[#608d64] hover:bg-[#4a6e4d] text-white shadow-lg shadow-[#608d64]/10 transition-all duration-300 flex items-center gap-2 border-none"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                  <span className="text-[11px] font-bold uppercase tracking-wider">Restore</span>
                                 </Button>
                               </>
                             ) : (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => fetchProviderDetails(providerId)}
+                                onClick={() => fetchProviderDetails(actionId)}
                                 className="h-11 px-6 rounded-2xl border-slate-100 hover:border-[#608d64] hover:bg-[#608d64]/5 text-slate-600 hover:text-[#608d64] transition-all duration-300 flex items-center gap-3"
                               >
                                 <span className="text-[11px] font-bold uppercase tracking-widest">Detailed Dossier</span>
@@ -451,15 +541,21 @@ export function AdminProviders() {
 
       {/* Detail Modal - Sanctuary Aesthetic */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl">
-          <div className="bg-[#fdfcf9] p-12 space-y-10">
-            <DialogHeader className="space-y-1">
-              <DialogTitle className="text-3xl font-serif italic text-slate-900 tracking-tight">Artisan Dossier</DialogTitle>
-              <div className="flex items-center gap-2">
-                <div className="h-[1px] w-6 bg-[#608d64]/60" />
-                <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Comprehensive Credential Analysis</p>
-              </div>
-            </DialogHeader>
+        <DialogContent className="sm:max-w-5xl w-[95vw] sm:w-full p-0 overflow-hidden border-none rounded-[2.5rem] shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-[#fdfcf9] flex flex-col h-full overflow-hidden">
+            {/* Header Area */}
+            <div className="p-6 md:p-10 lg:p-12 pb-4 md:pb-6 shrink-0">
+              <DialogHeader className="space-y-1">
+                <DialogTitle className="text-2xl md:text-3xl font-serif italic text-slate-900 tracking-tight">Artisan Dossier</DialogTitle>
+                <div className="flex items-center gap-2">
+                  <div className="h-[1px] w-6 bg-[#608d64]/60" />
+                  <p className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.3em]">Comprehensive Credential Analysis</p>
+                </div>
+              </DialogHeader>
+            </div>
+
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto px-6 md:px-10 lg:px-12 py-2 space-y-10 custom-scrollbar">
 
             {providerDetail && (
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-both">
@@ -494,7 +590,7 @@ export function AdminProviders() {
                           <div className="p-2.5 bg-slate-50 rounded-xl text-slate-600"><Mail className="w-4 h-4" /></div>
                           <div>
                             <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Email conduit</p>
-                            <p className="text-sm font-medium text-slate-700 uppercase tracking-tight">{providerDetail.onboarding?.email || providerDetail.provider?.email}</p>
+                            <p className="text-sm font-medium text-slate-700 break-all">{providerDetail.onboarding?.email || providerDetail.provider?.email}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -506,6 +602,13 @@ export function AdminProviders() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Business Narrative</p>
+                      <div className="bg-white p-6 rounded-[2rem] border border-slate-50 text-sm text-slate-600 leading-relaxed min-h-[120px]">
+                        {providerDetail.onboarding?.business_description || "No narrative provided for this artisan."}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-8">
@@ -514,11 +617,11 @@ export function AdminProviders() {
                       <div className="space-y-4 bg-[#608d64]/[0.02] p-6 rounded-[2rem] border border-[#608d64]/5">
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">RDB Entity</span>
-                          <span className="font-serif italic text-slate-700">{providerDetail.verification?.rdb_company_name || "Self-Propelled"}</span>
+                          <span className="font-serif italic text-slate-700">{providerDetail.onboarding?.business_name || providerDetail.verification?.rdb_company_name || "Self-Propelled"}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">TIN Identity</span>
-                          <span className="font-mono text-[11px] font-bold text-slate-500">{providerDetail.verification?.rdb_tin_number || "Not Furnished"}</span>
+                          <span className="font-mono text-[11px] font-bold text-slate-500">{providerDetail.onboarding?.tax_number || providerDetail.verification?.rdb_tin_number || "Not Furnished"}</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t border-[#608d64]/10">
                           <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.2em]">Verification</span>
@@ -529,54 +632,126 @@ export function AdminProviders() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Expertise & Service Scope</p>
+                      <div className="space-y-4 bg-white p-6 rounded-[2rem] border border-slate-50">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Crafting Experience</span>
+                          <span className="text-sm font-bold text-slate-800">{providerDetail.onboarding?.years_experience || providerDetail.provider?.years_experience || 0} Years</span>
+                        </div>
+                        <div className="space-y-2 pt-2 border-t border-slate-50">
+                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Specializations</span>
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              try {
+                                const cats = providerDetail.onboarding?.service_categories;
+                                const parsed = typeof cats === 'string' ? JSON.parse(cats) : cats;
+                                const categoriesArray = Array.isArray(parsed) ? parsed : [];
+                                
+                                if (categoriesArray.length === 0) return <span className="text-[10px] text-slate-400 italic font-light">No specific categories defined</span>;
+                                
+                                return categoriesArray.map((cat: string) => (
+                                  <Badge key={cat} variant="secondary" className="bg-slate-100 text-slate-600 border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                    {cat}
+                                  </Badge>
+                                ));
+                              } catch (e) {
+                                return <span className="text-xs text-slate-500">{providerDetail.onboarding?.service_categories}</span>;
+                              }
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Verifiable Credentials</p>
+                      <div className="grid gap-3">
+                        {[
+                          { label: "RDB Certificate", key: "rdb_document_url", icon: <FileText className="w-4 h-4" /> },
+                          { label: "Business License", key: "business_license_url", icon: <FileText className="w-4 h-4" /> },
+                          { label: "ID / Passport", key: "id_document_url", icon: <ShieldCheck className="w-4 h-4" /> },
+                          { label: "Selfie Verification", key: "selfie_photo_url", icon: <UserCircle2 className="w-4 h-4" /> },
+                        ].map((doc) => {
+                          const url = providerDetail.onboarding?.[doc.key];
+                          if (!url) return null;
+                          return (
+                            <div key={doc.key} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-50 shadow-sm hover:border-[#608d64]/20 transition-all group">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:text-[#608d64] transition-colors">{doc.icon}</div>
+                                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">{doc.label}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(url, '_blank')}
+                                className="h-8 px-3 rounded-lg text-slate-400 hover:text-[#608d64] hover:bg-[#608d64]/5"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                        {!["business_license_url", "id_document_url", "selfie_photo_url", "tax_certificate_url"].some(k => providerDetail.onboarding?.[k]) && (
+                          <div className="py-8 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-100">
+                             <FileText className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Documents Found</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
+            )}            </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row gap-4 pt-4 shrink-0">
-              <Button
-                variant="outline"
-                onClick={() => setIsDetailsModalOpen(false)}
-                className="flex-1 h-14 border-slate-200 rounded-2xl text-slate-600 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all duration-300 shadow-none border"
-              >
-                Conclude Dossier
-              </Button>
-              {statusFilter === "pending" && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "reject")}
-                    className="h-14 px-8 border-rose-100 bg-rose-50/20 rounded-2xl text-rose-500 font-bold uppercase tracking-widest text-[10px] hover:bg-rose-50 transition-all duration-300"
-                  >
-                    Decline Admission
-                  </Button>
-                  <Button
-                    onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "approve")}
-                    className="h-14 px-10 bg-[#608d64] border-none rounded-2xl text-white font-bold uppercase tracking-widest text-[10px] hover:bg-[#4a6e4d] transition-all duration-300 shadow-xl shadow-[#608d64]/10"
-                  >
-                    Authorize Admission
-                  </Button>
-                </>
-              )}
-              {statusFilter === "active" && (
+            {/* Footer Area */}
+            <div className="p-6 md:p-10 lg:p-12 pt-4 md:pt-6 border-t border-slate-100 bg-white/50 backdrop-blur-sm shrink-0">
+              <DialogFooter className="flex flex-col sm:flex-row gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "suspend")}
-                  className="h-14 px-8 border-rose-100 bg-rose-50/20 rounded-2xl text-rose-500 font-bold uppercase tracking-widest text-[10px] hover:bg-rose-50 transition-all duration-300"
+                  onClick={() => setIsDetailsModalOpen(false)}
+                  className="flex-1 h-14 border-slate-200 rounded-2xl text-slate-600 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 transition-all duration-300 shadow-none border"
                 >
-                  Suspend Presence
+                  Conclude Dossier
                 </Button>
-              )}
-              {statusFilter === "suspended" && (
-                <Button
-                  onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.provider?.id!, "activate")}
-                  className="h-14 px-10 bg-[#608d64] border-none rounded-2xl text-white font-bold uppercase tracking-widest text-[10px] hover:bg-[#4a6e4d] transition-all duration-300 shadow-xl shadow-[#608d64]/10"
-                >
-                  Restore Presence
-                </Button>
-              )}
-            </DialogFooter>
+                {statusFilter === "pending" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.id!, "reject")}
+                      className="h-14 px-8 border-rose-100 bg-rose-50/20 rounded-2xl text-rose-500 font-bold uppercase tracking-widest text-[10px] hover:bg-rose-50 transition-all duration-300"
+                    >
+                      Decline Admission
+                    </Button>
+                    <Button
+                      onClick={() => openActionModal(providerDetail?.onboarding?.id || providerDetail?.id!, "approve")}
+                      className="h-14 px-10 bg-[#608d64] border-none rounded-2xl text-white font-bold uppercase tracking-widest text-[10px] hover:bg-[#4a6e4d] transition-all duration-300 shadow-xl shadow-[#608d64]/10"
+                    >
+                      Authorize Admission
+                    </Button>
+                  </>
+                )}
+                {statusFilter === "active" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => openActionModal(providerDetail?.provider?.id || providerDetail?.user?.id!, "suspend")}
+                    className="h-14 px-8 border-rose-100 bg-rose-50/20 rounded-2xl text-rose-500 font-bold uppercase tracking-widest text-[10px] hover:bg-rose-50 transition-all duration-300"
+                  >
+                    Suspend Presence
+                  </Button>
+                )}
+                {statusFilter === "suspended" && (
+                  <Button
+                    onClick={() => openActionModal(providerDetail?.provider?.id || providerDetail?.id!, "activate")}
+                    className="h-14 px-10 bg-[#608d64] border-none rounded-2xl text-white font-bold uppercase tracking-widest text-[10px] hover:bg-[#4a6e4d] transition-all duration-300 shadow-xl shadow-[#608d64]/10"
+                  >
+                    Restore Presence
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

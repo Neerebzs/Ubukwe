@@ -31,7 +31,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
       title: "User Management",
       items: [
         { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
-        { id: "providers", label: "Onboarding", icon: <Briefcase className="w-4 h-4" /> },
+        { id: "onboarding", label: "Onboarding", icon: <Briefcase className="w-4 h-4" /> },
       ]
     },
     {

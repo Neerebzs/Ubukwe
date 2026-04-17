@@ -75,8 +75,109 @@ interface ServiceFormProps {
   onCancel?: () => void
 }
 
-export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps) {
-  const { toast } = useToast()
+// ── Gallery Card ─────────────────────────────────────────────────────────────
+// Renders a single gallery item. Videos and reels use a real <video> element
+// so the provider can preview/play them directly in the form.
+function GalleryCard({ item, onRemove, readOnly = false }: { item: GalleryItem; onRemove: (id: string) => void; readOnly?: boolean }) {
+  // For local files (newly added), create an object URL so the video can play.
+  // For already-uploaded items (edit mode), item.url is the Cloudinary URL — use it directly.
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if ((item.type === "video" || item.type === "reel") && item.file && !item.url) {
+      const url = URL.createObjectURL(item.file)
+      setObjectUrl(url)
+      return () => URL.revokeObjectURL(url)
+    }
+    // If item already has a URL (edit mode), no object URL needed
+    setObjectUrl(null)
+  }, [item.file, item.type, item.url])
+
+  const isVideo = item.type === "video" || item.type === "reel"
+  // Prefer the Cloudinary URL (edit mode), fall back to local object URL (new upload)
+  const videoSrc = item.url || objectUrl
+  const fileSizeMB = item.file ? (item.file.size / (1024 * 1024)).toFixed(1) : null
+
+  const typeColors: Record<string, string> = {
+    image: "bg-emerald-500",
+    reel:  "bg-purple-500",
+    video: "bg-blue-500",
+  }
+
+  return (
+    <div className="group relative rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm hover:shadow-md hover:border-[#668c65]/30 transition-all duration-300">
+      {/* Media area */}
+      <div className="relative aspect-video bg-slate-900">
+        {item.type === "image" ? (
+          // Images: use preview (local) or url (uploaded)
+          (item.preview || item.url) ? (
+            <img
+              src={item.preview || item.url}
+              alt={item.title || "Gallery image"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+              <ImageIcon className="w-10 h-10 text-slate-300" />
+            </div>
+          )
+        ) : isVideo && videoSrc ? (
+          // Videos/reels: use Cloudinary URL (edit) or object URL (new upload)
+          <video
+            src={videoSrc}
+            controls
+            preload="metadata"
+            className="w-full h-full object-contain bg-black"
+            style={{ maxHeight: "100%" }}
+          />
+        ) : isVideo ? (
+          // Still generating object URL
+          <div className="w-full h-full flex items-center justify-center bg-slate-800">
+            <Loader2 className="w-8 h-8 text-white/40 animate-spin" />
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100">
+            <ImageIcon className="w-10 h-10 text-slate-300" />
+          </div>
+        )}
+
+        {/* Remove button — hidden in readOnly (review) mode */}
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => onRemove(item.id)}
+            className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg backdrop-blur-sm"
+            title="Remove"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Footer info */}
+      <div className="px-3 py-2.5 flex items-center justify-between gap-2 bg-white">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`flex-shrink-0 w-2 h-2 rounded-full ${typeColors[item.type] ?? "bg-slate-400"}`} />
+          <p className="text-[11px] font-semibold text-slate-700 truncate">
+            {item.file?.name || item.title || item.url?.split("/").pop() || item.type}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {fileSizeMB && (
+            <span className="text-[10px] text-slate-400">{fileSizeMB} MB</span>
+          )}
+          <Badge
+            className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border-none text-white ${typeColors[item.type] ?? "bg-slate-500"}`}
+          >
+            {item.type}
+          </Badge>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps) {  const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 5
   const [currentSpecialty, setCurrentSpecialty] = useState("")
@@ -123,15 +224,44 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
     "Kigali", "Butare", "Gisenyi", "Musanze", "Huye", "Rwamagana", "Other"
   ]
 
-  // Fetch categories from backend
+  // Fetch categories filtered to only those the provider registered during onboarding
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
-        const response = await fetch(`${API_BASE_URL}/api/v1/public/categories`)
-        const data = await response.json()
-        // Safely extract categories array from potential wrapper object
-        setCategories(Array.isArray(data) ? data : (data?.data || []))
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+        // Fetch all public categories and the provider's onboarding status in parallel
+        const [catRes, onboardingRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/v1/public/categories`),
+          fetch(`${API_BASE_URL}/api/v1/provider/onboarding/status`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          })
+        ]);
+
+        const catData = await catRes.json();
+        const allCategories: Array<{id: string, name: string, slug: string}> =
+          Array.isArray(catData) ? catData : (catData?.data || []);
+
+        // Extract the provider's registered service categories from onboarding
+        let providerCategories: string[] = [];
+        if (onboardingRes.ok) {
+          const onboardingData = await onboardingRes.json();
+          const details = onboardingData?.application_details;
+          if (details?.service_categories && Array.isArray(details.service_categories)) {
+            providerCategories = details.service_categories.map((c: string) => c.toLowerCase().trim());
+          }
+        }
+
+        // Filter to only categories the provider registered with during onboarding.
+        // If no onboarding data is available (e.g. approved provider with no record), show all.
+        const filtered = providerCategories.length > 0
+          ? allCategories.filter(cat =>
+              providerCategories.includes(cat.name.toLowerCase().trim())
+            )
+          : allCategories;
+
+        setCategories(filtered);
       } catch (error) {
         console.error('Failed to fetch categories:', error)
         toast({
@@ -143,7 +273,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         setIsLoadingCategories(false)
       }
     }
-    
+
     fetchCategories()
   }, [])
 
@@ -977,17 +1107,34 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                         category: selectedCategory?.name || ""
                       })
                     }}
-                    disabled={isLoadingCategories}
+                    disabled={isLoadingCategories || categories.length === 0}
                   >
-                    <SelectTrigger className="h-14 rounded-2xl border-slate-100 focus:ring-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900">
-                      <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select a category"} />
+                    <SelectTrigger className={`h-14 rounded-2xl border-slate-100 focus:ring-[#668c65] px-5 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-900 ${validationErrors.category ? "border-red-500" : ""}`}>
+                      <SelectValue placeholder={
+                        isLoadingCategories
+                          ? "Loading your categories..."
+                          : categories.length === 0
+                            ? "No categories from your onboarding"
+                            : "Select a category"
+                      } />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
-                      {categories?.map(cat => (
-                        <SelectItem key={cat.id} value={cat.id} className="rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">{cat.name}</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="rounded-xl focus:bg-[#668c65]/5 focus:text-[#668c65]">
+                          {cat.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-slate-400 mt-1.5 ml-1">
+                    Only categories you registered during onboarding are available.
+                  </p>
+                  {validationErrors.category && (
+                    <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {validationErrors.category}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1336,59 +1483,24 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
                     {/* Display uploaded media */}
                     {formData.gallery.filter(item => !item.contentType).length > 0 && (
-                      <div className="space-y-3">
-                        <Separator />
-                        <h4 className="font-semibold">Uploaded Media</h4>
+                      <div className="space-y-4 mt-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                            Uploaded Media
+                            <span className="ml-2 text-[#668c65]">
+                              ({formData.gallery.filter(i => !i.contentType).length})
+                            </span>
+                          </h4>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                           {formData.gallery
                             .filter(item => !item.contentType)
                             .map((item) => (
-                              <div key={item.id} className="relative aspect-video bg-muted rounded-lg overflow-hidden group border-2 border-border hover:border-primary transition-colors">
-                                {item.type === "image" && item.preview ? (
-                                  <img
-                                    src={item.preview}
-                                    alt={item.title || `Gallery item ${item.id}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (item.type === "video" || item.type === "reel") ? (
-                                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative">
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      {item.type === "reel" ? (
-                                        <Film className="w-12 h-12 text-white opacity-75" />
-                                      ) : (
-                                        <PlayCircle className="w-12 h-12 text-white opacity-75" />
-                                      )}
-                                    </div>
-                                    <div className="absolute bottom-2 left-2 right-2">
-                                      <p className="text-xs text-white truncate bg-black/70 px-2 py-1 rounded">
-                                        {item.file?.name || item.type}
-                                      </p>
-                                      {item.file && (
-                                        <p className="text-xs text-white/80 bg-black/70 px-2 py-1 rounded mt-1">
-                                          {(item.file.size / (1024 * 1024)).toFixed(2)} MB
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <ImageIcon className="w-12 h-12 opacity-50" />
-                                  </div>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => removeGalleryItem(item.id)}
-                                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                  title="Remove"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-
-                                <Badge className="absolute bottom-2 left-2 text-xs capitalize bg-black/70 text-white border-none">
-                                  {item.type}
-                                </Badge>
-                              </div>
+                              <GalleryCard
+                                key={item.id}
+                                item={item}
+                                onRemove={removeGalleryItem}
+                              />
                             ))}
                         </div>
                       </div>
@@ -1546,42 +1658,43 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
 
               {/* Gallery Review */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Gallery ({formData.gallery.length} items)</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-widest border-b border-slate-100 pb-2 flex-1">
+                    Part III: Visual Portfolio
+                    <span className="ml-2 text-slate-400">({formData.gallery.length} items)</span>
+                  </h3>
+                </div>
                 {formData.gallery.length === 0 ? (
-                  <p className="text-muted-foreground">No gallery items added</p>
+                  <p className="text-sm text-slate-400 italic">No gallery items added</p>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {formData.gallery.map((item) => (
-                      <div key={item.id} className="aspect-video rounded-xl overflow-hidden bg-slate-100 relative">
-                        {(item.preview || item.url) ? (
-                          item.type === "video" || item.type === "reel" ? (
-                            <video
-                              src={item.preview || item.url}
-                              className="w-full h-full object-cover"
-                              muted
-                              playsInline
-                            />
-                          ) : (
-                            <img
-                              src={item.preview || item.url}
-                              alt={item.title || "Gallery item"}
-                              className="w-full h-full object-cover"
-                            />
-                          )
-                        ) : item.file ? (
-                          <img
-                            src={URL.createObjectURL(item.file)}
-                            alt={item.title || "Gallery item"}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Badge variant="outline">{item.type}</Badge>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {formData.gallery.map((item) => (
+                        <GalleryCard
+                          key={item.id}
+                          item={item}
+                          onRemove={() => {}} // read-only in review step
+                          readOnly
+                        />
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      {[
+                        { type: "image", label: "Images", color: "bg-emerald-500" },
+                        { type: "reel",  label: "Reels",  color: "bg-purple-500" },
+                        { type: "video", label: "Videos", color: "bg-blue-500" },
+                      ].map(({ type, label, color }) => {
+                        const count = formData.gallery.filter(i => i.type === type).length
+                        if (!count) return null
+                        return (
+                          <span key={type} className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full">
+                            <span className={`w-2 h-2 rounded-full ${color}`} />
+                            {count} {label}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
 

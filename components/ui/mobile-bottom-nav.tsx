@@ -8,9 +8,10 @@ interface MobileBottomNavProps {
   userRole?: "customer" | "provider" | "admin";
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  isOnboardingApproved?: boolean;
 }
 
-export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange }: MobileBottomNavProps) {
+export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange, isOnboardingApproved = true }: MobileBottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -23,20 +24,26 @@ export function MobileBottomNav({ userRole = "customer", activeTab, onTabChange 
     { id: "messages", label: "Messages", icon: MessageCircle, path: "/customer/dashboard?tab=messages" },
   ];
 
-  // Provider navigation items
-  const providerNavItems = [
-    { id: "overview", label: "Home", icon: Home, path: "/provider/dashboard?tab=overview" },
-    { id: "bookings", label: "Bookings", icon: BookOpen, path: "/provider/dashboard?tab=bookings" },
-    { id: "services", label: "Services", icon: Search, path: "/provider/dashboard?tab=services" },
-    { id: "earnings", label: "Earnings", icon: DollarSign, path: "/provider/dashboard?tab=earnings" },
-    { id: "profile", label: "Profile", icon: User, path: "/provider/dashboard?tab=profile" },
-  ];
+  // Provider navigation items — when onboarding is not approved, only show
+  // overview and onboarding so the provider can complete registration.
+  const providerNavItems = isOnboardingApproved
+    ? [
+        { id: "overview", label: "Home", icon: Home, path: "/provider/dashboard?tab=overview" },
+        { id: "bookings", label: "Bookings", icon: BookOpen, path: "/provider/dashboard?tab=bookings" },
+        { id: "services", label: "Services", icon: Search, path: "/provider/dashboard?tab=services" },
+        { id: "earnings", label: "Earnings", icon: DollarSign, path: "/provider/dashboard?tab=earnings" },
+        { id: "profile", label: "Profile", icon: User, path: "/provider/dashboard?tab=profile" },
+      ]
+    : [
+        { id: "overview", label: "Home", icon: Home, path: "/provider/dashboard?tab=overview" },
+        { id: "onboarding", label: "Onboarding", icon: User, path: "/provider/dashboard?tab=onboarding" },
+      ];
 
   // Admin navigation items
   const adminNavItems = [
     { id: "overview", label: "Home", icon: Home, path: "/admin/dashboard?tab=overview" },
     { id: "users", label: "Users", icon: User, path: "/admin/dashboard?tab=users" },
-    { id: "providers", label: "Onboarding", icon: Search, path: "/admin/dashboard?tab=providers" },
+    { id: "onboarding", label: "Onboarding", icon: Search, path: "/admin/dashboard?tab=onboarding" },
     { id: "services", label: "Services", icon: BookOpen, path: "/admin/dashboard?tab=services" },
     { id: "events", label: "Events", icon: Calendar, path: "/admin/dashboard?tab=events" },
   ];

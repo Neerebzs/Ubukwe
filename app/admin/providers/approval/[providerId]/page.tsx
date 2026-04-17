@@ -37,7 +37,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
       })
       setApprovalDecision("approved")
       toast.success("Provider approved — they will be notified by email.")
-      setTimeout(() => router.push("/admin/dashboard?tab=providers"), 1500)
+      setTimeout(() => router.push("/admin/dashboard?tab=onboarding"), 1500)
     } catch (err: any) {
       toast.error(err.message || "Failed to approve provider")
     } finally {
@@ -57,7 +57,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
       })
       setApprovalDecision("rejected")
       toast.success("Application rejected — provider will be notified.")
-      setTimeout(() => router.push("/admin/dashboard?tab=providers"), 1500)
+      setTimeout(() => router.push("/admin/dashboard?tab=onboarding"), 1500)
     } catch (err: any) {
       toast.error(err.message || "Failed to reject application")
     } finally {
@@ -87,7 +87,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
       <div className="min-h-screen bg-[#f9fafc] p-6 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">Application not found.</p>
-          <Link href="/admin/dashboard?tab=providers">
+          <Link href="/admin/dashboard?tab=onboarding">
             <Button variant="outline">Back to Providers</Button>
           </Link>
         </div>
@@ -95,13 +95,16 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
     )
   }
 
+  const requiredDocKeys = Object.keys(application.documents).filter((k: string) => k !== "portfolio");
+  const allDocumentsVerified = requiredDocKeys.length > 0 && requiredDocKeys.every(k => application.documents[k]?.verified === true);
+
   return (
     <div className="min-h-screen bg-[#f9fafc] p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard?tab=providers">
+            <Link href="/admin/dashboard?tab=onboarding">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Providers
@@ -147,7 +150,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
                   <div>
                     <p className="text-sm text-muted-foreground">Service Categories</p>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {application.serviceCategories.map((cat) => (
+                      {application.serviceCategories.map((cat: string) => (
                         <Badge key={cat} variant="outline">
                           {cat}
                         </Badge>
@@ -277,7 +280,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
                   </TabsContent>
 
                   <TabsContent value="portfolio" className="space-y-2 mt-4">
-                    {application.documents.portfolio.map((item, idx) => (
+                    {application.documents.portfolio.map((item: any, idx: number) => (
                       <div key={idx} className="flex items-center gap-3 p-3 border rounded-lg">
                         <FileText className="w-5 h-5 text-muted-foreground" />
                         <p className="flex-1 font-medium">{item.name}</p>
@@ -290,7 +293,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
                   </TabsContent>
 
                   <TabsContent value="references" className="space-y-3 mt-4">
-                    {application.references.map((ref, idx) => (
+                    {application.references.map((ref: any, idx: number) => (
                       <div key={idx} className="p-3 border rounded-lg">
                         <p className="font-medium">{ref.name}</p>
                         <p className="text-sm text-muted-foreground">{ref.relationship}</p>
@@ -363,7 +366,7 @@ export default function ProviderApprovalDetailPage({ params }: { params: { provi
                     {Object.values(application.documents)
                       .filter((doc: any) => doc.verified === true).length} of{" "}
                     {Object.keys(application.documents).filter(
-                      (k) => k !== "portfolio"
+                      (k: string) => k !== "portfolio"
                     ).length} required documents verified
                   </p>
                 </div>

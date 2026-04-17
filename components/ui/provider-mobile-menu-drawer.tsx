@@ -40,6 +40,7 @@ interface ProviderMobileMenuDrawerProps {
     is_verified?: boolean;
   };
   onLogout?: () => void;
+  isOnboardingApproved?: boolean;
 }
 
 export function ProviderMobileMenuDrawer({
@@ -49,6 +50,7 @@ export function ProviderMobileMenuDrawer({
   onTabChange,
   user,
   onLogout,
+  isOnboardingApproved = false,
 }: ProviderMobileMenuDrawerProps) {
   const [expandedSections, setExpandedSections] = useState<string[]>(["overview", "services", "crm", "business"]);
 
@@ -60,53 +62,64 @@ export function ProviderMobileMenuDrawer({
     );
   };
 
-  const menuSections = [
-    {
-      id: "overview",
-      title: "Overview",
-      icon: <Home className="w-4 h-4" />,
-      items: [
-        { id: "overview", label: "Dashboard", icon: Home },
-        ...(!user?.is_verified ? [{ id: "onboarding", label: "Onboarding", icon: FileText }] : []),
+  // When onboarding is not approved, only show the onboarding section so the
+  // provider is guided to complete their registration before anything else.
+  const menuSections = isOnboardingApproved
+    ? [
+        {
+          id: "overview",
+          title: "Overview",
+          icon: <Home className="w-4 h-4" />,
+          items: [
+            { id: "overview", label: "Dashboard", icon: Home },
+          ]
+        },
+        {
+          id: "services",
+          title: "Services",
+          icon: <Package className="w-4 h-4" />,
+          items: [
+            { id: "services", label: "My Services", icon: Package },
+            { id: "events", label: "Events", icon: Calendar },
+            { id: "bookings", label: "Bookings", icon: BookOpen },
+          ]
+        },
+        {
+          id: "crm",
+          title: "My Relationships",
+          icon: <MessageSquare className="w-4 h-4" />,
+          items: [
+            { id: "messages", label: "Messages", icon: MessageSquare },
+            { id: "inquiries", label: "Customer Feedback", icon: Star },
+            { id: "contracts", label: "Contracts", icon: FileText },
+          ]
+        },
+        {
+          id: "business",
+          title: "Business",
+          icon: <DollarSign className="w-4 h-4" />,
+          items: [
+            { id: "earnings", label: "Earnings", icon: DollarSign },
+            { id: "profile", label: "Profile", icon: User },
+          ]
+        }
       ]
-    },
-    {
-      id: "services",
-      title: "Services",
-      icon: <Package className="w-4 h-4" />,
-      items: [
-        { id: "services", label: "My Services", icon: Package },
-        { id: "events", label: "Events", icon: Calendar },
-        { id: "bookings", label: "Bookings", icon: BookOpen },
-      ]
-    },
-    {
-      id: "crm",
-      title: "My Relationships",
-      icon: <MessageSquare className="w-4 h-4" />,
-      items: [
-        { id: "messages", label: "Messages", icon: MessageSquare },
-        { id: "inquiries", label: "Customer Feedback", icon: Star },
-        { id: "contracts", label: "Contracts", icon: FileText },
-      ]
-    },
-    {
-      id: "business",
-      title: "Business",
-      icon: <DollarSign className="w-4 h-4" />,
-      items: [
-        { id: "earnings", label: "Earnings", icon: DollarSign },
-        { id: "profile", label: "Profile", icon: User },
-      ]
-    }
-  ];
+    : [
+        // Unapproved: only allow access to onboarding
+        {
+          id: "overview",
+          title: "Get Started",
+          icon: <Home className="w-4 h-4" />,
+          items: [
+            { id: "overview", label: "Dashboard", icon: Home },
+            { id: "onboarding", label: "Complete Onboarding", icon: FileText },
+          ]
+        }
+      ];
 
   const handleTabClick = (tabId: string) => {
-    const isTabDisabled = !user?.is_verified && !['overview', 'onboarding'].includes(tabId);
-    if (!isTabDisabled) {
-      onTabChange(tabId);
-      onClose();
-    }
+    onTabChange(tabId);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -167,20 +180,16 @@ export function ProviderMobileMenuDrawer({
                     {section.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
-                      const isTabDisabled = !user?.is_verified && !['overview', 'onboarding'].includes(item.id);
 
                       return (
                         <button
                           key={item.id}
                           onClick={() => handleTabClick(item.id)}
-                          disabled={isTabDisabled}
                           className={cn(
                             "relative w-full text-left text-sm px-4 py-3 rounded-2xl transition-all duration-500 flex items-center gap-4",
                             isActive
                               ? "bg-white/10 text-white shadow-2xl shadow-[#668c65]/10 border border-white/10"
-                              : isTabDisabled
-                                ? "opacity-20 cursor-not-allowed text-white/50"
-                                : "text-white/60 hover:text-white hover:bg-white/5"
+                              : "text-white/60 hover:text-white hover:bg-white/5"
                           )}
                         >
                           <Icon className={cn("h-5 w-5 flex-shrink-0 transition-colors duration-500", isActive ? "text-[#668c65]" : "group-hover:text-white")} />

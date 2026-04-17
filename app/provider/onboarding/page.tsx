@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, FileText, CheckCircle, AlertCircle, ArrowRight, AlertTriangle, Camera, X } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, ArrowRight, AlertTriangle, Camera, X, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { apiClient } from "@/lib/api-client"
+import { apiClient, axiosInstance } from "@/lib/api-client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -23,12 +23,24 @@ import {
 } from "@/lib/validation/onboarding-schema"
 import { useRef } from "react"
 
+interface ServiceCategory {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  icon?: string
+  is_active: boolean
+}
+
 export default function ProviderOnboarding() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [stepErrors, setStepErrors] = useState<ValidationError[]>([])
   const [cameraActive, setCameraActive] = useState(false)
+  const [categories, setCategories] = useState<ServiceCategory[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [isResubmission, setIsResubmission] = useState(false) // true when updating existing application
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -50,6 +62,7 @@ export default function ProviderOnboarding() {
     idDocument: null as File | null,
     selfiePhoto: null as File | null,
     businessLicense: null as File | null,
+    businessLogo: null as File | null,
     taxCertificate: null as File | null,
     insuranceCertificate: null as File | null,
     portfolio: [] as File[],
@@ -76,21 +89,69 @@ export default function ProviderOnboarding() {
   useEffect(() => {
     const checkExistingApplication = async () => {
       try {
-        const response = await apiClient.provider.getOnboardingStatus()
-        if (response.data && response.data.status) {
-          // User already has an application
-          toast.info(`You already have an onboarding application with status: ${response.data.status}`)
-          router.push("/provider/dashboard")
+        const response = await axiosInstance.get("/api/v1/provider/onboarding/status")
+        const onboardingData = response.data
+
+        if (onboardingData && onboardingData.onboarding_status) {
+          const status = onboardingData.onboarding_status
+
+          // Pending/approved — no need to re-submit, go back to the onboarding status tab
+          if (status === "pending" || status === "approved") {
+            toast.info(`Your application is ${status}. You don't need to submit again.`)
+            router.push("/provider/dashboard?tab=onboarding")
+            return
+          }
+
+          // Requires revision or rejected — pre-fill the form with existing data
+          if ((status === "requires_revision" || status === "rejected") && onboardingData.application_details) {
+            const details = onboardingData.application_details
+            setFormData({
+              businessName: details.business_name || "",
+              businessType: details.business_type || "",
+              yearsExperience: String(details.years_experience) || "",
+              serviceCategories: Array.isArray(details.service_categories) ? details.service_categories : [],
+              description: details.business_description || "",
+              phone: details.phone || "",
+              email: details.email || "",
+              address: details.address || "",
+              city: details.city || "",
+              country: details.country || "",
+            })
+            setIsResubmission(true)
+            const msg = status === "requires_revision"
+              ? "Please update your information as requested by the administrator."
+              : "Your previous application was declined. Please review and resubmit."
+            toast.info(msg)
+          }
         }
       } catch (error: any) {
-        // If error is 404 or similar, it means no application exists, which is fine
-        if (!error.message?.includes("404") && !error.message?.includes("not found")) {
+        if (!error.message?.includes("404")) {
           console.error("Error checking onboarding status:", error)
         }
       }
     }
 
     checkExistingApplication()
+  }, [])
+
+  // Fetch service categories from the database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setCategoriesLoading(true)
+      try {
+        const response = await axiosInstance.get("/api/v1/public/categories")
+        const data = response.data
+        // Handle both array response and wrapped response
+        const cats = Array.isArray(data) ? data : (data?.data ?? data?.categories ?? [])
+        setCategories(cats.filter((c: ServiceCategory) => c.is_active !== false))
+      } catch (error) {
+        console.error("Failed to fetch categories:", error)
+        // Fallback to empty — user will see a message
+      } finally {
+        setCategoriesLoading(false)
+      }
+    }
+    fetchCategories()
   }, [])
 
   /* ---------------- CAMERA (FIXED) ---------------- */
@@ -305,8 +366,8 @@ export default function ProviderOnboarding() {
     }
     setIsSubmitting(true)
     try {
-      // Validate required documents
-      if (!documents.businessLicense) {
+      // Validate required documents (only for fresh submissions — resubmissions may keep existing docs)
+      if (!isResubmission && !documents.businessLicense) {
         throw new Error("Missing business license (RDB file). Please upload your RDB certificate.")
       }
 
@@ -323,10 +384,16 @@ export default function ProviderOnboarding() {
         country: formData.country,
       }
 
-      const response = await apiClient.provider.submitOnboarding(onboardingData, documents.businessLicense)
+      if (isResubmission) {
+        // Use PUT to update the existing application
+        await apiClient.provider.updateOnboarding(onboardingData, documents.businessLicense, documents.businessLogo)
+        toast.success("Application updated successfully! Our team will review your changes.")
+      } else {
+        await apiClient.provider.submitOnboarding(onboardingData, documents.businessLicense!, documents.businessLogo)
+        toast.success("Onboarding application submitted successfully! You will be notified once it's reviewed.")
+      }
 
-      toast.success("Onboarding application submitted successfully! You will be notified once it's reviewed.")
-      router.push("/provider/dashboard")
+      router.push("/provider/dashboard?tab=onboarding")
     } catch (error: any) {
       console.error("Submission failed:", error)
 
@@ -368,7 +435,7 @@ export default function ProviderOnboarding() {
   const progress = (currentStep / 6) * 100
 
   return (
-    <div className="min-h-screen bg-[#fbfcff] py-12 px-4 font-sans">
+    <div className="min-h-screen bg-[#fbfcff] py-6 md:py-12 px-3 md:px-4 font-sans">
       {cameraActive && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center flex-col gap-4">
           <button
@@ -409,30 +476,30 @@ export default function ProviderOnboarding() {
       )}
 
       <div className="max-w-4xl mx-auto">
-        <div className="mb-12">
+        <div className="mb-8 md:mb-12">
           <Link href="/" className="text-sage-600 hover:text-sage-700 text-sm flex items-center gap-2 transition-colors font-medium">
             ← Back to Home
           </Link>
-          <h1 className="text-4xl lg:text-5xl font-serif italic text-slate-900 mt-6 leading-tight">Provider Onboarding</h1>
-          <p className="text-slate-500 mt-3 text-lg">Complete your profile to start offering services on our boutique platform</p>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif italic text-slate-900 mt-4 md:mt-6 leading-tight">Provider Onboarding</h1>
+          <p className="text-slate-500 mt-2 md:mt-3 text-base md:text-lg">Complete your profile to start offering services on our boutique platform</p>
         </div>
 
-        <div className="mb-12">
-          <Progress value={progress} className="mb-8 h-2 bg-sage-100 [&>div]:bg-sage-600" />
-          <div className="flex justify-between relative">
+        <div className="mb-8 md:mb-12">
+          <Progress value={progress} className="mb-6 md:mb-8 h-2 bg-sage-100 [&>div]:bg-sage-600" />
+          <div className="flex justify-between relative gap-1">
             {steps.map((step) => (
               <div key={step.id} className="flex flex-col items-center flex-1 relative z-10">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${step.completed
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${step.completed
                     ? "bg-sage-600 border-sage-600 text-white"
                     : currentStep === step.id
                       ? "bg-white border-sage-600 text-sage-600 shadow-[0_0_20px_rgba(13,148,136,0.3)]"
                       : "bg-white border-slate-200 text-slate-400"
                     }`}
                 >
-                  {step.completed ? <CheckCircle className="w-6 h-6" /> : <span className="text-sm font-bold">{step.id}</span>}
+                  {step.completed ? <CheckCircle className="w-5 h-5 md:w-6 md:h-6" /> : <span className="text-xs md:text-sm font-bold">{step.id}</span>}
                 </div>
-                <p className={`text-[11px] font-medium mt-3 uppercase tracking-wider text-center max-w-[80px] ${currentStep === step.id ? "text-sage-600" : "text-slate-400"}`}>
+                <p className={`text-[10px] md:text-[11px] font-medium mt-2 md:mt-3 uppercase tracking-wider text-center max-w-[80px] ${currentStep === step.id ? "text-sage-600 block" : "text-slate-400 hidden md:block"}`}>
                   {step.title}
                 </p>
               </div>
@@ -440,21 +507,21 @@ export default function ProviderOnboarding() {
           </div>
         </div>
 
-        <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-md">
-          <CardHeader className="pb-8 pt-10 px-8 lg:px-12 border-b border-slate-100">
-            <div className="flex justify-between items-end">
+        <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-md">
+          <CardHeader className="pb-6 pt-8 md:pb-8 md:pt-10 px-5 md:px-8 lg:px-12 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 sm:gap-0">
               <div>
-                <CardTitle className="text-2xl font-serif text-slate-800">{steps[currentStep - 1].title}</CardTitle>
-                <CardDescription className="text-slate-500 mt-1">
+                <CardTitle className="text-xl md:text-2xl font-serif text-slate-800">{steps[currentStep - 1].title}</CardTitle>
+                <CardDescription className="text-slate-500 mt-1 text-sm">
                   Complete the details to proceed
                 </CardDescription>
               </div>
-              <span className="text-sm font-medium text-sage-600 bg-sage-50 px-4 py-1.5 rounded-full border border-sage-100">
+              <span className="text-xs md:text-sm font-medium text-sage-600 bg-sage-50 px-3 md:px-4 py-1 md:py-1.5 rounded-full border border-sage-100">
                 Step {currentStep} of {steps.length}
               </span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-8 p-8 lg:p-12">
+          <CardContent className="space-y-6 md:space-y-8 p-5 md:p-8 lg:p-12">
             {stepErrors.length > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <div className="flex gap-3">
@@ -523,32 +590,99 @@ export default function ProviderOnboarding() {
             )}
 
             {currentStep === 2 && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <Label htmlFor="serviceCategories">Service Categories *</Label>
-                  <p className="text-sm text-muted-foreground mb-2">Select at least one category</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {["Photography", "Venue", "Catering", "Music", "Decoration", "Transportation", "MC Services", "Dance", "Other"].map((cat) => (
-                      <Button
-                        key={cat}
-                        type="button"
-                        variant={formData.serviceCategories.includes(cat) ? "default" : "outline"}
-                        className={`rounded-xl py-6 transition-all duration-300 ${formData.serviceCategories.includes(cat)
-                          ? "bg-sage-600 hover:bg-sage-700 text-white shadow-lg shadow-sage-200"
-                          : "hover:border-sage-300 hover:text-sage-600"
-                          }`}
-                        onClick={() => {
-                          const categories = formData.serviceCategories.includes(cat)
-                            ? formData.serviceCategories.filter((c) => c !== cat)
-                            : [...formData.serviceCategories, cat]
-                          handleInputChange("serviceCategories", categories)
-                        }}
-                      >
-                        {cat}
-                      </Button>
-                    ))}
-                  </div>
+                  <Label htmlFor="serviceCategories" className="text-slate-700 font-medium mb-1 block">
+                    Service Categories *
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Select all categories that apply to your business. You can choose multiple.
+                  </p>
+
+                  {categoriesLoading ? (
+                    <div className="flex items-center justify-center py-10 gap-3 text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-sm">Loading categories...</span>
+                    </div>
+                  ) : categories.length === 0 ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                      No categories available yet. Please contact the administrator to add service categories.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {categories.map((cat) => {
+                        const isSelected = formData.serviceCategories.includes(cat.name)
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              const updated = isSelected
+                                ? formData.serviceCategories.filter((c) => c !== cat.name)
+                                : [...formData.serviceCategories, cat.name]
+                              handleInputChange("serviceCategories", updated)
+                            }}
+                            className={`relative flex items-center gap-3 rounded-xl border-2 px-4 py-4 text-left transition-all duration-200 ${
+                              isSelected
+                                ? "border-sage-600 bg-sage-50 text-sage-800 shadow-md shadow-sage-100"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-sage-300 hover:bg-sage-50/50"
+                            }`}
+                          >
+                            {/* Checkbox indicator */}
+                            <span
+                              className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? "border-sage-600 bg-sage-600"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {isSelected && (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </span>
+                            <span className="text-sm font-medium leading-tight">{cat.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Selected count badge */}
+                  {formData.serviceCategories.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="text-xs text-slate-500 self-center">Selected:</span>
+                      {formData.serviceCategories.map((cat) => (
+                        <span
+                          key={cat}
+                          className="inline-flex items-center gap-1 bg-sage-100 text-sage-800 text-xs font-medium px-2.5 py-1 rounded-full"
+                        >
+                          {cat}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleInputChange(
+                                "serviceCategories",
+                                formData.serviceCategories.filter((c) => c !== cat)
+                              )
+                            }
+                            className="hover:text-sage-600 ml-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {stepErrors.some((e) => e.field === "serviceCategories") && (
+                    <p className="text-sm text-red-600 mt-2">
+                      {stepErrors.find((e) => e.field === "serviceCategories")?.message}
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <Label htmlFor="description">Business Description *</Label>
                   <Textarea
@@ -681,9 +815,17 @@ export default function ProviderOnboarding() {
 
             {currentStep === 5 && (
               <div className="space-y-6">
+                {/* Business License / RDB Certificate */}
                 <div>
-                  <Label>Business License / Registration *</Label>
-                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <Label className="text-slate-700 font-medium mb-1 block">
+                    Business License / RDB Certificate *
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Upload your official business registration document (PDF or image)
+                  </p>
+                  <div className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                    documents.businessLicense ? "border-sage-400 bg-sage-50" : "border-slate-200 hover:border-sage-300"
+                  }`}>
                     <input
                       type="file"
                       id="businessLicense"
@@ -691,20 +833,92 @@ export default function ProviderOnboarding() {
                       onChange={(e) => handleFileUpload("businessLicense", e.target.files)}
                       className="hidden"
                     />
-                    <label htmlFor="businessLicense" className="cursor-pointer">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm font-medium">Click to upload</p>
+                    <label htmlFor="businessLicense" className="cursor-pointer block">
+                      {documents.businessLicense ? (
+                        <div className="flex items-center justify-center gap-3 text-sage-700">
+                          <CheckCircle className="w-6 h-6 text-sage-600" />
+                          <div className="text-left">
+                            <p className="text-sm font-semibold">{documents.businessLicense.name}</p>
+                            <p className="text-xs text-slate-500">{(documents.businessLicense.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setDocuments(p => ({ ...p, businessLicense: null })) }}
+                            className="ml-2 text-slate-400 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                          <p className="text-sm font-medium text-slate-600">Click to upload RDB certificate</p>
+                          <p className="text-xs text-slate-400 mt-1">PDF, JPG, PNG — max 10MB</p>
+                        </>
+                      )}
                     </label>
-                    {documents.businessLicense && (
-                      <div className="mt-2 flex items-center justify-center gap-2 text-sm">
-                        <FileText className="w-4 h-4" />
-                        {documents.businessLicense.name}
+                  </div>
+                  {stepErrors.some((e) => e.field === "businessLicense") && (
+                    <p className="text-sm text-red-600 mt-1">{stepErrors.find((e) => e.field === "businessLicense")?.message}</p>
+                  )}
+                </div>
+
+                {/* Business Logo */}
+                <div>
+                  <Label className="text-slate-700 font-medium mb-1 block">
+                    Business Logo
+                    <span className="ml-2 text-xs font-normal text-slate-400">(Optional)</span>
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Upload your company logo — it will appear on your public profile and services
+                  </p>
+                  <div className={`border-2 border-dashed rounded-xl transition-colors ${
+                    documents.businessLogo ? "border-sage-400 bg-sage-50" : "border-slate-200 hover:border-sage-300"
+                  }`}>
+                    <input
+                      type="file"
+                      id="businessLogo"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                      onChange={(e) => handleFileUpload("businessLogo", e.target.files)}
+                      className="hidden"
+                    />
+                    {documents.businessLogo ? (
+                      <div className="p-4 flex items-center gap-4">
+                        {/* Preview */}
+                        <img
+                          src={URL.createObjectURL(documents.businessLogo)}
+                          alt="Logo preview"
+                          className="w-16 h-16 object-contain rounded-lg border border-slate-200 bg-white p-1 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-700 truncate">{documents.businessLogo.name}</p>
+                          <p className="text-xs text-slate-500">{(documents.businessLogo.size / 1024).toFixed(1)} KB</p>
+                          <label
+                            htmlFor="businessLogo"
+                            className="text-xs text-sage-600 hover:text-sage-700 cursor-pointer underline mt-1 inline-block"
+                          >
+                            Change logo
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDocuments(p => ({ ...p, businessLogo: null }))}
+                          className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
+                    ) : (
+                      <label htmlFor="businessLogo" className="cursor-pointer block p-6 text-center">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-600">Click to upload your logo</p>
+                        <p className="text-xs text-slate-400 mt-1">PNG, JPG, SVG, WebP — max 5MB</p>
+                      </label>
                     )}
                   </div>
                 </div>
-
-
               </div>
             )}
 
@@ -735,13 +949,12 @@ export default function ProviderOnboarding() {
                 </div>
               </div>
             )}
-
-            <div className="flex justify-between pt-10 border-t border-slate-100">
+            <div className="flex justify-between pt-6 md:pt-10 border-t border-slate-100">
               <Button
                 variant="outline"
                 onClick={handlePrev}
                 disabled={currentStep === 1}
-                className="rounded-full px-8 py-6 border-slate-200 hover:bg-slate-50 transition-colors"
+                className="rounded-full px-5 md:px-8 py-5 md:py-6 border-slate-200 hover:bg-slate-50 transition-colors text-sm md:text-base"
               >
                 Previous
               </Button>
@@ -749,16 +962,18 @@ export default function ProviderOnboarding() {
                 <Button
                   onClick={handleNext}
                   disabled={isSubmitting}
-                  className="rounded-full px-10 py-6 bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-200 transition-all duration-300 transform hover:-translate-y-0.5"
+                  className="rounded-full px-6 md:px-10 py-5 md:py-6 bg-[#668c65] hover:bg-[#557555] text-white shadow-xl shadow-slate-200 transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base font-semibold"
                 >
-                  {isSubmitting ? "Verifying..." : currentStep === 4 ? "Verify Identity" : "Next Step"}
-                  {currentStep !== 4 && <ArrowRight className="w-4 h-4 ml-2" />}
+                  <span className="flex items-center gap-2">
+                    {isSubmitting ? "Verifying..." : currentStep === 4 ? "Verify Identity" : "Next Step"}
+                    {currentStep !== 4 && <ArrowRight className="w-4 h-4" />}
+                  </span>
                 </Button>
               ) : (
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="rounded-full px-12 py-6 bg-sage-600 hover:bg-sage-700 text-white shadow-xl shadow-sage-200 transition-all duration-300 transform hover:-translate-y-0.5"
+                  className="rounded-full px-8 md:px-12 py-5 md:py-6 bg-[#668c65] hover:bg-[#557555] text-white shadow-xl shadow-slate-200 transition-all duration-300 transform hover:-translate-y-0.5 text-sm md:text-base font-semibold"
                 >
                   {isSubmitting ? "Submitting..." : "Submit Application"}
                 </Button>

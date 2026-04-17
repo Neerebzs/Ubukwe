@@ -12,6 +12,8 @@ import { User, Mail, Phone, MapPin, Lock, Camera, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { updateProfile, changePassword } from "@/lib/api/profile";
+import { ProviderOnboardingStatus } from "./onboarding-status";
+
 
 export function ProviderProfileSettings() {
   const { user, refreshUser } = useAuth();
@@ -118,10 +120,12 @@ export function ProviderProfileSettings() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile Information</TabsTrigger>
           <TabsTrigger value="password">Change Password</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="profile">
           <Card className="border-slate-200">
@@ -297,7 +301,11 @@ export function ProviderProfileSettings() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="onboarding">
+          <ProviderOnboardingStatus />
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }

@@ -201,7 +201,6 @@ export function Navbar() {
                   {[
                     { href: "/", label: "Home", icon: Home },
                     { href: "/services", label: "Services", icon: Briefcase },
-                    { href: "/about", label: "About", icon: Info },
                   ].map((item) => (
                     <a
                       key={item.label}
@@ -223,7 +222,7 @@ export function Navbar() {
                   <div className="space-y-1">
                     <button
                       onClick={() => setMobileEventsOpen(!mobileEventsOpen)}
-                      className="w-full flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
+                      className="w-full flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group text-left"
                     >
                       <div className="flex items-center space-x-4">
                         <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
@@ -231,38 +230,54 @@ export function Navbar() {
                           <TranslatedText text="Events" />
                         </span>
                       </div>
-                      <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${mobileEventsOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform duration-300 ${mobileEventsOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    {mobileEventsOpen && (
-                      <div className="ml-6 space-y-1 border-l border-slate-100 pl-6">
-                        <a
+                    <div 
+                      className={`overflow-hidden transition-all duration-500 ease-in-out ${
+                        mobileEventsOpen ? 'max-h-40 opacity-100 mt-2' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <div className="ml-10 space-y-1 border-l-2 border-[#668c65]/10 pl-4 py-2">
+                        <Link
                           href="/events"
                           onClick={toggleMenu}
                           className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-all group"
                         >
-                          <Calendar className="h-3 w-3 text-slate-400 group-hover:text-[#668c65] transition-colors" />
-                          <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 group-hover:bg-[#668c65] transition-colors" />
+                          <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 group-hover:text-slate-900">
                             <TranslatedText text="Browse Events" />
                           </span>
-                        </a>
-                        <a
+                        </Link>
+                        <Link
                           href="/my-tickets"
                           onClick={toggleMenu}
                           className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-slate-50 transition-all group"
                         >
-                          <Ticket className="h-3 w-3 text-slate-400 group-hover:text-[#668c65] transition-colors" />
-                          <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                          <div className="h-1.5 w-1.5 rounded-full bg-slate-300 group-hover:bg-[#668c65] transition-colors" />
+                          <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500 group-hover:text-slate-900">
                             <TranslatedText text="My Tickets" />
                           </span>
-                        </a>
+                        </Link>
                       </div>
-                    )}
+                    </div>
                   </div>
+
+                  <a
+                    href="/about"
+                    onClick={toggleMenu}
+                    className="flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <Info className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
+                      <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-600 group-hover:text-slate-900">
+                        <TranslatedText text="About" />
+                      </span>
+                    </div>
+                    <div className="h-1 w-1 rounded-full bg-slate-200 group-hover:bg-[#668c65] transition-colors" />
+                  </a>
                 </nav>
               </div>
-
-              {/* Mobile Search (Moved to main header) */}
 
               {/* Preferences */}
               <div className="space-y-4 pt-6 border-t border-slate-50">

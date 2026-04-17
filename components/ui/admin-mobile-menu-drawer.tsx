@@ -59,10 +59,10 @@ export function AdminMobileMenuDrawer({
       ]
     },
     {
-      id: "providers",
+      id: "onboarding",
       title: "Provider Management",
       items: [
-        { id: "providers", label: "Onboarding", icon: Store },
+        { id: "onboarding", label: "Onboarding", icon: Store },
         { id: "approvals", label: "Approvals", icon: CheckCircle },
       ]
     },

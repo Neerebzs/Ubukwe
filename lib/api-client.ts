@@ -378,8 +378,7 @@ class ApiClient {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
-    submitOnboarding: async (data: any, rdbFile: File) => {
-      const formData = new FormData();
+    submitOnboarding: async (data: any, rdbFile: File, businessLogoFile?: File | null) => {      const formData = new FormData();
 
       // Map frontend field names to backend field names
       const fieldMapping = {
@@ -405,18 +404,58 @@ class ApiClient {
         }
       });
 
-      // Append file
+      // Append RDB file (required)
       formData.append('rdb_file', rdbFile);
 
-      // Debug logging
-      console.log('FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
+      // Append business logo (optional)
+      if (businessLogoFile) {
+        formData.append('business_logo', businessLogoFile);
       }
 
       return axiosInstance.post<any>('/api/v1/provider/onboarding', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+    },
+    updateOnboarding: async (data: any, rdbFile?: File | null, businessLogoFile?: File | null) => {
+      // For updates we send JSON (text fields only) — files are optional
+      const fieldMapping: Record<string, string> = {
+        businessName: 'business_name',
+        businessType: 'business_type',
+        yearsExperience: 'years_experience',
+        serviceCategories: 'service_categories',
+        description: 'business_description',
+        phone: 'phone',
+        email: 'email',
+        address: 'address',
+        city: 'city',
+        country: 'country',
+      };
+
+      // If files are provided, use multipart; otherwise use JSON
+      if (rdbFile || businessLogoFile) {
+        const formData = new FormData();
+        Object.keys(data).forEach(key => {
+          const backendKey = fieldMapping[key] || key;
+          if (Array.isArray(data[key])) {
+            formData.append(backendKey, JSON.stringify(data[key]));
+          } else {
+            formData.append(backendKey, data[key]);
+          }
+        });
+        if (rdbFile) formData.append('rdb_file', rdbFile);
+        if (businessLogoFile) formData.append('business_logo', businessLogoFile);
+        return axiosInstance.put<any>('/api/v1/provider/onboarding', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      }
+
+      // JSON update (no new files)
+      const payload: Record<string, any> = {};
+      Object.keys(data).forEach(key => {
+        const backendKey = fieldMapping[key] || key;
+        payload[backendKey] = Array.isArray(data[key]) ? JSON.stringify(data[key]) : data[key];
+      });
+      return axiosInstance.put<any>('/api/v1/provider/onboarding', payload);
     },
     // Quotes
     quotes: {
@@ -645,8 +684,9 @@ class ApiClient {
       getPending: async () => {
         return axiosInstance.get<any[]>('/api/v1/admin/onboarding?status=pending');
       },
+      // For active/suspended providers — hits the providers endpoint, not onboarding
       getDetails: async (id: string) => {
-        return axiosInstance.get<any>(`/api/v1/admin/onboarding/${id}`);
+        return axiosInstance.get<any>(`/api/v1/admin/providers/${id}`);
       },
       approve: async (id: string, notes?: string) => {
         return axiosInstance.put<any>(`/api/v1/admin/onboarding/${id}/approve`, { admin_notes: notes });

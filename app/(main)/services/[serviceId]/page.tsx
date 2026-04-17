@@ -13,7 +13,8 @@ import {
     CheckCircle, Users, Clock, Award, Calendar, Tag,
     Play, Image as ImageIcon, Video, Sparkles, ThumbsUp, MessageSquare,
     ChevronDown, Search, ArrowRight, ChevronLeft, ChevronRight,
-    Loader2, AlertCircle
+    Loader2, AlertCircle,
+    BookOpen
 } from "lucide-react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
@@ -132,7 +133,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
         setIsFavorite(!isFavorite);
         toast.success(isFavorite ? "Removed from favorites" : "Added to favorites", {
-            description: serviceRes?.business_name || serviceRes?.name
+            description: serviceRes?.name || serviceRes?.business_name
         });
     };
 
@@ -245,10 +246,14 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     // Map backend to frontend structure with better data handling
     const service = {
         id: serviceData.id,
-        title: serviceData.business_name || serviceData.name,
-        provider: "Verified Provider", // TODO: Join with provider data from backend
+        title: serviceData.name,
+        provider: serviceData.business_name || "Verified Provider", // Join with provider data from backend
         category: serviceData.category,
         location: serviceData.location || "Rwanda",
+        price_range: {
+            min: serviceData.price_range_min || 0,
+            max: serviceData.price_range_max || 0
+        },
         rating: serviceData.rating || 0,
         verified: serviceData.status === "approved",
         experience: "Expert",
@@ -394,25 +399,61 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
     return (
         <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden pb-16 md:pb-0">
-            {/* Top Navigation Overlay */}
-            <div className="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-sm border-b border-white/10 px-6 py-4 md:px-12 flex justify-between items-center group/nav hover:bg-white/80 hover:border-slate-100 transition-all duration-500">
-                <Link href="/services">
-                    <Button variant="ghost" className="rounded-full bg-white/20 hover:bg-slate-900 hover:text-white backdrop-blur-md border border-white/20 text-white group-hover/nav:text-slate-900 group-hover/nav:bg-white group-hover/nav:border-slate-200 transition-all gap-2 px-6">
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="font-bold text-[10px] uppercase tracking-widest">Collection</span>
-                    </Button>
-                </Link>
-                <div className="flex items-center gap-3">
+            {/* Top Navigation Overlay - Redesigned Header */}
+            <div className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50 px-6 py-4 md:px-12 flex justify-between items-center group/nav transition-all duration-500 shadow-sm">
+                <div className="flex items-center gap-6">
+                    <Link href="/services">
+                        <Button variant="ghost" className="rounded-full bg-slate-100 hover:bg-slate-900 hover:text-white transition-all gap-2 px-5 h-11">
+                            <ArrowLeft className="h-4 w-4" />
+                            <span className="font-bold text-[10px] uppercase tracking-widest hidden sm:inline">Collection</span>
+                        </Button>
+                    </Link>
+                    
+                    <div className="h-10 w-[1px] bg-slate-100 hidden sm:block" />
+                    
+                    {/* Branded Identity */}
+                    <div className="flex items-center gap-3 group/brand cursor-default">
+                        <div className="relative">
+                            <Avatar className="h-10 w-10 border-2 border-white shadow-md transition-transform group-hover/brand:scale-110 duration-500">
+                                <AvatarImage src={serviceRes?.provider_logo} alt={serviceRes?.business_name} />
+                                <AvatarFallback className="bg-slate-100 text-slate-400 font-serif italic text-xs">
+                                    {(serviceRes?.business_name || "P").substring(0, 1).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#668c65] rounded-full border-2 border-white flex items-center justify-center">
+                                <CheckCircle className="w-2.5 h-2.5 text-white" />
+                            </div>
+                        </div>
+                        <div className="flex flex-col">
+                            <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em] leading-none mb-1 hidden sm:block">Service by</p>
+                            <h3 className="font-serif italic text-base sm:text-lg text-slate-900 leading-none truncate max-w-[120px] sm:max-w-none">
+                                {serviceRes?.business_name || "Verified Provider"}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-4">
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
-                        className="rounded-full bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-rose-500 hover:text-white transition-all group/heart"
+                        className={cn(
+                            "rounded-full transition-all duration-300 h-11 w-11",
+                            isFavorite ? "bg-rose-50 text-rose-500 hover:bg-rose-100" : "bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                        )}
                         onClick={handleFavoriteClick}
                     >
-                        <Heart className={cn("h-4 w-4 transition-colors", isFavorite ? "fill-white text-white" : "text-white")} />
+                        <Heart className={cn("h-4 w-4 transition-all duration-500", isFavorite ? "fill-rose-500 scale-110" : "scale-100")} />
                     </Button>
-                    <Button variant="outline" size="icon" className="rounded-full bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-slate-900 hover:text-white transition-all">
+                    <Button variant="ghost" size="icon" className="rounded-full bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all h-11 w-11">
                         <Share2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                        size="lg" 
+                        className="hidden sm:flex h-11 px-6 rounded-full bg-slate-900 hover:bg-[#668c65] text-white font-bold text-[10px] uppercase tracking-widest transition-all duration-300 shadow-lg shadow-slate-900/10"
+                        onClick={() => document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                        Book Now
                     </Button>
                 </div>
             </div>
@@ -845,9 +886,25 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         </AnimatePresence>
 
                                         <div className="space-y-8 flex-1">
-                                            <div className="space-y-2">
-                                                <h3 className={cn("font-serif italic text-3xl leading-tight transition-colors", isSelected ? "text-white" : "group-hover:text-[#668c65]")}>{pkg.name}</h3>
-                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{pkg.duration}</p>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <h3 className={cn("font-serif italic text-3xl leading-tight transition-colors", isSelected ? "text-white" : "group-hover:text-[#668c65]")}>{pkg.name}</h3>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{pkg.duration}</p>
+                                                </div>
+                                                <div className={cn(
+                                                    "p-5 rounded-2xl border-l-4 transition-all duration-300",
+                                                    isSelected 
+                                                        ? "bg-white/5 border-white/20 text-white/90" 
+                                                        : "bg-slate-50 border-[#668c65]/30 text-slate-600"
+                                                )}>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <BookOpen className={cn("h-3 w-3", isSelected ? "text-white/40" : "text-[#668c65]")} />
+                                                        <span className={cn("text-[9px] font-bold uppercase tracking-widest", isSelected ? "text-white/40" : "text-slate-400")}>Package Insight</span>
+                                                    </div>
+                                                    <p className="font-serif italic text-[15px] leading-relaxed">
+                                                        {pkg.description}
+                                                    </p>
+                                                </div>
                                             </div>
                                             
                                             <div className="flex items-baseline gap-2">
@@ -1012,8 +1069,10 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 {selectedPackage ? `Selected: ${selectedPackage.name}` : "Artisan Investment"}
                             </p>
                             <div className="flex items-baseline gap-2 justify-center md:justify-start">
-                                <span className="text-3xl md:text-4xl font-black text-white">
-                                    {(selectedPackage?.price || service.packages[0].price).toLocaleString()}
+                                <span className={cn("text-white font-black", selectedPackage ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl")}>
+                                    {selectedPackage 
+                                        ? selectedPackage.price.toLocaleString() 
+                                        : `${service.price_range.min.toLocaleString()} - ${service.price_range.max.toLocaleString()}`}
                                 </span>
                                 <span className="text-xs font-bold text-slate-500 uppercase">RWF</span>
                             </div>
