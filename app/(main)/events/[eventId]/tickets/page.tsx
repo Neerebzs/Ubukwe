@@ -645,12 +645,6 @@ export default function EventTicketingPage() {
                 </div>
               </div>
             )}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>
