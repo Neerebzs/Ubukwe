@@ -451,7 +451,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                     <Button 
                         size="lg" 
                         className="hidden sm:flex h-11 px-6 rounded-full bg-slate-900 hover:bg-[#668c65] text-white font-bold text-[10px] uppercase tracking-widest transition-all duration-300 shadow-lg shadow-slate-900/10"
-                        onClick={() => document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' })}
+                        onClick={(e) => handleBookingClick(e, `/booking/${params.serviceId}?packageId=${selectedPackage?.id || ""}&packageName=${encodeURIComponent(selectedPackage?.name || "")}`)}
                     >
                         Book Now
                     </Button>
@@ -1061,10 +1061,11 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 </div>
             </section>
 
-            {/* Sticky Action Footer / Booking Bar */}
+            {/* Sticky Action Footer / Booking Bar — visible on mobile/tablet only */}
             <div className={cn(
                 "fixed bottom-0 left-0 right-0 z-50 transition-transform duration-700 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:max-w-4xl w-full",
-                "px-6 md:px-0"
+                "px-6 md:px-0",
+                "lg:hidden"
             )}>
                 <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-4 md:px-10 md:py-6 md:rounded-[40px] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
                     {/* Background Light Effect */}
