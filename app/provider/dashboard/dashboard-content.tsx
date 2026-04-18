@@ -50,24 +50,26 @@ export function ProviderDashboardContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(null)
   const [statusLoading, setStatusLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   const { user, logout } = useAuth()
 
+  // Ensure router is only used after client mount
+  useEffect(() => { setMounted(true) }, [])
+
   useEffect(() => {
+    if (!mounted) return
     const currentTab = searchParams.get("tab") || "overview"
     if (currentTab === activeTab) return
 
-    // If onboarding is not approved, block navigation to protected tabs
-    // that arrive via URL (direct link, back/forward, etc.)
     const approved = onboardingStatus === "approved"
     if (PROTECTED_TABS.includes(currentTab) && !approved && !statusLoading) {
-      // Redirect to onboarding — don't honour the URL
       router.replace("/provider/dashboard?tab=onboarding", { scroll: false })
       setActiveTab("onboarding")
       return
     }
 
     setActiveTab(currentTab)
-  }, [searchParams, activeTab, onboardingStatus, statusLoading])
+  }, [searchParams, activeTab, onboardingStatus, statusLoading, mounted])
 
   // Fetch onboarding status once user is loaded
   useEffect(() => {
@@ -176,9 +178,8 @@ export function ProviderDashboardContent() {
   }
 
   const renderContent = () => {
-    // Redirect verified users away from onboarding tab
+    // Don't render onboarding tab for verified users — redirect handled by useEffect below
     if (activeTab === "onboarding" && user?.is_verified) {
-      handleTabChange("overview");
       return null;
     }
 
@@ -216,8 +217,9 @@ export function ProviderDashboardContent() {
   const isApproved = onboardingStatus === "approved"
 
   // Once status is resolved, if the active tab is protected and not approved,
-  // redirect to onboarding. Using useEffect avoids calling router during render.
+  // redirect to onboarding. Guard with mounted to avoid calling router before hydration.
   useEffect(() => {
+    if (!mounted) return
     if (statusLoading) return
     if (isApproved) return
     if (user?.is_verified) return
@@ -225,7 +227,16 @@ export function ProviderDashboardContent() {
       router.replace("/provider/dashboard?tab=onboarding", { scroll: false })
       setActiveTab("onboarding")
     }
-  }, [statusLoading, isApproved, activeTab, user?.is_verified])
+  }, [mounted, statusLoading, isApproved, activeTab, user?.is_verified])
+
+  // Redirect verified users away from the onboarding tab
+  useEffect(() => {
+    if (!mounted) return
+    if (activeTab === "onboarding" && user?.is_verified) {
+      router.replace("/provider/dashboard?tab=overview", { scroll: false })
+      setActiveTab("overview")
+    }
+  }, [mounted, activeTab, user?.is_verified])
 
   return (
     <div className="min-h-screen bg-[#f9fafc]">
