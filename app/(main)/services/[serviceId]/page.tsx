@@ -706,17 +706,19 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         <div ref={videosRef} className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-6 md:px-12 max-w-7xl mx-auto">
                             {service.gallery.videos.map((video: any, i: number) => (
                                 <div key={i} className="flex-shrink-0 w-[85vw] md:w-[500px] snap-center">
-                                    <div className="relative aspect-video rounded-[40px] overflow-hidden group/vid shadow-xl bg-slate-200">
-                                        <img src={video.thumbnail || video.url} alt="Video preview" className="absolute inset-0 w-full h-full object-cover group-hover/vid:scale-105 transition-transform duration-1000" />
-                                        <div className="absolute inset-0 bg-black/30 group-hover/vid:bg-black/10 transition-colors" />
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover/vid:scale-110 transition-transform">
-                                                <Play className="h-6 w-6 text-white fill-white" />
+                                    <div className="relative aspect-video rounded-[40px] overflow-hidden shadow-xl bg-slate-900">
+                                        <video
+                                            src={video.url}
+                                            controls
+                                            preload="metadata"
+                                            poster={video.thumbnail && !video.thumbnail.endsWith('.mp4') && !video.thumbnail.endsWith('.mov') ? video.thumbnail : undefined}
+                                            className="w-full h-full object-contain bg-black rounded-[40px]"
+                                        />
+                                        {video.title && (
+                                            <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[40px]">
+                                                <p className="text-sm font-serif italic text-white line-clamp-1">{video.title}</p>
                                             </div>
-                                        </div>
-                                        <div className="absolute bottom-6 left-6 right-6">
-                                            <p className="text-lg font-serif italic text-white line-clamp-1">{video.title || 'Cinematic Story'}</p>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -750,14 +752,19 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         <div ref={reelsRef} className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-6 md:px-12 max-w-7xl mx-auto">
                             {service.gallery.reels.map((reel: any, i: number) => (
                                 <div key={i} className="flex-shrink-0 w-[60vw] md:w-[280px] snap-center">
-                                    <div className="relative aspect-[9/16] rounded-[32px] overflow-hidden group/reel shadow-lg border border-slate-50">
-                                        <img src={reel.thumbnail || reel.url} alt="Reel preview" className="absolute inset-0 w-full h-full object-cover group-hover/reel:scale-105 transition-transform duration-1000" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover/reel:scale-110 transition-transform">
-                                                <Play className="h-4 w-4 text-white fill-white" />
+                                    <div className="relative aspect-[9/16] rounded-[32px] overflow-hidden shadow-lg bg-slate-900">
+                                        <video
+                                            src={reel.url}
+                                            controls
+                                            preload="metadata"
+                                            poster={reel.thumbnail && !reel.thumbnail.endsWith('.mp4') && !reel.thumbnail.endsWith('.mov') ? reel.thumbnail : undefined}
+                                            className="w-full h-full object-contain bg-black rounded-[32px]"
+                                        />
+                                        {reel.title && (
+                                            <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[32px]">
+                                                <p className="text-xs font-serif italic text-white line-clamp-1">{reel.title}</p>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
