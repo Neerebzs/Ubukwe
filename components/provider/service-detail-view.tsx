@@ -506,14 +506,18 @@ export function ServiceDetailView({
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                           {reels.map((item) => (
-                            <div key={item.id} className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl group border border-white/5">
-                              <video src={item.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" preload="metadata" />
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                                <PlayCircle className="w-16 h-16 text-white/40" />
-                              </div>
-                              <div className="absolute bottom-6 left-6 right-6">
-                                <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title || "Highlight"}</p>
-                              </div>
+                            <div key={item.id} className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5">
+                              <video
+                                src={item.url}
+                                controls
+                                preload="metadata"
+                                className="w-full h-full object-contain bg-black rounded-[2rem]"
+                              />
+                              {item.title && (
+                                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
+                                  <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title}</p>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -528,15 +532,21 @@ export function ServiceDetailView({
                         </div>
                         <div className="space-y-6">
                           {videos.map((item) => (
-                            <div key={item.id} className="relative aspect-video rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl group border border-white/5">
-                              <video src={item.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" preload="metadata" />
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                                <PlayCircle className="w-20 h-20 text-white/40" />
-                              </div>
-                              <div className="absolute bottom-8 left-8 right-8">
-                                <h4 className="text-white font-serif italic text-2xl drop-shadow-xl">{item.title || "Video Archive"}</h4>
-                                <p className="text-white/50 text-[10px] font-black uppercase tracking-widest mt-2">{item.description}</p>
-                              </div>
+                            <div key={item.id} className="relative aspect-video rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5">
+                              <video
+                                src={item.url}
+                                controls
+                                preload="metadata"
+                                className="w-full h-full object-contain bg-black rounded-[2rem]"
+                              />
+                              {item.title && (
+                                <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
+                                  <h4 className="text-white font-serif italic text-lg drop-shadow-xl">{item.title}</h4>
+                                  {item.description && (
+                                    <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mt-1">{item.description}</p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
