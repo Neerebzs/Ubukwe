@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Loader2, Eye, EyeOff } from "lucide-react"
+import { Loader2, Eye, EyeOff, Home } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { RegisterRequest } from "@/lib/api"
@@ -73,8 +73,8 @@ export default function SignUpPage() {
       newErrors.confirmPassword = 'Passwords do not match'
     }
 
-    if (formData.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number (e.g., +250788123456)'
+    if (formData.phone && !/^07\d{8}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone must start with 07 followed by 8 digits (e.g. 0781234567)'
     }
 
     setErrors(newErrors)
@@ -101,7 +101,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
       {/* Visual Narrative Side - Desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img
@@ -132,10 +132,21 @@ export default function SignUpPage() {
       </div>
 
       {/* Interaction Side */}
-      <div className="flex-1 flex flex-col bg-slate-900 justify-center px-6 md:px-8 lg:px-24 py-12 md:py-20 relative overflow-x-hidden overflow-y-auto">
+      <div className="flex-1 flex flex-col bg-slate-900 px-6 md:px-8 lg:px-24 pt-32 pb-20 relative overflow-x-hidden lg:overflow-y-auto">
         {/* Subtle background texture */}
         <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
         <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48 pointer-events-none" />
+
+        {/* Return to Home - Modern Right Alignment */}
+        <div className="absolute top-8 right-8 lg:right-12 z-20">
+          <Link
+            href="/"
+            className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[10px] font-black text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 uppercase tracking-[0.3em] transition-all group"
+          >
+            <Home className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+            <span>Return Home</span>
+          </Link>
+        </div>
 
         <div className="w-full max-w-xl mx-auto relative z-10 space-y-12">
           {/* Header */}
@@ -231,15 +242,24 @@ export default function SignUpPage() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+250 000 000"
+                    placeholder="07XXXXXXXX"
+                    maxLength={10}
                     value={formData.phone}
                     onChange={(e) => {
-                      setFormData({ ...formData, phone: e.target.value })
+                      // Strip non-digits
+                      let val = e.target.value.replace(/\D/g, '')
+                      // Enforce leading "07"
+                      if (val.length >= 1 && val[0] !== '0') val = '0' + val
+                      if (val.length >= 2 && val[1] !== '7') val = val[0] + '7' + val.slice(2)
+                      // Cap at 10 digits
+                      val = val.slice(0, 10)
+                      setFormData({ ...formData, phone: val })
                       if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }))
                     }}
                     className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium ${errors.phone ? 'border-red-500/50 bg-red-500/5' : ''}`}
                     disabled={isRegistering}
                   />
+                  <p className="text-[9px] text-slate-600 px-1">Format: 07XXXXXXXX (10 digits)</p>
                 </div>
 
                 <div className="space-y-2">

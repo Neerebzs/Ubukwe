@@ -239,21 +239,18 @@ export default function VerifyOtpPage() {
                 </div>
             </div>
 
-            {/* Interaction Side */}
-            <div className="flex-1 flex flex-col bg-slate-900 justify-center px-8 lg:px-24 py-20 relative overflow-hidden">
+            <div className="flex-1 flex flex-col bg-slate-900 px-8 lg:px-24 pt-32 pb-20 relative overflow-hidden">
                 {/* Subtle background texture */}
                 <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
                 <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
 
-                {/* Return to Home - Mobile/Desktop */}
-                <div className="absolute top-8 left-8 lg:left-24 z-20">
+                {/* Return to Home - Modern Right Alignment */}
+                <div className="absolute top-8 right-8 lg:right-12 z-20">
                     <Link
                         href="/"
-                        className="flex items-center gap-2 text-[10px] font-black text-white/40 hover:text-[#608d64] uppercase tracking-[0.3em] transition-all group"
+                        className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-[10px] font-black text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 uppercase tracking-[0.3em] transition-all group"
                     >
-                        <div className="h-8 w-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-[#608d64]/30 group-hover:bg-[#608d64]/5 transition-all">
-                            <Home className="h-3 w-3" />
-                        </div>
+                        <Home className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
                         <span>Return Home</span>
                     </Link>
                 </div>

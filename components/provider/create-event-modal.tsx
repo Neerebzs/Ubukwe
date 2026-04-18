@@ -710,6 +710,52 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
 
           <TabsContent value="tickets" className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="space-y-8">
+
+              {/* Capacity usage banner */}
+              {formData.capacity && (() => {
+                const cap = Number(formData.capacity)
+                const used = ticketTypes.reduce((s, t) => s + t.quantity, 0)
+                const drafting = ticketDrafts.reduce((s, d) => s + (Number(d.quantity) || 0), 0)
+                const total = used + drafting
+                const remaining = cap - total
+                const pct = Math.min(100, Math.round((total / cap) * 100))
+                const isOver = total > cap
+
+                return (
+                  <div className={`rounded-2xl border p-5 space-y-3 ${isOver ? "bg-rose-50 border-rose-200" : "bg-[#668c65]/5 border-[#668c65]/15"}`}>
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                      <span className={isOver ? "text-rose-600" : "text-[#668c65]"}>
+                        {isOver ? "⚠ Capacity Exceeded" : "Capacity Usage"}
+                      </span>
+                      <span className={isOver ? "text-rose-600" : "text-slate-600"}>
+                        {total.toLocaleString()} / {cap.toLocaleString()} tickets
+                      </span>
+                    </div>
+                    <div className="h-2 bg-white rounded-full overflow-hidden border border-slate-100">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${isOver ? "bg-rose-500" : pct >= 90 ? "bg-amber-400" : "bg-[#668c65]"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] font-medium">
+                      <span className={isOver ? "text-rose-500" : "text-slate-500"}>
+                        {isOver
+                          ? `Remove ${(total - cap).toLocaleString()} ticket${total - cap !== 1 ? "s" : ""} to stay within capacity`
+                          : `${remaining.toLocaleString()} seat${remaining !== 1 ? "s" : ""} still available`}
+                      </span>
+                      <span className={`font-bold ${isOver ? "text-rose-600" : pct >= 90 ? "text-amber-600" : "text-[#668c65]"}`}>
+                        {pct}% full
+                      </span>
+                    </div>
+                    {isOver && (
+                      <div className="flex items-center gap-2 text-rose-600 text-[10px] font-black uppercase tracking-wider pt-1">
+                        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        Total tickets ({total.toLocaleString()}) exceed event capacity ({cap.toLocaleString()}). Reduce ticket counts before finalizing.
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
               <div>
                 <h3 className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                   <div className="h-[1px] w-8 bg-[#668c65]/30" />
@@ -778,6 +824,12 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                                 errors.ticketDrafts?.[draft.tempId]?.name ? "border-rose-200 bg-rose-50/20" : ""
                               )}
                             />
+                            {errors.ticketDrafts?.[draft.tempId]?.name && (
+                              <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1">
+                                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                {errors.ticketDrafts[draft.tempId].name}
+                              </div>
+                            )}
                           </div>
                           <div className="md:col-span-3 space-y-2">
                             <Label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Price (RWF)</Label>
@@ -791,19 +843,79 @@ export function CreateEventModal({ open, onOpenChange, standalone }: CreateEvent
                                 errors.ticketDrafts?.[draft.tempId]?.price ? "border-rose-200 bg-rose-50/20" : ""
                               )}
                             />
+                            {errors.ticketDrafts?.[draft.tempId]?.price && (
+                              <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1">
+                                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                {errors.ticketDrafts[draft.tempId].price}
+                              </div>
+                            )}
                           </div>
                           <div className="md:col-span-3 space-y-2">
-                            <Label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Count</Label>
+                            <div className="flex items-center justify-between ml-1">
+                              <Label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Count</Label>
+                              {formData.capacity && (() => {
+                                const cap = Number(formData.capacity)
+                                const usedByOthers = ticketTypes.reduce((s, t) => s + t.quantity, 0)
+                                  + ticketDrafts.filter(d => d.tempId !== draft.tempId).reduce((s, d) => s + (Number(d.quantity) || 0), 0)
+                                const remaining = cap - usedByOthers
+                                return (
+                                  <span className="text-[8px] font-bold text-slate-400">
+                                    max {remaining.toLocaleString()}
+                                  </span>
+                                )
+                              })()}
+                            </div>
                             <Input
                               type="number"
                               placeholder="0"
+                              min={1}
+                              max={formData.capacity ? Number(formData.capacity) - ticketTypes.reduce((s, t) => s + t.quantity, 0) - ticketDrafts.filter(d => d.tempId !== draft.tempId).reduce((s, d) => s + (Number(d.quantity) || 0), 0) : undefined}
                               value={draft.quantity}
-                              onChange={(e) => updateDraftRow(draft.tempId, 'quantity', e.target.value)}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                updateDraftRow(draft.tempId, 'quantity', val)
+                                // Live capacity check
+                                if (formData.capacity && val) {
+                                  const cap = Number(formData.capacity)
+                                  const usedByOthers = ticketTypes.reduce((s, t) => s + t.quantity, 0)
+                                    + ticketDrafts.filter(d => d.tempId !== draft.tempId).reduce((s, d) => s + (Number(d.quantity) || 0), 0)
+                                  if (Number(val) + usedByOthers > cap) {
+                                    setErrors(prev => ({
+                                      ...prev,
+                                      ticketDrafts: {
+                                        ...prev.ticketDrafts,
+                                        [draft.tempId]: {
+                                          ...prev.ticketDrafts?.[draft.tempId],
+                                          quantity: `Exceeds remaining capacity (${(cap - usedByOthers).toLocaleString()} left)`
+                                        }
+                                      }
+                                    }))
+                                  } else {
+                                    // Clear the quantity error if now valid
+                                    setErrors(prev => {
+                                      const draftErrs = { ...prev.ticketDrafts }
+                                      if (draftErrs?.[draft.tempId]) {
+                                        const rowErrs = { ...draftErrs[draft.tempId] }
+                                        delete rowErrs.quantity
+                                        if (Object.keys(rowErrs).length === 0) delete draftErrs[draft.tempId]
+                                        else draftErrs[draft.tempId] = rowErrs
+                                      }
+                                      return { ...prev, ticketDrafts: draftErrs }
+                                    })
+                                  }
+                                }
+                              }}
                               className={cn(
                                 "h-14 rounded-xl border-slate-50 bg-white transition-all font-serif italic text-lg",
                                 errors.ticketDrafts?.[draft.tempId]?.quantity ? "border-rose-200 bg-rose-50/20" : ""
                               )}
                             />
+                            {errors.ticketDrafts?.[draft.tempId]?.quantity && (
+                              <div className="flex items-center gap-1.5 text-rose-500 text-[10px] font-black uppercase tracking-wider ml-1">
+                                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                                {errors.ticketDrafts[draft.tempId].quantity}
+                              </div>
+                            )}
                           </div>
                           <div className="md:col-span-1 pt-6 flex justify-end">
                             <Button

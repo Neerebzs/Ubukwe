@@ -12,7 +12,7 @@ import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, M
 import { usePublicEvent, usePurchaseTicket } from "@/hooks/useCustomerEvents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PaymentUI } from "@/components/customer/payment-ui";
-import { TicketDownload } from "@/components/customer/ticket-download";
+import { TicketGraphic } from "@/components/customer/ticket-graphic";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { toast } from "sonner";
@@ -578,27 +578,24 @@ export default function EventTicketingPage() {
             )}
 
             {currentStep === "success" && purchasedTickets.length > 0 && (
-              <div className="space-y-12">
-                <div className="text-center space-y-6">
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom duration-700">
+                {/* Success header */}
+                <div className="text-center space-y-4">
                   <div className="w-20 h-20 rounded-full bg-[#608d64]/10 flex items-center justify-center mx-auto">
                     <Ticket className="h-10 w-10 text-[#608d64]" />
                   </div>
-                  <div className="space-y-4">
-                    <h2 className="font-serif italic text-5xl text-slate-900">Purchase Complete!</h2>
-                    <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-[0.4em]">
-                      {purchasedTickets.length} Ticket{purchasedTickets.length > 1 ? 's' : ''} Confirmed
-                    </p>
-                    <div className="max-w-md mx-auto space-y-3">
-                      <p className="text-slate-600 text-sm">
-                        Your tickets have been sent to <span className="font-semibold text-slate-900">{purchaseData.holderEmail}</span>
-                      </p>
-                      <p className="text-slate-500 text-xs">
-                        You can retrieve your tickets anytime by entering your email on the My Tickets page
-                      </p>
-                    </div>
-                  </div>
+                  <h2 className="font-serif italic text-5xl text-slate-900">Purchase Complete!</h2>
+                  <p className="text-[10px] font-bold text-[#608d64] uppercase tracking-[0.4em]">
+                    {purchasedTickets.length} Ticket{purchasedTickets.length > 1 ? 's' : ''} Confirmed
+                  </p>
+                  <p className="text-slate-500 text-sm max-w-md mx-auto">
+                    Your tickets have been sent to{" "}
+                    <span className="font-semibold text-slate-900">{purchaseData.holderEmail}</span>.
+                    You can retrieve them anytime on the My Tickets page.
+                  </p>
                 </div>
 
+                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
                     onClick={() => router.push("/my-tickets")}
@@ -615,29 +612,39 @@ export default function EventTicketingPage() {
                     Browse More Events
                   </Button>
                 </div>
-                
-                <div className="space-y-16 pt-8">
+
+                {/* Tickets — same TicketGraphic as /my-tickets */}
+                <div className="flex flex-col items-center gap-4 pt-4">
                   {purchasedTickets.map((ticket, index) => (
-                    <div key={ticket.id} className="animate-in fade-in slide-in-from-bottom duration-700" style={{ animationDelay: `${index * 200}ms` }}>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="h-px flex-1 bg-slate-100" />
-                        <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Ticket {index + 1}</span>
-                        <div className="h-px flex-1 bg-slate-100" />
-                      </div>
-                      <TicketDownload
+                    <div
+                      key={ticket.id}
+                      className="w-full animate-in fade-in slide-in-from-bottom duration-700"
+                      style={{ animationDelay: `${index * 150}ms` }}
+                    >
+                      {index > 0 && (
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="h-px flex-1 bg-slate-100" />
+                          <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                            Ticket {index + 1}
+                          </span>
+                          <div className="h-px flex-1 bg-slate-100" />
+                        </div>
+                      )}
+                      <TicketGraphic
                         ticketNumber={ticket.ticket_number}
-                        eventTitle={event.title}
-                        eventDate={formatDate(event.event_date)}
-                        eventTime={event.event_time}
-                        eventLocation={event.location}
-                        eventImage={event.image_url}
                         ticketType={ticket.ticketTypeName}
-                        holderName={purchaseData.holderName}
-                        holderEmail={purchaseData.holderEmail}
+                        holderName={purchaseData.holderName || "Guest"}
+                        eventTitle={event.title}
+                        eventLocation={event.location}
+                        eventDate={event.event_date}
+                        eventImage={event.image_url}
                         price={ticket.totalPrice}
-                        qrCode={ticket.qrCode}
-                        barcode={ticket.barcode}
-                        status="confirmed"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
                       />
                     </div>
                   ))}

@@ -43,79 +43,121 @@ function VendorCard({ vendor, currency = "RWF" }: { vendor: VendorRecommendation
   const formatPrice = (v: number | null) =>
     v != null ? `${v.toLocaleString()} ${currency}` : "—";
 
+  const matchColor =
+    vendor.score >= 70 ? "bg-emerald-500" :
+    vendor.score >= 40 ? "bg-amber-400" : "bg-slate-300";
+
+  const categoryMeta = CATEGORIES.find(
+    (c) => c.key === vendor.category?.toLowerCase()
+  );
+
   return (
-    <div className="flex flex-col gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800 text-sm truncate">
+    <div className="group flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-300 overflow-hidden">
+
+      {/* Colour band header — replaces missing thumbnail */}
+      <div className={`relative h-24 flex items-center justify-center ${categoryMeta?.color ?? "bg-slate-50 text-slate-400"} border-b border-slate-100`}>
+        <span className="text-4xl select-none">{categoryMeta?.emoji ?? "✨"}</span>
+        {/* Badge */}
+        <span className={`absolute top-3 right-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${badge.color}`}>
+          {badge.icon}
+          {vendor.badge}
+        </span>
+        {/* Score pill */}
+        <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 text-[10px] font-black text-white bg-slate-900/70 backdrop-blur-sm px-2 py-0.5 rounded-full">
+          {vendor.score.toFixed(0)}/100
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-3 p-4 flex-1">
+        {/* Name & location */}
+        <div>
+          <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-1">
             {vendor.business_name || vendor.name}
           </p>
-          {vendor.location && (
-            <div className="flex items-center gap-1 mt-0.5">
+          {(vendor.city || vendor.location) && (
+            <div className="flex items-center gap-1 mt-1">
               <MapPin className="h-3 w-3 text-slate-400 flex-shrink-0" />
               <span className="text-xs text-slate-400 truncate">{vendor.city || vendor.location}</span>
             </div>
           )}
         </div>
-        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border flex-shrink-0 ${badge.color}`}>
-          {badge.icon}
-          {vendor.badge}
-        </span>
-      </div>
 
-      {/* Rating & Price */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+        {/* Rating & bookings */}
+        <div className="flex items-center gap-1.5">
+          <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
           <span className="text-xs font-bold text-slate-700">{vendor.rating.toFixed(1)}</span>
-          <span className="text-xs text-slate-400">({vendor.bookings_count} bookings)</span>
+          <span className="text-xs text-slate-400">· {vendor.bookings_count} bookings</span>
         </div>
-        <div className="text-right">
-          <p className="text-xs font-bold text-slate-800">
-            {formatPrice(vendor.price_range_min)}
-            {vendor.price_range_max && vendor.price_range_max !== vendor.price_range_min
-              ? ` – ${formatPrice(vendor.price_range_max)}`
-              : ""}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            Budget: {formatPrice(vendor.allocated_budget)}
-          </p>
+
+        {/* Price vs budget */}
+        <div className="flex items-start justify-between gap-2 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+          <div>
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Price range</p>
+            <p className="text-xs font-bold text-slate-800 mt-0.5">
+              {formatPrice(vendor.price_range_min)}
+              {vendor.price_range_max && vendor.price_range_max !== vendor.price_range_min
+                ? ` – ${formatPrice(vendor.price_range_max)}`
+                : ""}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Your budget</p>
+            <p className="text-xs font-bold text-primary mt-0.5">{formatPrice(vendor.allocated_budget)}</p>
+          </div>
+        </div>
+
+        {/* Description */}
+        {vendor.description && (
+          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{vendor.description}</p>
+        )}
+
+        {/* Specialties */}
+        {vendor.specialties.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {vendor.specialties.slice(0, 3).map((s) => (
+              <span key={s} className="text-[10px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full border border-slate-100 truncate max-w-[140px]">
+                {s}
+              </span>
+            ))}
+            {vendor.specialties.length > 3 && (
+              <span className="text-[10px] text-slate-400 px-1">+{vendor.specialties.length - 3}</span>
+            )}
+          </div>
+        )}
+
+        {/* Match score bar */}
+        <div className="space-y-1 mt-auto pt-1">
+          <div className="flex justify-between text-[10px] text-slate-400">
+            <span>Match score</span>
+            <span className="font-bold text-slate-600">{vendor.score.toFixed(0)}/100</span>
+          </div>
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${matchColor}`}
+              style={{ width: `${vendor.score}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 rounded-xl text-xs font-semibold border-slate-200 hover:border-primary/30 hover:text-primary"
+            onClick={() => router.push(`/services/${vendor.id}`)}
+          >
+            View Details
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1 rounded-xl text-xs font-bold"
+            onClick={() => router.push(`/services/${vendor.id}`)}
+          >
+            Book Now
+          </Button>
         </div>
       </div>
-
-      {/* Specialties */}
-      {vendor.specialties.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {vendor.specialties.slice(0, 3).map((s) => (
-            <span key={s} className="text-[10px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full border border-slate-100">
-              {s}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Score bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-[10px] text-slate-400">
-          <span>Match score</span>
-          <span className="font-bold text-slate-600">{vendor.score.toFixed(0)}/100</span>
-        </div>
-        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all duration-700"
-            style={{ width: `${vendor.score}%` }}
-          />
-        </div>
-      </div>
-
-      <Button
-        size="sm"
-        className="w-full rounded-xl text-xs font-bold"
-        onClick={() => router.push(`/customer/dashboard?tab=booking&serviceId=${vendor.id}`, { scroll: false })}
-      >
-        Book Now
-      </Button>
     </div>
   );
 }
