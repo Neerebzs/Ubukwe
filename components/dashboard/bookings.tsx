@@ -42,6 +42,8 @@ interface Booking {
   service_description?: string;
   business_name?: string;
   service_image?: string;
+  package_id?: string;
+  package_name?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -167,11 +169,11 @@ export function Bookings() {
                             {booking.service_name || "Bespoke Service Booking"}
                           </h3>
                           {booking.business_name && (
-                            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 flex items-center gap-2">
+                            <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 flex items-center gap-2">
                               <span>Provider</span>
                               <div className="w-4 h-[1px] bg-slate-200" />
                               <span className="text-slate-800">{booking.business_name}</span>
-                            </p>
+                            </div>
                           )}
                         </div>
                         {booking.provider_confirmed && (
@@ -268,6 +270,15 @@ export function Bookings() {
                                   <div className="space-y-6">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Financial Portfolio</h4>
                                     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+                                      {booking.package_name && (
+                                          <>
+                                            <div className="flex justify-between items-center">
+                                              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Selected Collection</span>
+                                              <span className="font-bold text-slate-600 text-right">{booking.package_name}</span>
+                                            </div>
+                                            <Separator className="bg-slate-100" />
+                                          </>
+                                      )}
                                       <div className="flex justify-between items-center">
                                         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Baseline Rate</span>
                                         <span className="font-bold text-slate-600">{booking.booking_amount.toLocaleString()} RWF</span>
@@ -327,7 +338,7 @@ export function Bookings() {
                         </Dialog>
 
                         {booking.status === "in_progress" && (
-                          <Link href={`/booking/${booking.service_id}?bookingId=${booking.id}&packageId=${booking.package_id || ''}&packageName=${encodeURIComponent(booking.service_name || 'Service')}&step=3`}>
+                          <Link href={`/booking/${booking.service_id}?bookingId=${booking.id}&packageId=${booking.package_id || ''}&packageName=${encodeURIComponent(booking.package_name || booking.service_name || 'Service')}&step=3`}>
                             <Button className="h-14 px-10 text-white shadow-xl rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 group/pay flex-1 sm:flex-initial">
                               <HandCoins className="h-4 w-4 mr-2 group-hover/pay:-rotate-12 transition-transform" />
                               Pay Now
