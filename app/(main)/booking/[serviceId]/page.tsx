@@ -114,7 +114,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   // Create booking mutation (Step 2 - Request only)
   const createBookingMutation = useMutation({
     mutationFn: async (bookingPayload: any) => {
-      const response = await apiClient.post('/api/v1/bookings/bookings', bookingPayload);
+      const response = await apiClient.post('/api/v1/bookings', bookingPayload);
       return response;
     },
     onSuccess: (data) => {

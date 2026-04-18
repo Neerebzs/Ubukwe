@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import {
     MapPin, Star, Phone, Mail, Share2, Heart, ArrowLeft,
     CheckCircle, Users, Clock, Award, Calendar, Tag,
@@ -33,7 +33,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const [activeTab, setActiveTab] = useState("home")
     const [isFavorite, setIsFavorite] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState<any>(null)
-    const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string} | null>(null)
+    const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string, index?: number} | null>(null)
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [pendingBookingUrl, setPendingBookingUrl] = useState("")
     const [authModalContext, setAuthModalContext] = useState("")
@@ -663,7 +663,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 <div key={i} className="flex-shrink-0 w-[80vw] md:w-[400px] snap-center">
                                     <div 
                                         className="relative h-[500px] rounded-[40px] overflow-hidden group/item cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-700"
-                                        onClick={() => setSelectedImage({url: item.url, caption: item.caption})}
+                                        onClick={() => setSelectedImage({url: item.url, caption: item.caption, index: i})}
                                     >
                                         <img src={item.url} alt="Still art" className="absolute inset-0 w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-1000" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-40 group-hover/item:opacity-70 transition-opacity" />
@@ -1136,16 +1136,47 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             {/* Lightbox Dialog (Keep Existing) */}
             <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
                 <DialogContent className="max-w-[90vw] md:max-w-5xl h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none flex items-center justify-center">
+                   <DialogTitle className="sr-only">Image Gallery</DialogTitle>
+                   <DialogDescription className="sr-only">Viewing image in full screen</DialogDescription>
                    {selectedImage && (
-                       <div className="relative w-full h-full flex flex-col items-center justify-center">
+                       <div className="relative w-full h-full flex flex-col items-center justify-center group/lightbox">
                            <img 
                                src={selectedImage.url} 
                                alt={selectedImage.caption || "Gallery visual"} 
                                className="max-w-full max-h-full object-contain rounded-2xl" 
                            />
+
+                           {/* Navigation Arrows */}
+                           {selectedImage.index !== undefined && service.gallery.photos.length > 1 && (
+                               <>
+                                   <button 
+                                       className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 md:opacity-100 group-hover/lightbox:opacity-100 disabled:opacity-0 z-50"
+                                       onClick={(e) => {
+                                           e.stopPropagation();
+                                           const prevIndex = selectedImage.index! > 0 ? selectedImage.index! - 1 : service.gallery.photos.length - 1;
+                                           const prevItem = service.gallery.photos[prevIndex];
+                                           setSelectedImage({ url: prevItem.url, caption: prevItem.caption, index: prevIndex });
+                                       }}
+                                   >
+                                       <ChevronLeft className="h-6 w-6" />
+                                   </button>
+                                   <button 
+                                       className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 md:opacity-100 group-hover/lightbox:opacity-100 disabled:opacity-0 z-50"
+                                       onClick={(e) => {
+                                           e.stopPropagation();
+                                           const nextIndex = selectedImage.index! < service.gallery.photos.length - 1 ? selectedImage.index! + 1 : 0;
+                                           const nextItem = service.gallery.photos[nextIndex];
+                                           setSelectedImage({ url: nextItem.url, caption: nextItem.caption, index: nextIndex });
+                                       }}
+                                   >
+                                       <ChevronRight className="h-6 w-6" />
+                                   </button>
+                               </>
+                           )}
+
                            {selectedImage.caption && (
                                <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-                                   <div className="bg-black/60 shadow-xl backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
+                                   <div className="bg-black/60 shadow-xl backdrop-blur-md px-6 py-3 rounded-full border border-white/10 z-50">
                                        <p className="text-white text-sm font-medium italic font-serif">{selectedImage.caption}</p>
                                    </div>
                                </div>
