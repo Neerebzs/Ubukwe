@@ -628,6 +628,28 @@ class ApiClient {
     },
   };
 
+  // File Upload API
+  upload = {
+    general: async (file: File, folder?: string, resourceType?: string) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (folder) formData.append('folder', folder);
+      if (resourceType) formData.append('resource_type', resourceType);
+      
+      return axiosInstance.post<any>('/api/v1/upload/general', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    profileImage: async (file: File, userId: string) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', userId);
+      return axiosInstance.post<any>('/api/v1/upload/profile-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+  };
+
   // Admin API
   admin = {
     stats: {

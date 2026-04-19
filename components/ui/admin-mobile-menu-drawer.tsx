@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, ChevronRight, Home, Users, Store, CheckCircle, BookOpen, ShieldAlert, BarChart, LogOut, Calendar, Globe } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, LogOut, Globe } from "lucide-react";
+import { ADMIN_NAVIGATION } from "@/lib/admin-navigation";
 import Link from "next/link";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
@@ -33,57 +34,15 @@ export function AdminMobileMenuDrawer({
   user,
   onLogout,
 }: AdminMobileMenuDrawerProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["overview", "users"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(ADMIN_NAVIGATION.map(g => g.id));
 
-  const toggleSection = (section: string) => {
+  const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
-      prev.includes(section)
-        ? prev.filter((s) => s !== section)
-        : [...prev, section]
+      prev.includes(sectionId)
+        ? prev.filter((s) => s !== sectionId)
+        : [...prev, sectionId]
     );
   };
-
-  const menuSections = [
-    {
-      id: "overview",
-      title: "Overview",
-      items: [
-        { id: "overview", label: "Dashboard", icon: Home },
-      ]
-    },
-    {
-      id: "users",
-      title: "User Management",
-      items: [
-        { id: "users", label: "Users", icon: Users },
-      ]
-    },
-    {
-      id: "onboarding",
-      title: "Provider Management",
-      items: [
-        { id: "onboarding", label: "Onboarding", icon: Store },
-        { id: "approvals", label: "Approvals", icon: CheckCircle },
-      ]
-    },
-    {
-      id: "operations",
-      title: "Operations",
-      items: [
-        { id: "bookings", label: "Bookings", icon: BookOpen },
-        { id: "events", label: "Events", icon: Calendar },
-        { id: "services", label: "Services", icon: ShieldAlert },
-        { id: "disputes", label: "Disputes", icon: ShieldAlert },
-      ]
-    },
-    {
-      id: "analytics",
-      title: "Analytics",
-      items: [
-        { id: "analytics", label: "Analytics", icon: BarChart },
-      ]
-    }
-  ];
 
   const handleTabClick = (tabId: string) => {
     onTabChange(tabId);
@@ -120,7 +79,7 @@ export function AdminMobileMenuDrawer({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-2">
-          {menuSections.map((section) => {
+          {ADMIN_NAVIGATION.map((section) => {
             const isExpanded = expandedSections.includes(section.id);
             
             return (

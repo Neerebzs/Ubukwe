@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Home, Users, Briefcase, BookOpen, ShieldAlert, BarChart3, ChevronLeft, ChevronRight, LogOut, ChevronDown, Calendar, Globe, HeadphonesIcon, Wallet, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, ChevronDown, Globe } from "lucide-react";
+import { ADMIN_NAVIGATION, NavGroup } from "@/lib/admin-navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -20,38 +21,9 @@ interface AdminTabsSidebarProps {
 }
 
 export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, onToggle, user, onLogout, mobile = false }: AdminTabsSidebarProps) {
-  const navigationGroups = [
-    {
-      title: "Overview",
-      items: [
-        { id: "overview", label: "Dashboard", icon: <Home className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "User Management",
-      items: [
-        { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
-        { id: "onboarding", label: "Onboarding", icon: <Briefcase className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "Platform",
-      items: [
-        { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "events", label: "Events", icon: <Calendar className="w-4 h-4" /> },
-        { id: "services", label: "Services", icon: <ShieldAlert className="w-4 h-4" /> },
-        { id: "disputes", label: "Disputes", icon: <ShieldAlert className="w-4 h-4" /> },
-        { id: "support", label: "Support", icon: <HeadphonesIcon className="w-4 h-4" /> },
-        { id: "payments", label: "Payments", icon: <Wallet className="w-4 h-4" /> },
-        { id: "analytics", label: "Analytics", icon: <BarChart3 className="w-4 h-4" /> },
-        { id: "system", label: "System Settings", icon: <Settings className="w-4 h-4" /> },
-      ]
-    }
-  ];
-
   const initialExpanded = React.useMemo(() => {
     const state: Record<string, boolean> = {};
-    for (const group of navigationGroups) state[group.title] = true;
+    for (const group of ADMIN_NAVIGATION) state[group.title] = true;
     return state;
   }, []);
 
@@ -79,11 +51,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
     } catch { }
   }, [expandedGroups]);
 
-  const groupIconByTitle: Record<string, React.ReactNode> = {
-    "Overview": <Home className="w-4 h-4" />,
-    "User Management": <Users className="w-4 h-4" />,
-    "Platform": <BarChart3 className="w-4 h-4" />,
-  };
+
 
   return (
     <div className={
@@ -117,7 +85,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
       )}
 
       <nav className="flex-1 overflow-y-auto space-y-8 scrollbar-hide pr-2">
-        {navigationGroups.map((group) => (
+        {ADMIN_NAVIGATION.map((group) => (
           <div key={group.title} className="space-y-4">
             {/* Group Title */}
             {!isCollapsed && (
@@ -129,7 +97,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
               >
                 <div className="flex items-center gap-2">
                   <span className={`h-4 w-4 flex-shrink-0 text-white/60 group-hover:text-[#668c65] transition-colors`}>
-                    {groupIconByTitle[group.title]}
+                    <group.icon className="w-4 h-4" />
                   </span>
                   <span className="text-[10px] font-black text-white/70 group-hover:text-[#668c65] uppercase tracking-[0.4em] transition-colors">
                     {group.title}
@@ -143,6 +111,7 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
             <div className="space-y-2">
               {group.items.map((tab) => {
                 const isActive = activeTab === tab.id;
+                const Icon = tab.icon;
                 const content = (
                   <button
                     key={tab.id}
@@ -154,7 +123,9 @@ export function AdminTabsSidebar({ activeTab, onTabChange, isCollapsed = false, 
                       }`}
                     title={isCollapsed ? tab.label : undefined}
                   >
-                    <span className={`h-5 w-5 flex-shrink-0 transition-colors duration-500 ${isActive ? 'text-[#668c65]' : 'group-hover:text-white'}`}>{tab.icon}</span>
+                    <span className={`h-5 w-5 flex-shrink-0 transition-colors duration-500 ${isActive ? 'text-[#668c65]' : 'group-hover:text-white'}`}>
+                      <Icon className="w-5 h-5" />
+                    </span>
                     {!isCollapsed && <span className={`font-medium tracking-tight ${isActive ? 'font-bold' : 'font-light'}`}>{tab.label}</span>}
                     {isActive && !isCollapsed && (
                       <div className="ml-auto w-1 h-1 rounded-full bg-[#668c65] shadow-[0_0_8px_#668c65]" />
