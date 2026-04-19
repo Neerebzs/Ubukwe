@@ -34,6 +34,8 @@ export const viewport: Viewport = {
 }
 
 
+import { SystemSettingsProvider } from "@/contexts/system-settings-context"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -50,13 +52,15 @@ export default function RootLayout({
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <PWARegister />
-        <I18nProvider>
-          <QueryProvider>
-            <MobileMenuProvider>
-              <Suspense fallback={null}>{children}</Suspense>
-            </MobileMenuProvider>
-          </QueryProvider>
-        </I18nProvider>
+        <SystemSettingsProvider>
+          <I18nProvider>
+            <QueryProvider>
+              <MobileMenuProvider>
+                <Suspense fallback={null}>{children}</Suspense>
+              </MobileMenuProvider>
+            </QueryProvider>
+          </I18nProvider>
+        </SystemSettingsProvider>
         {/* <Analytics /> */}
       </body>
     </html>

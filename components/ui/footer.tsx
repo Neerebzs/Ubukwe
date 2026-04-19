@@ -5,8 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
+import { useSystemSettings } from "@/contexts/system-settings-context";
 
 export function Footer() {
+  const { settings } = useSystemSettings();
+
   return (
     <footer className="bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10 px-4">
       <div className="container mx-auto">
@@ -16,7 +19,7 @@ export function Footer() {
             <Link href="/" className="flex items-center space-x-3">
               <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden">
                 <Image 
-                  src="/logo.png" 
+                  src={settings.logoUrl} 
                   alt="VowNest Logo" 
                   width={48} 
                   height={48}
@@ -80,8 +83,8 @@ export function Footer() {
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div className="text-slate-600">
-                  <p className="font-medium text-slate-900">Kigali, Rwanda</p>
-                  <p className="text-sm opacity-80">KN 2 Rd, Nyarugenge</p>
+                  <p className="font-medium text-slate-900">{settings.contactLocationLine1}</p>
+                  <p className="text-sm opacity-80">{settings.contactLocationLine2}</p>
                 </div>
               </li>
               <li className="flex items-start gap-4">
@@ -89,7 +92,7 @@ export function Footer() {
                   <Phone className="h-5 w-5" />
                 </div>
                 <div className="text-slate-600">
-                  <p className="font-medium text-slate-900">+250 788 000 000</p>
+                  <p className="font-medium text-slate-900">{settings.contactPhone}</p>
                   <p className="text-sm opacity-80">Mon - Fri, 9am - 6pm</p>
                 </div>
               </li>
@@ -98,7 +101,7 @@ export function Footer() {
                   <Mail className="h-5 w-5" />
                 </div>
                 <div className="text-slate-600">
-                  <p className="font-medium text-slate-900">support@vownest.rw</p>
+                  <p className="font-medium text-slate-900">{settings.contactEmail}</p>
                   <p className="text-sm opacity-80">Online 24/7</p>
                 </div>
               </li>

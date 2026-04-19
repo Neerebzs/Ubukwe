@@ -12,8 +12,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePublicEvents } from "@/hooks/useCustomerEvents";
 import { useOffers } from "@/hooks/useOffers";
 import { SupportWidget } from "@/components/SupportWidget";
+import { useSystemSettings } from "@/contexts/system-settings-context";
 
 export default function HomePage() {
+  const { settings } = useSystemSettings();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -214,7 +216,7 @@ export default function HomePage() {
                   <div className="absolute inset-0 border-[1px] border-slate-200 rounded-[200px] -m-4 group-hover:m-0 transition-all duration-700" />
                   <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white">
                     <img
-                      src="/grom.jpg"
+                      src={settings.homeHeroImageUrl}
                       className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
                       alt="Rwandan Wedding"
                     />

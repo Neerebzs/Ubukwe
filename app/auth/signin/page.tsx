@@ -10,8 +10,10 @@ import { Loader2, Eye, EyeOff, Home } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginRequest } from "@/lib/api"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 export default function SignInPage() {
+  const { settings } = useSystemSettings();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -70,7 +72,7 @@ export default function SignInPage() {
       {/* Visual Narrative Side - Desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img
-          src="/grom.jpg"
+          src={settings.authBackgroundImageUrl}
           alt="Editorial Wedding Scape"
           className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] hover:scale-105 transition-transform duration-[3s] ease-out"
         />

@@ -22,6 +22,7 @@ import { AdminProfileSettings } from "@/components/admin/profile-settings"
 import { AdminPreferencesSettings } from "@/components/admin/preferences-settings"
 import { AdminSupportTickets } from "@/components/admin/support-tickets"
 import { AdminPayments } from "@/components/admin/payments"
+import { AdminSystemSettings } from "@/components/admin/system-settings"
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -68,6 +69,7 @@ export function AdminDashboardContent() {
       case "analytics":   return <AdminAnalytics />
       case "events":      return <AdminEvents />
       case "payments":    return <AdminPayments />
+      case "system":      return <AdminSystemSettings />
       case "profile":     return <AdminProfileSettings />
       case "preferences": return <AdminPreferencesSettings />
       default:            return null
