@@ -604,28 +604,28 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                         </span>
                                     </div>
 
-                                    <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.1] md:leading-[1] tracking-tight">
+                                    <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.15] md:leading-[1] tracking-tight break-words">
                                         <span className="block font-light whitespace-normal">
                                             {service.title.split(' ').length > 2 
                                                 ? service.title.split(' ').slice(0, 2).join(' ') 
                                                 : service.title.split(' ')[0]}
                                         </span>
-                                        <span className="block italic font-medium ml-4 md:ml-12 text-[#668c65] whitespace-normal">
+                                        <span className="block italic font-medium ml-2 sm:ml-4 md:ml-12 text-[#668c65] whitespace-normal break-words">
                                             {service.title.split(' ').length > 2 
                                                 ? service.title.split(' ').slice(2).join(' ') 
                                                 : service.title.split(' ').slice(1).join(' ')}
                                         </span>
                                     </h1>
 
-                                    <div className="flex items-center gap-6 pt-4">
+                                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 pt-4">
                                         <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map((s) => (
                                                 <Star key={s} className={`h-4 w-4 ${s <= Math.round(service.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
                                             ))}
-                                            <span className="ml-2 font-bold text-slate-900">{service.rating.toFixed(1)}</span>
+                                            <span className="ml-1 sm:ml-2 font-bold text-slate-900">{service.rating.toFixed(1)}</span>
                                         </div>
-                                        <div className="h-4 w-[1px] bg-slate-200" />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        <div className="h-4 w-[1px] bg-slate-200 hidden sm:block" />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] sm:tracking-widest mt-1 sm:mt-0">
                                             {service.reviews.summary.total} Verified Reviews
                                         </p>
                                     </div>
