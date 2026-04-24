@@ -12,6 +12,7 @@ import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { List, Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BookingData {
   id: string;
@@ -56,6 +57,7 @@ export function ProviderBookings() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const bookingCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -67,14 +69,24 @@ export function ProviderBookings() {
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
-    if (!selectedDate) return bookings;
-    // Format selected date to YYYY-MM-DD in local timezone
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
-    return bookings.filter((b) => b.booking_date === dateStr);
-  }, [bookings, selectedDate]);
+    let filtered = bookings;
+    
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((b) => b.status === statusFilter);
+    }
+    
+    // Filter by date if selected
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      filtered = filtered.filter((b) => b.booking_date === dateStr);
+    }
+    
+    return filtered;
+  }, [bookings, selectedDate, statusFilter]);
 
   const fetchBookings = async () => {
     try {
@@ -188,8 +200,59 @@ export function ProviderBookings() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div />
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Status Filter Tabs */}
+        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full md:w-auto">
+          <TabsList className="flex items-center gap-1 bg-white border border-slate-100 p-1.5 rounded-2xl h-auto w-full md:w-fit shadow-sm">
+            <TabsTrigger
+              value="all"
+              className={cn(
+                "h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-[#668c65] data-[state=active]:text-white data-[state=active]:shadow-md",
+                "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              All
+            </TabsTrigger>
+            <TabsTrigger
+              value="pending"
+              className={cn(
+                "h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md",
+                "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              Pending
+            </TabsTrigger>
+            <TabsTrigger
+              value="in_progress"
+              className={cn(
+                "h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md",
+                "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              In Progress
+            </TabsTrigger>
+            <TabsTrigger
+              value="confirmed"
+              className={cn(
+                "h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-[#668c65] data-[state=active]:text-white data-[state=active]:shadow-md",
+                "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              Confirmed
+            </TabsTrigger>
+            <TabsTrigger
+              value="completed"
+              className={cn(
+                "h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-slate-700 data-[state=active]:text-white data-[state=active]:shadow-md",
+                "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              Completed
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* View Mode Toggle */}
         <div className="flex items-center bg-slate-50 p-1 rounded-2xl border border-slate-100 shadow-sm">
           <Button
             variant={viewMode === "list" ? "default" : "ghost"}
@@ -299,14 +362,14 @@ export function ProviderBookings() {
               )}
             </div>
 
-            {(selectedDate ? filteredBookings : bookings).length === 0 ? (
+            {filteredBookings.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center text-muted-foreground">
-                  No bookings found for this day.
+                  No bookings found {selectedDate ? 'for this day' : 'with this status'}.
                 </CardContent>
               </Card>
             ) : (
-              (selectedDate ? filteredBookings : bookings).map((booking) => (
+              filteredBookings.map((booking) => (
                 <BookingCard
                   key={booking.id}
                   booking={booking}
@@ -321,17 +384,21 @@ export function ProviderBookings() {
         </div>
       ) : (
         /* Bookings List */
-        bookings.length === 0 ? (
+        filteredBookings.length === 0 ? (
           <Card className="border-slate-100 bg-white shadow-none rounded-[2rem] overflow-hidden">
             <CardContent className="p-20 text-center">
               <Package className="h-16 w-16 text-slate-100 mx-auto mb-6" />
-              <h3 className="text-2xl font-serif italic text-slate-900 mb-2">No bookings yet</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Waiting for your first order</p>
+              <h3 className="text-2xl font-serif italic text-slate-900 mb-2">
+                {bookings.length === 0 ? "No bookings yet" : "No bookings found"}
+              </h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                {bookings.length === 0 ? "Waiting for your first order" : "Try adjusting your filters"}
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6 pb-12">
-            {bookings.map((booking) => (
+            {filteredBookings.map((booking) => (
               <BookingCard
                 key={booking.id}
                 booking={booking}
