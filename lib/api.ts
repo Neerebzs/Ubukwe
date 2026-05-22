@@ -769,6 +769,18 @@ export const apiClient = {
     delete<T>(weddingId: string, guestId: string): Promise<ApiResponse<T>> {
       return apiClient.delete<T>(`/api/v1/wedding/${weddingId}/guests/${guestId}`);
     },
+    importFile(weddingId: string, file: File): Promise<any> {
+      const form = new FormData();
+      form.append("file", file);
+      return fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/wedding/${weddingId}/guests/import`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}` },
+        body: form,
+      }).then(r => r.json());
+    },
+    sendInvitations(weddingId: string, guestIds: string[], invitation: any): Promise<any> {
+      return apiClient.post(`/api/v1/wedding/${weddingId}/guests/send-invitations`, { guest_ids: guestIds, invitation });
+    },
   },
 
   // Invitation API methods
