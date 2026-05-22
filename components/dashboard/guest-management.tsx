@@ -68,6 +68,73 @@ const EMPTY_AI = {
   invitation_note: "", couple_contact: "",
 };
 
+// ── Built-in default templates ─────────────────────────────────────────────
+interface TemplateDefinition {
+  id: string;
+  name: string;
+  language: string;
+  layout: "two_column" | "single_column";
+  section_order: string[];
+  preview_bg: string;
+  preview_accent: string;
+  preview_text: string;
+  description: string;
+  is_default: true;
+}
+
+const DEFAULT_TEMPLATES: TemplateDefinition[] = [
+  {
+    id: "default_bilingual_traditional",
+    name: "Bilingual Traditional",
+    language: "bilingual",
+    layout: "two_column",
+    section_order: ["bible_verse","couple_names","date","schedule","contacts"],
+    preview_bg: "#FDFBF5", preview_accent: "#C4A45A", preview_text: "#2C2010",
+    description: "Two-column · Kinyarwanda left, English right · Gold ornaments",
+    is_default: true,
+  },
+  {
+    id: "default_classic_english",
+    name: "Classic English",
+    language: "english",
+    layout: "single_column",
+    section_order: ["bible_verse","couple_names","date","time_slot","venue","schedule","contacts"],
+    preview_bg: "#FFFFFF", preview_accent: "#C8B89A", preview_text: "#1A1209",
+    description: "Single-column · English only · Clean white design",
+    is_default: true,
+  },
+  {
+    id: "default_modern_minimal",
+    name: "Modern Minimal",
+    language: "english",
+    layout: "single_column",
+    section_order: ["couple_names","date","venue","schedule","invitation_note","contacts"],
+    preview_bg: "#F8F7FF", preview_accent: "#7C6AF7", preview_text: "#1A1636",
+    description: "Single-column · Minimalist · No verse · Bold names",
+    is_default: true,
+  },
+  {
+    id: "default_kinyarwanda_only",
+    name: "Kinyarwanda Only",
+    language: "kinyarwanda",
+    layout: "single_column",
+    section_order: ["bible_verse","couple_names","date","schedule","invitation_note","contacts"],
+    preview_bg: "#FDF6E3", preview_accent: "#D4AF6A", preview_text: "#2C1A00",
+    description: "Single-column · Full Kinyarwanda · Gold theme",
+    is_default: true,
+  },
+  {
+    id: "default_rustic_floral",
+    name: "Rustic Floral",
+    language: "english",
+    layout: "single_column",
+    section_order: ["bible_verse","couple_names","date","time_slot","venue","schedule","dress_code","contacts"],
+    preview_bg: "#FFF8F0", preview_accent: "#C0784A", preview_text: "#3A1F0A",
+    description: "Single-column · Warm rustic tones · Includes dress code",
+    is_default: true,
+  },
+];
+
 const STYLE_COLORS: Record<string, string> = {
   classic: "from-slate-50 to-slate-100 border-slate-200",
   modern:  "from-violet-50 to-violet-100 border-violet-200",
@@ -324,15 +391,22 @@ export function GuestManagement() {
 // ── InvitationsTab ────────────────────────────────────────────────────────────
 function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: any }) {
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"list"|"upload"|"ai-form"|"ai-results"|"preview"|"edit">("list");
+  const [mode, setMode] = useState<"list"|"upload"|"ai-form"|"ai-results"|"preview"|"edit"|"templates">("list");
   const [manualForm, setManualForm] = useState({ ...EMPTY_INV });
   const [aiForm, setAiForm] = useState({ ...EMPTY_AI });
   const [aiResults, setAiResults] = useState<Partial<Invitation>[]>([]);
   const [previewInv, setPreviewInv] = useState<Partial<Invitation>|null>(null);
   const [editingId, setEditingId] = useState<string|null>(null);
   const [cardTheme, setCardTheme] = useState<CardThemeKey>("cream");
-  const [uploadedFile, setUploadedFile] = useState<{name:string; url:string; type:string}|null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{name:string; url:string; type:string; file?:File}|null>(null);
+  const [templateUpload, setTemplateUpload] = useState<{status:"idle"|"uploading"|"done"|"error"; message?:string}>({status:"idle"});
+  const [selectedTemplate, setSelectedTemplate] = useState<{id:string; name:string; layout:string; section_order:string[]; language:string}|null>(null);
   const uploadRef = useRef<HTMLInputElement|null>(null);
+
+  const { data: learnedTemplates = [] } = useQuery<any[]>({
+    queryKey: ["invitation-templates"],
+    queryFn: async () => { const res = await apiClient.invitations.listTemplates(); return (res as any).data || []; },
+  });
 
   const { data: invitations = [], isLoading } = useQuery<Invitation[]>({
     queryKey: ["wedding-invitations", weddingId],
@@ -367,11 +441,23 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     onError: (e: any) => toast.error(e.message || "Failed to generate"),
   });
 
-  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    setUploadedFile({ name: file.name, url, type: file.type });
+    setUploadedFile({ name: file.name, url, type: file.type, file });
+    // Send to backend for AI learning
+    setTemplateUpload({ status: "uploading" });
+    try {
+      const res = await apiClient.invitations.uploadTemplate(file);
+      if (res?.status === "success") {
+        setTemplateUpload({ status: "done", message: res.message || "Template learned!" });
+      } else {
+        setTemplateUpload({ status: "error", message: "Could not process file for AI learning" });
+      }
+    } catch {
+      setTemplateUpload({ status: "error", message: "Upload failed" });
+    }
   };
 
   const handleDownload = (inv: Partial<Invitation>) => {
@@ -429,9 +515,17 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div><h3 className="text-2xl font-serif italic text-slate-800">Wedding Invitations</h3><p className="text-sm text-slate-500 mt-1">Create, customise, and share your invitations</p></div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={()=>{setUploadedFile(null);setMode("upload");}} className="rounded-full border-slate-200 px-6 gap-2"><Upload className="h-4 w-4"/>Upload File</Button>
-          <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 shadow-lg bg-violet-600 hover:bg-violet-700"><Sparkles className="h-4 w-4"/>AI Generate</Button>
+        <div className="flex flex-wrap gap-2">
+          {selectedTemplate && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{background:`${selectedTemplate.id.startsWith('default') ? '#f5f0ff' : '#fff7e6'}`, borderColor: selectedTemplate.id.startsWith('default') ? '#c4b5fd' : '#D4AF6A', color: selectedTemplate.id.startsWith('default') ? '#6d28d9' : '#7B6A45'}}>
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{background: selectedTemplate.id.startsWith('default') ? '#7c3aed' : '#D4AF6A'}}/>
+              {selectedTemplate.name}
+              <button onClick={()=>setSelectedTemplate(null)} className="ml-1 opacity-60 hover:opacity-100"><X className="h-3 w-3"/></button>
+            </div>
+          )}
+          <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-amber-200 text-amber-700 px-4 gap-2 text-sm"><FileText className="h-4 w-4"/>Templates</Button>
+          <Button variant="outline" onClick={()=>{setUploadedFile(null);setMode("upload");}} className="rounded-full border-slate-200 px-4 gap-2 text-sm"><Upload className="h-4 w-4"/>Upload</Button>
+          <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-5 gap-2 shadow-lg bg-violet-600 hover:bg-violet-700 text-sm"><Sparkles className="h-4 w-4"/>AI Generate</Button>
         </div>
       </div>
       {isLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-sage-600"/></div>
@@ -442,6 +536,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <p className="text-slate-400 text-sm mb-6">Upload your own file or let AI generate one for you</p>
           <div className="flex justify-center gap-3">
             <Button variant="outline" onClick={()=>{setUploadedFile(null);setMode("upload");}} className="rounded-full px-6 gap-2"><Upload className="h-4 w-4"/>Upload File</Button>
+            <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-amber-200 text-amber-700 px-6 gap-2"><FileText className="h-4 w-4"/>Browse Templates</Button>
             <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 bg-violet-600 hover:bg-violet-700"><Sparkles className="h-4 w-4"/>Generate with AI</Button>
           </div>
         </div>
@@ -501,6 +596,9 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     const s = previewInv.template_style||"classic";
     // cardTheme is set when Preview button is clicked (see onClick handlers below)
     const activeTheme = CARD_THEMES[cardTheme] ? cardTheme : "cream";
+    // Layout comes from the learned template (two_column or single_column)
+    const learnedLayout: string = (previewInv as any).template_layout || "two_column";
+    const isTwoColumn = learnedLayout !== "single_column";
 
     if (s === "traditional") {
       // message field is raw text used for download/export only — preview uses structured fields
@@ -514,7 +612,14 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
-              <h3 className="text-xl font-serif italic text-slate-800">Preview Invitation</h3>
+              <div>
+                <h3 className="text-xl font-serif italic text-slate-800">Preview Invitation</h3>
+                {(previewInv as any).learned_from_template && (
+                  <p className="text-[10px] text-violet-500 flex items-center gap-1 mt-0.5">
+                    <Sparkles className="h-3 w-3"/>{isTwoColumn ? "Two-column" : "Single-column"} layout learned from upload
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style:</span>
@@ -569,99 +674,105 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                 <div className="h-px flex-1" style={{background:`linear-gradient(to left, transparent, ${thm.divider}99)`}}/>
               </div>
 
-              {/* Two column body */}
-              <div className="grid grid-cols-1 md:grid-cols-2 relative px-0">
-
-                {/* Vertical divider */}
-                <div className="hidden md:flex absolute top-0 bottom-0 left-1/2 -translate-x-1/2 flex-col items-center justify-center pointer-events-none z-10">
-                  <div className="w-px flex-1" style={{background:`linear-gradient(to bottom, transparent, ${thm.divider}80, transparent)`}}/>
+              {/* Body — two-column or single-column based on learned template */}
+              {isTwoColumn ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 relative px-0">
+                  {/* Vertical divider */}
+                  <div className="hidden md:flex absolute top-0 bottom-0 left-1/2 -translate-x-1/2 flex-col items-center justify-center pointer-events-none z-10">
+                    <div className="w-px flex-1" style={{background:`linear-gradient(to bottom, transparent, ${thm.divider}80, transparent)`}}/>
+                  </div>
+                  {/* LEFT — Kinyarwanda */}
+                  <div className="px-8 py-8 text-center font-serif space-y-3 border-b md:border-b-0" style={{borderColor:`${thm.divider}30`}}>
+                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Imiryango yacu yishimiye kubatumira mu birori by&apos;ubukwe bw&apos;abana babo:</p>
+                    {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
+                    {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Buzaba tariki ya {previewInv.wedding_date}</p>}
+                    {previewInv.wedding_time && <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>}
+                    {tradEvents.length > 0 && (
+                      <div className="pt-2 space-y-3 text-left">
+                        {tradEvents.map((ev,i)=>(
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="shrink-0 text-[10px] font-bold font-mono min-w-[52px] text-right pt-0.5" style={{color:thm.date}}>{ev.time}</span>
+                            <div className="w-px self-stretch mx-1 shrink-0" style={{background:`${thm.divider}50`}}/>
+                            <div><p className="text-[11px] font-semibold" style={{color:thm.text}}>{ev.event}</p>{ev.location && <p className="text-[10px] italic" style={{color:thm.note}}>Aho: {ev.location}</p>}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(previewInv as any).invitation_note && <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
+                    {(previewInv as any).couple_contact && (
+                      <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
+                        <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Mobile divider */}
+                  <div className="md:hidden flex items-center justify-center px-8">
+                    <div className="h-px flex-1" style={{background:`linear-gradient(to right, transparent, ${thm.divider}99)`}}/>
+                    <div className="mx-2 w-2 h-2 rounded-full border" style={{borderColor:thm.divider, background:thm.bg}}/>
+                    <div className="h-px flex-1" style={{background:`linear-gradient(to left, transparent, ${thm.divider}99)`}}/>
+                  </div>
+                  {/* RIGHT — English */}
+                  <div className="px-8 py-8 text-center font-serif space-y-3">
+                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Together with our families, we joyfully invite you to celebrate the wedding of:</p>
+                    {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
+                    {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Which will take place on {previewInv.wedding_date}</p>}
+                    {previewInv.wedding_time && <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>}
+                    {tradEvents.length > 0 && (
+                      <div className="pt-2 space-y-3 text-left">
+                        {tradEvents.map((ev,i)=>(
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="shrink-0 text-[10px] font-bold font-mono min-w-[52px] text-right pt-0.5" style={{color:thm.date}}>{ev.time}</span>
+                            <div className="w-px self-stretch mx-1 shrink-0" style={{background:`${thm.divider}50`}}/>
+                            <div><p className="text-[11px] font-semibold" style={{color:thm.text}}>{ev.event}</p>{ev.location && <p className="text-[10px] italic" style={{color:thm.note}}>Venue: {ev.location}</p>}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(previewInv as any).invitation_note && <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
+                    {(previewInv as any).couple_contact && (
+                      <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
+                        <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                {/* LEFT — Kinyarwanda */}
-                <div className="px-8 py-8 text-center font-serif space-y-3 border-b md:border-b-0" style={{borderColor:`${thm.divider}30`}}>
-                  <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>
-                    Imiryango yacu yishimiye kubatumira mu birori by&apos;ubukwe bw&apos;abana babo:
-                  </p>
-                  {previewInv.couple_names && (
-                    <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>
+              ) : (
+                /* SINGLE COLUMN — matches uploaded single-column design */
+                <div className="px-10 py-8 text-center font-serif space-y-4 max-w-sm mx-auto">
+                  {(previewInv as any).bible_verse && (
+                    <p className="text-[11px] italic leading-relaxed" style={{color:thm.note}}>&ldquo;{(previewInv as any).bible_verse}&rdquo;</p>
                   )}
-                  {previewInv.wedding_date && (
-                    <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Buzaba tariki ya {previewInv.wedding_date}</p>
-                  )}
-                  {previewInv.wedding_time && (
-                    <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>
-                  )}
+                  <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Together with our families, we joyfully invite you to celebrate the wedding of:</p>
+                  {previewInv.couple_names && <p className="text-[26px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="h-px flex-1" style={{background:`${thm.divider}60`}}/>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{background:thm.divider}}/>
+                    <div className="h-px flex-1" style={{background:`${thm.divider}60`}}/>
+                  </div>
+                  {previewInv.wedding_date && <p className="text-[13px] font-bold tracking-widest uppercase" style={{color:thm.date}}>{previewInv.wedding_date}</p>}
+                  {previewInv.wedding_time && <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>}
                   {tradEvents.length > 0 && (
                     <div className="pt-2 space-y-3 text-left">
                       {tradEvents.map((ev,i)=>(
                         <div key={i} className="flex items-start gap-2">
                           <span className="shrink-0 text-[10px] font-bold font-mono min-w-[52px] text-right pt-0.5" style={{color:thm.date}}>{ev.time}</span>
                           <div className="w-px self-stretch mx-1 shrink-0" style={{background:`${thm.divider}50`}}/>
-                          <div>
-                            <p className="text-[11px] font-semibold" style={{color:thm.text}}>{ev.event}</p>
-                            {ev.location && <p className="text-[10px] italic" style={{color:thm.note}}>Aho: {ev.location}</p>}
-                          </div>
+                          <div><p className="text-[11px] font-semibold" style={{color:thm.text}}>{ev.event}</p>{ev.location && <p className="text-[10px] italic" style={{color:thm.note}}>{ev.location}</p>}</div>
                         </div>
                       ))}
                     </div>
                   )}
-                  {(previewInv as any).invitation_note && (
-                    <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>
-                  )}
+                  {(previewInv as any).invitation_note && <p className="text-[11px] italic pt-2" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
                   {(previewInv as any).couple_contact && (
-                    <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
+                    <div className="pt-3 border-t" style={{borderColor:`${thm.divider}30`}}>
                       <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
                       <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
                     </div>
                   )}
                 </div>
-
-                {/* Mobile divider */}
-                <div className="md:hidden flex items-center justify-center px-8">
-                  <div className="h-px flex-1" style={{background:`linear-gradient(to right, transparent, ${thm.divider}99)`}}/>
-                  <div className="mx-2 w-2 h-2 rounded-full border" style={{borderColor:thm.divider, background:thm.bg}}/>
-                  <div className="h-px flex-1" style={{background:`linear-gradient(to left, transparent, ${thm.divider}99)`}}/>
-                </div>
-
-                {/* RIGHT — English */}
-                <div className="px-8 py-8 text-center font-serif space-y-3">
-                  <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>
-                    Together with our families, we joyfully invite you to celebrate the wedding of:
-                  </p>
-                  {previewInv.couple_names && (
-                    <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>
-                  )}
-                  {previewInv.wedding_date && (
-                    <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Which will take place on {previewInv.wedding_date}</p>
-                  )}
-                  {previewInv.wedding_time && (
-                    <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>
-                  )}
-                  {tradEvents.length > 0 && (
-                    <div className="pt-2 space-y-3 text-left">
-                      {tradEvents.map((ev,i)=>(
-                        <div key={i} className="flex items-start gap-2">
-                          <span className="shrink-0 text-[10px] font-bold font-mono min-w-[52px] text-right pt-0.5" style={{color:thm.date}}>{ev.time}</span>
-                          <div className="w-px self-stretch mx-1 shrink-0" style={{background:`${thm.divider}50`}}/>
-                          <div>
-                            <p className="text-[11px] font-semibold" style={{color:thm.text}}>{ev.event}</p>
-                            {ev.location && <p className="text-[10px] italic" style={{color:thm.note}}>Venue: {ev.location}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {(previewInv as any).invitation_note && (
-                    <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>
-                  )}
-                  {(previewInv as any).couple_contact && (
-                    <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
-                      <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
-                      <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               {/* Bottom divider */}
               <div className="flex items-center justify-center gap-2 px-8 mb-6 mt-2">
@@ -831,14 +942,179 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     );
   }
 
+  // TEMPLATES GALLERY
+  if (mode === "templates") return (
+    <div className="space-y-8">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
+        <div>
+          <h3 className="text-xl font-serif italic text-slate-800">Invitation Templates</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Pick a style — the AI will generate your invitation in that layout</p>
+        </div>
+      </div>
+
+      {/* DEFAULT TEMPLATES */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Built-in Designs</span>
+          <div className="h-px flex-1 bg-slate-100"/>
+          <span className="text-[10px] text-slate-300">{DEFAULT_TEMPLATES.length} templates</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {DEFAULT_TEMPLATES.map(tpl => {
+            const isSelected = selectedTemplate?.id === tpl.id;
+            return (
+              <div key={tpl.id}
+                className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
+                style={{background: tpl.preview_bg, borderColor: isSelected ? tpl.preview_accent : `${tpl.preview_accent}40`}}
+                onClick={()=>{setSelectedTemplate({id:tpl.id, name:tpl.name, layout:tpl.layout, section_order:tpl.section_order, language:tpl.language});}}>
+                {/* Selected badge */}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:tpl.preview_accent}}>
+                    ✓ Selected
+                  </div>
+                )}
+                {/* Mini card preview */}
+                <div className="p-5 space-y-2.5">
+                  {/* Ornament bar */}
+                  <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${tpl.preview_accent}, transparent)`}}/>
+                  {/* Corner dots */}
+                  <div className="flex justify-between">
+                    <div className="w-1.5 h-1.5 rounded-full opacity-40" style={{background:tpl.preview_accent}}/>
+                    <div className="w-1.5 h-1.5 rounded-full opacity-40" style={{background:tpl.preview_accent}}/>
+                  </div>
+                  {/* Layout preview */}
+                  {tpl.layout === "two_column" ? (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {[0,1].map(col => (
+                        <div key={col} className="space-y-1.5">
+                          <div className="h-1.5 rounded-full w-3/4 mx-auto opacity-30" style={{background:tpl.preview_accent}}/>
+                          <div className="h-3 rounded w-5/6 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
+                          <div className="h-1.5 rounded w-2/3 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
+                          <div className="space-y-1 pt-1">
+                            {[0,1,2].map(r=>(
+                              <div key={r} className="h-1 rounded opacity-15" style={{background:tpl.preview_text}}/>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 pt-1 px-2">
+                      <div className="h-1.5 rounded-full w-2/3 mx-auto opacity-30" style={{background:tpl.preview_accent}}/>
+                      <div className="h-4 rounded w-3/4 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
+                      <div className="h-1.5 rounded w-1/2 mx-auto opacity-20" style={{background:tpl.preview_accent}}/>
+                      <div className="space-y-1 pt-1">
+                        {[0,1,2,3].map(r=>(
+                          <div key={r} className="h-1 rounded opacity-15" style={{background:tpl.preview_text}}/>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${tpl.preview_accent}, transparent)`}}/>
+                </div>
+                {/* Footer */}
+                <div className="px-5 pb-4 space-y-0.5">
+                  <p className="text-[13px] font-serif italic font-semibold" style={{color:tpl.preview_text}}>{tpl.name}</p>
+                  <p className="text-[10px]" style={{color:`${tpl.preview_text}80`}}>{tpl.description}</p>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:tpl.preview_accent, borderColor:`${tpl.preview_accent}50`, background:`${tpl.preview_accent}10`}}>{tpl.layout === "two_column" ? "2-Column" : "1-Column"}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-slate-200 text-slate-400 bg-slate-50">{tpl.language}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* LEARNED TEMPLATES */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-violet-400"/>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Learned from Uploads</span>
+          <div className="h-px flex-1 bg-slate-100"/>
+          <span className="text-[10px] text-slate-300">{learnedTemplates.length} templates</span>
+        </div>
+        {learnedTemplates.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed border-violet-100 bg-violet-50/30 py-10 text-center">
+            <Sparkles className="h-8 w-8 text-violet-200 mx-auto mb-3"/>
+            <p className="text-sm font-serif italic text-slate-500">No learned templates yet</p>
+            <p className="text-[11px] text-slate-400 mt-1">Upload an invitation file and our AI will learn its style</p>
+            <Button variant="outline" size="sm" onClick={()=>setMode("upload")} className="rounded-full mt-4 border-violet-200 text-violet-600 gap-2"><Upload className="h-3.5 w-3.5"/>Upload Now</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {learnedTemplates.map((tpl: any) => {
+              const isSelected = selectedTemplate?.id === tpl.id;
+              const accent = tpl.language === "kinyarwanda" ? "#D4AF6A" : tpl.language === "bilingual" ? "#C4A45A" : "#7C6AF7";
+              return (
+                <div key={tpl.id}
+                  className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 bg-white hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
+                  style={{borderColor: isSelected ? accent : `${accent}40`}}
+                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Learned Template", layout:tpl.layout||"two_column", section_order:tpl.section_order||[], language:tpl.language||"bilingual"})}>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:accent}}>✓ Selected</div>
+                  )}
+                  <div className="p-5 space-y-2">
+                    <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" style={{color:accent}}/>
+                      <div className="space-y-1 flex-1">
+                        {(tpl.section_order||[]).slice(0,4).map((s:string,i:number)=>(
+                          <div key={i} className="h-1 rounded opacity-20 bg-slate-700" style={{width:`${70-i*12}%`}}/>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
+                  </div>
+                  <div className="px-5 pb-4 space-y-0.5">
+                    <p className="text-[13px] font-serif italic font-semibold text-slate-800">{tpl.name||"Learned Template"}</p>
+                    <p className="text-[10px] text-slate-400">Used {tpl.usage_count||0} times · {(tpl.section_order||[]).length} sections detected</p>
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:accent, borderColor:`${accent}50`, background:`${accent}10`}}>{(tpl.layout||"two_column")==="two_column"?"2-Column":"1-Column"}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-violet-100 text-violet-500 bg-violet-50 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI Learned</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+        <Button variant="outline" onClick={()=>setMode("list")} className="rounded-full px-6">Cancel</Button>
+        <Button onClick={()=>{prefill();setMode("ai-form");}} disabled={!selectedTemplate} className="rounded-full px-8 gap-2 text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-40">
+          <Sparkles className="h-4 w-4"/>{selectedTemplate ? `Generate with "${selectedTemplate.name}"` : "Select a template first"}
+        </Button>
+      </div>
+    </div>
+  );
+
   // UPLOAD FILE
   if (mode === "upload") return (
     <div className="space-y-6 max-w-xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
-        <h3 className="text-xl font-serif italic text-slate-800">Upload Invitation File</h3>
+        <Button variant="ghost" onClick={()=>{setMode("list");setTemplateUpload({status:"idle"});}} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
+        <div>
+          <h3 className="text-xl font-serif italic text-slate-800">Upload Invitation File</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Your file will train our AI to generate similar styles</p>
+        </div>
       </div>
+
+      {/* AI learning notice */}
+      <div className="rounded-2xl border border-violet-100 bg-violet-50/40 px-4 py-3 flex items-start gap-3">
+        <Sparkles className="h-4 w-4 text-violet-500 shrink-0 mt-0.5"/>
+        <div>
+          <p className="text-xs font-semibold text-violet-700">AI Learning Enabled</p>
+          <p className="text-[11px] text-violet-500 mt-0.5">Every file you upload is analysed by our system. The more you upload, the better the AI gets at generating invitations that match your style.</p>
+        </div>
+      </div>
+
       <input ref={uploadRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleUploadFile}/>
+
       {!uploadedFile ? (
         <div
           onClick={()=>uploadRef.current?.click()}
@@ -850,11 +1126,22 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           </div>
           <div>
             <p className="text-[#5C4A2A] font-serif text-lg">Click to upload your invitation</p>
-            <p className="text-slate-400 text-sm mt-1">Supports image files (JPG, PNG) and PDF</p>
+            <p className="text-slate-400 text-sm mt-1">JPG, PNG, WebP or PDF · max 10 MB</p>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
+          {/* AI learning status */}
+          {templateUpload.status !== "idle" && (
+            <div className={`rounded-2xl px-4 py-3 flex items-center gap-2 text-sm ${
+              templateUpload.status==="uploading" ? "bg-violet-50 text-violet-600 border border-violet-100" :
+              templateUpload.status==="done"      ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
+                                                    "bg-rose-50 text-rose-600 border border-rose-100"
+            }`}>
+              {templateUpload.status==="uploading" ? <Loader2 className="h-4 w-4 animate-spin shrink-0"/> : <Sparkles className="h-4 w-4 shrink-0"/>}
+              <span className="text-xs">{templateUpload.status==="uploading" ? "Analysing file and training AI…" : templateUpload.message}</span>
+            </div>
+          )}
           <div className="relative bg-[#FDFBF5] border border-[#D4AF6A]/40 rounded-2xl overflow-hidden shadow-lg">
             {uploadedFile.type === "application/pdf" ? (
               <iframe src={uploadedFile.url} className="w-full h-[500px]" title="Invitation PDF"/>
@@ -862,13 +1149,13 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               <img src={uploadedFile.url} alt="Invitation" className="w-full object-contain max-h-[500px]"/>
             )}
             <div className="absolute top-3 right-3">
-              <Button size="sm" variant="ghost" className="rounded-full bg-white/80 shadow text-slate-600" onClick={()=>{setUploadedFile(null);uploadRef.current && (uploadRef.current.value="");}}><X className="h-4 w-4"/>Remove</Button>
+              <Button size="sm" variant="ghost" className="rounded-full bg-white/80 shadow text-slate-600" onClick={()=>{setUploadedFile(null);setTemplateUpload({status:"idle"});uploadRef.current && (uploadRef.current.value="");}}><X className="h-4 w-4"/>Remove</Button>
             </div>
           </div>
           <p className="text-sm text-slate-500 text-center"><FileText className="h-3.5 w-3.5 inline mr-1"/>{uploadedFile.name}</p>
           <div className="flex justify-center gap-3 pt-2">
             <Button variant="outline" onClick={()=>uploadRef.current?.click()} className="rounded-full px-6 gap-2 border-[#D4AF6A]/40 text-[#7B6A45]"><Upload className="h-4 w-4"/>Change File</Button>
-            <Button onClick={()=>setMode("list")} className="rounded-full px-8 gap-2 text-white shadow-lg bg-[#C4A45A] hover:bg-[#B8944A]"><Save className="h-4 w-4"/>Use This Invitation</Button>
+            <Button onClick={()=>{setMode("list");setTemplateUpload({status:"idle"});}} className="rounded-full px-8 gap-2 text-white shadow-lg bg-[#C4A45A] hover:bg-[#B8944A]"><Save className="h-4 w-4"/>Done</Button>
           </div>
         </div>
       )}
@@ -957,6 +1244,14 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         <div>
           <h3 className="text-xl font-serif italic text-slate-800 flex items-center gap-2"><Sparkles className="h-5 w-5 text-violet-500"/>AI Invitation Generator</h3>
           <p className="text-xs text-slate-400 mt-0.5">Fill in your details and we'll generate 3 colour versions: White, Gold &amp; Cream</p>
+          {selectedTemplate ? (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full flex items-center gap-1"><FileText className="h-3 w-3"/>Using: {selectedTemplate.name}</span>
+              <button className="text-[10px] text-slate-400 underline" onClick={()=>setMode("templates")}>Change</button>
+            </div>
+          ) : (
+            <button className="text-[10px] text-amber-600 underline mt-0.5" onClick={()=>setMode("templates")}>Browse templates →</button>
+          )}
         </div>
       </div>
 
@@ -1015,7 +1310,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         <Textarea value={aiForm.couple_contact} onChange={e=>setAiForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-slate-100 bg-white/70 resize-none text-sm"/>
       </div>
 
-      <Button onClick={()=>aiMutation.mutate(aiForm)} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-violet-600 hover:bg-violet-700">
+      <Button onClick={()=>aiMutation.mutate({...aiForm, selected_template: selectedTemplate ? {id:selectedTemplate.id, layout:selectedTemplate.layout, section_order:selectedTemplate.section_order, language:selectedTemplate.language} : undefined})} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-violet-600 hover:bg-violet-700">
         {aiMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<Sparkles className="h-4 w-4"/>}Generate 3 Styles (White · Gold · Cream)
       </Button>
     </div>

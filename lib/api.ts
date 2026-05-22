@@ -788,5 +788,17 @@ export const apiClient = {
     aiGenerate<T>(weddingId: string, data: any): Promise<ApiResponse<T>> {
       return apiClient.post<T>(`/api/v1/wedding/${weddingId}/invitations/ai-generate`, data);
     },
+    uploadTemplate(file: File): Promise<any> {
+      const form = new FormData();
+      form.append("file", file);
+      return fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/invitations/upload-template`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}` },
+        body: form,
+      }).then(r => r.json());
+    },
+    listTemplates(): Promise<any> {
+      return apiClient.get(`/api/v1/invitations/templates`);
+    },
   },
 };
