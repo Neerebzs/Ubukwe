@@ -298,25 +298,34 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-stone-50">
       {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="rounded-full">
+            <Button variant="ghost" size="icon" onClick={() => window.history.back()} className="rounded-full hover:bg-stone-100">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="hidden md:block">
-              <h1 className="text-lg font-semibold">{service.name}</h1>
-              <p className="text-xs text-muted-foreground">Booking with {service.business_name}</p>
+              <h1 className="text-lg font-semibold text-stone-900">{service.name}</h1>
+              <p className="text-xs text-stone-500">Booking with {service.business_name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-8">
-            <span className={cn(currentStep >= 1 ? "text-primary" : "")}>Details</span>
-            <ChevronRight className="h-4 w-4" />
-            <span className={cn(currentStep >= 2 ? "text-primary" : "")}>Contact</span>
-            <ChevronRight className="h-4 w-4" />
-            <span className={cn(currentStep >= 4 ? "text-primary" : "")}>Request Sent</span>
+          <div className="flex items-center mr-8">
+            <div className="flex items-center gap-2">
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 1 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>1</div>
+              <span className={cn("hidden sm:inline-block text-sm font-medium", currentStep >= 1 ? "text-stone-900" : "text-stone-400")}>Details</span>
+              <div className={cn("h-px w-8 mx-2", currentStep >= 2 ? "bg-primary" : "bg-stone-200")} />
+              
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 2 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>2</div>
+              <span className={cn("hidden sm:inline-block text-sm font-medium", currentStep >= 2 ? "text-stone-900" : "text-stone-400")}>Contact</span>
+              <div className={cn("h-px w-8 mx-2", currentStep >= 4 ? "bg-primary" : "bg-stone-200")} />
+
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 4 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>
+                <CheckCircle className="h-4 w-4" />
+              </div>
+              <span className={cn("hidden sm:inline-block text-sm font-medium", currentStep >= 4 ? "text-stone-900" : "text-stone-400")}>Done</span>
+            </div>
           </div>
         </div>
       </nav>
@@ -325,11 +334,18 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
         {/* Main Form Area */}
         <div className="lg:col-span-2 space-y-6">
           {currentStep === 1 && (
-            <Card className="border-none shadow-sm overflow-hidden">
+            <Card className="border border-stone-200 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="h-2 bg-primary" />
-              <CardHeader className="pb-4">
-                <CardTitle className="text-2xl">Event Details</CardTitle>
-                <p className="text-muted-foreground">When and where is your big day?</p>
+              <CardHeader className="pb-6 border-b border-stone-100 mb-6 bg-stone-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <CalendarIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight text-stone-900">Event Details</CardTitle>
+                    <p className="text-sm text-stone-500 mt-1 font-medium">When and where is your big day?</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
@@ -340,7 +356,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-full justify-start text-left font-normal h-12 border-gray-200",
+                            "w-full justify-start text-left font-normal h-12 border-stone-200 bg-stone-50 rounded-xl",
                             !bookingData.date && "text-muted-foreground"
                           )}
                         >
@@ -373,7 +389,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       <select
                         value={bookingData.time}
                         onChange={(e) => handleInputChange("time", e.target.value)}
-                        className="col-span-2 w-full h-12 px-3 rounded-md border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                        className="col-span-2 w-full h-12 px-3 border border-stone-200 bg-stone-50 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                       >
                         <option value="" disabled>Select time</option>
                         {availableTimeslots.map((t) => (
@@ -390,7 +406,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                     <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                     <Input
                       placeholder="Enter venue address or city"
-                      className="pl-10 h-12 border-gray-200"
+                      className="pl-10 h-12 border-stone-200 bg-stone-50 rounded-xl"
                       value={bookingData.location}
                       onChange={(e) => handleInputChange("location", e.target.value)}
                     />
@@ -403,7 +419,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                     <Input
                       type="number"
                       placeholder="e.g. 200"
-                      className="h-12 border-gray-200"
+                      className="h-12 border-stone-200 bg-stone-50 rounded-xl"
                       value={bookingData.guestCount}
                       onChange={(e) => handleInputChange("guestCount", e.target.value)}
                     />
@@ -414,7 +430,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   <Label className="text-sm font-bold">Any Special Requests?</Label>
                   <Textarea
                     placeholder="Tell the provider about any specific needs or vision for the service..."
-                    className="min-h-[120px] border-gray-200 focus:ring-primary"
+                    className="min-h-[120px] border-stone-200 bg-stone-50 rounded-xl focus:ring-primary"
                     value={bookingData.specialRequests}
                     onChange={(e) => handleInputChange("specialRequests", e.target.value)}
                   />
@@ -422,7 +438,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
 
                 <Button
                   onClick={handleNextStep}
-                  className="w-full h-12 text-lg font-medium shadow-md shadow-primary/20"
+                  className="w-full h-12 text-lg font-medium rounded-xl hover:opacity-90 transition-opacity"
                   disabled={!bookingData.date || !bookingData.time || !bookingData.location}
                 >
                   Confirm & Continue
@@ -432,7 +448,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
           )}
 
           {currentStep === 2 && (
-            <Card className="border-none shadow-sm overflow-hidden">
+            <Card className="border border-stone-200 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="h-2 bg-primary" />
               <CardHeader>
                 <CardTitle className="text-2xl">Contact Information</CardTitle>
@@ -443,7 +459,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   <Label className="text-sm font-bold">Full Name</Label>
                   <Input
                     placeholder="Enter your full name"
-                    className="h-12 border-gray-200"
+                    className="h-12 border-stone-200 bg-stone-50 rounded-xl"
                     value={bookingData.contactName}
                     onChange={(e) => handleInputChange("contactName", e.target.value)}
                   />
@@ -457,7 +473,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       <Input
                         type="email"
                         placeholder="your@email.com"
-                        className="pl-10 h-12 border-gray-200"
+                        className="pl-10 h-12 border-stone-200 bg-stone-50 rounded-xl"
                         value={bookingData.contactEmail}
                         onChange={(e) => handleInputChange("contactEmail", e.target.value)}
                       />
@@ -469,7 +485,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       <Phone className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         placeholder="+250 78x xxx xxx"
-                        className="pl-10 h-12 border-gray-200"
+                        className="pl-10 h-12 border-stone-200 bg-stone-50 rounded-xl"
                         value={bookingData.contactPhone}
                         onChange={(e) => handleInputChange("contactPhone", e.target.value)}
                       />
@@ -490,7 +506,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </Button>
                   <Button
                     onClick={handleBookingSubmit}
-                    className="flex-1 h-12 text-lg font-bold shadow-md shadow-primary/20"
+                    className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity"
                     disabled={!bookingData.contactName || !bookingData.contactEmail || !bookingData.contactPhone || createBookingMutation.isPending}
                   >
                     {createBookingMutation.isPending ? (
@@ -508,7 +524,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
           )}
 
           {currentStep === 3 && (
-            <Card className="border-none shadow-sm overflow-hidden">
+            <Card className="border border-stone-200 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="h-2 bg-primary" />
               <CardHeader>
                 <CardTitle className="text-2xl">Payment & Confirmation</CardTitle>
@@ -523,7 +539,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       onClick={() => handleInputChange("paymentMethod", "card")}
                       className={cn(
                         "h-20 flex-col items-center gap-2 border-2 transition-all text-sm font-semibold",
-                        bookingData.paymentMethod === "card" ? "border-primary bg-primary/5 shadow-sm" : "border-gray-100 hover:border-gray-200"
+                        bookingData.paymentMethod === "card" ? "border-primary bg-primary/5" : "border-gray-100 hover:border-stone-200 bg-stone-50 rounded-xl"
                       )}
                     >
                       <CreditCard className={cn("h-6 w-6", bookingData.paymentMethod === "card" ? "text-primary" : "text-gray-400")} />
@@ -534,7 +550,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       onClick={() => handleInputChange("paymentMethod", "momo")}
                       className={cn(
                         "h-20 flex-col items-center gap-2 border-2 transition-all text-sm font-semibold",
-                        bookingData.paymentMethod === "momo" ? "border-primary bg-primary/5 shadow-sm" : "border-gray-100 hover:border-gray-200"
+                        bookingData.paymentMethod === "momo" ? "border-primary bg-primary/5" : "border-gray-100 hover:border-stone-200 bg-stone-50 rounded-xl"
                       )}
                     >
                       <Phone className={cn("h-6 w-6", bookingData.paymentMethod === "momo" ? "text-primary" : "text-gray-400")} />
@@ -558,8 +574,8 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                           className={cn(
                             "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-[10px] font-bold h-20",
                             bookingData.momoProvider === provider.id
-                              ? "border-primary bg-white shadow-md scale-105"
-                              : "border-gray-100 bg-gray-50/50 hover:border-gray-200 opacity-70"
+                              ? "border-primary bg-white scale-105"
+                              : "border-gray-100 bg-gray-50/50 hover:border-stone-200 bg-stone-50 rounded-xl opacity-70"
                           )}
                         >
                           <div className={cn("h-8 w-8 rounded-full mb-2 flex items-center justify-center text-[8px]", provider.color)}>
@@ -591,7 +607,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                 )}
 
                 {bookingData.paymentMethod === "card" && (
-                  <div className="rounded-xl border border-gray-200 p-6 space-y-4 bg-white shadow-inner animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="rounded-xl border border-stone-200 bg-stone-50 rounded-xl p-6 space-y-4 bg-white animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center gap-2 text-primary">
                       <CreditCard className="h-5 w-5" />
                       <span className="font-bold">Card Details</span>
@@ -670,7 +686,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </Button>
                   <Button 
                     onClick={handlePaymentConfirmation} 
-                    className="flex-1 h-12 text-lg font-bold shadow-md shadow-primary/20" 
+                    className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity" 
                     disabled={
                       !bookingId ||
                       !bookingData.acceptedContract ||
@@ -694,7 +710,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
           )}
 
           {currentStep === 4 && (
-            <Card className="border-none shadow-sm text-center py-12 px-8">
+            <Card className="border border-stone-200 rounded-3xl text-center py-12 px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-6 animate-bounce">
                 <CheckCircle className="h-10 w-10 text-green-600" />
               </div>
@@ -703,7 +719,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                 We've sent your request to <strong>{service.business_name}</strong>. They will respond within 24 hours.
               </p>
 
-              <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 mb-8 inline-block min-w-[300px]">
+              <div className="bg-gray-50 border border-dashed border-stone-200 bg-stone-50 rounded-xl rounded-2xl p-6 mb-8 inline-block min-w-[300px]">
                 <p className="text-xs font-bold uppercase text-gray-400 tracking-widest mb-2">Reference Code</p>
                 <p className="text-2xl font-mono font-bold tracking-wider text-primary">UBK-{Date.now().toString().slice(-6)}</p>
               </div>
@@ -723,7 +739,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
         {/* Sticky Summary Sidebar */}
         <aside className="lg:col-span-1">
           <div className="sticky top-24 space-y-4">
-            <Card className="border-none shadow-sm overflow-hidden">
+            <Card className="border border-stone-200 rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="relative h-32 w-full overflow-hidden">
                 <img
                   src={getServiceImage()}
@@ -786,7 +802,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm bg-primary/5 border border-primary/10">
+            <Card className="bg-primary/5 border border-primary/10 rounded-2xl mt-4">
               <CardContent className="p-4 flex gap-3 text-xs leading-relaxed text-gray-600">
                 <Shield className="h-4 w-4 text-primary shrink-0" />
                 <p><strong>Cancellation Policy:</strong> Free cancellation for 48 hours. After that, cancel up to 7 days before for a 50% refund.</p>

@@ -167,7 +167,7 @@ export function AISearch({ className }: { className?: string }) {
             onChange={e => handleInput(e.target.value)}
             onFocus={() => setIsOpen(true)}
             placeholder="Ask AI — find venues, photographers..."
-            className="w-full pl-14 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/30 focus:ring-4 focus:ring-[#668c65]/5 shadow-sm transition-all duration-300 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 placeholder:text-xs"
+            className="w-full pl-14 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-widest focus:outline-none focus:bg-white focus:border-[#668c65]/30 focus:ring-4 focus:ring-[#668c65]/5 transition-all duration-300 placeholder:normal-case placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 placeholder:text-xs"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(""); setResponse(null); inputRef.current?.focus(); }}
@@ -183,7 +183,7 @@ export function AISearch({ className }: { className?: string }) {
         <div 
           ref={modalPanelRef}
           onMouseDown={(e) => e.stopPropagation()}
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] max-w-[95vw] bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-[200] max-h-[80vh] flex flex-col"
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[600px] max-w-[95vw] bg-white rounded-3xl border border-slate-200 overflow-hidden z-[200] max-h-[80vh] flex flex-col"
         >
 
           {/* Sticky search input inside panel */}

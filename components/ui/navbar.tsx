@@ -36,8 +36,8 @@ export function Navbar() {
 
   return (
     <>
-      <header className="w-full bg-white/70 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-100/50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="w-full bg-white/80 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-200/60">
+        <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center group flex-shrink-0 py-1">
             <div className="relative flex flex-shrink-0 items-center justify-center">
               <Image 
@@ -45,7 +45,7 @@ export function Navbar() {
                 alt="VowNest Collective Logo" 
                 width={200} 
                 height={70}
-                className="object-contain h-12 sm:h-16 w-auto drop-shadow-sm group-hover:scale-[1.05] origin-left transition-transform duration-500"
+                className="object-contain h-12 sm:h-16 w-auto group-hover:scale-[1.05] origin-left transition-transform duration-500"
                 priority
               />
             </div>
@@ -78,7 +78,7 @@ export function Navbar() {
                   </button>
                   
                   {eventsDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl border border-slate-200 py-2 z-50">
                       <Link
                         href="/events"
                         className="flex items-center px-4 py-3 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all"
@@ -117,7 +117,7 @@ export function Navbar() {
                       </Button>
                     </Link>
                     <Link href="/auth/signup">
-                      <Button size="sm" className="hover:bg-slate-900 text-white shadow-xl px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+                      <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white px-8 h-11 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 border border-slate-900">
                         <TranslatedText text="Get Started" />
                       </Button>
                     </Link>
@@ -171,7 +171,7 @@ export function Navbar() {
           />
 
           {/* Drawer */}
-          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-[#fdfcfb] shadow-[-20px_0_60px_-15px_rgba(0,0,0,0.1)] overflow-y-auto animate-in slide-in-from-right duration-700 ease-out flex flex-col">
+          <div className="fixed right-0 top-0 h-full w-[85%] max-w-sm bg-[#fdfcfb] border-l border-slate-200 overflow-y-auto animate-in slide-in-from-right duration-700 ease-out flex flex-col">
             <div className="p-8 space-y-10 flex-1">
               {/* Brand Header */}
               <div className="flex items-center justify-between pb-8 border-b border-slate-50">
@@ -182,7 +182,7 @@ export function Navbar() {
                       alt="VowNest Collective Logo" 
                       width={200} 
                       height={70}
-                      className="object-contain h-12 sm:h-14 w-auto drop-shadow-sm origin-left"
+                      className="object-contain h-12 sm:h-14 w-auto origin-left"
                     />
                   </div>
                 </div>
@@ -293,12 +293,12 @@ export function Navbar() {
               {!isAuthenticated ? (
                 <div className="grid grid-cols-2 gap-4">
                   <Link href="/auth/signin" onClick={toggleMenu} className="block">
-                    <Button variant="outline" className="w-full h-14 border-slate-200 text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-white transition-all shadow-sm" size="lg">
+                    <Button variant="outline" className="w-full h-14 border-slate-200 text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-white transition-all" size="lg">
                       <TranslatedText text="Sign In" />
                     </Button>
                   </Link>
                   <Link href="/auth/signup" onClick={toggleMenu} className="block">
-                    <Button className="w-full h-14 hover:bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl" size="lg">
+                    <Button className="w-full h-14 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all border border-slate-900" size="lg">
                       <TranslatedText text="Join" />
                     </Button>
                   </Link>
