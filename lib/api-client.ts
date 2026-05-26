@@ -198,6 +198,12 @@ class ApiClient {
     searchAll: async (params?: { category?: string; location?: string; min_price?: number; max_price?: number }) => {
       return axiosInstance.get<any[]>('/api/v1/provider/services/search/all', { params });
     },
+    addGalleryItem: async (serviceId: string, item: { type: string; url: string; thumbnail?: string; title?: string; description?: string; contentType?: string | null }) => {
+      return axiosInstance.post<any>(`/api/v1/provider/services/${serviceId}/gallery`, item);
+    },
+    removeGalleryItem: async (serviceId: string, itemId: string) => {
+      return axiosInstance.delete<any>(`/api/v1/provider/services/${serviceId}/gallery/${itemId}`);
+    },
   };
 
   // Bookings API

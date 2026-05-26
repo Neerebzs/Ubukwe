@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -30,11 +30,20 @@ import {
   Award,
   Clock,
   ShieldCheck,
-  Globe
+  Globe,
+  Upload,
+  Plus,
+  X,
+  Loader2,
+  Camera,
+  Video,
+  Clapperboard,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { AddPromotionModal } from "./add-promotion-modal"
+import { toast } from "sonner"
+import { apiClient } from "@/lib/api-client"
 
 interface GalleryItem {
   id: string
@@ -96,20 +105,83 @@ export function ServiceDetailView({
   const [activeTab, setActiveTab] = useState("overview")
   const [showPromotionModal, setShowPromotionModal] = useState(false)
 
-  // Debug logging
+  // Gallery management state
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(service.gallery)
+  const [uploadingType, setUploadingType] = useState<"image" | "video" | "reel" | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
+  const reelInputRef = useRef<HTMLInputElement>(null)
 
   if (isLoading) {
     return <ServiceDetailSkeleton />
   }
 
   const handlePromotionSuccess = () => {
-    // Refresh the page or refetch service data
     window.location.reload()
   }
 
-  const regularMedia = service.gallery.filter(item => !item.contentType)
-  const offers = service.gallery.filter(item => item.contentType === "offer")
-  const events = service.gallery.filter(item => item.contentType === "event")
+  // Upload a new gallery item
+  const handleGalleryUpload = async (file: File, type: "image" | "video" | "reel") => {
+    setUploadingType(type)
+    try {
+      const folder = type === "image" ? "ubukwe/gallery" : type === "reel" ? "ubukwe/reels" : "ubukwe/videos"
+      const resourceType = type === "image" ? "image" : "video"
+      const uploadRes = await apiClient.upload.general(file, folder, resourceType)
+      const url: string = uploadRes.data?.url
+      if (!url) throw new Error("Upload failed — no URL returned")
+
+      let thumbnail: string | undefined
+      if (type === "image") {
+        thumbnail = url.replace("/upload/", "/upload/c_thumb,w_200/")
+      } else {
+        thumbnail = url.replace("/upload/", "/upload/so_0/").replace(/\.[^.]+$/, ".jpg")
+      }
+
+      const res = await apiClient.providerServices.addGalleryItem(service.id, {
+        type,
+        url,
+        thumbnail,
+        title: file.name.replace(/\.[^.]+$/, ""),
+        description: "",
+        contentType: null,
+      })
+
+      const updatedGallery: GalleryItem[] = (res.data?.gallery ?? []).map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        contentType: item.contentType ?? null,
+        url: item.url,
+        thumbnail: item.thumbnail,
+        title: item.title ?? "",
+        description: item.description ?? "",
+      }))
+      setGalleryItems(updatedGallery)
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} added to gallery`)
+    } catch (err: any) {
+      toast.error(err?.message ?? "Upload failed")
+    } finally {
+      setUploadingType(null)
+    }
+  }
+
+  // Remove a gallery item
+  const handleGalleryDelete = async (itemId: string) => {
+    setDeletingId(itemId)
+    try {
+      await apiClient.providerServices.removeGalleryItem(service.id, itemId)
+      setGalleryItems(prev => prev.filter(i => i.id !== itemId))
+      toast.success("Gallery item removed")
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to remove item")
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const regularMedia = galleryItems.filter(item => !item.contentType)
+  const offers = galleryItems.filter(item => item.contentType === "offer")
+  const events = galleryItems.filter(item => item.contentType === "event")
   const images = regularMedia.filter(item => item.type === "image")
   const reels = regularMedia.filter(item => item.type === "reel")
   const videos = regularMedia.filter(item => item.type === "video")
@@ -456,107 +528,211 @@ export function ServiceDetailView({
 
         {/* Gallery Tab */}
         < TabsContent value="gallery" className="space-y-12 pt-6 animate-in fade-in slide-in-from-bottom-4 duration-700" >
-          {
-            regularMedia.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                <ImageIcon className="w-16 h-16 mx-auto mb-6 text-slate-100" />
-                <h4 className="text-xl font-serif italic text-slate-900 mb-2">No photos found</h4>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Add some images to showcase your work</p>
+          {/* Hidden file inputs */}
+          <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden"
+            onChange={async (e) => {
+              const files = Array.from(e.target.files ?? [])
+              for (const file of files) await handleGalleryUpload(file, "image")
+              e.target.value = ""
+            }}
+          />
+          <input ref={videoInputRef} type="file" accept="video/*" className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (file) await handleGalleryUpload(file, "video")
+              e.target.value = ""
+            }}
+          />
+          <input ref={reelInputRef} type="file" accept="video/*" className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (file) await handleGalleryUpload(file, "reel")
+              e.target.value = ""
+            }}
+          />
+
+          {/* Upload toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="h-[1px] w-6 bg-[#668c65]/40" />
+              <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">
+                Gallery ({regularMedia.length} items)
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={uploadingType === "image"}
+                onClick={() => imageInputRef.current?.click()}
+                className="rounded-2xl border-slate-200 text-[10px] font-black uppercase tracking-widest h-10 px-5 hover:bg-[#668c65]/5 hover:border-[#668c65]/30 transition-all"
+              >
+                {uploadingType === "image" ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-2" />}
+                Add Photo
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={uploadingType === "video"}
+                onClick={() => videoInputRef.current?.click()}
+                className="rounded-2xl border-slate-200 text-[10px] font-black uppercase tracking-widest h-10 px-5 hover:bg-[#668c65]/5 hover:border-[#668c65]/30 transition-all"
+              >
+                {uploadingType === "video" ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Video className="h-3.5 w-3.5 mr-2" />}
+                Add Video
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={uploadingType === "reel"}
+                onClick={() => reelInputRef.current?.click()}
+                className="rounded-2xl border-slate-200 text-[10px] font-black uppercase tracking-widest h-10 px-5 hover:bg-[#668c65]/5 hover:border-[#668c65]/30 transition-all"
+              >
+                {uploadingType === "reel" ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Clapperboard className="h-3.5 w-3.5 mr-2" />}
+                Add Reel
+              </Button>
+            </div>
+          </div>
+
+          {/* Upload progress indicator */}
+          {uploadingType && (
+            <div className="flex items-center gap-3 px-6 py-4 bg-[#668c65]/5 rounded-2xl border border-[#668c65]/10">
+              <Loader2 className="h-4 w-4 text-[#668c65] animate-spin flex-shrink-0" />
+              <p className="text-[10px] font-black text-[#668c65] uppercase tracking-widest">
+                Uploading {uploadingType}…
+              </p>
+            </div>
+          )}
+
+          {regularMedia.length === 0 && !uploadingType ? (
+            <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
+              <ImageIcon className="w-16 h-16 mx-auto mb-6 text-slate-100" />
+              <h4 className="text-xl font-serif italic text-slate-900 mb-2">No media yet</h4>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-8">
+                Use the buttons above to add photos, videos, or reels
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button size="sm" onClick={() => imageInputRef.current?.click()} className="rounded-2xl bg-[#668c65] hover:bg-[#5a7b59] text-white shadow-lg shadow-[#668c65]/20 px-6 h-11">
+                  <Camera className="h-4 w-4 mr-2" /> Add Photo
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-20">
-                {/* Images Grid */}
-                {images.length > 0 && (
-                  <section>
-                    <div className="flex items-center gap-3 mb-10">
-                      <div className="h-[1px] w-6 bg-[#668c65]/40" />
-                      <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Photos</h3>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {images.map((item) => (
-                        <div
-                          key={item.id}
-                          className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-700"
-                          onClick={() => setSelectedGalleryItem(item)}
-                        >
-                          <img
-                            src={item.url}
-                            alt={item.title || "Gallery image"}
-                            className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110"
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                            <div className="bg-white/10 backdrop-blur-xl p-4 rounded-full scale-50 group-hover:scale-100 transition-transform duration-500 border border-white/20">
-                              <Eye className="w-8 h-8 text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Video Content */}
-                {(reels.length > 0 || videos.length > 0) && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    {reels.length > 0 && (
-                      <section className="space-y-10">
-                        <div className="flex items-center gap-3">
-                          <div className="h-[1px] w-6 bg-indigo-400/40" />
-                          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Cinematic Reels</h3>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                          {reels.map((item) => (
-                            <div key={item.id} className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5">
-                              <video
-                                src={item.url}
-                                controls
-                                preload="metadata"
-                                className="w-full h-full object-contain bg-black rounded-[2rem]"
-                              />
-                              {item.title && (
-                                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
-                                  <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    {videos.length > 0 && (
-                      <section className="space-y-10">
-                        <div className="flex items-center gap-3">
-                          <div className="h-[1px] w-6 bg-emerald-400/40" />
-                          <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Full Videos</h3>
-                        </div>
-                        <div className="space-y-6">
-                          {videos.map((item) => (
-                            <div key={item.id} className="relative aspect-video rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5">
-                              <video
-                                src={item.url}
-                                controls
-                                preload="metadata"
-                                className="w-full h-full object-contain bg-black rounded-[2rem]"
-                              />
-                              {item.title && (
-                                <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
-                                  <h4 className="text-white font-serif italic text-lg drop-shadow-xl">{item.title}</h4>
-                                  {item.description && (
-                                    <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mt-1">{item.description}</p>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    )}
+            </div>
+          ) : (
+            <div className="space-y-20">
+              {/* Images Grid */}
+              {images.length > 0 && (
+                <section>
+                  <div className="flex items-center gap-3 mb-10">
+                    <div className="h-[1px] w-6 bg-[#668c65]/40" />
+                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Photos ({images.length})</h3>
                   </div>
-                )}
-              </div>
-            )
-          }
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {images.map((item) => (
+                      <div
+                        key={item.id}
+                        className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-700"
+                      >
+                        <img
+                          src={item.url}
+                          alt={item.title || "Gallery image"}
+                          className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110 cursor-pointer"
+                          onClick={() => setSelectedGalleryItem(item)}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center gap-3">
+                          <button
+                            onClick={() => setSelectedGalleryItem(item)}
+                            className="bg-white/10 backdrop-blur-xl p-3 rounded-full border border-white/20 text-white hover:bg-white/20 transition-all"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleGalleryDelete(item.id)}
+                            disabled={deletingId === item.id}
+                            className="bg-red-500/80 backdrop-blur-xl p-3 rounded-full border border-red-400/20 text-white hover:bg-red-600 transition-all disabled:opacity-50"
+                          >
+                            {deletingId === item.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Video Content */}
+              {(reels.length > 0 || videos.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                  {reels.length > 0 && (
+                    <section className="space-y-10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-[1px] w-6 bg-indigo-400/40" />
+                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Cinematic Reels ({reels.length})</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-6">
+                        {reels.map((item) => (
+                          <div key={item.id} className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5 group">
+                            <video
+                              src={item.url}
+                              controls
+                              preload="metadata"
+                              className="w-full h-full object-contain bg-black rounded-[2rem]"
+                            />
+                            {item.title && (
+                              <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
+                                <p className="text-white text-[10px] font-black uppercase tracking-widest drop-shadow-lg">{item.title}</p>
+                              </div>
+                            )}
+                            <button
+                              onClick={() => handleGalleryDelete(item.id)}
+                              disabled={deletingId === item.id}
+                              className="absolute top-3 right-3 bg-red-500/80 backdrop-blur-xl p-2 rounded-full text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all disabled:opacity-50 z-10"
+                            >
+                              {deletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {videos.length > 0 && (
+                    <section className="space-y-10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-[1px] w-6 bg-emerald-400/40" />
+                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-[0.4em]">Full Videos ({videos.length})</h3>
+                      </div>
+                      <div className="space-y-6">
+                        {videos.map((item) => (
+                          <div key={item.id} className="relative aspect-video rounded-[2rem] overflow-hidden bg-slate-950 shadow-2xl border border-white/5 group">
+                            <video
+                              src={item.url}
+                              controls
+                              preload="metadata"
+                              className="w-full h-full object-contain bg-black rounded-[2rem]"
+                            />
+                            {item.title && (
+                              <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[2rem]">
+                                <h4 className="text-white font-serif italic text-lg drop-shadow-xl">{item.title}</h4>
+                                {item.description && (
+                                  <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mt-1">{item.description}</p>
+                                )}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => handleGalleryDelete(item.id)}
+                              disabled={deletingId === item.id}
+                              className="absolute top-3 right-3 bg-red-500/80 backdrop-blur-xl p-2 rounded-full text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all disabled:opacity-50 z-10"
+                            >
+                              {deletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </TabsContent >
 
         {/* Promotional Tab */}
