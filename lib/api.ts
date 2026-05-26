@@ -779,7 +779,8 @@ export const apiClient = {
       }).then(r => r.json());
     },
     sendInvitations(weddingId: string, guestIds: string[], invitation: any): Promise<any> {
-      return apiClient.post(`/api/v1/wedding/${weddingId}/guests/send-invitations`, { guest_ids: guestIds, invitation });
+      // Longer timeout (2 min) for bulk email sending
+      return apiClient.post(`/api/v1/wedding/${weddingId}/guests/send-invitations`, { guest_ids: guestIds, invitation }, { timeout: 120000 });
     },
   },
 
@@ -803,9 +804,9 @@ export const apiClient = {
     uploadTemplate(file: File): Promise<any> {
       const form = new FormData();
       form.append("file", file);
-      return fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/invitations/upload-template`, {
+      return fetch(`${API_BASE_URL}/api/v1/invitations/upload-template`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}` },
+        headers: { Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("accessToken") || "" : ""}` },
         body: form,
       }).then(r => r.json());
     },

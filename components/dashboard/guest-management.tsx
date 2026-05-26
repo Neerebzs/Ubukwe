@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Plus, Search, Filter, Mail, Phone, MapPin,
@@ -189,6 +189,8 @@ export function GuestManagement() {
   const [editForm, setEditForm] = useState<Partial<Guest>>({});
   const [showEdit, setShowEdit] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<Array<{name:string;email:string;phone:string;relationship?:string;rsvp_status?:string;dietary_restrictions?:string;plus_one?:boolean;plus_one_name?:string;table_number?:number;notes?:string;error?:string}>>([]);
+  const [importFileName, setImportFileName] = useState<string>("");
   const [sendingIds, setSendingIds] = useState<Set<string>>(new Set());
   const [bulkSending, setBulkSending] = useState(false);
   const [waLinks, setWaLinks] = useState<WaLink[]>([]);
@@ -208,6 +210,13 @@ export function GuestManagement() {
     queryKey: ["wedding-guests", weddingId],
     queryFn: async () => { const res = await apiClient.guests.list<Guest[]>(weddingId); return (res as any).data || []; },
     enabled: !!weddingId
+  });
+
+  // Fetch invitations so we can send them to guests
+  const { data: invitations = [] } = useQuery<Invitation[]>({
+    queryKey: ["wedding-invitations", weddingId],
+    queryFn: async () => { const res = await apiClient.invitations.list<Invitation[]>(weddingId!); return (res as any).data || []; },
+    enabled: !!weddingId,
   });
 
   const createMutation = useMutation({
@@ -247,38 +256,167 @@ export function GuestManagement() {
   const handleRSVP = (g: Guest, status: string) => updateMutation.mutate({ id: g.id, data: { rsvp_status: status } });
 
   const handleExportCSV = () => {
-    const header = ["id","name","email","phone","relationship","rsvp_status","dietary_restrictions","plus_one","plus_one_name","table_number","notes","invitation_sent"];
-    const rows = guests.map(g => [g.id,g.name,g.email,g.phone||"",g.relationship||"",g.rsvp_status,g.dietary_restrictions||"",g.plus_one?"true":"false",g.plus_one_name||"",g.table_number!=null?String(g.table_number):"",(g.notes||"").replace(/\n/g," "),g.invitation_sent?"true":"false"]);
-    const csv = [header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"}); const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='guests.csv'; a.click(); URL.revokeObjectURL(url);
+    // Export only user-editable fields (exclude backend-generated id/wedding_id)
+    const header = ["name","email","phone","relationship","rsvp_status","dietary_restrictions","plus_one","plus_one_name","table_number","notes"];
+    const rows = guests.map(g => [
+      g.name,
+      g.email,
+      g.phone || "",
+      g.relationship || "",
+      g.rsvp_status,
+      g.dietary_restrictions || "",
+      g.plus_one ? "true" : "false",
+      g.plus_one_name || "",
+      g.table_number != null ? String(g.table_number) : "",
+      (g.notes || "").replace(/\n/g, " ")
+    ]);
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guests.csv';
+    document.body.appendChild(a); // Required for Firefox
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (!weddingId) { toast.error("No wedding found"); return; }
+  const handleDownloadTemplate = () => {
+    // Download blank template with just headers and one example row
+    const header = ["name","email","phone","relationship","rsvp_status","dietary_restrictions","plus_one","plus_one_name","table_number","notes"];
+    const example = ["John Doe","john@example.com","+250 7XX XXX XXX","Family","pending","","false","","",""];
+    const csv = [header, example].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guest_import_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // ── Client-side CSV parsing for preview ─────────────────────────────────
+  const parseCSV = (text: string): Array<Record<string, string>> => {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+    return lines.slice(1).map(line => {
+      const values: string[] = [];
+      let val = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { val += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if (ch === ',' && !inQuotes) {
+          values.push(val.trim().replace(/^"|"$/g, ''));
+          val = '';
+        } else { val += ch; }
+      }
+      values.push(val.trim().replace(/^"|"$/g, ''));
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => row[h] = values[i] ?? '');
+      return row;
+    });
+  };
+
+  const validateRow = (row: {name?:string;email?:string;phone?:string}): string | null => {
+    if (!row.name?.trim()) return "Name is required";
+    if (!row.email?.trim()) return "Email is required";
+    if (!row.phone?.trim()) return "Phone is required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(row.email)) return "Invalid email format";
+    return null;
+  };
+
+  const handleParseFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileName(file.name);
     setImporting(true);
     try {
-      const res = await apiClient.guests.importFile(weddingId, file);
-      if (res.status === "success") {
-        queryClient.invalidateQueries({ queryKey: ["wedding-guests", weddingId] });
-        toast.success(res.message || "Guests imported");
-        if (res.errors?.length) toast.warning(`${res.errors.length} row(s) skipped: ${res.errors[0]}`);
-        setShowAdd(false);
-      } else {
-        toast.error(res.detail || "Import failed");
-      }
+      const text = await file.text();
+      const rows = parseCSV(text);
+      const mapped = rows.map(r => {
+        const name = r.name || r.full_name || r.guest_name || r['guest name'] || '';
+        const email = r.email || r.email_address || r['email address'] || '';
+        const phone = r.phone || r.phone_number || r['phone number'] || r.mobile || r.telephone || '';
+        const error = validateRow({name, email, phone});
+        return {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          relationship: r.relationship || r.relation || '',
+          rsvp_status: (r.rsvp_status || r.rsvp || 'pending').toLowerCase(),
+          dietary_restrictions: r.dietary_restrictions || r.dietary || '',
+          plus_one: (r.plus_one || r.plusone || '').toLowerCase() === 'true',
+          plus_one_name: r.plus_one_name || '',
+          table_number: r.table_number ? Number(r.table_number) : undefined,
+          notes: r.notes || '',
+          error: error || undefined
+        };
+      });
+      setImportPreview(mapped);
+      const validCount = mapped.filter(r => !r.error).length;
+      const errorCount = mapped.filter(r => r.error).length;
+      toast.success(`Parsed ${mapped.length} rows: ${validCount} valid, ${errorCount} errors`);
     } catch (err: any) {
-      toast.error(err.message || "Import failed");
+      toast.error("Failed to parse file: " + (err.message || "Unknown error"));
     } finally {
       setImporting(false);
       e.target.value = "";
     }
   };
 
+  const handleUpdatePreviewRow = (idx: number, field: string, value: any) => {
+    setImportPreview(prev => {
+      const next = [...prev];
+      (next[idx] as any)[field] = value;
+      // Re-validate
+      next[idx].error = validateRow({name: next[idx].name, email: next[idx].email, phone: next[idx].phone}) || undefined;
+      return next;
+    });
+  };
+
+  const handleSaveImport = async () => {
+    const validRows = importPreview.filter(r => !r.error && r.name && r.email && r.phone);
+    if (validRows.length === 0) { toast.error("No valid rows to import"); return; }
+    if (!weddingId) { toast.error("No wedding found"); return; }
+    setImporting(true);
+    try {
+      // Send one by one or batch
+      for (const row of validRows) {
+        await apiClient.guests.create(weddingId, {
+          name: row.name,
+          email: row.email,
+          phone: row.phone || null,
+          relationship: row.relationship || null,
+          rsvp_status: row.rsvp_status || 'pending',
+          dietary_restrictions: row.dietary_restrictions || null,
+          plus_one: row.plus_one || false,
+          plus_one_name: row.plus_one_name || null,
+          table_number: row.table_number || null,
+          notes: row.notes || null
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["wedding-guests", weddingId] });
+      toast.success(`${validRows.length} guests imported successfully`);
+      setImportPreview([]);
+      setImportFileName("");
+      setShowAdd(false);
+    } catch (err: any) {
+      toast.error(err.message || "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const pickInvitation = (): Invitation | null => {
-    const inv = (queryClient.getQueryData(["wedding-invitations", weddingId]) as Invitation[] | undefined) || [];
-    return inv[0] || null;
+    return invitations[0] || null;
   };
 
   const handleSendOne = async (guest: Guest) => {
@@ -301,13 +439,15 @@ export function GuestManagement() {
   const handleBulkSend = async () => {
     const inv = pickInvitation();
     if (!inv) { toast.error("Create an invitation first (Invitations tab)"); return; }
-    const ids = selectedGuestIds.size > 0 ? Array.from(selectedGuestIds) : [];
+    // If no selection, send to ALL guests. Otherwise send to selected only.
+    const ids = selectedGuestIds.size > 0 ? Array.from(selectedGuestIds) : guests.map(g => g.id);
+    if (ids.length === 0) { toast.error("No guests to send to"); return; }
     setBulkSending(true);
     try {
       const res: any = await apiClient.guests.sendInvitations(weddingId, ids, inv);
       const data = res.data || res;
       queryClient.invalidateQueries({ queryKey: ["wedding-guests", weddingId] });
-      toast.success(data.message || "Invitations sent!");
+      toast.success(data.message || `Invitations sent to ${ids.length} guests!`);
       setSelectedGuestIds(new Set());
       if (data.whatsapp_links?.length) { setWaLinks(data.whatsapp_links); setShowWaDialog(true); }
     } catch (err: any) {
@@ -330,8 +470,7 @@ export function GuestManagement() {
         <TabsContent value="guests" className="space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-3">
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,.ods" className="hidden" onChange={handleImportFile} />
-              <Button variant="outline" onClick={handleExportCSV} className="rounded-full border-sage-200 text-sage-700 hover:bg-sage-50 px-4 gap-2 text-sm"><Download className="w-4 h-4" />Export CSV</Button>
+              <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleParseFile} />
               {guests.length > 0 && (
                 <Button onClick={handleBulkSend} disabled={bulkSending} className="rounded-full bg-rose-600 hover:bg-rose-700 text-white px-4 gap-2 text-sm shadow">
                   {bulkSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
@@ -438,9 +577,10 @@ export function GuestManagement() {
       </Tabs>
 
       <Dialog open={showAdd} onOpenChange={v=>{setShowAdd(v);if(!v)setForm({...EMPTY_FORM});}}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95">
+        <DialogContent className="!max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95" aria-describedby="add-guests-desc">
           <DialogHeader className="mb-5">
             <DialogTitle className="text-3xl font-serif italic text-slate-800">Add Guests</DialogTitle>
+            <DialogDescription id="add-guests-desc">Add a single guest manually or import multiple guests from an Excel/CSV file.</DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="form" className="space-y-5">
@@ -466,37 +606,160 @@ export function GuestManagement() {
 
             {/* ── Tab 2: Excel / CSV import ── */}
             <TabsContent value="import" className="space-y-5 mt-0">
-              <div className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-8 text-center space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
-                  <FileText className="h-7 w-7 text-emerald-600"/>
+              {importPreview.length === 0 ? (
+                /* ── Upload UI (no file parsed yet) ── */
+                <div className="rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 p-8 text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
+                    <FileText className="h-7 w-7 text-emerald-600"/>
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-slate-700">Upload Excel or CSV file</p>
+                    <p className="text-xs text-slate-400 mt-1">Supports <span className="font-semibold">.csv</span> (Excel coming soon)</p>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-emerald-100 p-4 text-left space-y-1.5">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Required columns (in any order):</p>
+                    {[                      {col:"name", desc:"Guest full name"},
+                      {col:"email", desc:"Email address (must be valid)"},
+                      {col:"phone", desc:"Phone number e.g. +250 788 123 456"},
+                    ].map(({col,desc})=>(
+                      <div key={col} className="flex items-center gap-2">
+                        <code className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-mono w-16 text-center">{col}</code>
+                        <span className="text-xs text-slate-500">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={()=>fileInputRef.current?.click()}
+                    disabled={importing}
+                    className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-8 gap-2 shadow"
+                  >
+                    {importing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}
+                    {importing ? "Reading…" : "Choose File"}
+                  </Button>
+
+                  {/* Export CSV Template */}
+                  <div className="pt-4 border-t border-emerald-100">
+                    <p className="text-[11px] font-semibold text-slate-500 mb-2">Need a template?</p>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadTemplate}
+                      className="rounded-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 px-6 gap-2 text-sm"
+                    >
+                      <Download className="h-4 w-4"/>Download Import Template
+                    </Button>
+                    <p className="text-[10px] text-slate-400 mt-2">CSV with column headers and example row. Fill it out and re-import.</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-base font-semibold text-slate-700">Upload Excel or CSV file</p>
-                  <p className="text-xs text-slate-400 mt-1">Supports <span className="font-semibold">.xlsx · .xls · .csv</span></p>
-                </div>
-                <div className="bg-white rounded-2xl border border-emerald-100 p-4 text-left space-y-1.5">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Required columns (in any order):</p>
-                  {[
-                    {col:"name", desc:"Guest full name"},
-                    {col:"email", desc:"Email address (must be valid)"},
-                    {col:"phone", desc:"Phone number e.g. +250 788 123 456"},
-                  ].map(({col,desc})=>(
-                    <div key={col} className="flex items-center gap-2">
-                      <code className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-mono w-16 text-center">{col}</code>
-                      <span className="text-xs text-slate-500">{desc}</span>
+              ) : (
+                /* ── Preview & Edit Table ── */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">{importFileName}</p>
+                      <p className="text-xs text-slate-400">
+                        {importPreview.filter(r => !r.error).length} valid · {importPreview.filter(r => r.error).length} errors
+                      </p>
                     </div>
-                  ))}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={()=>{setImportPreview([]);setImportFileName("");}}
+                        className="rounded-full text-slate-500"
+                      >
+                        <X className="h-4 w-4 mr-1"/>Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveImport}
+                        disabled={importing || importPreview.filter(r => !r.error).length === 0}
+                        className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        {importing ? <Loader2 className="h-4 w-4 animate-spin mr-1"/> : <CheckCircle className="h-4 w-4 mr-1"/>}
+                        Save {importPreview.filter(r => !r.error).length} Guests
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Editable Table */}
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-[50vh] overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 sticky top-0">
+                        <tr>
+                          {["Name *","Email *","Phone *","Relationship","Status","Error"].map(h => (
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {importPreview.map((row, idx) => (
+                          <tr key={idx} className={row.error ? "bg-rose-50/50" : "bg-white"}>
+                            <td className="px-2 py-1">
+                              <Input
+                                value={row.name}
+                                onChange={e => handleUpdatePreviewRow(idx, 'name', e.target.value)}
+                                className={`h-8 text-xs ${row.error && !row.name ? 'border-rose-400' : 'border-slate-200'}`}
+                                placeholder="Name"
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <Input
+                                value={row.email}
+                                onChange={e => handleUpdatePreviewRow(idx, 'email', e.target.value)}
+                                className={`h-8 text-xs ${row.error && (!row.email || row.error?.includes('email')) ? 'border-rose-400' : 'border-slate-200'}`}
+                                placeholder="email@example.com"
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <Input
+                                value={row.phone}
+                                onChange={e => handleUpdatePreviewRow(idx, 'phone', e.target.value)}
+                                className={`h-8 text-xs ${row.error && !row.phone ? 'border-rose-400' : 'border-slate-200'}`}
+                                placeholder="+250..."
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <Input
+                                value={row.relationship || ''}
+                                onChange={e => handleUpdatePreviewRow(idx, 'relationship', e.target.value)}
+                                className="h-8 text-xs border-slate-200"
+                                placeholder="Family"
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <Select
+                                value={row.rsvp_status || 'pending'}
+                                onValueChange={v => handleUpdatePreviewRow(idx, 'rsvp_status', v)}
+                              >
+                                <SelectTrigger className="h-8 text-xs w-24">
+                                  <SelectValue/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="declined">Declined</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="px-2 py-1">
+                              {row.error ? (
+                                <span className="text-[10px] text-rose-600 flex items-center gap-1">
+                                  <XCircle className="w-3 h-3"/>{row.error}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3"/>Valid
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-[10px] text-slate-400">* Required fields. Edit any cell above to fix errors before saving.</p>
                 </div>
-                <Button
-                  onClick={()=>fileInputRef.current?.click()}
-                  disabled={importing}
-                  className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-8 gap-2 shadow"
-                >
-                  {importing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Upload className="h-4 w-4"/>}
-                  {importing ? "Importing…" : "Choose File"}
-                </Button>
-                {importing && <p className="text-xs text-emerald-600 animate-pulse">Reading file and saving guests…</p>}
-              </div>
+              )}
               <div className="flex justify-end">
                 <Button variant="ghost" className="rounded-2xl px-6 text-slate-500" onClick={()=>setShowAdd(false)}>Close</Button>
               </div>
@@ -506,8 +769,11 @@ export function GuestManagement() {
       </Dialog>
 
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95">
-          <DialogHeader className="mb-6"><DialogTitle className="text-3xl font-serif italic text-slate-800">Edit Guest</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95" aria-describedby="edit-guest-desc">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-3xl font-serif italic text-slate-800">Edit Guest</DialogTitle>
+            <DialogDescription id="edit-guest-desc">Update guest information and RSVP status.</DialogDescription>
+          </DialogHeader>
           <GuestForm form={editForm as any} setForm={setEditForm as any} showRsvp />
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" className="rounded-2xl px-6 text-slate-500" onClick={()=>setShowEdit(false)}>Cancel</Button>
@@ -518,13 +784,13 @@ export function GuestManagement() {
 
       {/* WhatsApp Links Dialog */}
       <Dialog open={showWaDialog} onOpenChange={setShowWaDialog}>
-        <DialogContent className="max-w-lg rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95">
+        <DialogContent className="max-w-lg rounded-[2.5rem] border-none shadow-2xl p-8 bg-white/95" aria-describedby="wa-links-desc">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-serif italic text-slate-800 flex items-center gap-2">
               <span className="text-2xl">💬</span> WhatsApp Invitation Links
             </DialogTitle>
+            <DialogDescription id="wa-links-desc">Click each link to open WhatsApp and send the invitation message directly to the guest.</DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-slate-500 mb-4">Click each link to open WhatsApp and send the invitation message directly to the guest.</p>
           <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
             {waLinks.map((w, i) => (
               <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-green-100 bg-green-50/40">
@@ -563,10 +829,12 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const [selectedTemplate, setSelectedTemplate] = useState<{id:string; name:string; layout:string; section_order:string[]; language:string}|null>(null);
   const uploadRef = useRef<HTMLInputElement|null>(null);
 
-  const { data: learnedTemplates = [] } = useQuery<any[]>({
+  const { data: learnedTemplatesRaw } = useQuery<any[]>({
     queryKey: ["invitation-templates"],
     queryFn: async () => { const res = await apiClient.invitations.listTemplates(); return (res as any).data || []; },
   });
+  // Ensure learnedTemplates is always an array (handle API returning object instead of array)
+  const learnedTemplates = Array.isArray(learnedTemplatesRaw) ? learnedTemplatesRaw : [];
 
   const { data: invitations = [], isLoading } = useQuery<Invitation[]>({
     queryKey: ["wedding-invitations", weddingId],
@@ -612,6 +880,9 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       const res = await apiClient.invitations.uploadTemplate(file);
       if (res?.status === "success") {
         setTemplateUpload({ status: "done", message: res.message || "Template learned!" });
+        // Refresh templates so new one appears in gallery
+        queryClient.invalidateQueries({ queryKey: ["invitation-templates"] });
+        toast.success("Template saved! Go to 'Templates Gallery' to select it.");
       } else {
         setTemplateUpload({ status: "error", message: "Could not process file for AI learning" });
       }
@@ -1315,7 +1586,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <p className="text-sm text-slate-500 text-center"><FileText className="h-3.5 w-3.5 inline mr-1"/>{uploadedFile.name}</p>
           <div className="flex justify-center gap-3 pt-2">
             <Button variant="outline" onClick={()=>uploadRef.current?.click()} className="rounded-full px-6 gap-2 border-[#D4AF6A]/40 text-[#7B6A45]"><Upload className="h-4 w-4"/>Change File</Button>
-            <Button onClick={()=>{setMode("list");setTemplateUpload({status:"idle"});}} className="rounded-full px-8 gap-2 text-white shadow-lg bg-[#C4A45A] hover:bg-[#B8944A]"><Save className="h-4 w-4"/>Done</Button>
+            <Button onClick={()=>{setMode("templates");setTemplateUpload({status:"idle"});}} className="rounded-full px-8 gap-2 text-white shadow-lg bg-[#C4A45A] hover:bg-[#B8944A]"><Save className="h-4 w-4"/>Go to Templates Gallery</Button>
           </div>
         </div>
       )}
