@@ -116,7 +116,7 @@ export interface AIDashboard {
 
 class AIAssistantAPI {
   private async fetchAPI(endpoint: string, options?: RequestInit) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
