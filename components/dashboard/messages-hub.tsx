@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { tokenManager } from "@/lib/auth";
 import {
   useConversations,
   useMessageHistory,
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Search, Send, ShieldCheck, Clock, Wifi, WifiOff, ChevronLeft } from "lucide-react";
+import { MessageCircle, Search, Send, Wifi, WifiOff, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -194,9 +195,20 @@ function MessageBubble({ msg, isMe }: { msg: ChatMessage; isMe: boolean }) {
             {formatMessageTime(msg.created_at)}
           </span>
           {isMe && (
-            msg.read
-              ? <ShieldCheck className="w-3 h-3 text-black/70" />
-              : <Clock className="w-3 h-3 text-black/50" />
+            <span className="inline-flex items-center ml-0.5">
+              {msg.read ? (
+                // Double blue ticks
+                <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+                  <path d="M1 5.5L4.5 9L11 2" stroke="#2196F3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M5 5.5L8.5 9L15 2" stroke="#2196F3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                // Single grey tick
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path d="M1.5 5.5L4.5 8.5L9.5 2" stroke="rgba(0,0,0,0.45)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </span>
           )}
         </div>
       </div>
@@ -206,8 +218,20 @@ function MessageBubble({ msg, isMe }: { msg: ChatMessage; isMe: boolean }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function getTokenUserId(): string | null {
+  try {
+    const token = tokenManager.getAccessToken();
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.user_id || payload.sub || null;
+  } catch {
+    return null;
+  }
+}
+
 export function MessagesHub() {
   const { user } = useAuth();
+  const currentUserId = user?.id ?? getTokenUserId();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
@@ -236,7 +260,7 @@ export function MessagesHub() {
 
   // Show WS error once
   useEffect(() => {
-    if (wsError && wsError !== 'no_booking') toast.error("Messaging connection lost — retrying…");
+    if (wsError) toast.error("Messaging connection lost — retrying…");
   }, [wsError]);
 
   const selectConversation = (id: string) => {
@@ -405,7 +429,7 @@ export function MessagesHub() {
                         </span>
                       </div>
                     )}
-                    <MessageBubble msg={msg} isMe={msg.sender_id === user?.id} />
+                    <MessageBubble msg={msg} isMe={msg.sender_id === user?.id || msg.sender_id === currentUserId} />
                   </div>
                 );
               })}
@@ -414,45 +438,33 @@ export function MessagesHub() {
 
             {/* Input */}
             <div className="p-6 border-t border-slate-50">
-              {wsError === 'no_booking' ? (
-                <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                  <span className="text-2xl">🔒</span>
-                  <div>
-                    <p className="text-sm font-bold text-amber-800">Booking required to chat</p>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Complete and pay for a booking with this provider to unlock messaging.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-end gap-3 p-2 pl-4 bg-white rounded-3xl border border-slate-300 focus-within:border-sage-600/60 focus-within:bg-white transition-all shadow-sm">
-                  <Textarea
-                    placeholder="Type a message…"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm text-slate-900 placeholder:text-slate-700"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleSend}
-                    disabled={!draft.trim() || !connected}
-                    className={`h-12 w-12 rounded-2xl mb-0.5 transition-all shrink-0 ${
-                      draft.trim() && connected
-                        ? "bg-[#668c65] text-white shadow-lg hover:bg-sage-700 active:scale-95"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
-                    }`}
-                  >
-                    <Send className="w-5 h-5" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-end gap-3 p-2 pl-4 bg-white rounded-3xl border border-slate-300 focus-within:border-sage-600/60 focus-within:bg-white transition-all shadow-sm">
+                <Textarea
+                  placeholder="Type a message…"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  className="flex-1 min-h-[48px] max-h-[140px] resize-none bg-transparent border-none shadow-none focus-visible:ring-0 text-sm text-slate-900 placeholder:text-slate-700"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!draft.trim() || !connected}
+                  className={`h-12 w-12 rounded-2xl mb-0.5 transition-all shrink-0 ${
+                    draft.trim() && connected
+                      ? "bg-[#668c65] text-white hover:bg-sage-700 active:scale-95"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
+                  }`}
+                >
+                  <Send className="w-5 h-5" />
+                </Button>
+              </div>
               <p className="text-center text-[9px] font-bold uppercase tracking-[0.3em] text-slate-300 mt-4">
-                {wsError === 'no_booking' ? 'Unlock by completing a booking' : 'End-to-end encrypted'}
+                End-to-end encrypted
               </p>
             </div>
           </>

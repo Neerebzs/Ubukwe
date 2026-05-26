@@ -74,72 +74,6 @@ const EMPTY_AI = {
   invitation_note: "", couple_contact: "",
 };
 
-// ── Built-in default templates ─────────────────────────────────────────────
-interface TemplateDefinition {
-  id: string;
-  name: string;
-  language: string;
-  layout: "two_column" | "single_column";
-  section_order: string[];
-  preview_bg: string;
-  preview_accent: string;
-  preview_text: string;
-  description: string;
-  is_default: true;
-}
-
-const DEFAULT_TEMPLATES: TemplateDefinition[] = [
-  {
-    id: "default_bilingual_traditional",
-    name: "Bilingual Traditional",
-    language: "bilingual",
-    layout: "two_column",
-    section_order: ["bible_verse","couple_names","date","schedule","contacts"],
-    preview_bg: "#FDFBF5", preview_accent: "#C4A45A", preview_text: "#2C2010",
-    description: "Two-column · Kinyarwanda left, English right · Gold ornaments",
-    is_default: true,
-  },
-  {
-    id: "default_classic_english",
-    name: "Classic English",
-    language: "english",
-    layout: "single_column",
-    section_order: ["bible_verse","couple_names","date","time_slot","venue","schedule","contacts"],
-    preview_bg: "#FFFFFF", preview_accent: "#C8B89A", preview_text: "#1A1209",
-    description: "Single-column · English only · Clean white design",
-    is_default: true,
-  },
-  {
-    id: "default_modern_minimal",
-    name: "Modern Minimal",
-    language: "english",
-    layout: "single_column",
-    section_order: ["couple_names","date","venue","schedule","invitation_note","contacts"],
-    preview_bg: "#F8F7FF", preview_accent: "#7C6AF7", preview_text: "#1A1636",
-    description: "Single-column · Minimalist · No verse · Bold names",
-    is_default: true,
-  },
-  {
-    id: "default_kinyarwanda_only",
-    name: "Kinyarwanda Only",
-    language: "kinyarwanda",
-    layout: "single_column",
-    section_order: ["bible_verse","couple_names","date","schedule","invitation_note","contacts"],
-    preview_bg: "#FDF6E3", preview_accent: "#D4AF6A", preview_text: "#2C1A00",
-    description: "Single-column · Full Kinyarwanda · Gold theme",
-    is_default: true,
-  },
-  {
-    id: "default_rustic_floral",
-    name: "Rustic Floral",
-    language: "english",
-    layout: "single_column",
-    section_order: ["bible_verse","couple_names","date","time_slot","venue","schedule","dress_code","contacts"],
-    preview_bg: "#FFF8F0", preview_accent: "#C0784A", preview_text: "#3A1F0A",
-    description: "Single-column · Warm rustic tones · Includes dress code",
-    is_default: true,
-  },
-];
 
 const STYLE_COLORS: Record<string, string> = {
   classic: "from-slate-50 to-slate-100 border-slate-200",
@@ -508,7 +442,33 @@ export function GuestManagement() {
 
           <div className="space-y-4">
             <h3 className="text-xl font-serif italic text-slate-800 px-2">Registry ({filteredGuests.length})</h3>
-            {isLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-sage-600" /></div>
+            {isLoading ? (
+              <div className="grid gap-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i} className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white/50 animate-pulse">
+                    <CardContent className="p-0">
+                      <div className="flex">
+                        <div className="w-1.5 flex-shrink-0 bg-slate-200" />
+                        <div className="flex-1 p-5 flex flex-col md:flex-row items-start justify-between gap-4">
+                          <div className="flex-1 space-y-4 w-full">
+                            <div className="h-6 bg-slate-200 rounded-lg w-1/3" />
+                            <div className="flex gap-4">
+                              <div className="h-4 bg-slate-100 rounded w-24" />
+                              <div className="h-4 bg-slate-100 rounded w-24" />
+                              <div className="h-4 bg-slate-100 rounded w-20" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-10 w-28 bg-slate-100 rounded-2xl" />
+                            <div className="h-9 w-20 bg-slate-100 rounded-2xl" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
             : filteredGuests.length === 0 ? (
               <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
                 <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -822,6 +782,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const [aiForm, setAiForm] = useState({ ...EMPTY_AI });
   const [aiResults, setAiResults] = useState<Partial<Invitation>[]>([]);
   const [previewInv, setPreviewInv] = useState<Partial<Invitation>|null>(null);
+  const [previewGroup, setPreviewGroup] = useState<Partial<Invitation>[]>([]);
   const [editingId, setEditingId] = useState<string|null>(null);
   const [cardTheme, setCardTheme] = useState<CardThemeKey>("cream");
   const [uploadedFile, setUploadedFile] = useState<{name:string; url:string; type:string; file?:File}|null>(null);
@@ -941,7 +902,25 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     </div>
   );
 
-  // LIST
+  // LIST — group AI invitations by couple+date into one card
+  const invitationGroups: { key: string; variants: Invitation[]; isAiGroup: boolean }[] = [];
+  {
+    const seen = new Map<string, number>();
+    invitations.forEach((inv: Invitation) => {
+      if (inv.is_ai_generated) {
+        const key = `${inv.couple_names}|${inv.wedding_date}`;
+        if (seen.has(key)) {
+          invitationGroups[seen.get(key)!].variants.push(inv);
+        } else {
+          seen.set(key, invitationGroups.length);
+          invitationGroups.push({ key, variants: [inv], isAiGroup: true });
+        }
+      } else {
+        invitationGroups.push({ key: inv.id, variants: [inv], isAiGroup: false });
+      }
+    });
+  }
+
   if (mode === "list") return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -954,70 +933,107 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               <button onClick={()=>setSelectedTemplate(null)} className="ml-1 opacity-60 hover:opacity-100"><X className="h-3 w-3"/></button>
             </div>
           )}
-          <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-amber-200 text-amber-700 px-4 gap-2 text-sm"><FileText className="h-4 w-4"/>Templates</Button>
-          <Button variant="outline" onClick={()=>{setUploadedFile(null);setMode("upload");}} className="rounded-full border-slate-200 px-4 gap-2 text-sm"><Upload className="h-4 w-4"/>Upload</Button>
-          <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-5 gap-2 shadow-lg bg-violet-600 hover:bg-violet-700 text-sm"><Sparkles className="h-4 w-4"/>AI Generate</Button>
+          <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-[#668c65]/50 text-[#668c65] px-4 gap-2 text-sm"><FileText className="h-4 w-4"/>Templates</Button>
+          <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-5 gap-2 shadow-lg bg-[#668c65] hover:bg-[#527451] text-sm"><Sparkles className="h-4 w-4"/>AI Generate</Button>
         </div>
       </div>
-      {isLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-sage-600"/></div>
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="relative overflow-hidden rounded-2xl shadow-sm border border-slate-100 bg-slate-50/50 animate-pulse">
+              <div className="h-1 w-full bg-slate-200" />
+              <div className="p-5 space-y-4">
+                <div className="space-y-2">
+                  <div className="h-5 bg-slate-200 rounded w-2/3" />
+                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+                </div>
+                <div className="h-28 bg-slate-100 border border-slate-200 rounded-xl" />
+                <div className="flex gap-2 pt-1">
+                  <div className="h-8 bg-slate-200 rounded-xl w-20" />
+                  <div className="h-8 bg-slate-200 rounded-xl w-16" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
       : invitations.length === 0 ? (
         <div className="text-center py-20 bg-gradient-to-br from-rose-50/30 to-slate-50 rounded-[2.5rem] border-2 border-dashed border-rose-100">
           <Heart className="h-14 w-14 text-rose-200 mx-auto mb-4"/>
           <p className="text-slate-600 font-serif italic text-xl mb-2">No invitations yet</p>
           <p className="text-slate-400 text-sm mb-6">Upload your own file or let AI generate one for you</p>
           <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={()=>{setUploadedFile(null);setMode("upload");}} className="rounded-full px-6 gap-2"><Upload className="h-4 w-4"/>Upload File</Button>
-            <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-amber-200 text-amber-700 px-6 gap-2"><FileText className="h-4 w-4"/>Browse Templates</Button>
-            <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 bg-violet-600 hover:bg-violet-700"><Sparkles className="h-4 w-4"/>Generate with AI</Button>
+            <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-[#668c65]/50 text-[#668c65] px-6 gap-2"><FileText className="h-4 w-4"/>Browse Templates</Button>
+            <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 bg-[#668c65] hover:bg-[#527451]"><Sparkles className="h-4 w-4"/>Generate with AI</Button>
           </div>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {invitations.map(inv => {
-            const ct = (inv.color_theme as CardThemeKey) || "cream";
-            const thm = CARD_THEMES[ct] || CARD_THEMES.cream;
-            return (
-              <div key={inv.id} className="relative overflow-hidden rounded-2xl shadow-md cursor-pointer group transition-transform hover:scale-[1.01]"
-                   style={{background:thm.bg, border:`1px solid ${thm.border}`}}
-                   onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setMode("preview");}}>
-                {/* top color bar */}
-                <div className="h-1 w-full" style={{background:`linear-gradient(to right, ${thm.divider}60, ${thm.divider}, ${thm.divider}60)`}}/>
-                {/* corner ornament */}
-                <div className="absolute top-2 right-2 w-10 h-10 pointer-events-none opacity-30">
-                  <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
-                    <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={thm.corner}/>
-                    <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={thm.corner} strokeWidth="1.5" fill="none"/>
-                  </svg>
-                </div>
-                <div className="p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border" style={{color:thm.divider, borderColor:`${thm.divider}50`, background:`${thm.divider}10`}}>{ct}</span>
-                        {inv.is_ai_generated && <span className="text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI</span>}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {invitationGroups.map(({ key, variants, isAiGroup }) => {
+                const inv = variants[0];
+                // For AI groups, prefer cream as representative card theme
+                const ct = (isAiGroup ? "cream" : (inv.color_theme as CardThemeKey)) || "cream";
+                const thm = CARD_THEMES[ct] || CARD_THEMES.cream;
+                const openDetails = () => {
+                  setCardTheme(ct);
+                  setPreviewInv(inv);
+                  setPreviewGroup(isAiGroup ? variants : []);
+                  setMode("preview");
+                };
+                return (
+                  <div key={key} className="relative overflow-hidden rounded-2xl shadow-md cursor-pointer group transition-transform hover:scale-[1.01]"
+                       style={{background:thm.bg, border:`1px solid ${thm.border}`}}
+                       onClick={openDetails}>
+                    {/* top color bar */}
+                    <div className="h-1 w-full" style={{background:`linear-gradient(to right, ${thm.divider}60, ${thm.divider}, ${thm.divider}60)`}}/>
+                    {/* corner ornament */}
+                    <div className="absolute top-2 right-2 w-10 h-10 pointer-events-none opacity-30">
+                      <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
+                        <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={thm.corner}/>
+                        <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={thm.corner} strokeWidth="1.5" fill="none"/>
+                      </svg>
+                    </div>
+                    <div className="p-5 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {isAiGroup ? (
+                              <>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI</span>
+                                {/* Color swatches for all 3 variants */}
+                                <div className="flex items-center gap-1">
+                                  {variants.map(v => {
+                                    const vt = CARD_THEMES[(v.color_theme as CardThemeKey)] || CARD_THEMES.cream;
+                                    return <span key={v.id} className="w-3 h-3 rounded-full border border-white shadow-sm" style={{background:vt.divider}} title={v.color_theme||""}/>
+                                  })}
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border" style={{color:thm.divider, borderColor:`${thm.divider}50`, background:`${thm.divider}10`}}>{ct}</span>
+                            )}
+                          </div>
+                          <h4 className="text-base font-serif italic truncate" style={{color:thm.text}}>{isAiGroup ? inv.couple_names : inv.title}</h4>
+                          <p className="text-[12px] mt-0.5 truncate" style={{color:thm.sub}}>{inv.couple_names} · {inv.wedding_date}</p>
+                        </div>
                       </div>
-                      <h4 className="text-base font-serif italic truncate" style={{color:thm.text}}>{inv.title}</h4>
-                      <p className="text-[12px] mt-0.5 truncate" style={{color:thm.sub}}>{inv.couple_names} · {inv.wedding_date}</p>
+                      {/* Mini card preview */}
+                      <div className="rounded-xl p-3 text-center space-y-1" style={{background:`${thm.divider}08`, border:`1px solid ${thm.divider}20`}}>
+                        {inv.bible_verse && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{inv.bible_verse}&rdquo;</p>}
+                        {inv.couple_names && <p className="text-[13px] font-serif italic" style={{color:thm.text}}>{inv.couple_names}</p>}
+                        {inv.wedding_date && <p className="text-[9px] font-bold uppercase tracking-widest" style={{color:thm.date}}>{inv.wedding_date}</p>}
+                        {inv.venue && <p className="text-[9px]" style={{color:thm.sub}}>{inv.venue}</p>}
+                      </div>
+                      <div className="flex items-center gap-1 pt-1" onClick={e=>e.stopPropagation()}>
+                        <Button size="sm" className="rounded-xl gap-1 text-[11px] px-3 py-1 h-auto text-white" style={{background:thm.divider}} onClick={openDetails}><Eye className="h-3 w-3"/>Details</Button>
+                        <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>handleOpenEdit(inv)}><Edit className="h-3 w-3"/>Edit</Button>
+                        <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>handleDownload(inv)}><Download className="h-3 w-3"/>Save</Button>
+                        <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto text-rose-400 hover:bg-rose-50 ml-auto" onClick={()=>variants.forEach(v=>deleteMutation.mutate(v.id))} disabled={deleteMutation.isPending}><Trash2 className="h-3 w-3"/></Button>
+                      </div>
                     </div>
                   </div>
-                  {/* Mini card preview */}
-                  <div className="rounded-xl p-3 text-center space-y-1" style={{background:`${thm.divider}08`, border:`1px solid ${thm.divider}20`}}>
-                    {inv.bible_verse && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{inv.bible_verse}&rdquo;</p>}
-                    {inv.couple_names && <p className="text-[13px] font-serif italic" style={{color:thm.text}}>{inv.couple_names}</p>}
-                    {inv.wedding_date && <p className="text-[9px] font-bold uppercase tracking-widest" style={{color:thm.date}}>{inv.wedding_date}</p>}
-                    {inv.venue && <p className="text-[9px]" style={{color:thm.sub}}>{inv.venue}</p>}
-                  </div>
-                  <div className="flex items-center gap-1 pt-1" onClick={e=>e.stopPropagation()}>
-                    <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>{const ct=((inv as any).color_theme as CardThemeKey)||"cream";setCardTheme(CARD_THEMES[ct]?ct:"cream");setPreviewInv(inv);setMode("preview");}}><Eye className="h-3 w-3"/>View</Button>
-                    <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>handleOpenEdit(inv)}><Edit className="h-3 w-3"/>Edit</Button>
-                    <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>handleDownload(inv)}><Download className="h-3 w-3"/>Save</Button>
-                    <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto text-rose-400 hover:bg-rose-50 ml-auto" onClick={()=>deleteMutation.mutate(inv.id)} disabled={deleteMutation.isPending}><Trash2 className="h-3 w-3"/></Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
       )}
     </div>
   );
@@ -1055,7 +1071,14 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style:</span>
               {(Object.keys(CARD_THEMES) as CardThemeKey[]).map(k => (
-                <button key={k} onClick={()=>setCardTheme(k)}
+                <button key={k} onClick={()=>{
+                  setCardTheme(k);
+                  // If we have a group, switch previewInv to the matching variant
+                  if (previewGroup.length > 0) {
+                    const match = previewGroup.find(v => v.color_theme === k);
+                    if (match) setPreviewInv(match);
+                  }
+                }}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                     cardTheme===k ? "border-[#D4AF6A] bg-amber-50 text-[#7B6A45] shadow" : "border-slate-200 text-slate-400 hover:border-[#D4AF6A]/50"
                   }`}>{CARD_THEMES[k].label}</button>
@@ -1376,148 +1399,80 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   // TEMPLATES GALLERY
   if (mode === "templates") return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
-        <div>
-          <h3 className="text-xl font-serif italic text-slate-800">Invitation Templates</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Pick a style — the AI will generate your invitation in that layout</p>
-        </div>
-      </div>
-
-      {/* DEFAULT TEMPLATES */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Built-in Designs</span>
-          <div className="h-px flex-1 bg-slate-100"/>
-          <span className="text-[10px] text-slate-300">{DEFAULT_TEMPLATES.length} templates</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {DEFAULT_TEMPLATES.map(tpl => {
-            const isSelected = selectedTemplate?.id === tpl.id;
-            return (
-              <div key={tpl.id}
-                className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
-                style={{background: tpl.preview_bg, borderColor: isSelected ? tpl.preview_accent : `${tpl.preview_accent}40`}}
-                onClick={()=>{setSelectedTemplate({id:tpl.id, name:tpl.name, layout:tpl.layout, section_order:tpl.section_order, language:tpl.language});}}>
-                {/* Selected badge */}
-                {isSelected && (
-                  <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:tpl.preview_accent}}>
-                    ✓ Selected
-                  </div>
-                )}
-                {/* Mini card preview */}
-                <div className="p-5 space-y-2.5">
-                  {/* Ornament bar */}
-                  <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${tpl.preview_accent}, transparent)`}}/>
-                  {/* Corner dots */}
-                  <div className="flex justify-between">
-                    <div className="w-1.5 h-1.5 rounded-full opacity-40" style={{background:tpl.preview_accent}}/>
-                    <div className="w-1.5 h-1.5 rounded-full opacity-40" style={{background:tpl.preview_accent}}/>
-                  </div>
-                  {/* Layout preview */}
-                  {tpl.layout === "two_column" ? (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      {[0,1].map(col => (
-                        <div key={col} className="space-y-1.5">
-                          <div className="h-1.5 rounded-full w-3/4 mx-auto opacity-30" style={{background:tpl.preview_accent}}/>
-                          <div className="h-3 rounded w-5/6 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
-                          <div className="h-1.5 rounded w-2/3 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
-                          <div className="space-y-1 pt-1">
-                            {[0,1,2].map(r=>(
-                              <div key={r} className="h-1 rounded opacity-15" style={{background:tpl.preview_text}}/>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 pt-1 px-2">
-                      <div className="h-1.5 rounded-full w-2/3 mx-auto opacity-30" style={{background:tpl.preview_accent}}/>
-                      <div className="h-4 rounded w-3/4 mx-auto opacity-20" style={{background:tpl.preview_text}}/>
-                      <div className="h-1.5 rounded w-1/2 mx-auto opacity-20" style={{background:tpl.preview_accent}}/>
-                      <div className="space-y-1 pt-1">
-                        {[0,1,2,3].map(r=>(
-                          <div key={r} className="h-1 rounded opacity-15" style={{background:tpl.preview_text}}/>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${tpl.preview_accent}, transparent)`}}/>
-                </div>
-                {/* Footer */}
-                <div className="px-5 pb-4 space-y-0.5">
-                  <p className="text-[13px] font-serif italic font-semibold" style={{color:tpl.preview_text}}>{tpl.name}</p>
-                  <p className="text-[10px]" style={{color:`${tpl.preview_text}80`}}>{tpl.description}</p>
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:tpl.preview_accent, borderColor:`${tpl.preview_accent}50`, background:`${tpl.preview_accent}10`}}>{tpl.layout === "two_column" ? "2-Column" : "1-Column"}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-slate-200 text-slate-400 bg-slate-50">{tpl.language}</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* LEARNED TEMPLATES */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-3.5 w-3.5 text-violet-400"/>
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Learned from Uploads</span>
-          <div className="h-px flex-1 bg-slate-100"/>
-          <span className="text-[10px] text-slate-300">{learnedTemplates.length} templates</span>
-        </div>
-        {learnedTemplates.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-violet-100 bg-violet-50/30 py-10 text-center">
-            <Sparkles className="h-8 w-8 text-violet-200 mx-auto mb-3"/>
-            <p className="text-sm font-serif italic text-slate-500">No learned templates yet</p>
-            <p className="text-[11px] text-slate-400 mt-1">Upload an invitation file and our AI will learn its style</p>
-            <Button variant="outline" size="sm" onClick={()=>setMode("upload")} className="rounded-full mt-4 border-violet-200 text-violet-600 gap-2"><Upload className="h-3.5 w-3.5"/>Upload Now</Button>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
+          <div>
+            <h3 className="text-xl font-serif italic text-[#668c65]">Invitation Templates</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Pick a style from your uploaded templates — the AI will generate your invitation in that layout</p>
           </div>
-        ) : (
+        </div>
+        <Button variant="outline" onClick={()=>setMode("upload")} className="rounded-full border-[#668c65]/50 text-[#668c65] hover:bg-[#668c65]/5 gap-2 text-sm"><Upload className="h-4 w-4"/>Upload New Template</Button>
+      </div>
+
+      {/* ALL TEMPLATES FROM UPLOADS */}
+      {learnedTemplates.length === 0 ? (
+        <div className="rounded-2xl border-2 border-dashed border-[#668c65]/40 bg-[#FCFBF9] py-16 text-center">
+          <div className="w-16 h-16 rounded-full bg-[#668c65]/10 border-2 border-[#668c65]/40 flex items-center justify-center mx-auto mb-4">
+            <Upload className="h-7 w-7 text-[#668c65]"/>
+          </div>
+          <p className="text-lg font-serif italic text-slate-600 mb-1">No templates yet</p>
+          <p className="text-[12px] text-slate-400 mb-6">Upload your own invitation file and it will appear here as a selectable template</p>
+          <Button onClick={()=>setMode("upload")} className="rounded-full px-8 gap-2 text-white bg-[#668c65] hover:bg-[#527451]"><Upload className="h-4 w-4"/>Upload Invitation File</Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-[#668c65]"/>
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Templates</span>
+            <div className="h-px flex-1 bg-slate-100"/>
+            <span className="text-[10px] text-slate-300">{learnedTemplates.length} template{learnedTemplates.length !== 1 ? "s" : ""}</span>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {learnedTemplates.map((tpl: any) => {
               const isSelected = selectedTemplate?.id === tpl.id;
-              const accent = tpl.language === "kinyarwanda" ? "#D4AF6A" : tpl.language === "bilingual" ? "#C4A45A" : "#7C6AF7";
+              const accent = "#668c65";
               return (
                 <div key={tpl.id}
                   className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 bg-white hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
                   style={{borderColor: isSelected ? accent : `${accent}40`}}
-                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Learned Template", layout:tpl.layout||"two_column", section_order:tpl.section_order||[], language:tpl.language||"bilingual"})}>
+                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Uploaded Template", layout:tpl.layout||"single_column", section_order:tpl.section_order||[], language:tpl.language||"english"})}>
                   {isSelected && (
                     <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:accent}}>✓ Selected</div>
                   )}
-                  <div className="p-5 space-y-2">
+                  <div className="p-5 space-y-2.5">
                     <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
                     <div className="flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 shrink-0" style={{color:accent}}/>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{background:`${accent}18`}}>
+                        <Upload className="h-3.5 w-3.5" style={{color:accent}}/>
+                      </div>
                       <div className="space-y-1 flex-1">
-                        {(tpl.section_order||[]).slice(0,4).map((s:string,i:number)=>(
-                          <div key={i} className="h-1 rounded opacity-20 bg-slate-700" style={{width:`${70-i*12}%`}}/>
+                        {(tpl.section_order||["verse","names","date","schedule"]).slice(0,4).map((s:string,i:number)=>(
+                          <div key={i} className="h-1 rounded" style={{background:`${accent}30`, width:`${72-i*14}%`}}/>
                         ))}
                       </div>
                     </div>
                     <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
                   </div>
                   <div className="px-5 pb-4 space-y-0.5">
-                    <p className="text-[13px] font-serif italic font-semibold text-slate-800">{tpl.name||"Learned Template"}</p>
+                    <p className="text-[13px] font-serif italic font-semibold" style={{color:"#2C2010"}}>{tpl.name||"Uploaded Template"}</p>
                     <p className="text-[10px] text-slate-400">Used {tpl.usage_count||0} times · {(tpl.section_order||[]).length} sections detected</p>
                     <div className="flex items-center gap-1.5 pt-1">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:accent, borderColor:`${accent}50`, background:`${accent}10`}}>{(tpl.layout||"two_column")==="two_column"?"2-Column":"1-Column"}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-violet-100 text-violet-500 bg-violet-50 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI Learned</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:accent, borderColor:`${accent}50`, background:`${accent}10`}}>{(tpl.layout||"single_column")==="two_column"?"2-Column":"1-Column"}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-slate-200 text-slate-500 bg-slate-50">{tpl.language||"english"}</span>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
         <Button variant="outline" onClick={()=>setMode("list")} className="rounded-full px-6">Cancel</Button>
-        <Button onClick={()=>{prefill();setMode("ai-form");}} disabled={!selectedTemplate} className="rounded-full px-8 gap-2 text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-40">
+        <Button onClick={()=>{prefill();setMode("ai-form");}} disabled={!selectedTemplate} className="rounded-full px-8 gap-2 text-white bg-[#668c65] hover:bg-[#527451] disabled:opacity-40">
           <Sparkles className="h-4 w-4"/>{selectedTemplate ? `Generate with "${selectedTemplate.name}"` : "Select a template first"}
         </Button>
       </div>
@@ -1536,11 +1491,11 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       </div>
 
       {/* AI learning notice */}
-      <div className="rounded-2xl border border-violet-100 bg-violet-50/40 px-4 py-3 flex items-start gap-3">
-        <Sparkles className="h-4 w-4 text-violet-500 shrink-0 mt-0.5"/>
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 px-4 py-3 flex items-start gap-3">
+        <Sparkles className="h-4 w-4 text-[#668c65] shrink-0 mt-0.5"/>
         <div>
-          <p className="text-xs font-semibold text-violet-700">AI Learning Enabled</p>
-          <p className="text-[11px] text-violet-500 mt-0.5">Every file you upload is analysed by our system. The more you upload, the better the AI gets at generating invitations that match your style.</p>
+          <p className="text-xs font-semibold text-[#668c65]">AI Learning Enabled</p>
+          <p className="text-[11px] text-[#668c65] mt-0.5">Every file you upload is analysed by our system. The more you upload, the better the AI gets at generating invitations that match your style.</p>
         </div>
       </div>
 
@@ -1603,9 +1558,9 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       <div className="space-y-5">
 
         {/* 1. Bible Verse */}
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4 space-y-2">
-          <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-amber-600"/><span className="text-xs font-semibold uppercase tracking-wider text-amber-700">Bible Verse</span></div>
-          <Textarea value={manualForm.bible_verse} onChange={e=>setManualForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-amber-100 bg-white/70 resize-none text-sm"/>
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+          <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Bible Verse</span></div>
+          <Textarea value={manualForm.bible_verse} onChange={e=>setManualForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
         </div>
 
         {/* 2. Description */}
@@ -1620,24 +1575,24 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         </div>
 
         {/* 4. Wedding Schedule */}
-        <div className="rounded-2xl border border-rose-100 bg-rose-50/20 p-4 space-y-3">
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-rose-500"/><span className="text-xs font-semibold uppercase tracking-wider text-rose-600">Wedding Schedule</span></div>
-            <Button type="button" size="sm" variant="outline" className="rounded-full text-xs px-3 border-rose-200 text-rose-600 hover:bg-rose-50" onClick={()=>setManualForm(f=>({...f,program_events:[...(f.program_events||[]),{...EMPTY_PROGRAM_EVENT}]}))}>+ Add Event</Button>
+            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Wedding Schedule</span></div>
+            <Button type="button" size="sm" variant="outline" className="rounded-full text-xs px-3 border-[#668c65]/30 text-[#668c65] hover:bg-[#668c65]/10" onClick={()=>setManualForm(f=>({...f,program_events:[...(f.program_events||[]),{...EMPTY_PROGRAM_EVENT}]}))}>+ Add Event</Button>
           </div>
           {(manualForm.program_events||[]).map((ev,idx)=>(
-            <div key={idx} className="rounded-xl border border-rose-100 bg-white p-3 space-y-2">
+            <div key={idx} className="rounded-xl border border-[#668c65]/20 bg-white p-3 space-y-2">
               <div className="flex items-center gap-2">
-                <Input value={ev.event} onChange={e=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],event:e.target.value};setManualForm(f=>({...f,program_events:arr}));}} placeholder="📍 Introduction Ceremony (Gusaba)" className="rounded-xl border-rose-100 bg-rose-50/30 h-9 text-sm flex-1"/>
-                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-slate-300 hover:text-rose-500 shrink-0" disabled={(manualForm.program_events||[]).length<=1} onClick={()=>{const arr=[...(manualForm.program_events||[])];arr.splice(idx,1);setManualForm(f=>({...f,program_events:arr}));}}><X className="h-3.5 w-3.5"/></Button>
+                <Input value={ev.event} onChange={e=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],event:e.target.value};setManualForm(f=>({...f,program_events:arr}));}} placeholder="📍 Introduction Ceremony (Gusaba)" className="rounded-xl border-[#668c65]/20 bg-[#668c65]/5 h-9 text-sm flex-1"/>
+                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-slate-300 hover:text-[#668c65] shrink-0" disabled={(manualForm.program_events||[]).length<=1} onClick={()=>{const arr=[...(manualForm.program_events||[])];arr.splice(idx,1);setManualForm(f=>({...f,program_events:arr}));}}><X className="h-3.5 w-3.5"/></Button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 bg-rose-50/30 border border-rose-100 rounded-xl px-3 h-9">
-                  <Clock className="h-3.5 w-3.5 text-rose-400 shrink-0"/>
+                <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
+                  <Clock className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
                   <Input value={ev.time} onChange={e=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],time:e.target.value};setManualForm(f=>({...f,program_events:arr}));}} placeholder="9:00 AM – 1:00 PM" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
                 </div>
-                <div className="flex items-center gap-2 bg-rose-50/30 border border-rose-100 rounded-xl px-3 h-9">
-                  <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0"/>
+                <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
+                  <MapPin className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
                   <Input value={ev.location} onChange={e=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],location:e.target.value};setManualForm(f=>({...f,program_events:arr}));}} placeholder="Maliot Hotel" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
                 </div>
               </div>
@@ -1646,15 +1601,15 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         </div>
 
         {/* 5. Note */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 space-y-2">
-          <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-slate-500"/><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Note</span></div>
-          <Textarea value={manualForm.invitation_note} onChange={e=>setManualForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-slate-100 bg-white/70 resize-none text-sm"/>
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+          <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Note</span></div>
+          <Textarea value={manualForm.invitation_note} onChange={e=>setManualForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
         </div>
 
         {/* 6. Couple Contact */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 space-y-2">
-          <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-slate-500"/><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Couple Contact</span></div>
-          <Textarea value={manualForm.couple_contact} onChange={e=>setManualForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-slate-100 bg-white/70 resize-none text-sm"/>
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+          <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Couple Contact</span></div>
+          <Textarea value={manualForm.couple_contact} onChange={e=>setManualForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
         </div>
 
       </div>
@@ -1673,23 +1628,23 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       <div className="flex items-center gap-3">
         <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
         <div>
-          <h3 className="text-xl font-serif italic text-slate-800 flex items-center gap-2"><Sparkles className="h-5 w-5 text-violet-500"/>AI Invitation Generator</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Fill in your details and we'll generate 3 colour versions: White, Gold &amp; Cream</p>
+          <h3 className="text-xl font-serif italic text-[#668c65] flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#668c65]"/>AI Invitation Generator</h3>
+          <p className="text-xs text-[#668c65]/70 mt-0.5">Fill in your details and we'll generate 3 colour versions: White, Gold &amp; Cream</p>
           {selectedTemplate ? (
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-full flex items-center gap-1"><FileText className="h-3 w-3"/>Using: {selectedTemplate.name}</span>
+              <span className="text-[10px] font-semibold text-[#668c65] bg-[#668c65]/10 border border-[#668c65]/20 px-2 py-0.5 rounded-full flex items-center gap-1"><FileText className="h-3 w-3"/>Using: {selectedTemplate.name}</span>
               <button className="text-[10px] text-slate-400 underline" onClick={()=>setMode("templates")}>Change</button>
             </div>
           ) : (
-            <button className="text-[10px] text-amber-600 underline mt-0.5" onClick={()=>setMode("templates")}>Browse templates →</button>
+            <button className="text-[10px] text-[#668c65] underline mt-0.5" onClick={()=>setMode("templates")}>Browse templates →</button>
           )}
         </div>
       </div>
 
       {/* 1. Bible Verse */}
-      <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4 space-y-2">
-        <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-amber-600"/><span className="text-xs font-semibold uppercase tracking-wider text-amber-700">Bible Verse</span></div>
-        <Textarea value={aiForm.bible_verse} onChange={e=>setAiForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-amber-100 bg-white/70 resize-none text-sm"/>
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+        <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Bible Verse</span></div>
+        <Textarea value={aiForm.bible_verse} onChange={e=>setAiForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
       </div>
 
       {/* 2. Description */}
@@ -1704,24 +1659,24 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       </div>
 
       {/* 4. Wedding Schedule */}
-      <div className="rounded-2xl border border-rose-100 bg-rose-50/20 p-4 space-y-3">
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-rose-500"/><span className="text-xs font-semibold uppercase tracking-wider text-rose-600">Wedding Schedule</span></div>
-          <Button type="button" size="sm" variant="outline" className="rounded-full text-xs px-3 border-rose-200 text-rose-600 hover:bg-rose-50" onClick={()=>setAiForm(f=>({...f,program_events:[...(f.program_events),{...EMPTY_PROGRAM_EVENT}]}))}>+ Add Event</Button>
+          <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Wedding Schedule</span></div>
+          <Button type="button" size="sm" variant="outline" className="rounded-full text-xs px-3 border-[#668c65]/30 text-[#668c65] hover:bg-[#668c65]/10" onClick={()=>setAiForm(f=>({...f,program_events:[...(f.program_events),{...EMPTY_PROGRAM_EVENT}]}))}>+ Add Event</Button>
         </div>
         {aiForm.program_events.map((ev: ProgramEvent, idx: number)=>(
-          <div key={idx} className="rounded-xl border border-rose-100 bg-white p-3 space-y-2">
+          <div key={idx} className="rounded-xl border border-[#668c65]/20 bg-white p-3 space-y-2">
             <div className="flex items-center gap-2">
-              <Input value={ev.event} onChange={e=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],event:e.target.value};setAiForm(f=>({...f,program_events:arr}));}} placeholder="📍 Introduction Ceremony (Gusaba)" className="rounded-xl border-rose-100 bg-rose-50/30 h-9 text-sm flex-1"/>
-              <Button type="button" size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-slate-300 hover:text-rose-500 shrink-0" disabled={aiForm.program_events.length<=1} onClick={()=>{const arr=[...aiForm.program_events];arr.splice(idx,1);setAiForm(f=>({...f,program_events:arr}));}}><X className="h-3.5 w-3.5"/></Button>
+              <Input value={ev.event} onChange={e=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],event:e.target.value};setAiForm(f=>({...f,program_events:arr}));}} placeholder="📍 Introduction Ceremony (Gusaba)" className="rounded-xl border-[#668c65]/20 bg-[#668c65]/5 h-9 text-sm flex-1"/>
+              <Button type="button" size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-slate-300 hover:text-[#668c65] shrink-0" disabled={aiForm.program_events.length<=1} onClick={()=>{const arr=[...aiForm.program_events];arr.splice(idx,1);setAiForm(f=>({...f,program_events:arr}));}}><X className="h-3.5 w-3.5"/></Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 bg-rose-50/30 border border-rose-100 rounded-xl px-3 h-9">
-                <Clock className="h-3.5 w-3.5 text-rose-400 shrink-0"/>
+              <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
+                <Clock className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
                 <Input value={ev.time} onChange={e=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],time:e.target.value};setAiForm(f=>({...f,program_events:arr}));}} placeholder="9:00 AM – 1:00 PM" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
               </div>
-              <div className="flex items-center gap-2 bg-rose-50/30 border border-rose-100 rounded-xl px-3 h-9">
-                <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0"/>
+              <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
+                <MapPin className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
                 <Input value={ev.location} onChange={e=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],location:e.target.value};setAiForm(f=>({...f,program_events:arr}));}} placeholder="Maliot Hotel" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
               </div>
             </div>
@@ -1730,18 +1685,18 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       </div>
 
       {/* 5. Note */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 space-y-2">
-        <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-slate-500"/><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Note</span></div>
-        <Textarea value={aiForm.invitation_note} onChange={e=>setAiForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-slate-100 bg-white/70 resize-none text-sm"/>
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+        <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Note</span></div>
+        <Textarea value={aiForm.invitation_note} onChange={e=>setAiForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
       </div>
 
       {/* 5. Couple Contact */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 space-y-2">
-        <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-slate-500"/><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Couple Contact</span></div>
-        <Textarea value={aiForm.couple_contact} onChange={e=>setAiForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-slate-100 bg-white/70 resize-none text-sm"/>
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+        <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Couple Contact</span></div>
+        <Textarea value={aiForm.couple_contact} onChange={e=>setAiForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
       </div>
 
-      <Button onClick={()=>aiMutation.mutate({...aiForm, selected_template: selectedTemplate ? {id:selectedTemplate.id, layout:selectedTemplate.layout, section_order:selectedTemplate.section_order, language:selectedTemplate.language} : undefined})} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-violet-600 hover:bg-violet-700">
+      <Button onClick={()=>aiMutation.mutate({...aiForm, selected_template: selectedTemplate ? {id:selectedTemplate.id, layout:selectedTemplate.layout, section_order:selectedTemplate.section_order, language:selectedTemplate.language} : undefined})} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-[#668c65] hover:bg-[#527451]">
         {aiMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<Sparkles className="h-4 w-4"/>}Generate 3 Styles (White · Gold · Cream)
       </Button>
     </div>

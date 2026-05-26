@@ -103,8 +103,17 @@ export function useMessagesSocket(otherUserId: string | null) {
 
     ws.onmessage = (event) => {
       try {
-        const msg: ChatMessage = JSON.parse(event.data);
-        appendMessage(msg);
+        const data = JSON.parse(event.data);
+        // read_receipt — mark all messages in this conversation as read
+        if (data.type === 'read_receipt') {
+          queryClient.setQueryData<ChatMessage[]>(
+            ['message-history', otherUserId],
+            (prev = []) => prev.map(m => ({ ...m, read: true }))
+          );
+          return;
+        }
+        // Regular incoming message
+        appendMessage(data as ChatMessage);
       } catch {
         // ignore malformed frames
       }
@@ -115,12 +124,9 @@ export function useMessagesSocket(otherUserId: string | null) {
     ws.onclose = (e) => {
       setConnected(false);
       wsRef.current = null;
-      // 4001 = auth failure, 4003 = no confirmed booking — don't retry these
-      if (shouldReconnect.current && e.code !== 1000 && e.code !== 4001 && e.code !== 4003) {
+      // 4001 = auth failure — don't retry
+      if (shouldReconnect.current && e.code !== 1000 && e.code !== 4001) {
         reconnectTimer.current = setTimeout(connect, 3000);
-      }
-      if (e.code === 4003) {
-        setError('no_booking');
       }
     };
   }, [getWsUrl, appendMessage]);

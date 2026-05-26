@@ -443,9 +443,29 @@ export function ProfessionalWeddingTasks({ weddingDate, totalBudget = 0 }: Profe
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading your tasks...</span>
+            <div className="space-y-4 animate-pulse">
+                {/* Toolbar skeleton */}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="h-9 bg-slate-200 rounded-xl w-48" />
+                    <div className="flex gap-2">
+                        <div className="h-9 bg-slate-100 rounded-xl w-24" />
+                        <div className="h-9 bg-slate-200 rounded-xl w-28" />
+                    </div>
+                </div>
+                {/* Task row skeletons */}
+                {[1,2,3,4,5].map(i => (
+                    <div key={i} className="rounded-2xl border border-slate-100 bg-white p-4 flex items-center gap-4">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 shrink-0" />
+                        <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-slate-200 rounded w-1/2" />
+                            <div className="flex gap-3">
+                                <div className="h-3 bg-slate-100 rounded w-20" />
+                                <div className="h-3 bg-slate-100 rounded w-16" />
+                            </div>
+                        </div>
+                        <div className="h-6 bg-slate-100 rounded-full w-16 shrink-0" />
+                    </div>
+                ))}
             </div>
         );
     }

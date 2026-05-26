@@ -711,266 +711,168 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 </div>
             </section>
 
-            {/* The Narrative / Experience Section */}
-            <section className="py-32 bg-[#FCFBF9] relative overflow-hidden">
-                <div className="container mx-auto px-6 md:px-12 max-w-6xl relative z-10">
-                    <div className="grid lg:grid-cols-2 gap-20 items-center">
-                        <div className="order-2 lg:order-1 relative">
-                            <div className="aspect-[3/4] rounded-[60px] overflow-hidden shadow-2xl border-[12px] border-white relative group">
-                                <img 
-                                    src={service.gallery.photos[0]?.url || service.coverImage} 
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
-                                    alt="Process" 
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
-                            </div>
-                            {/* Decorative watercolor-like element could go here */}
-                        </div>
-
-                        <div className="order-1 lg:order-2 space-y-12">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 text-[#668c65]">
-                                    <Sparkles className="h-4 w-4" />
-                                    <span className="font-bold tracking-[0.4em] uppercase text-[10px]">The Philosophy</span>
-                                </div>
-                                <h2 className="font-serif text-5xl md:text-6xl text-slate-900 italic">Our Craft & Narrative.</h2>
-                            </div>
-
-                            <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-light italic font-serif">
-                                <span className="text-7xl font-serif text-[#668c65] float-left mr-4 leading-[0.7] mt-2 italic font-medium">B</span>
-                                {service.description}
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-200">
-                                {service.features.slice(0, 4).map((feature, i) => (
-                                    <div key={i} className="flex items-start gap-4 group">
-                                        <div className="mt-1 h-5 w-5 rounded-full bg-[#668c65]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#668c65] transition-colors duration-500">
-                                            <CheckCircle className="h-3 w-3 text-[#668c65] group-hover:text-white" />
-                                        </div>
-                                        <span className="font-bold text-[11px] uppercase tracking-widest text-slate-500 group-hover:text-slate-900 transition-colors">
-                                            {feature}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Featured Visual Art Section (Photos) */}
-            {service.gallery.photos.length > 0 && (
+            {/* Gallery Tabs Section (Visual Art, Cinema, Live Stories, Artisan Exclusives) */}
+            {(service.gallery.photos.length > 0 || service.gallery.videos.length > 0 || service.gallery.reels.length > 0 || service.promotionalMedia.offers.length > 0) && (
                 <section className="py-24 bg-white group/carousel"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
-                    <div className="container mx-auto px-4 max-w-7xl mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <ImageIcon className="h-4 w-4 text-[#668c65]" />
-                                <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">Visual Art</span>
-                            </div>
-                            <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 leading-tight">The Stills.</h2>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => scroll(photosRef, "left")} className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronLeft className="h-5 w-5 group-hover/btn:-translate-x-0.5 transition-transform" />
-                            </button>
-                            <button onClick={() => scroll(photosRef, "right")} className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronRight className="h-5 w-5 group-hover/btn:translate-x-0.5 transition-transform" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="container mx-auto px-0 max-w-7xl">
-                        <div ref={photosRef} className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-6 md:px-12 max-w-7xl mx-auto">
-                            {service.gallery.photos.map((item: any, i: number) => (
-                                <div key={i} className="flex-shrink-0 w-[80vw] md:w-[400px] snap-center">
-                                    <div 
-                                        className="relative h-[500px] rounded-[40px] overflow-hidden group/item cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-700"
-                                        onClick={() => setSelectedImage({url: item.url, caption: item.caption, index: i})}
-                                    >
-                                        <img src={item.url} alt="Still art" className="absolute inset-0 w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-1000" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-40 group-hover/item:opacity-70 transition-opacity" />
-                                        <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end translate-y-2 group-hover/item:translate-y-0 transition-transform duration-500">
-                                            <p className="text-lg font-serif italic text-white line-clamp-1">{item.caption || 'Masterpiece'}</p>
-                                            <div className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
-                                                <Search className="h-3 w-3" />
-                                            </div>
-                                        </div>
+                    <div className="container mx-auto px-4 max-w-7xl">
+                        <Tabs defaultValue={service.gallery.photos.length > 0 ? "visual-art" : service.gallery.videos.length > 0 ? "cinema" : service.gallery.reels.length > 0 ? "live-stories" : "exclusives"} className="w-full">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <ImageIcon className="h-4 w-4 text-[#668c65]" />
+                                        <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">Gallery</span>
                                     </div>
+                                    <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 leading-tight">The Portfolio.</h2>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* The Cinema Section (Videos) */}
-            {service.gallery.videos.length > 0 && (
-                <section className="py-24 bg-[#FCFBF9] border-y border-slate-100">
-                    <div className="container mx-auto px-4 max-w-7xl mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Video className="h-4 w-4 text-[#668c65]" />
-                                <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">Cinema</span>
+                                <TabsList className="bg-slate-50 p-1.5 rounded-full border border-slate-100 flex h-auto flex-wrap justify-center gap-1">
+                                    {service.gallery.photos.length > 0 && (
+                                        <TabsTrigger value="visual-art" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                            Visual Art
+                                        </TabsTrigger>
+                                    )}
+                                    {service.gallery.videos.length > 0 && (
+                                        <TabsTrigger value="cinema" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                            Cinema
+                                        </TabsTrigger>
+                                    )}
+                                    {service.gallery.reels.length > 0 && (
+                                        <TabsTrigger value="live-stories" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                            Live Stories
+                                        </TabsTrigger>
+                                    )}
+                                    {service.promotionalMedia.offers.length > 0 && (
+                                        <TabsTrigger value="exclusives" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                            Exclusives
+                                        </TabsTrigger>
+                                    )}
+                                </TabsList>
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 leading-tight">Motion Mastery.</h2>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => scroll(videosRef, "left")} className="w-12 h-12 rounded-full bg-white border border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
-                            <button onClick={() => scroll(videosRef, "right")} className="w-12 h-12 rounded-full bg-white border border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
 
-                    <div className="container mx-auto px-0 max-w-7xl">
-                        <div ref={videosRef} className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-6 md:px-12 max-w-7xl mx-auto">
-                            {service.gallery.videos.map((video: any, i: number) => (
-                                <div key={i} className="flex-shrink-0 w-[85vw] md:w-[500px] snap-center">
-                                    <div className="relative aspect-video rounded-[40px] overflow-hidden shadow-xl bg-slate-900">
-                                        <video
-                                            src={video.url}
-                                            controls
-                                            preload="metadata"
-                                            poster={video.thumbnail && !video.thumbnail.endsWith('.mp4') && !video.thumbnail.endsWith('.mov') ? video.thumbnail : undefined}
-                                            className="w-full h-full object-contain bg-black rounded-[40px]"
-                                        />
-                                        {video.title && (
-                                            <div className="absolute bottom-0 left-0 right-0 px-6 py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[40px]">
-                                                <p className="text-sm font-serif italic text-white line-clamp-1">{video.title}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* Live Stories Section (Reels) */}
-            {service.gallery.reels.length > 0 && (
-                <section className="py-24 bg-white">
-                    <div className="container mx-auto px-6 md:px-12 max-w-7xl mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Sparkles className="h-4 w-4 text-[#668c65]" />
-                                <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">Live Stories</span>
-                            </div>
-                            <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 leading-tight">The Highlights.</h2>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => scroll(reelsRef, "left")} className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronLeft className="h-5 w-5" />
-                            </button>
-                            <button onClick={() => scroll(reelsRef, "right")} className="w-12 h-12 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all duration-500 flex items-center justify-center group/btn">
-                                <ChevronRight className="h-5 w-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="container mx-auto px-0 max-w-7xl">
-                        <div ref={reelsRef} className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 px-6 md:px-12 max-w-7xl mx-auto">
-                            {service.gallery.reels.map((reel: any, i: number) => (
-                                <div key={i} className="flex-shrink-0 w-[60vw] md:w-[280px] snap-center">
-                                    <div className="relative aspect-[9/16] rounded-[32px] overflow-hidden shadow-lg bg-slate-900">
-                                        <video
-                                            src={reel.url}
-                                            controls
-                                            preload="metadata"
-                                            poster={reel.thumbnail && !reel.thumbnail.endsWith('.mp4') && !reel.thumbnail.endsWith('.mov') ? reel.thumbnail : undefined}
-                                            className="w-full h-full object-contain bg-black rounded-[32px]"
-                                        />
-                                        {reel.title && (
-                                            <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none rounded-b-[32px]">
-                                                <p className="text-xs font-serif italic text-white line-clamp-1">{reel.title}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            {/* Artisan Exclusives Section (Offers) */}
-            {service.promotionalMedia.offers.length > 0 && (
-                <section className="py-24 bg-[#FCFBF9] border-y border-slate-100">
-                    <div className="container mx-auto px-6 md:px-12 max-w-7xl text-center mb-16 space-y-4">
-                        <div className="flex items-center justify-center gap-2 text-[#668c65]">
-                            <Tag className="h-4 w-4" />
-                            <span className="font-bold tracking-[0.4em] uppercase text-[10px]">Artisan Exclusives</span>
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900">Limited Invitations.</h2>
-                    </div>
-
-                    <div className="container mx-auto px-6 md:px-12 max-w-6xl">
-                        <div className="grid md:grid-cols-2 gap-10">
-                            {service.promotionalMedia.offers.map((offer: any) => (
-                                <div key={offer.id} className="group relative h-[400px] rounded-[50px] overflow-hidden bg-slate-900 shadow-xl border border-white/10 hover:shadow-2xl transition-all duration-700">
-                                    <img src={offer.url || offer.thumbnail} alt={offer.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 origin-center" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                                    
-                                    <div className="absolute top-8 left-8">
-                                        <Badge className="bg-white/10 backdrop-blur-md text-white border border-white/20 py-1.5 px-4 rounded-full font-bold text-[9px] uppercase tracking-[0.2em]">
-                                            Curated Exclusive
-                                        </Badge>
-                                    </div>
-
-                                    <div className="absolute inset-x-10 bottom-10 space-y-4">
-                                        <div className="space-y-1">
-                                            <h3 className="text-3xl font-serif italic text-white leading-tight">{offer.title}</h3>
-                                            <p className="text-white/70 text-sm font-medium leading-relaxed line-clamp-2">{offer.description || 'Join us for an exclusive experience curated for excellence.'}</p>
-                                        </div>
-                                        <div className="flex items-center justify-between pt-6 border-t border-white/10">
-                                            <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
-                                                <Clock className="w-3.5 h-3.5" />
-                                                <span>Limited Commission</span>
-                                            </div>
-                                            <Button variant="ghost" className="h-10 px-0 flex items-center text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-transparent group/btn" onClick={(e) => handleBookingClick(e, `/booking/${service.id}`)}>
-                                                Claim Now
-                                                <div className="ml-3 w-8 h-[1px] bg-white/30 group-hover/btn:w-12 group-hover/btn:bg-[#668c65] transition-all duration-500 relative">
-                                                    <ArrowRight className="absolute -right-1 -top-1.5 w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:text-[#668c65] transition-all" />
+                            {service.gallery.photos.length > 0 && (
+                                <TabsContent value="visual-art" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6 pb-8 pt-6">
+                                        {service.gallery.photos.map((item: any, i: number) => (
+                                            <div key={i} className="w-full">
+                                                <div 
+                                                    className="relative aspect-square md:aspect-[4/5] rounded-2xl md:rounded-[32px] overflow-hidden group/item cursor-pointer shadow-md hover:shadow-xl transition-all duration-700"
+                                                    onClick={() => setSelectedImage({url: item.url, caption: item.caption, index: i})}
+                                                >
+                                                    <img src={item.url} alt="Still art" className="absolute inset-0 w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-1000" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-40 group-hover/item:opacity-70 transition-opacity" />
+                                                    <div className="absolute bottom-3 left-3 right-3 md:bottom-6 md:left-6 md:right-6 flex justify-between items-end translate-y-2 group-hover/item:translate-y-0 transition-transform duration-500">
+                                                        <p className="text-sm md:text-lg font-serif italic text-white line-clamp-1">{item.caption || 'Masterpiece'}</p>
+                                                        <div className="h-6 w-6 md:h-8 md:w-8 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white flex-shrink-0">
+                                                            <Search className="h-3 w-3" />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TabsContent>
+                            )}
+
+                            {service.gallery.videos.length > 0 && (
+                                <TabsContent value="cinema" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 pb-8 pt-6">
+                                        {service.gallery.videos.map((video: any, i: number) => (
+                                            <div key={i} className="w-full">
+                                                <div className="relative aspect-video rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
+                                                    <video
+                                                        src={video.url}
+                                                        controls
+                                                        preload="metadata"
+                                                        poster={video.thumbnail && !video.thumbnail.endsWith('.mp4') && !video.thumbnail.endsWith('.mov') ? video.thumbnail : undefined}
+                                                        className="w-full h-full object-contain bg-black"
+                                                    />
+                                                    {video.title && (
+                                                        <div className="absolute bottom-0 left-0 right-0 px-4 py-3 md:px-6 md:py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+                                                            <p className="text-sm font-serif italic text-white line-clamp-1">{video.title}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TabsContent>
+                            )}
+
+                            {service.gallery.reels.length > 0 && (
+                                <TabsContent value="live-stories" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6 pb-8 pt-6">
+                                        {service.gallery.reels.map((reel: any, i: number) => (
+                                            <div key={i} className="w-full">
+                                                <div className="relative aspect-[9/16] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
+                                                    <video
+                                                        src={reel.url}
+                                                        controls
+                                                        preload="metadata"
+                                                        poster={reel.thumbnail && !reel.thumbnail.endsWith('.mp4') && !reel.thumbnail.endsWith('.mov') ? reel.thumbnail : undefined}
+                                                        className="w-full h-full object-contain bg-black"
+                                                    />
+                                                    {reel.title && (
+                                                        <div className="absolute bottom-0 left-0 right-0 px-3 py-2 md:px-4 md:py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+                                                            <p className="text-xs font-serif italic text-white line-clamp-1">{reel.title}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TabsContent>
+                            )}
+
+                            {service.promotionalMedia.offers.length > 0 && (
+                                <TabsContent value="exclusives" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+                                    <div className="pt-6 pb-8">
+                                        <div className="text-center mb-10 space-y-2">
+                                            <div className="flex items-center justify-center gap-2 text-[#668c65]">
+                                                <Tag className="h-4 w-4" />
+                                                <span className="font-bold tracking-[0.4em] uppercase text-[10px]">Artisan Exclusives</span>
+                                            </div>
+                                            <p className="font-serif italic text-2xl text-slate-900">Limited Invitations.</p>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-10">
+                                            {service.promotionalMedia.offers.map((offer: any) => (
+                                                <div key={offer.id} className="group relative h-[400px] rounded-[50px] overflow-hidden bg-slate-900 shadow-xl border border-white/10 hover:shadow-2xl transition-all duration-700">
+                                                    <img src={offer.url || offer.thumbnail} alt={offer.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 origin-center" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                                                    <div className="absolute top-8 left-8">
+                                                        <Badge className="bg-white/10 backdrop-blur-md text-white border border-white/20 py-1.5 px-4 rounded-full font-bold text-[9px] uppercase tracking-[0.2em]">
+                                                            Curated Exclusive
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="absolute inset-x-10 bottom-10 space-y-4">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-3xl font-serif italic text-white leading-tight">{offer.title}</h3>
+                                                            <p className="text-white/70 text-sm font-medium leading-relaxed line-clamp-2">{offer.description || 'Join us for an exclusive experience curated for excellence.'}</p>
+                                                        </div>
+                                                        <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                                                <Clock className="w-3.5 h-3.5" />
+                                                                <span>Limited Commission</span>
+                                                            </div>
+                                                            <Button variant="ghost" className="h-10 px-0 flex items-center text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-transparent group/btn" onClick={(e) => handleBookingClick(e, `/booking/${service.id}`)}>
+                                                                Claim Now
+                                                                <div className="ml-3 w-8 h-[1px] bg-white/30 group-hover/btn:w-12 group-hover/btn:bg-[#668c65] transition-all duration-500 relative">
+                                                                    <ArrowRight className="absolute -right-1 -top-1.5 w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:text-[#668c65] transition-all" />
+                                                                </div>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                </TabsContent>
+                            )}
+                        </Tabs>
                     </div>
                 </section>
             )}
-
-            {/* Stats Summary - Floating Style */}
-            <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
-                <div className="container mx-auto px-6 md:px-12 max-w-6xl">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
-                        {[
-                            { label: "Completed Events", value: `${service.stats.eventsCompleted}+`, icon: <CheckCircle className="h-6 w-6" /> },
-                            { label: "Years Experience", value: `${service.stats.yearsExperience}`, icon: <Clock className="h-6 w-6" /> },
-                            { label: "Artisans", value: `${service.stats.teamSize}`, icon: <Users className="h-6 w-6" /> },
-                            { label: "Satisfaction", value: `${service.stats.satisfactionRate}%`, icon: <Star className="h-6 w-6" /> },
-                        ].map((stat, i) => (
-                            <div key={i} className="text-center space-y-4 group">
-                                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-[#668c65] group-hover:scale-110 transition-all duration-500">
-                                    {React.cloneElement(stat.icon as React.ReactElement, { className: 'h-6 w-6 text-[#668c65] group-hover:text-white' })}
-                                </div>
-                                <div>
-                                    <p className="text-4xl md:text-5xl font-black tracking-tighter">{stat.value}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-[#668c65] transition-colors">{stat.label}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Artisan Collections (Pricing) Section */}
+             {/* Artisan Collections (Pricing) Section */}
             <section id="collections" className="py-32 bg-[#FCFBF9] relative">
                 <div className="container mx-auto px-6 md:px-12 max-w-6xl">
                     <div className="text-center mb-20 space-y-4">
@@ -1078,6 +980,79 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 </div>
             </section>
 
+
+
+              {/* The Narrative / Experience Section */}
+            <section className="py-32 bg-[#FCFBF9] relative overflow-hidden">
+                <div className="container mx-auto px-6 md:px-12 max-w-6xl relative z-10">
+                    <div className="grid lg:grid-cols-2 gap-20 items-center">
+                        <div className="order-2 lg:order-1 relative">
+                            <div className="aspect-[3/4] rounded-[60px] overflow-hidden shadow-2xl border-[12px] border-white relative group">
+                                <img 
+                                    src={service.gallery.photos[0]?.url || service.coverImage} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                                    alt="Process" 
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent" />
+                            </div>
+                            {/* Decorative watercolor-like element could go here */}
+                        </div>
+
+                        <div className="order-1 lg:order-2 space-y-12">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-[#668c65]">
+                                    <Sparkles className="h-4 w-4" />
+                                    <span className="font-bold tracking-[0.4em] uppercase text-[10px]">The Philosophy</span>
+                                </div>
+                                <h2 className="font-serif text-5xl md:text-6xl text-slate-900 italic">Our Craft & Narrative.</h2>
+                            </div>
+
+                            <p className="text-xl md:text-2xl text-slate-600 leading-relaxed font-light italic font-serif">
+                                <span className="text-7xl font-serif text-[#668c65] float-left mr-4 leading-[0.7] mt-2 italic font-medium">B</span>
+                                {service.description}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-10 pt-8 border-t border-slate-200">
+                                {service.features.slice(0, 4).map((feature, i) => (
+                                    <div key={i} className="flex items-start gap-4 group">
+                                        <div className="mt-1 h-5 w-5 rounded-full bg-[#668c65]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#668c65] transition-colors duration-500">
+                                            <CheckCircle className="h-3 w-3 text-[#668c65] group-hover:text-white" />
+                                        </div>
+                                        <span className="font-bold text-[11px] uppercase tracking-widest text-slate-500 group-hover:text-slate-900 transition-colors">
+                                            {feature}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             {/* Stats Summary - Floating Style */}
+            <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
+                <div className="container mx-auto px-6 md:px-12 max-w-6xl">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                        {[
+                            { label: "Completed Events", value: `${service.stats.eventsCompleted}+`, icon: <CheckCircle className="h-6 w-6" /> },
+                            { label: "Years Experience", value: `${service.stats.yearsExperience}`, icon: <Clock className="h-6 w-6" /> },
+                            { label: "Artisans", value: `${service.stats.teamSize}`, icon: <Users className="h-6 w-6" /> },
+                            { label: "Satisfaction", value: `${service.stats.satisfactionRate}%`, icon: <Star className="h-6 w-6" /> },
+                        ].map((stat, i) => (
+                            <div key={i} className="text-center space-y-4 group">
+                                <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mx-auto group-hover:bg-[#668c65] group-hover:scale-110 transition-all duration-500">
+                                    {React.cloneElement(stat.icon as React.ReactElement, { className: 'h-6 w-6 text-[#668c65] group-hover:text-white' })}
+                                </div>
+                                <div>
+                                    <p className="text-4xl md:text-5xl font-black tracking-tighter">{stat.value}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-[#668c65] transition-colors">{stat.label}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Client Stories (Reviews) Section */}
             <section className="py-32 bg-white relative overflow-hidden">
                  <div className="container mx-auto px-6 md:px-12 max-w-7xl">
@@ -1149,6 +1124,16 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                     </div>
                  </div>
             </section>
+
+          
+
+            
+
+          
+
+           
+
+           
 
             {/* Practicalities (FAQ) Section */}
             <section className="py-32 bg-[#FCFBF9] border-t border-slate-100">

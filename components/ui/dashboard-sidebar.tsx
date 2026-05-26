@@ -34,11 +34,6 @@ export function DashboardSidebar({ activeTab, onTabChange, userRole = "Customer"
         { id: "planning", label: "Planning & Timeline", icon: <CheckCircle className="w-4 h-4" /> },
         { id: "ai-assistant", label: "AI Assistant", icon: <Sparkles className="w-4 h-4" /> },
         { id: "guests", label: "Guest Management", icon: <Users className="w-4 h-4" /> },
-      ]
-    },
-    {
-      title: "Services & Vendors",
-      items: [
         { id: "vendors", label: "Find Vendors", icon: <Star className="w-4 h-4" /> },
       ]
     },

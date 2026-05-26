@@ -63,9 +63,36 @@ export function ProfessionalPlanningDashboard({ defaultTab = "overview" }: Profe
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center p-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Loading wedding planning dashboard...</span>
+            <div className="space-y-6 animate-pulse">
+                {/* Header skeleton */}
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <div className="h-8 bg-slate-200 rounded-lg w-72" />
+                        <div className="h-4 bg-slate-100 rounded w-52" />
+                    </div>
+                    <div className="h-10 bg-slate-200 rounded-xl w-28" />
+                </div>
+                {/* Stats cards skeleton */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[1,2,3,4].map(i => (
+                        <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
+                            <div className="h-4 bg-slate-200 rounded w-1/2" />
+                            <div className="h-7 bg-slate-200 rounded w-1/3" />
+                        </div>
+                    ))}
+                </div>
+                {/* Tabs skeleton */}
+                <div className="h-12 bg-slate-100 rounded-xl w-full" />
+                {/* Content skeleton */}
+                <div className="space-y-4">
+                    {[1,2,3].map(i => (
+                        <div key={i} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 space-y-3">
+                            <div className="h-5 bg-slate-200 rounded w-1/3" />
+                            <div className="h-3 bg-slate-100 rounded w-full" />
+                            <div className="h-3 bg-slate-100 rounded w-4/5" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }

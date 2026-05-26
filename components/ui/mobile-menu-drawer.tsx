@@ -59,12 +59,6 @@ export function MobileMenuDrawer({
         { id: "budget", label: "Budget", icon: DollarSign },
         { id: "ai-assistant", label: "AI Assistant", icon: Sparkles },
         { id: "guests", label: "Guest Management", icon: Users },
-      ]
-    },
-    {
-      id: "services",
-      title: "Services & Vendors",
-      items: [
         { id: "vendors", label: "Find Vendors", icon: Star },
       ]
     },
