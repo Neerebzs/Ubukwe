@@ -1,9 +1,10 @@
 import { Suspense } from "react"
 import { ProviderDashboardContent } from "./dashboard-content"
+import ProviderDashboardLoading from "./loading"
 
 export default function ProviderDashboard() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f9fafc] flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<ProviderDashboardLoading />}>
       <ProviderDashboardContent />
     </Suspense>
   )

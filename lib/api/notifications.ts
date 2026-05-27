@@ -26,6 +26,7 @@ export interface NotificationResponse {
 }
 
 export interface UnreadCountResponse {
+  unread_count: any;
   status: string;
   message: string;
   data: {

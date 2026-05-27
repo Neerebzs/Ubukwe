@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, CheckCircle, Eye, MessageCircle, Clock, DollarSign, CheckCircle2, Package, Activity, Users } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -181,10 +182,94 @@ export function ProviderBookings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage-600 mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading bookings...</p>
+      <div className="space-y-6">
+        {/* Page title */}
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-10 w-64 rounded-xl" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-[1px] w-8 rounded" />
+            <Skeleton className="h-3 w-72 rounded" />
+          </div>
+        </div>
+
+        {/* Filter tabs + view toggle row */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          {/* Status filter tabs */}
+          <div className="flex items-center gap-1.5 bg-white border border-slate-100 p-1.5 rounded-2xl shadow-sm">
+            {[40, 52, 64, 56, 60].map((w, i) => (
+              <Skeleton key={i} className={`h-9 rounded-xl`} style={{ width: `${w}px` }} />
+            ))}
+          </div>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-100 shadow-sm">
+            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-9 w-32 rounded-xl" />
+          </div>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-8">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24 rounded" />
+                  <Skeleton className="h-9 w-16 rounded-lg" />
+                </div>
+                <Skeleton className="h-14 w-14 rounded-2xl shrink-0" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Booking cards */}
+        <div className="space-y-6 pb-12">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-8">
+              <div className="flex flex-col md:flex-row gap-10">
+                {/* Image / avatar block */}
+                <Skeleton className="w-full md:w-48 h-48 rounded-[1.5rem] shrink-0" />
+
+                {/* Details */}
+                <div className="flex-1 space-y-8">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between border-b border-slate-50 pb-6">
+                    <div className="space-y-2">
+                      <Skeleton className="h-8 w-44 rounded-lg" />
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-3 w-28 rounded" />
+                        <Skeleton className="h-3 w-3 rounded-full" />
+                        <Skeleton className="h-3 w-20 rounded" />
+                      </div>
+                    </div>
+                    <div className="text-right space-y-1.5">
+                      <Skeleton className="h-7 w-32 rounded-lg ml-auto" />
+                      <Skeleton className="h-3 w-20 rounded ml-auto" />
+                    </div>
+                  </div>
+
+                  {/* Metadata grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                    {[...Array(4)].map((_, j) => (
+                      <div key={j} className="space-y-2">
+                        <Skeleton className="h-3 w-20 rounded" />
+                        <Skeleton className="h-12 w-full rounded-xl" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer row */}
+                  <div className="flex flex-col lg:flex-row items-end justify-between gap-6 pt-2">
+                    <Skeleton className="h-16 w-full lg:w-64 rounded-[1.5rem]" />
+                    <div className="flex gap-3 shrink-0">
+                      <Skeleton className="h-12 w-24 rounded-xl" />
+                      <Skeleton className="h-12 w-36 rounded-xl" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

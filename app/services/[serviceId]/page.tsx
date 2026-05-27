@@ -46,6 +46,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const reelsRef = useRef<HTMLDivElement>(null)
     
     const [isHovered, setIsHovered] = useState(false)
+    const [heroSlideIndex, setHeroSlideIndex] = useState(0)
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null)
     const [showShareMenu, setShowShareMenu] = useState(false)
     const [linkCopied, setLinkCopied] = useState(false)
@@ -240,6 +241,26 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
         refetchOnWindowFocus: false,
     });
 
+    // Hero image slideshow — auto-advances every 4 s, pauses when gallery carousel is hovered
+    useEffect(() => {
+        if (!serviceRes || isHovered) return;
+
+        const photos = (serviceRes.gallery ?? [])
+            .filter((item: any) => {
+                const type = typeof item === 'string' ? 'image' : item.type;
+                const contentType = typeof item === 'object' ? item.contentType : null;
+                return (!type || type === 'image') && !contentType;
+            });
+
+        if (photos.length <= 1) return; // nothing to slide
+
+        const timer = setInterval(() => {
+            setHeroSlideIndex(prev => (prev + 1) % photos.length);
+        }, 4000);
+
+        return () => clearInterval(timer);
+    }, [serviceRes, isHovered]);
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] space-y-6">
@@ -310,6 +331,21 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const firstPortfolioUrl = firstPortfolioImage
         ? (typeof firstPortfolioImage === 'string' ? firstPortfolioImage : firstPortfolioImage.url)
         : "/placeholder.svg";
+
+    // Hero slideshow images — all portfolio photos (no offers/events)
+    const heroImages: string[] = (serviceData.gallery ?? [])
+        .filter((item: any) => {
+            const type = typeof item === 'string' ? 'image' : item.type;
+            const contentType = typeof item === 'object' ? item.contentType : null;
+            return (!type || type === 'image') && !contentType;
+        })
+        .map((item: any) => typeof item === 'string' ? item : item.url)
+        .filter(Boolean);
+
+    // Fallback to cover image if no gallery photos
+    if (heroImages.length === 0) heroImages.push(firstPortfolioUrl);
+
+    const currentHeroImage = heroImages[heroSlideIndex % heroImages.length];
 
     // Map backend to frontend structure with better data handling
     const service = {
@@ -670,12 +706,54 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                             <div className="relative w-full max-w-[450px] aspect-[4/5] z-20 group mx-auto">
                                 <div className="absolute inset-0 border-[1px] border-slate-200 rounded-[200px] -m-6 group-hover:m-0 transition-all duration-700 pointer-events-none" />
                                 <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white">
-                                    <img
-                                      src={service.coverImage}
-                                      className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
-                                      alt={service.title}
-                                    />
+                                    <AnimatePresence mode="wait">
+                                        <motion.img
+                                            key={currentHeroImage}
+                                            src={currentHeroImage}
+                                            className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
+                                            alt={service.title}
+                                            initial={{ opacity: 0, scale: 1.08 }}
+                                            animate={{ opacity: 1, scale: 1.1 }}
+                                            exit={{ opacity: 0, scale: 1.05 }}
+                                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                                        />
+                                    </AnimatePresence>
                                 </div>
+
+                                {/* Slide indicators — only shown when there are multiple images */}
+                                {heroImages.length > 1 && (
+                                    <>
+                                        {/* Dot indicators */}
+                                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-40">
+                                            {heroImages.map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setHeroSlideIndex(i)}
+                                                    className={cn(
+                                                        "rounded-full transition-all duration-300",
+                                                        i === heroSlideIndex % heroImages.length
+                                                            ? "w-5 h-2 bg-white shadow-md"
+                                                            : "w-2 h-2 bg-white/50 hover:bg-white/80"
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* Prev / Next arrows */}
+                                        <button
+                                            onClick={() => setHeroSlideIndex(prev => (prev - 1 + heroImages.length) % heroImages.length)}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 z-40 w-8 h-8 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <ChevronLeft className="w-4 h-4 text-slate-700" />
+                                        </button>
+                                        <button
+                                            onClick={() => setHeroSlideIndex(prev => (prev + 1) % heroImages.length)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 z-40 w-8 h-8 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                        >
+                                            <ChevronRight className="w-4 h-4 text-slate-700" />
+                                        </button>
+                                    </>
+                                )}
                                 
                                 {/* Floating Badge */}
                                 <motion.div 

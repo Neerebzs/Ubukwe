@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar,
   DollarSign,
@@ -95,10 +96,110 @@ export function ProviderOverview() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-sage-600 mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <div className="space-y-8 pb-8">
+        {/* Page title */}
+        <div className="flex flex-col gap-2 mb-8">
+          <Skeleton className="h-10 w-52 rounded-xl" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-[1px] w-8 rounded" />
+            <Skeleton className="h-3 w-56 rounded" />
+          </div>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3.5 w-24 rounded" />
+                <Skeleton className="h-10 w-10 rounded-xl" />
+              </div>
+              <Skeleton className="h-9 w-28 rounded-lg" />
+              <Skeleton className="h-3 w-32 rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Chart + growth card */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Earnings chart card */}
+          <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 overflow-hidden">
+            <div className="p-8 pb-0 flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-36 rounded-lg" />
+                <Skeleton className="h-3 w-48 rounded" />
+              </div>
+              <Skeleton className="h-7 w-24 rounded-full" />
+            </div>
+            <div className="p-8">
+              {/* Chart bars simulation */}
+              <div className="h-[300px] flex items-end gap-3">
+                {[55, 80, 45, 90, 60, 75, 50].map((h, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <Skeleton className="w-full rounded-t-lg" style={{ height: `${h}%` }} />
+                    <Skeleton className="h-3 w-6 rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Growth / insights card */}
+          <div className="bg-slate-900 rounded-[2rem] p-10 space-y-10">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-32 rounded-lg bg-slate-700" />
+              <Skeleton className="h-3 w-44 rounded bg-slate-700" />
+            </div>
+            <div className="space-y-8">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-20 rounded bg-slate-700" />
+                    <Skeleton className="h-3 w-8 rounded bg-slate-700" />
+                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full bg-slate-700" />
+                </div>
+              ))}
+            </div>
+            <div className="pt-2">
+              <Skeleton className="h-24 w-full rounded-2xl bg-slate-800" />
+            </div>
+          </div>
+        </div>
+
+        {/* Recent activity */}
+        <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden">
+          <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40 rounded-lg" />
+              <Skeleton className="h-3 w-52 rounded" />
+            </div>
+            <Skeleton className="h-4 w-16 rounded" />
+          </div>
+          <div className="divide-y divide-slate-50">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="p-8 flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-3.5 w-28 rounded" />
+                      <Skeleton className="h-3 w-3 rounded-full" />
+                      <Skeleton className="h-3 w-20 rounded" />
+                    </div>
+                    <Skeleton className="h-3.5 w-36 rounded" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-8">
+                  <div className="text-right hidden sm:block space-y-1.5">
+                    <Skeleton className="h-3.5 w-24 rounded ml-auto" />
+                    <Skeleton className="h-3 w-12 rounded ml-auto" />
+                  </div>
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
