@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import {
   MapPin, Star, CreditCard, Shield, CheckCircle,
   ArrowLeft, Phone, Mail, Heart, Calendar as CalendarIcon,
-  ChevronRight, Loader2
+  ChevronRight, Loader2, AlertTriangle
 } from "lucide-react"
 import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
 import { Calendar } from "@/components/ui/calendar"
@@ -21,6 +21,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
+
+/** Category names / slugs that indicate a venue service */
+const VENUE_KEYWORDS = ["venue", "hall", "garden", "resort", "hotel", "lodge", "estate"]
+
+function isVenueService(service: any): boolean {
+  const cat = ((service?.category || "") + " " + (service?.name || "")).toLowerCase()
+  return VENUE_KEYWORDS.some((kw) => cat.includes(kw))
+}
 
 export default function BookingPage({ params }: { params: { serviceId: string } }) {
   const router = useRouter()
@@ -89,6 +97,24 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     },
     enabled: isAuthenticated
   })
+
+  // Fetch booked dates for venue services so we can disable them in the calendar
+  const { data: venueBookedDatesData } = useQuery({
+    queryKey: ["venue-booked-dates", params.serviceId],
+    queryFn: async () => {
+      const response = await apiClient.get<{ booked_dates: string[] }>(
+        `/api/v1/bookings/venue-availability/${params.serviceId}`
+      )
+      return (response as any).data || response
+    },
+    // Only fetch once we know the service is a venue
+    enabled: !!service && isVenueService(service),
+  })
+
+  const bookedDates: Date[] = useMemo(() => {
+    if (!venueBookedDatesData?.booked_dates) return []
+    return venueBookedDatesData.booked_dates.map((d: string) => new Date(d + "T00:00:00"))
+  }, [venueBookedDatesData])
 
   // Auto-fill effects
   useEffect(() => {
@@ -348,9 +374,27 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Venue availability banner */}
+                {service && isVenueService(service) && bookedDates.length > 0 && (
+                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p>
+                      <strong>Venue availability:</strong> Dates shown in red are already booked and cannot be selected.
+                      Only dates with confirmed payments are blocked.
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold">Wedding Date</Label>
+                    <Label className="text-sm font-bold">
+                      Wedding Date
+                      {service && isVenueService(service) && (
+                        <span className="ml-2 text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                          Venue — check availability
+                        </span>
+                      )}
+                    </Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -376,10 +420,51 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                         <Calendar
                           mode="single"
                           selected={bookingData.date}
-                          onSelect={(date) => handleInputChange("date", date)}
-                          disabled={(date) => date < new Date()}
+                          onSelect={(selectedDate) => {
+                            if (!selectedDate) return
+                            // Extra client-side guard for venue services
+                            if (service && isVenueService(service)) {
+                              const isBooked = bookedDates.some(
+                                (d) => d.toDateString() === selectedDate.toDateString()
+                              )
+                              if (isBooked) {
+                                toast.error("This date is already booked", {
+                                  description: "This venue has a confirmed booking on the selected date. Please choose another date.",
+                                })
+                                return
+                              }
+                            }
+                            handleInputChange("date", selectedDate)
+                          }}
+                          disabled={(date) => {
+                            // Always disable past dates
+                            if (date < new Date()) return true
+                            // For venue services, also disable confirmed-booked dates
+                            if (service && isVenueService(service)) {
+                              return bookedDates.some(
+                                (d) => d.toDateString() === date.toDateString()
+                              )
+                            }
+                            return false
+                          }}
+                          modifiers={
+                            service && isVenueService(service)
+                              ? { booked: bookedDates }
+                              : undefined
+                          }
+                          modifiersClassNames={
+                            service && isVenueService(service)
+                              ? { booked: "bg-red-100 text-red-400 line-through" }
+                              : undefined
+                          }
                           initialFocus
                         />
+                        {service && isVenueService(service) && bookedDates.length > 0 && (
+                          <div className="flex items-center gap-2 px-3 py-2 border-t border-stone-100 text-[11px] text-stone-500">
+                            <span className="inline-block w-3 h-3 rounded-sm bg-red-100 border border-red-200" />
+                            Already booked
+                          </div>
+                        )}
                       </PopoverContent>
                     </Popover>
                   </div>
