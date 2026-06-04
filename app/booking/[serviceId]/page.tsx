@@ -23,7 +23,7 @@ import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 
 /** Category names / slugs that indicate a venue service */
-const VENUE_KEYWORDS = ["venue", "hall", "garden", "resort", "hotel", "lodge", "estate"]
+const VENUE_KEYWORDS = ["venue", "venue booking", "hall", "garden", "resort", "hotel", "lodge", "estate"]
 
 function isVenueService(service: any): boolean {
   const cat = ((service?.category || "") + " " + (service?.name || "")).toLowerCase()
@@ -485,18 +485,21 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold">Events Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      placeholder="Enter venue address or city"
-                      className="pl-10 h-12 border-stone-200 bg-stone-50 rounded-xl"
-                      value={bookingData.location}
-                      onChange={(e) => handleInputChange("location", e.target.value)}
-                    />
+                {/* Hide location input for venue services - they ARE the location */}
+                {!isVenueService(service) && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold">Events Location</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        placeholder="Enter venue address or city"
+                        className="pl-10 h-12 border-stone-200 bg-stone-50 rounded-xl"
+                        value={bookingData.location}
+                        onChange={(e) => handleInputChange("location", e.target.value)}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -524,7 +527,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                 <Button
                   onClick={handleNextStep}
                   className="w-full h-12 text-lg font-medium rounded-xl hover:opacity-90 transition-opacity"
-                  disabled={!bookingData.date || !bookingData.time || !bookingData.location}
+                  disabled={!bookingData.date || !bookingData.time || (!isVenueService(service) && !bookingData.location)}
                 >
                   Confirm & Continue
                 </Button>

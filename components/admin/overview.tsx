@@ -303,7 +303,7 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
             <Button
               variant="ghost"
               className="text-[10px] font-black text-[#608d64] uppercase tracking-widest rounded-full hover:bg-[#608d64]/5"
-              onClick={() => onTabChange?.("providers")}
+              onClick={() => onTabChange?.("onboarding")}
             >
               View All <ArrowRight className="w-3 h-3 ml-2" />
             </Button>
@@ -348,7 +348,7 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
                       size="sm"
                       variant="outline"
                       className="rounded-full border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white text-[9px] font-black uppercase tracking-widest h-8 px-4 transition-all"
-                      onClick={() => onTabChange?.("providers")}
+                      onClick={() => onTabChange?.("onboarding")}
                     >
                       Review
                     </Button>
