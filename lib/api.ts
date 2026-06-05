@@ -93,6 +93,13 @@ export const API_ENDPOINTS = {
     MARK_READ: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}/read`,
     UNREAD_COUNT: `/api/${API_VERSION}/messages/unread-count`,
   },
+  // Payment endpoints (Flutterwave inline)
+  PAYMENTS: {
+    CREATE: `/api/${API_VERSION}/payments`,
+    VERIFY_FLUTTERWAVE: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify-flutterwave`,
+    GET: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}`,
+    LIST: `/api/${API_VERSION}/payments`,
+  },
   // Health check
   HEALTH: `/health`,
 };
