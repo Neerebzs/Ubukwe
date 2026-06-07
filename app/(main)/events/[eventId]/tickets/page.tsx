@@ -1,33 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TranslatedText } from "@/components/translated-text";
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle, Mail, Ticket } from "lucide-react";
-import { usePublicEvent, usePurchaseTicket } from "@/hooks/useCustomerEvents";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle, Mail, Ticket, CreditCard, Phone, Shield, XCircle } from "lucide-react";
+import { usePublicEvent } from "@/hooks/useCustomerEvents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PaymentUI } from "@/components/customer/payment-ui";
 import { TicketGraphic } from "@/components/customer/ticket-graphic";
+import { startTicketDpoPayment, verifyTicketOrder } from "@/lib/api/payments";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { toast } from "sonner";
 
-type Step = "selection" | "information" | "payment" | "success";
+type Step = "selection" | "information" | "payment" | "verifying" | "failed" | "success";
+
+// Generate QR code (module scope so the verification effect can use it)
+const generateQRCode = async (data: string): Promise<string> => {
+  try {
+    return await (QRCode.toDataURL(data, {
+      errorCorrectionLevel: "H",
+      type: "image/png",
+      margin: 1,
+      width: 300,
+    }) as unknown as Promise<string>);
+  } catch (error) {
+    console.error("Error generating QR code:", error);
+    return "";
+  }
+};
+
+// Generate barcode
+const generateBarcode = async (data: string): Promise<string> => {
+  try {
+    const canvas = document.createElement("canvas");
+    JsBarcode(canvas, data, {
+      format: "CODE128",
+      width: 2,
+      height: 50,
+      displayValue: true,
+    });
+    return canvas.toDataURL("image/png");
+  } catch (error) {
+    console.error("Error generating barcode:", error);
+    return "";
+  }
+};
 
 export default function EventTicketingPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const eventId = params.eventId as string;
-  
+
+  // Present when DPO redirects the customer back after payment
+  const returnedOrderId = searchParams.get("order_id");
+
   const { data: event, isLoading, error } = usePublicEvent(eventId);
-  const purchaseTicketMutation = usePurchaseTicket();
-  
-  const [currentStep, setCurrentStep] = useState<Step>("selection");
+
+  const [currentStep, setCurrentStep] = useState<Step>(returnedOrderId ? "verifying" : "selection");
   const [tickets, setTickets] = useState<Record<string, number>>({});
   const [purchaseData, setPurchaseData] = useState<any>(null);
   const [userInfo, setUserInfo] = useState({
@@ -36,6 +71,56 @@ export default function EventTicketingPage() {
   const [userInfoErrors, setUserInfoErrors] = useState<Record<string, string>>({});
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("mobile_money");
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
+  const [failureMessage, setFailureMessage] = useState("");
+  const verifyStartedRef = useRef(false);
+
+  // Back from the DPO hosted page: verify the order, then show the tickets
+  useEffect(() => {
+    if (!returnedOrderId || verifyStartedRef.current) return;
+    verifyStartedRef.current = true;
+
+    (async () => {
+      try {
+        const result = await verifyTicketOrder(
+          returnedOrderId,
+          searchParams.get("TransactionToken") || searchParams.get("TransID") || undefined
+        );
+
+        if (result.status === "completed" && result.tickets?.length) {
+          const generated = [];
+          for (const ticket of result.tickets) {
+            const qrCodeUrl = await generateQRCode(ticket.ticket_number);
+            const barcodeUrl = await generateBarcode(ticket.ticket_number);
+            generated.push({
+              id: ticket.ticket_id,
+              ticket_number: ticket.ticket_number,
+              holder_name: ticket.holder_name,
+              holder_email: ticket.holder_email,
+              qrCode: qrCodeUrl,
+              barcode: barcodeUrl,
+              totalPrice: ticket.price,
+              ticketTypeName: ticket.ticket_type,
+            });
+          }
+          setPurchaseData({ holderEmail: result.customer_email, holderName: "Guest" });
+          setPurchasedTickets(generated);
+          setCurrentStep("success");
+          toast.success(`Successfully purchased ${generated.length} ticket${generated.length > 1 ? "s" : ""}!`);
+        } else if (result.status === "pending") {
+          setFailureMessage("The payment was not completed. You can try again below.");
+          setCurrentStep("failed");
+        } else {
+          setFailureMessage(result.reason || "The payment failed. No money was taken for unconfirmed payments.");
+          setCurrentStep("failed");
+        }
+      } catch (err: any) {
+        setFailureMessage(err?.response?.data?.detail || err?.message || "We could not verify your payment.");
+        setCurrentStep("failed");
+      }
+    })();
+  }, [returnedOrderId, searchParams]);
 
   if (isLoading) {
     return (
@@ -94,39 +179,6 @@ export default function EventTicketingPage() {
     });
   };
 
-  // Generate QR code
-  const generateQRCode = async (data: string): Promise<string> => {
-    try {
-      return await (QRCode.toDataURL(data, {
-        errorCorrectionLevel: "H",
-        type: "image/png",
-        quality: 0.95,
-        margin: 1,
-        width: 300,
-      }) as unknown as Promise<string>);
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      return "";
-    }
-  };
-
-  // Generate barcode
-  const generateBarcode = async (data: string): Promise<string> => {
-    try {
-      const canvas = document.createElement("canvas");
-      JsBarcode(canvas, data, {
-        format: "CODE128",
-        width: 2,
-        height: 50,
-        displayValue: true,
-      });
-      return canvas.toDataURL("image/png");
-    } catch (error) {
-      console.error("Error generating barcode:", error);
-      return "";
-    }
-  };
-
   const handleContinueToInformation = () => {
     const selectedTickets = Object.keys(tickets)
       .filter(id => tickets[id] > 0)
@@ -176,71 +228,32 @@ export default function EventTicketingPage() {
     setCurrentStep("payment");
   };
 
-  const handlePaymentSubmit = async (paymentData: any) => {
+  // Create the order on the backend and redirect to the DPO hosted page.
+  // On return, the order_id query param triggers verification above.
+  const handlePayWithDpo = async () => {
     if (!purchaseData) return;
 
-    console.log("=== TICKET PURCHASE DEBUG ===");
-    console.log("Payment Data:", paymentData);
-    console.log("Purchase Data:", purchaseData);
-    console.log("Event ID:", eventId);
-
+    setIsRedirectingToPayment(true);
     try {
-      const results = [];
-      
-      // Process each ticket type separately (backend accepts one ticket type per request)
-      for (const item of purchaseData.selectedTickets) {
-        console.log(`Processing ticket type: ${item.name} (${item.ticketTypeId})`);
-        console.log(`Quantity: ${item.quantity}, Price: ${item.price}`);
-        
-        // Create array of ticket holders (all with same email for now)
-        const ticketHolders = Array(item.quantity).fill(null).map(() => ({
+      const items = purchaseData.selectedTickets.map((item: any) => ({
+        ticket_type_id: item.ticketTypeId,
+        tickets: Array(item.quantity).fill(null).map(() => ({
           holder_email: purchaseData.holderEmail,
           holder_name: purchaseData.holderName || "Guest",
           holder_phone: purchaseData.holderPhone || "",
-        }));
+        })),
+      }));
 
-        const payload = {
-          eventId,
-          ticketTypeId: item.ticketTypeId,
-          tickets: ticketHolders,
-          paymentReference: paymentData.reference,
-        };
-        
-        console.log("API Payload:", JSON.stringify(payload, null, 2));
-
-        // Purchase all tickets of this type in one call
-        const response = await purchaseTicketMutation.mutateAsync(payload);
-        
-        console.log("API Response:", response);
-
-        // Generate QR codes and barcodes for each ticket
-        for (const ticket of response.tickets) {
-          const qrCodeUrl = await generateQRCode(ticket.ticket_number);
-          const barcodeUrl = await generateBarcode(ticket.ticket_number);
-
-          results.push({
-            id: ticket.ticket_id,
-            ticket_number: ticket.ticket_number,
-            holder_name: ticket.holder_name,
-            holder_email: ticket.holder_email,
-            qrCode: qrCodeUrl,
-            barcode: barcodeUrl,
-            totalPrice: item.price,
-            ticketTypeName: item.name,
-          });
-        }
-      }
-
-      console.log("All tickets purchased successfully:", results.length);
-      setPurchasedTickets(results);
-      setCurrentStep("success");
-      toast.success(`Successfully purchased ${results.length} ticket${results.length > 1 ? 's' : ''}!`);
+      await startTicketDpoPayment({
+        eventId,
+        customerEmail: purchaseData.holderEmail,
+        paymentMethod,
+        items,
+      });
+      // The browser is navigating to DPO — nothing more to do here.
     } catch (error: any) {
-      console.error("=== PURCHASE ERROR ===");
-      console.error("Error:", error);
-      console.error("Error message:", error.message);
-      console.error("Error details:", error.response?.data || error);
-      toast.error(error.message || "Failed to purchase tickets");
+      setIsRedirectingToPayment(false);
+      toast.error(error?.response?.data?.detail || error?.message || "Failed to start the payment");
     }
   };
 
@@ -565,15 +578,126 @@ export default function EventTicketingPage() {
                   </Button>
                   <h2 className="font-serif italic text-3xl text-slate-900">Payment</h2>
                 </div>
-                <PaymentUI
-                  amount={purchaseData.totalAmount}
-                  eventTitle={event.title}
-                  ticketCount={totalTickets}
-                  ticketBreakdown={purchaseData.selectedTickets}
-                  onPaymentSubmit={handlePaymentSubmit}
-                  isLoading={purchaseTicketMutation.isPending}
-                  error={purchaseTicketMutation.error ? (purchaseTicketMutation.error as any).message : undefined}
-                />
+
+                <div className="space-y-8 p-12 bg-[#fdfcf9] rounded-[40px] border border-slate-100">
+                  {/* Order summary */}
+                  <div className="space-y-4 pb-6 border-b border-slate-200">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Order Summary</h3>
+                    <div className="space-y-3">
+                      {purchaseData.selectedTickets.map((item: any) => (
+                        <div key={item.ticketTypeId} className="flex items-center justify-between">
+                          <p className="font-serif italic text-lg text-slate-900">
+                            {item.name} <span className="text-xs text-slate-500 not-italic font-sans">× {item.quantity}</span>
+                          </p>
+                          <p className="font-serif italic text-lg text-slate-900">
+                            {(item.price * item.quantity).toLocaleString()} RWF
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                      <span className="font-serif italic text-3xl text-[#608d64]">
+                        {purchaseData.totalAmount.toLocaleString()} <span className="text-sm">RWF</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Payment method */}
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => setPaymentMethod("mobile_money")}
+                        className={`h-24 flex flex-col items-center justify-center gap-2 rounded-3xl border-2 transition-all text-sm font-semibold ${
+                          paymentMethod === "mobile_money"
+                            ? "border-[#608d64] bg-[#608d64]/5 text-slate-900"
+                            : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
+                        }`}
+                      >
+                        <Phone className={`h-6 w-6 ${paymentMethod === "mobile_money" ? "text-[#608d64]" : "text-slate-300"}`} />
+                        Mobile Money
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod("card")}
+                        className={`h-24 flex flex-col items-center justify-center gap-2 rounded-3xl border-2 transition-all text-sm font-semibold ${
+                          paymentMethod === "card"
+                            ? "border-[#608d64] bg-[#608d64]/5 text-slate-900"
+                            : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
+                        }`}
+                      >
+                        <CreditCard className={`h-6 w-6 ${paymentMethod === "card" ? "text-[#608d64]" : "text-slate-300"}`} />
+                        Credit / Debit Card
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
+                    <Shield className="h-5 w-5 text-[#608d64] shrink-0 mt-0.5" />
+                    <p>
+                      <strong className="text-slate-700">Secure payment via DPO Pay.</strong>{" "}
+                      You will be redirected to our payment partner's secure page to complete the{" "}
+                      {paymentMethod === "mobile_money" ? "mobile money" : "card"} payment.
+                      We never see or store your card or PIN details.
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handlePayWithDpo}
+                    disabled={isRedirectingToPayment}
+                    className="w-full h-20 rounded-full bg-[#608d64] text-white hover:bg-slate-900 text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl shadow-[#608d64]/20"
+                  >
+                    {isRedirectingToPayment ? (
+                      <>
+                        <Loader2 className="mr-4 h-6 w-6 animate-spin" />
+                        Redirecting...
+                      </>
+                    ) : (
+                      <>
+                        Pay {purchaseData.totalAmount.toLocaleString()} RWF
+                        <ArrowRight className="ml-4 h-6 w-6" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === "verifying" && (
+              <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in duration-700">
+                <Loader2 className="h-14 w-14 text-[#608d64] animate-spin" />
+                <h2 className="font-serif italic text-4xl text-slate-900">Verifying your payment…</h2>
+                <p className="text-slate-500 text-sm max-w-md text-center">
+                  Please wait while we confirm your transaction with DPO Pay and issue your tickets.
+                  Do not close this page.
+                </p>
+              </div>
+            )}
+
+            {currentStep === "failed" && (
+              <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in duration-700">
+                <XCircle className="h-14 w-14 text-red-500" />
+                <h2 className="font-serif italic text-4xl text-slate-900">Payment not completed</h2>
+                <p className="text-slate-500 text-sm max-w-md text-center">{failureMessage}</p>
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button
+                    onClick={() => {
+                      verifyStartedRef.current = false;
+                      router.replace(`/events/${eventId}/tickets`);
+                      setCurrentStep("selection");
+                    }}
+                    className="h-14 px-8 bg-[#608d64] text-white hover:bg-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-[#608d64]/20"
+                  >
+                    Try Again
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/contact")}
+                    className="h-14 px-8 rounded-full border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50"
+                  >
+                    Contact Support
+                  </Button>
+                </div>
               </div>
             )}
 

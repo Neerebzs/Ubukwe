@@ -63,11 +63,16 @@ export function Footer() {
           <div>
             <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Support</h4>
             <ul className="space-y-4 font-outfit font-light">
-              {["Help Center", "Contact Us", "Cultural Guidelines", "Terms of Service"].map((item) => (
-                <li key={item}>
-                  <Link href="#" className="text-slate-600 hover:text-primary transition-colors flex items-center gap-2 group">
+              {[
+                { label: "Contact Us", href: "/contact" },
+                { label: "Terms of Service", href: "/terms" },
+                { label: "Refund Policy", href: "/refund-policy" },
+                { label: "Cancellation Policy", href: "/cancellation-policy" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link href={item.href} className="text-slate-600 hover:text-primary transition-colors flex items-center gap-2 group">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                    <TranslatedText text={item} />
+                    <TranslatedText text={item.label} />
                   </Link>
                 </li>
               ))}
@@ -112,11 +117,11 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-primary/10 pt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <p className="text-slate-500 font-outfit font-light text-sm">
-            &copy; {new Date().getFullYear()} VowNest. <TranslatedText text="Celebrating Rwandan wedding traditions with pride." />
+            &copy; {new Date().getFullYear()} VowNest — operated by Neere Business Group Ltd. <TranslatedText text="Celebrating Rwandan wedding traditions with pride." />
           </p>
           <div className="flex items-center gap-8 text-sm text-slate-400 font-outfit font-light">
-            <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Cookies Setting</Link>
+            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link href="/refund-policy" className="hover:text-primary transition-colors">Refund Policy</Link>
           </div>
         </div>
       </div>

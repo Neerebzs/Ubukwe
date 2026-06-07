@@ -17,10 +17,10 @@ const defaultSettings: SystemSettings = {
   logoUrl: "/logo.png",
   homeHeroImageUrl: "/grom.jpg",
   authBackgroundImageUrl: "/grom.jpg",
-  contactEmail: "support@vownest.rw",
-  contactPhone: "+250 788 000 000",
-  contactLocationLine1: "Kigali, Rwanda",
-  contactLocationLine2: "KN 2 Rd, Nyarugenge",
+  contactEmail: "vownest@zohomail.com",
+  contactPhone: "+250 791 287 640",
+  contactLocationLine1: "Muhabura Building, KN 7 Ave",
+  contactLocationLine2: "Kigali, Rwanda",
 };
 
 interface SystemSettingsContextType {

@@ -22,29 +22,8 @@ export const usePublicEvents = (category?: string) => {
   });
 };
 
-// Purchase ticket mutation
-export const usePurchaseTicket = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      eventId,
-      ticketTypeId,
-      tickets,
-      paymentReference,
-    }: {
-      eventId: string;
-      ticketTypeId: string;
-      tickets: any[];
-      paymentReference?: string;
-    }) => customerEventAPI.purchaseTicket(eventId, ticketTypeId, tickets, paymentReference),
-    onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["my-tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["public-event", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["public-events"] });
-    },
-  });
-};
+// NOTE: the old usePurchaseTicket mutation was removed — tickets are now paid
+// via DPO Pay; see startTicketDpoPayment/verifyTicketOrder in lib/api/payments.ts.
 
 // Fetch customer's tickets
 export const useMyTickets = () => {

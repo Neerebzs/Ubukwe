@@ -1,36 +1,30 @@
 import { apiClient, API_ENDPOINTS } from "../api";
 
 /**
- * Flutterwave Inline payments.
+ * DPO Pay hosted-page payments.
  *
- * Flow (no redirect — the modal opens inside our own UI):
- *   1. POST /payments               → backend creates a pending Payment and returns the inline config
- *   2. FlutterwaveCheckout(config)  → modal opens over our page; customer pays (card / mobile money)
- *   3. inline callback fires        → we get a Flutterwave transaction_id
- *   4. POST /{id}/verify-flutterwave → backend verifies with Flutterwave and confirms the booking
+ * Flow (redirect — the customer pays on DPO's hosted payment page):
+ *   1. POST /payments                → backend registers the transaction with DPO
+ *                                      (createToken) and returns a payment_url
+ *   2. window.location = payment_url → customer pays on the DPO page (card / mobile money)
+ *   3. DPO redirects back            → /payment/callback?payment_id=...&TransactionToken=...
+ *   4. POST /{id}/verify-dpo         → backend verifies with DPO and confirms the booking
  *
  * Usage from your UI:
- *   const payment = await startFlutterwavePayment({ bookingId, paymentMethod: "mobile_money" });
- *   if (payment.status === "completed") { ...show your success UI... }
+ *   await startDpoPayment({ bookingId, paymentMethod: "mobile_money" });
+ *   // the browser navigates away; the /payment/callback page completes the flow
  */
-
-const FLW_INLINE_SCRIPT = "https://checkout.flutterwave.com/v3.js";
 
 export type PaymentMethod = "mobile_money" | "card" | "bank_transfer" | "cash";
 
-// Config the backend returns to drive FlutterwaveCheckout()
-export interface FlutterwaveInlineConfig {
+// Config the backend returns to start the DPO redirect
+export interface DpoPaymentConfig {
   payment_id: string;
-  public_key: string;
+  payment_url: string;
+  trans_token: string;
   tx_ref: string;
   amount: number;
   currency: string;
-  payment_options: string;
-  customer_email: string;
-  customer_name: string;
-  customer_phone?: string | null;
-  title: string;
-  description: string;
 }
 
 export interface Payment {
@@ -45,131 +39,145 @@ export interface Payment {
   paid_at?: string | null;
 }
 
-// Shape Flutterwave hands to the inline callback
-interface FlutterwaveCallbackResponse {
-  transaction_id?: number | string;
-  tx_ref?: string;
-  status?: string; // "successful" | "completed" | "cancelled" | ...
-}
-
-declare global {
-  interface Window {
-    FlutterwaveCheckout?: (config: any) => { close: () => void };
-    // Flutterwave injects this helper to programmatically dismiss the modal
-    closePaymentModal?: () => void;
-  }
-}
-
-/** Inject the Flutterwave inline script once and resolve when it is ready. */
-function loadFlutterwaveScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(new Error("Flutterwave inline can only run in the browser"));
-      return;
-    }
-    if (window.FlutterwaveCheckout) {
-      resolve();
-      return;
-    }
-    const existing = document.querySelector<HTMLScriptElement>(`script[src="${FLW_INLINE_SCRIPT}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", () => reject(new Error("Failed to load Flutterwave script")));
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = FLW_INLINE_SCRIPT;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Flutterwave script"));
-    document.head.appendChild(script);
-  });
-}
-
-/** Create the payment on the backend and get the inline checkout config. */
+/** Create the payment on the backend and get the DPO hosted page URL. */
 export async function createPayment(params: {
   bookingId: string;
   paymentMethod: PaymentMethod;
   notes?: string;
-}): Promise<FlutterwaveInlineConfig> {
-  const response = await apiClient.post<FlutterwaveInlineConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
+}): Promise<DpoPaymentConfig> {
+  const response = await apiClient.post<DpoPaymentConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
     booking_id: params.bookingId,
     payment_method: params.paymentMethod,
     notes: params.notes,
   });
-  return response.data as FlutterwaveInlineConfig;
+  return response.data as DpoPaymentConfig;
 }
 
-/** Confirm a Flutterwave transaction (id from the inline callback) on the backend. */
-export async function verifyPayment(paymentId: string, transactionId: string | number): Promise<Payment> {
-  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY_FLUTTERWAVE(paymentId), {
-    transaction_id: String(transactionId),
+/**
+ * Confirm a DPO transaction on the backend after the redirect back.
+ * The token is optional — the backend falls back to the one stored at creation.
+ */
+export async function verifyPayment(paymentId: string, transactionToken?: string): Promise<Payment> {
+  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY_DPO(paymentId), {
+    transaction_token: transactionToken || undefined,
   });
   return response.data as Payment;
 }
 
-export class PaymentCancelledError extends Error {
-  constructor() {
-    super("Payment was cancelled");
-    this.name = "PaymentCancelledError";
-  }
+/** Fetch a payment's current state (used by the callback page to poll pending payments). */
+export async function getPayment(paymentId: string): Promise<Payment> {
+  const response = await apiClient.get<Payment>(API_ENDPOINTS.PAYMENTS.GET(paymentId));
+  return response.data as Payment;
 }
 
 /**
- * End-to-end inline payment: create → open modal → verify.
- * Resolves with the verified Payment, or rejects with PaymentCancelledError
- * if the customer closes the modal without paying.
+ * End-to-end hosted-page payment: create → redirect to DPO.
+ * This navigates the browser away; on return, /payment/callback verifies and
+ * shows the result. Resolves with the created config just before redirecting
+ * (useful for storing context), so callers should not expect to keep running.
  */
-export async function startFlutterwavePayment(params: {
+export async function startDpoPayment(params: {
   bookingId: string;
   paymentMethod: PaymentMethod;
   notes?: string;
-}): Promise<Payment> {
-  await loadFlutterwaveScript();
+}): Promise<DpoPaymentConfig> {
+  if (typeof window === "undefined") {
+    throw new Error("DPO payments can only be started in the browser");
+  }
   const config = await createPayment(params);
+  if (!config?.payment_url) {
+    throw new Error("The server did not return a DPO payment URL");
+  }
+  window.location.assign(config.payment_url);
+  return config;
+}
 
-  return new Promise<Payment>((resolve, reject) => {
-    if (!window.FlutterwaveCheckout) {
-      reject(new Error("Flutterwave inline failed to initialise"));
-      return;
-    }
+// ── Ticket orders (event tickets, public endpoints) ─────────────────────────
 
-    let settled = false;
+export interface TicketOrderItemInput {
+  ticket_type_id: string;
+  tickets: Array<{
+    holder_name?: string;
+    holder_email: string;
+    holder_phone?: string;
+  }>;
+}
 
-    window.FlutterwaveCheckout({
-      public_key: config.public_key,
-      tx_ref: config.tx_ref,
-      amount: config.amount,
-      currency: config.currency,
-      payment_options: config.payment_options,
-      customer: {
-        email: config.customer_email,
-        phone_number: config.customer_phone || undefined,
-        name: config.customer_name,
-      },
-      customizations: {
-        title: config.title,
-        description: config.description,
-      },
-      callback: async (data: FlutterwaveCallbackResponse) => {
-        settled = true;
-        // Dismiss the modal before we hit our backend to verify
-        window.closePaymentModal?.();
-        try {
-          if (!data?.transaction_id) {
-            reject(new Error("No transaction id returned by Flutterwave"));
-            return;
-          }
-          const payment = await verifyPayment(config.payment_id, data.transaction_id);
-          resolve(payment);
-        } catch (err: any) {
-          reject(new Error(err?.message || "Failed to verify payment"));
-        }
-      },
-      onclose: () => {
-        // Fires on cancel too; only treat as cancellation if no callback ran
-        if (!settled) reject(new PaymentCancelledError());
-      },
-    });
+export interface TicketOrderConfig {
+  order_id: string;
+  payment_url: string;
+  trans_token: string;
+  tx_ref: string;
+  amount: number;
+  currency: string;
+}
+
+export interface SettledTicketOrder {
+  order_id: string;
+  status: string; // "completed" | "pending" | "failed"
+  reason?: string | null;
+  event_id?: string;
+  event_title?: string;
+  event_date?: string;
+  event_location?: string;
+  event_image?: string | null;
+  customer_email?: string;
+  quantity?: number;
+  total_price?: number;
+  currency?: string;
+  payment_reference?: string;
+  tickets?: Array<{
+    ticket_id: string;
+    ticket_number: string;
+    holder_name: string;
+    holder_email: string;
+    ticket_type: string;
+    price: number;
+    status: string;
+  }>;
+}
+
+/** Create a pending ticket order (one DPO charge for the whole checkout). */
+export async function initiateTicketOrder(params: {
+  eventId: string;
+  customerEmail: string;
+  paymentMethod: "card" | "mobile_money";
+  items: TicketOrderItemInput[];
+}): Promise<TicketOrderConfig> {
+  const response = await apiClient.post<TicketOrderConfig>(API_ENDPOINTS.TICKET_ORDERS.INITIATE, {
+    event_id: params.eventId,
+    customer_email: params.customerEmail,
+    payment_method: params.paymentMethod,
+    items: params.items,
   });
+  return response.data as TicketOrderConfig;
+}
+
+/**
+ * Verify a ticket order after the redirect back from DPO. Issues the tickets
+ * on success (idempotent — safe to call again).
+ */
+export async function verifyTicketOrder(orderId: string, transactionToken?: string): Promise<SettledTicketOrder> {
+  const response = await apiClient.post<SettledTicketOrder>(API_ENDPOINTS.TICKET_ORDERS.VERIFY(orderId), {
+    transaction_token: transactionToken || undefined,
+  });
+  return response.data as SettledTicketOrder;
+}
+
+/** End-to-end ticket payment: create the order → redirect to the DPO page. */
+export async function startTicketDpoPayment(params: {
+  eventId: string;
+  customerEmail: string;
+  paymentMethod: "card" | "mobile_money";
+  items: TicketOrderItemInput[];
+}): Promise<TicketOrderConfig> {
+  if (typeof window === "undefined") {
+    throw new Error("DPO payments can only be started in the browser");
+  }
+  const config = await initiateTicketOrder(params);
+  if (!config?.payment_url) {
+    throw new Error("The server did not return a DPO payment URL");
+  }
+  window.location.assign(config.payment_url);
+  return config;
 }

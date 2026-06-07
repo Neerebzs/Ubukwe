@@ -16,6 +16,7 @@ import {
   ChevronRight, Loader2, AlertTriangle
 } from "lucide-react"
 import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
+import { startDpoPayment } from "@/lib/api/payments"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -62,12 +63,8 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     contactEmail: "",
     acceptedContract: false,
     paymentMethod: "momo" as "card" | "momo",
-    momoProvider: "" as "mtn" | "airtel" | "mpesa" | "",
-    cardHolder: "",
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvv: "",
   })
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false)
 
   // Fetch actual service data
   const { data: service, isLoading: isServiceLoading, error } = useQuery({
@@ -160,40 +157,6 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     }
   })
 
-  // Confirm booking with payment mutation (Step 3 - Only after provider approval)
-  const confirmBookingMutation = useMutation({
-    mutationFn: async (paymentPayload: any) => {
-      console.log('=== PAYMENT MUTATION DEBUG ===');
-      console.log('Booking ID:', bookingId);
-      console.log('Payment Payload:', paymentPayload);
-      console.log('Full URL:', `/api/v1/bookings/${bookingId}/payment`);
-      
-      const response = await apiClient.post(`/api/v1/bookings/${bookingId}/payment`, paymentPayload);
-      return response;
-    },
-    onSuccess: (data) => {
-      console.log('✅ Payment success:', data);
-      toast.success('Payment processed successfully! Booking confirmed.');
-      setCurrentStep(4); // Go to confirmation
-      // Navigate to customer dashboard bookings tab after 3 seconds
-      setTimeout(() => {
-        router.push('/customer/dashboard?tab=bookings');
-      }, 3000);
-    },
-    onError: (error: any) => {
-      console.error('❌ Payment error:', error);
-      console.error('Error response:', error.response);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
-      console.error('Error detail:', error.response?.data?.detail);
-      
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to process payment';
-      toast.error(errorMessage, {
-        description: 'Please check the console for more details'
-      });
-    }
-  })
-
   const handleInputChange = (field: string, value: any) => {
     setBookingData((prev) => ({ ...prev, [field]: value }))
   }
@@ -240,39 +203,25 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     createBookingMutation.mutate(bookingPayload);
   }
 
-  const handlePaymentConfirmation = () => {
+  // Step 3: create the payment on the backend and redirect to the DPO hosted
+  // page. On return, /payment/callback verifies and confirms the booking.
+  const handlePaymentConfirmation = async () => {
     if (!bookingId) {
       toast.error('Booking ID not found. Please try again.');
       return;
     }
-
-    // Generate payment reference
-    const paymentReference = `PAY-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-
-    // Prepare payment payload with all details
-    const paymentPayload = {
-      payment_method: bookingData.paymentMethod, // "card" or "momo"
-      payment_reference: paymentReference,
-      payment_amount: pricing.total,
-      // Mobile Money details
-      ...(bookingData.paymentMethod === "momo" && {
-        momo_provider: bookingData.momoProvider,
-        momo_phone: bookingData.contactPhone,
-      }),
-      // Card details
-      ...(bookingData.paymentMethod === "card" && {
-        card_holder: bookingData.cardHolder,
-        card_number: bookingData.cardNumber,
-        card_expiry: bookingData.cardExpiry,
-        card_cvv: bookingData.cardCvv,
-      }),
-    };
-
-    console.log('=== PAYMENT CONFIRMATION DEBUG ===');
-    console.log('Booking ID:', bookingId);
-    console.log('Payment Payload:', paymentPayload);
-
-    confirmBookingMutation.mutate(paymentPayload);
+    setIsRedirectingToPayment(true);
+    try {
+      await startDpoPayment({
+        bookingId,
+        paymentMethod: bookingData.paymentMethod === "momo" ? "mobile_money" : "card",
+      });
+      // The browser is navigating to DPO — nothing more to do here.
+    } catch (error: any) {
+      setIsRedirectingToPayment(false);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start the payment';
+      toast.error(errorMessage);
+    }
   }
 
   const availableTimeslots = ["09:00", "11:00", "13:00", "15:00", "17:00"]
@@ -647,106 +596,16 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </div>
                 </div>
 
-                {bookingData.paymentMethod === "momo" && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Select Provider</Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: "mtn", name: "MTN MoMo", color: "bg-[#FFCC00] text-black" },
-                        { id: "airtel", name: "Airtel Money", color: "bg-[#FF0000] text-white" },
-                        { id: "mpesa", name: "M-Pesa", color: "bg-[#4B9123] text-white" },
-                      ].map((provider) => (
-                        <button
-                          key={provider.id}
-                          onClick={() => handleInputChange("momoProvider", provider.id)}
-                          className={cn(
-                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-[10px] font-bold h-20",
-                            bookingData.momoProvider === provider.id
-                              ? "border-primary bg-white scale-105"
-                              : "border-gray-100 bg-gray-50/50 hover:border-stone-200 bg-stone-50 rounded-xl opacity-70"
-                          )}
-                        >
-                          <div className={cn("h-8 w-8 rounded-full mb-2 flex items-center justify-center text-[8px]", provider.color)}>
-                            {provider.id.toUpperCase()}
-                          </div>
-                          {provider.name}
-                        </button>
-                      ))}
-                    </div>
-
-                    {bookingData.momoProvider && (
-                      <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-gray-500 uppercase">Phone Number</Label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder="078xxxxxxx"
-                              className="h-11 pl-10 bg-gray-50 border-transparent focus:bg-white focus:border-primary transition-colors"
-                              value={bookingData.contactPhone}
-                              onChange={(e) => handleInputChange("contactPhone", e.target.value)}
-                            />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">A prompt will be sent to this number to authorize the payment.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {bookingData.paymentMethod === "card" && (
-                  <div className="rounded-xl border border-stone-200 bg-stone-50 rounded-xl p-6 space-y-4 bg-white animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-2 text-primary">
-                      <CreditCard className="h-5 w-5" />
-                      <span className="font-bold">Card Details</span>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-500 uppercase">Card Holder Name</Label>
-                        <Input
-                          placeholder="John Doe"
-                          className="h-11 bg-gray-50 border-transparent focus:bg-white focus:border-primary transition-colors"
-                          value={bookingData.cardHolder}
-                          onChange={(e) => handleInputChange("cardHolder", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-gray-500 uppercase">Card Number</Label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="xxxx xxxx xxxx xxxx"
-                            className="h-11 pl-10 bg-gray-50 border-transparent focus:bg-white focus:border-primary transition-colors"
-                            value={bookingData.cardNumber}
-                            onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-gray-500 uppercase">Expiry Date</Label>
-                          <Input
-                            placeholder="MM/YY"
-                            className="h-11 bg-gray-50 border-transparent focus:bg-white focus:border-primary transition-colors"
-                            value={bookingData.cardExpiry}
-                            onChange={(e) => handleInputChange("cardExpiry", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-gray-500 uppercase">CVV</Label>
-                          <Input
-                            placeholder="xxx"
-                            type="password"
-                            maxLength={3}
-                            className="h-11 bg-gray-50 border-transparent focus:bg-white focus:border-primary transition-colors"
-                            value={bookingData.cardCvv}
-                            onChange={(e) => handleInputChange("cardCvv", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 flex gap-3 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Shield className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <p>
+                    <strong>Secure payment via DPO Pay.</strong> You will be redirected to our payment
+                    partner's secure page to complete the{" "}
+                    {bookingData.paymentMethod === "momo" ? "mobile money" : "card"} payment.
+                    {bookingData.paymentMethod === "momo" && " MTN MoMo and Airtel Money are supported."}{" "}
+                    We never see or store your card or PIN details.
+                  </p>
+                </div>
 
                 <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
                   <div className="relative flex h-5 w-5 items-center justify-center">
@@ -763,7 +622,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       htmlFor="acceptContract"
                       className="text-sm font-medium leading-normal cursor-pointer"
                     >
-                      I agree to the <button type="button" className="text-primary hover:underline" onClick={() => {}}>Booking Terms & Conditions</button> and cancellation policy.
+                      I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terms & Conditions</a>, <a href="/refund-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Refund Policy</a> and <a href="/cancellation-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Cancellation Policy</a>.
                     </label>
                   </div>
                 </div>
@@ -772,24 +631,22 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   <Button variant="outline" onClick={handlePrevStep} className="h-12 px-8">
                     Back
                   </Button>
-                  <Button 
-                    onClick={handlePaymentConfirmation} 
-                    className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity" 
+                  <Button
+                    onClick={handlePaymentConfirmation}
+                    className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity"
                     disabled={
                       !bookingId ||
                       !bookingData.acceptedContract ||
-                      (bookingData.paymentMethod === "momo" && (!bookingData.momoProvider || !bookingData.contactPhone)) ||
-                      (bookingData.paymentMethod === "card" && (!bookingData.cardHolder || !bookingData.cardNumber || !bookingData.cardExpiry || !bookingData.cardCvv)) ||
-                      confirmBookingMutation.isPending
+                      isRedirectingToPayment
                     }
                   >
-                    {confirmBookingMutation.isPending ? (
+                    {isRedirectingToPayment ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing Payment...
+                        Redirecting to DPO Pay...
                       </>
                     ) : (
-                      <>Confirm Booking • {pricing.total.toLocaleString()} RWF</>
+                      <>Pay Securely • {pricing.total.toLocaleString()} RWF</>
                     )}
                   </Button>
                 </div>

@@ -31,7 +31,7 @@ export default function TermsAndConditionsPage() {
                         These Terms govern your use of the VowNest platform. Please read them carefully before utilizing our services.
                     </p>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mt-8">
-                        Last Updated: April 2026
+                        Last Updated: June 2026
                     </p>
                 </div>
             </div>
@@ -47,7 +47,7 @@ export default function TermsAndConditionsPage() {
                                 Introduction & Acceptance
                             </h2>
                             <p>
-                                Welcome to VowNest ("Platform", "we", "us", or "our"). These Terms & Conditions constitute a legally binding agreement made between you (whether personally or on behalf of an entity) and VowNest concerning your access to and use of our web application.
+                                Welcome to VowNest ("Platform", "we", "us", or "our"), owned and operated by <strong>Neere Business Group Ltd</strong>, a company registered in Rwanda with offices at Muhabura Building, KN 7 Ave, Kigali, Rwanda. These Terms & Conditions constitute a legally binding agreement made between you (whether personally or on behalf of an entity) and Neere Business Group Ltd concerning your access to and use of our web application.
                             </p>
                             <p className="mt-4">
                                 By accessing the Platform, you agree that you have read, understood, and agree to be bound by all of these Terms of Service. If you do not agree with all of these Terms, then you are expressly prohibited from using the Platform and you must discontinue use immediately.
@@ -78,12 +78,13 @@ export default function TermsAndConditionsPage() {
                                 Booking, Payments & Fees
                             </h2>
                             <p>
-                                VowNest facilitates the initial connection and booking request phase. Depending on the tier and agreement:
+                                VowNest facilitates the connection, booking, and payment phases between Customers and Providers:
                             </p>
                             <ul className="list-disc pl-5 mt-4 space-y-2">
-                                <li>Any deposits or upfront payments managed through the platform are non-refundable unless specified otherwise by the Provider.</li>
-                                <li>VowNest may charge a platform service fee applied at checkout, which helps us maintain and run the platform safely.</li>
-                                <li>Disputes regarding service delivery, quality, or refund requests must be resolved directly between the Customer and the Provider, although VowNest will aid in dispute mediation when possible.</li>
+                                <li><strong>Payments</strong> are collected by Neere Business Group Ltd and processed securely through our payment partner, <strong>DPO Pay</strong>. Accepted methods include mobile money (MTN MoMo, Airtel Money) and credit/debit cards. All payments are subject to verification.</li>
+                                <li><strong>Platform commission:</strong> VowNest charges a 10% commission on bookings made through the platform; the Provider receives the remaining 90%. The commission covers payment processing, platform operations, and customer support.</li>
+                                <li><strong>Refunds and cancellations</strong> are governed by our <Link href="/refund-policy" className="text-[#668c65] font-semibold hover:underline">Refund Policy</Link> and <Link href="/cancellation-policy" className="text-[#668c65] font-semibold hover:underline">Cancellation Policy</Link>. Approved refunds are issued by the platform to your original payment method.</li>
+                                <li><strong>Disputes</strong> regarding service delivery, quality, or refunds should first be raised between the Customer and the Provider; VowNest provides mediation and a binding dispute-resolution process as described in the policies above.</li>
                             </ul>
                         </section>
 
@@ -114,6 +115,41 @@ export default function TermsAndConditionsPage() {
                             </p>
                             <p className="mt-4 font-semibold">
                                 The platform is provided on an "AS-IS" and "AS-AVAILABLE" basis. We disclaim all warranties, express or implied, including the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
+                            </p>
+                        </section>
+
+                        <div className="h-px bg-slate-100" />
+
+                        <section>
+                            <h2 className="text-2xl font-serif text-slate-900 mb-4 flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-sm">6</span>
+                                Accounts, Conduct & Compliance
+                            </h2>
+                            <ul className="list-disc pl-5 mt-4 space-y-2">
+                                <li>You must provide accurate, current, and complete information when creating an account and keep it up to date.</li>
+                                <li>You are responsible for safeguarding your credentials and for all activities performed through your account.</li>
+                                <li>We may suspend or terminate accounts involved in fraud, abuse, payment disputes initiated in bad faith, or violations of these Terms or applicable law.</li>
+                                <li>You agree to comply with all applicable laws of the Republic of Rwanda when using the Platform. These Terms are governed by the laws of Rwanda.</li>
+                                <li>We may update our services and policies when necessary; significant changes are announced on the Platform and by email, and continued use constitutes acceptance.</li>
+                            </ul>
+                        </section>
+
+                        <div className="h-px bg-slate-100" />
+
+                        <section>
+                            <h2 className="text-2xl font-serif text-slate-900 mb-4 flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-sm">7</span>
+                                Contact
+                            </h2>
+                            <p>Questions about these Terms? Reach us at:</p>
+                            <ul className="list-none pl-0 mt-4 space-y-2">
+                                <li><strong>Company:</strong> Neere Business Group Ltd (operating VowNest)</li>
+                                <li><strong>Email:</strong> vownest@zohomail.com</li>
+                                <li><strong>Phone:</strong> +250 791 287 640</li>
+                                <li><strong>Address:</strong> Muhabura Building, KN 7 Ave, Kigali, Rwanda</li>
+                            </ul>
+                            <p className="mt-4">
+                                See also our <Link href="/privacy" className="text-[#668c65] font-semibold hover:underline">Privacy Policy</Link>, <Link href="/refund-policy" className="text-[#668c65] font-semibold hover:underline">Refund Policy</Link>, and <Link href="/cancellation-policy" className="text-[#668c65] font-semibold hover:underline">Cancellation Policy</Link>.
                             </p>
                         </section>
 

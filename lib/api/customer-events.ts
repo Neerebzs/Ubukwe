@@ -115,24 +115,8 @@ export const customerEventAPI = {
     return apiCall(`/api/v1/public/events${query}`, "GET");
   },
 
-  // Purchase ticket (public endpoint - no auth required)
-  purchaseTicket: async (
-    eventId: string,
-    ticketTypeId: string,
-    tickets: PurchaseTicketRequest[],
-    paymentReference?: string
-  ): Promise<TicketPurchaseResponse> => {
-    return apiCall(
-      `/api/v1/tickets/purchase`,
-      "POST",
-      {
-        event_id: eventId,
-        ticket_type_id: ticketTypeId,
-        tickets: tickets,
-        payment_reference: paymentReference,
-      }
-    );
-  },
+  // NOTE: the old purchaseTicket helper was removed — tickets are now paid via
+  // DPO Pay; see initiateTicketOrder/verifyTicketOrder in lib/api/payments.ts.
 
   // Get customer's tickets
   getMyTickets: async () => {

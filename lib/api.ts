@@ -93,12 +93,17 @@ export const API_ENDPOINTS = {
     MARK_READ: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}/read`,
     UNREAD_COUNT: `/api/${API_VERSION}/messages/unread-count`,
   },
-  // Payment endpoints (Flutterwave inline)
+  // Payment endpoints (DPO Pay hosted page)
   PAYMENTS: {
     CREATE: `/api/${API_VERSION}/payments`,
-    VERIFY_FLUTTERWAVE: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify-flutterwave`,
+    VERIFY_DPO: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify-dpo`,
     GET: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}`,
     LIST: `/api/${API_VERSION}/payments`,
+  },
+  // Ticket order payments (DPO Pay hosted page; public — anonymous purchases)
+  TICKET_ORDERS: {
+    INITIATE: `/api/${API_VERSION}/tickets/purchase/initiate`,
+    VERIFY: (orderId: string) => `/api/${API_VERSION}/tickets/purchase/${orderId}/verify`,
   },
   // Health check
   HEALTH: `/health`,
