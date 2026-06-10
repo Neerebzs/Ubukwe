@@ -40,19 +40,20 @@ export function Navbar() {
     <>
       <header className="w-full bg-white/80 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-200/60">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center group flex-shrink-0 py-1">
-            <div className="relative flex flex-shrink-0 items-center justify-center">
-              {settings.logoUrl && (
-                <Image 
-                  src={settings.logoUrl} 
-                  alt="VowNest Collective Logo" 
-                  width={200} 
-                  height={70}
-                  className="object-contain h-12 sm:h-16 w-auto group-hover:scale-[1.05] origin-left transition-transform duration-500"
-                  priority
-                />
-              )}
-            </div>
+          <Link href="/" className="flex items-center gap-2 group flex-shrink-0 py-1">
+            {settings.logoUrl && (
+              <Image 
+                src={settings.logoUrl} 
+                alt="VowNest Collective Logo" 
+                width={200} 
+                height={70}
+                className="object-contain h-12 sm:h-16 w-auto group-hover:scale-[1.05] origin-left transition-transform duration-500"
+                priority
+              />
+            )}
+            <span className="font-serif italic text-xl sm:text-2xl font-semibold text-[#668c65] group-hover:opacity-80 transition-opacity duration-300">
+              Vownest
+            </span>
           </Link>
 
           <AISearch className="relative flex-1 max-w-sm sm:max-w-md mx-3 sm:mx-6 lg:mx-12" />
