@@ -41,9 +41,10 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
     async function loadSettings() {
       try {
         const response = await apiClient.admin.systemSettings.get();
-        if (mounted && response.data) {
-          // Merge defaults with backend overrides
-          setSettings(prev => ({ ...prev, ...response.data }));
+        // Backend wraps response as { success: true, data: { logoUrl, ... } }
+        const payload = (response.data as any)?.data ?? response.data;
+        if (mounted && payload) {
+          setSettings(prev => ({ ...prev, ...payload }));
         }
       } catch (e) {
         console.error("Failed to load global system settings from backend", e);
@@ -63,12 +64,12 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
 
   const updateSettings = async (newSettings: Partial<SystemSettings>) => {
     const updated = { ...settings, ...newSettings };
-    // Optimistically update
-    setSettings(updated);
-    
-    // Push silently to the database backend
+    setSettings(updated); // optimistic
     try {
-      await apiClient.admin.systemSettings.update(updated);
+      const response = await apiClient.admin.systemSettings.update(updated);
+      // Sync with what the server actually saved
+      const saved = (response.data as any)?.data ?? null;
+      if (saved) setSettings(prev => ({ ...prev, ...saved }));
     } catch (e) {
       console.error("Failed to persist system settings to backend", e);
     }
