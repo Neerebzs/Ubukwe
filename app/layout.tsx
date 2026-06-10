@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 
 import { SystemSettingsProvider } from "@/contexts/system-settings-context"
 
-// root layout function
+
 
 export default function RootLayout({
   children,
