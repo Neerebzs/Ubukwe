@@ -504,7 +504,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     return (
         <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden pb-16 md:pb-0">
             {/* Top Navigation Overlay - Redesigned Header */}
-            <div className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50 px-6 py-4 md:px-12 flex justify-between items-center group/nav transition-all duration-500 shadow-sm">
+            <div className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100/50 px-6 py-4 flex justify-between items-center group/nav transition-all duration-500 shadow-sm">
                 <div className="flex items-center gap-6">
                     <Link href="/services">
                         <Button variant="ghost" className="rounded-full bg-slate-100 hover:bg-slate-900 hover:text-white transition-all gap-2 px-5 h-11">
@@ -624,7 +624,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
 
-                <div className="container mx-auto px-6 md:px-12 relative z-10">
+                <div className="container mx-auto px-6 relative z-10">
                     <div className="grid lg:grid-cols-12 gap-12 items-center">
                         <div className="lg:col-span-6 space-y-10 animate-in fade-in slide-in-from-left duration-1000">
                                 <motion.div 
@@ -794,7 +794,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 <section className="py-24 bg-white group/carousel"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
-                    <div className="container mx-auto px-4 max-w-7xl">
+                    <div className="container mx-auto px-6 max-w-7xl">
                         <Tabs defaultValue={service.gallery.photos.length > 0 ? "visual-art" : service.gallery.videos.length > 0 ? "cinema" : service.gallery.reels.length > 0 ? "live-stories" : "exclusives"} className="w-full">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                                 <div className="space-y-4">

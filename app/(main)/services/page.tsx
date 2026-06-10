@@ -118,7 +118,7 @@ export default function ServicesPage() {
         <main className="flex-1 pb-24 md:pb-16 relative z-10 w-full">
           
           {/* Aesthetic Hero Header & Search */}
-          <div className="px-2 pt-4 pb-4 md:pt-6 md:pb-6 lg:pt-8 lg:pb-6">
+          <div className="px-6 pt-4 pb-4 md:pt-6 md:pb-6 lg:pt-8 lg:pb-6">
             <div className="max-w-4xl mx-auto text-left space-y-4 mb-8 animate-in fade-in slide-in-from-left-4 duration-1000">
               <div className="flex items-center justify-start gap-4">
                 <div className="h-[1px] w-8 sm:w-12 bg-[#668c65]/30" />
@@ -194,7 +194,7 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          <div className="container mx-auto px-4 md:px-6">
+          <div className="container mx-auto px-6">
             {/* Elegant Category Banner (only for non-'all') */}
             {selectedCategory !== "all" && currentCategory && (
               <div className="mb-14 px-8 md:px-16 py-12 md:py-16 bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-100/50 relative overflow-hidden group">

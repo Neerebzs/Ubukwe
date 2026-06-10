@@ -172,7 +172,7 @@ export default function HomePage() {
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-6 relative z-10">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             {/* Left Content Column */}
             <div className="lg:col-span-6 space-y-10 animate-in fade-in slide-in-from-left duration-1000">
@@ -264,7 +264,7 @@ export default function HomePage() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="w-full max-w-7xl mx-auto px-6 mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-[#668c65]" />
@@ -295,7 +295,7 @@ export default function HomePage() {
         <div className="w-full max-w-7xl mx-auto">
           <div
             ref={carouselRef}
-            className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 px-4 md:px-6 scroll-smooth"
+            className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 px-6 scroll-smooth"
           >
             {isLoading ? (
               Array.from({ length: 3 }).map((_, index) => (
@@ -398,7 +398,7 @@ export default function HomePage() {
       </section>
 
       {/* Modernized Stats Section */}
-      <section className="py-20 md:py-28 px-4 md:px-6 relative bg-white border-y border-slate-50">
+      <section className="py-20 md:py-28 px-6 relative bg-white border-y border-slate-50">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -419,7 +419,7 @@ export default function HomePage() {
       </section>
 
       {/* Modernized Services Section */}
-      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-slate-50/30">
+      <section className="py-24 md:py-32 px-6 relative bg-slate-50/30">
         <div className="container mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
             <div className="max-w-2xl space-y-4">
@@ -470,7 +470,7 @@ export default function HomePage() {
       </section>
 
       {/* Modernized How It Works Section */}
-      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white">
+      <section className="py-24 md:py-32 px-6 relative bg-white">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-20 space-y-4">
             <h2 className="text-5xl md:text-6xl font-black text-sage-950 tracking-tight">
@@ -510,7 +510,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-[#f7f9fa] overflow-hidden">
+      <section className="py-24 md:py-32 px-6 relative bg-[#f7f9fa] overflow-hidden">
         {/* Background Leaf Motif */}
         <div className="leaf-bg opacity-20" />
 
@@ -591,7 +591,7 @@ export default function HomePage() {
       </section>
 
       {/* Modernized FAQ Section */}
-      <section className="py-24 md:py-32 px-4 md:px-6 relative bg-white border-t border-slate-50">
+      <section className="py-24 md:py-32 px-6 relative bg-white border-t border-slate-50">
         <div className="container mx-auto max-w-3xl">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-5xl font-black text-sage-950 tracking-tight">
