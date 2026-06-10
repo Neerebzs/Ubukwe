@@ -252,7 +252,7 @@ export default function ServicesPage() {
                 </Button>
               </div>
             ) : filteredServices.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
+              <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-8 md:gap-10">
                 {filteredServices.map((service, index) => {
                   const categoryName = categoriesResponse?.find(
                     (cat) => cat.id === service.category_id

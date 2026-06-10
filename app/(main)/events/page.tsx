@@ -174,7 +174,7 @@ export default function EventsPage() {
               <p className="text-destructive font-medium">Failed to load events</p>
             </div>
           ) : filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
               {filteredEvents.map((event: any) => (
                 <EventCard
                   key={event.id}

@@ -45,7 +45,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="hidden md:block">
             <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Services</h4>
             <ul className="space-y-4 font-outfit font-light">
               {["Traditional Dancers", "Master of Ceremonies", "Decorations", "Catering"].map((item) => (
@@ -60,7 +60,7 @@ export function Footer() {
           </div>
 
           {/* Support */}
-          <div>
+          <div className="hidden md:block">
             <h4 className="font-serif italic text-xl text-slate-900 mb-6 font-medium">Support</h4>
             <ul className="space-y-4 font-outfit font-light">
               {[
