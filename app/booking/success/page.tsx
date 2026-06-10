@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Calendar, MapPin, Users, Phone, Mail, Download } from "lucide-react"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 export default function BookingSuccessPage() {
+  const { settings } = useSystemSettings()
   const bookingDetails = {
     reference: "UBK-789123",
     service: "Traditional Rwandan Wedding Dancers",
@@ -167,8 +169,8 @@ export default function BookingSuccessPage() {
           <div className="text-center mt-8 p-4 bg-muted/30 rounded-lg">
             <p className="text-sm text-muted-foreground mb-2">Need help with your booking?</p>
             <div className="flex items-center justify-center space-x-4 text-sm">
-              <span>📞 +250 788 123 456</span>
-              <span>✉️ support@ubukwe.rw</span>
+              {settings.contactPhone && <span>📞 {settings.contactPhone}</span>}
+              {settings.contactEmail && <span>✉️ {settings.contactEmail}</span>}
             </div>
           </div>
         </div>

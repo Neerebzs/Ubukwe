@@ -1,9 +1,14 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
 import { ArrowLeft, Mail, MapPin, MessageCircle, Phone, Clock, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 export default function ContactPage() {
+    const { settings } = useSystemSettings()
+
     return (
         <div className="min-h-screen bg-[#FCFBF9] text-slate-900 pb-20">
             {/* Header Section */}
@@ -37,44 +42,62 @@ export default function ContactPage() {
             <div className="container mx-auto px-6 md:px-12 max-w-4xl pt-16">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
+                    {/* Email */}
                     <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-slate-100 border border-slate-50">
                         <div className="p-3 rounded-2xl bg-[#668c65]/10 text-[#668c65] w-fit mb-5">
                             <Mail className="h-6 w-6" />
                         </div>
                         <h2 className="text-xl font-serif text-slate-900 mb-2">Email</h2>
-                        <a href="mailto:vownest@zohomail.com" className="text-[#668c65] font-semibold hover:underline">
-                            vownest@zohomail.com
-                        </a>
+                        {settings.contactEmail ? (
+                            <a href={`mailto:${settings.contactEmail}`} className="text-[#668c65] font-semibold hover:underline">
+                                {settings.contactEmail}
+                            </a>
+                        ) : (
+                            <span className="text-slate-400 text-sm">Loading...</span>
+                        )}
                         <p className="text-sm text-slate-500 mt-2 font-light">
                             For general support, refund requests, cancellations, and partnership inquiries. We aim to respond within one business day.
                         </p>
                     </div>
 
+                    {/* Phone */}
                     <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-slate-100 border border-slate-50">
                         <div className="p-3 rounded-2xl bg-[#668c65]/10 text-[#668c65] w-fit mb-5">
                             <Phone className="h-6 w-6" />
                         </div>
                         <h2 className="text-xl font-serif text-slate-900 mb-2">Phone</h2>
-                        <a href="tel:+250791287640" className="text-[#668c65] font-semibold hover:underline">
-                            +250 791 287 640
-                        </a>
+                        {settings.contactPhone ? (
+                            <a href={`tel:${settings.contactPhone.replace(/\s/g, "")}`} className="text-[#668c65] font-semibold hover:underline">
+                                {settings.contactPhone}
+                            </a>
+                        ) : (
+                            <span className="text-slate-400 text-sm">Loading...</span>
+                        )}
                         <p className="text-sm text-slate-500 mt-2 font-light">
                             Call or WhatsApp us during support hours for urgent booking issues.
                         </p>
                     </div>
 
+                    {/* Office */}
                     <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-slate-100 border border-slate-50">
                         <div className="p-3 rounded-2xl bg-[#668c65]/10 text-[#668c65] w-fit mb-5">
                             <MapPin className="h-6 w-6" />
                         </div>
                         <h2 className="text-xl font-serif text-slate-900 mb-2">Office</h2>
-                        <p className="text-slate-700 font-medium">Muhabura Building, KN 7 Ave</p>
-                        <p className="text-slate-700 font-medium">Kigali, Rwanda</p>
+                        {settings.contactLocationLine1 ? (
+                            <p className="text-slate-700 font-medium">{settings.contactLocationLine1}</p>
+                        ) : (
+                            <span className="text-slate-400 text-sm">Loading...</span>
+                        )}
+                        {settings.contactLocationLine2 && (
+                            <p className="text-slate-700 font-medium">{settings.contactLocationLine2}</p>
+                        )}
                         <p className="text-sm text-slate-500 mt-2 font-light">
                             Visits by appointment — please email or call ahead.
                         </p>
                     </div>
 
+                    {/* Hours */}
                     <div className="bg-white rounded-[32px] p-8 shadow-xl shadow-slate-100 border border-slate-50">
                         <div className="p-3 rounded-2xl bg-[#668c65]/10 text-[#668c65] w-fit mb-5">
                             <Clock className="h-6 w-6" />
@@ -100,7 +123,14 @@ export default function ContactPage() {
                         <div>
                             <h2 className="text-xl font-serif text-slate-900 mb-2">Company Information</h2>
                             <p className="text-slate-600 font-light leading-relaxed">
-                                VowNest is owned and operated by <strong className="font-semibold text-slate-900">Neere Business Group Ltd</strong>, a company registered in Rwanda, with its offices at Muhabura Building, KN 7 Ave, Kigali, Rwanda. Payments on the platform are processed securely by our payment partner, DPO Pay.
+                                VowNest is owned and operated by{" "}
+                                <strong className="font-semibold text-slate-900">Neere Business Group Ltd</strong>,
+                                a company registered in Rwanda
+                                {settings.contactLocationLine1 && (
+                                    <>, with its offices at {settings.contactLocationLine1}
+                                    {settings.contactLocationLine2 && `, ${settings.contactLocationLine2}`}</>
+                                )}.
+                                {" "}Payments on the platform are processed securely by our payment partner, DPO Pay.
                             </p>
                             <p className="text-sm text-slate-500 mt-4 font-light">
                                 Helpful links:{" "}
@@ -113,7 +143,6 @@ export default function ContactPage() {
                     </div>
                 </div>
             </div>
-
         </div>
     )
 }
