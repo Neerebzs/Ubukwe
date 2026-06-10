@@ -18,13 +18,15 @@ export function Footer() {
           <div className="space-y-6">
             <Link href="/" className="flex items-center space-x-3">
               <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center shadow-md overflow-hidden">
-                <Image 
-                  src={settings.logoUrl} 
-                  alt="VowNest Logo" 
-                  width={48} 
-                  height={48}
-                  className="object-contain"
-                />
+                {settings.logoUrl && (
+                  <Image 
+                    src={settings.logoUrl} 
+                    alt="VowNest Logo" 
+                    width={48} 
+                    height={48}
+                    className="object-contain"
+                  />
+                )}
               </div>
               <span className="text-2xl font-serif italic text-slate-900 font-medium">VowNest</span>
             </Link>

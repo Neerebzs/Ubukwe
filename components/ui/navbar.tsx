@@ -11,6 +11,7 @@ import { TranslatedText } from "@/components/translated-text";
 import { useAuth } from "@/hooks/useAuth";
 import { AISearch } from "@/components/ui/ai-search";
 import { useMobileMenu } from "@/contexts/mobile-menu-context";
+import { useSystemSettings } from "@/contexts/system-settings-context";
 
 export function Navbar() {
   const isMobile = useIsMobile();
@@ -41,14 +42,16 @@ export function Navbar() {
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center group flex-shrink-0 py-1">
             <div className="relative flex flex-shrink-0 items-center justify-center">
-              <Image 
-                src={settings.logoUrl} 
-                alt="VowNest Collective Logo" 
-                width={200} 
-                height={70}
-                className="object-contain h-12 sm:h-16 w-auto group-hover:scale-[1.05] origin-left transition-transform duration-500"
-                priority
-              />
+              {settings.logoUrl && (
+                <Image 
+                  src={settings.logoUrl} 
+                  alt="VowNest Collective Logo" 
+                  width={200} 
+                  height={70}
+                  className="object-contain h-12 sm:h-16 w-auto group-hover:scale-[1.05] origin-left transition-transform duration-500"
+                  priority
+                />
+              )}
             </div>
           </Link>
 
@@ -178,13 +181,15 @@ export function Navbar() {
               <div className="flex items-center justify-between pb-8 border-b border-slate-50">
                 <div className="flex items-center py-2">
                   <div className="flex items-center justify-center">
-                    <Image 
-                      src={settings.logoUrl} 
-                      alt="VowNest Collective Logo" 
-                      width={200} 
-                      height={70}
-                      className="object-contain h-12 sm:h-14 w-auto origin-left"
-                    />
+                    {settings.logoUrl && (
+                      <Image 
+                        src={settings.logoUrl} 
+                        alt="VowNest Collective Logo" 
+                        width={200} 
+                        height={70}
+                        className="object-contain h-12 sm:h-14 w-auto origin-left"
+                      />
+                    )}
                   </div>
                 </div>
                 <button
