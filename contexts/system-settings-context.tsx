@@ -14,13 +14,13 @@ export interface SystemSettings {
 }
 
 const defaultSettings: SystemSettings = {
-  logoUrl: "/logo.png",
-  homeHeroImageUrl: "/grom.jpg",
-  authBackgroundImageUrl: "/grom.jpg",
-  contactEmail: "vownest@zohomail.com",
-  contactPhone: "+250 791 287 640",
-  contactLocationLine1: "Muhabura Building, KN 7 Ave",
-  contactLocationLine2: "Kigali, Rwanda",
+  logoUrl: "",
+  homeHeroImageUrl: "",
+  authBackgroundImageUrl: "",
+  contactEmail: "",
+  contactPhone: "",
+  contactLocationLine1: "",
+  contactLocationLine2: "",
 };
 
 interface SystemSettingsContextType {

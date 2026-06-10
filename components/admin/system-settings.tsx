@@ -60,12 +60,12 @@ export function AdminSystemSettings() {
   const handleSaveSettings = async () => {
     setIsLoading(true);
     try {
-      // Small simulated delay for UX
-      await new Promise(res => setTimeout(res, 500));
+      await apiClient.admin.systemSettings.update(formData);
       updateSettings(formData);
-      toast.success("System Settings have been updated globally.");
+      toast.success("System settings saved successfully.");
     } catch (error) {
-      toast.error("Failed to save changes.");
+      console.error("Failed to save system settings", error);
+      toast.error("Failed to save changes. Please try again.");
     } finally {
       setIsLoading(false);
     }
