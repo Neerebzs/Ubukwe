@@ -52,8 +52,18 @@ export default function HomePage() {
   const { data: realEvents, isLoading: isLoadingEvents } = usePublicEvents();
   const { offers, isLoading: isLoadingOffers } = useOffers();
 
-  // Map real events to promotions format
-  const dynamicEvents = (realEvents || []).map((event: any) => ({
+  // Map real events to promotions format — only future/today events
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dynamicEvents = (realEvents || [])
+    .filter((event: any) => {
+      if (!event.event_date) return false;
+      const eventDate = new Date(event.event_date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today; // hide past events
+    })
+    .map((event: any) => ({
     id: event.id,
     type: "event",
     badge: "Upcoming Event",
