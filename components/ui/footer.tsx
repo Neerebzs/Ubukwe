@@ -11,8 +11,8 @@ export function Footer() {
   const { settings } = useSystemSettings();
 
   return (
-    <footer className="bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10 px-4">
-      <div className="container mx-auto">
+    <footer className="bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10">
+      <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Section */}
           <div className="space-y-6">
