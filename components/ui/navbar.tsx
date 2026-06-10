@@ -16,6 +16,7 @@ export function Navbar() {
   const isMobile = useIsMobile();
   const { isMenuOpen, toggleMenu } = useMobileMenu();
   const { user, isAuthenticated, logout } = useAuth();
+  const { settings } = useSystemSettings();
   const [eventsDropdownOpen, setEventsDropdownOpen] = React.useState(false);
   const [mobileEventsOpen, setMobileEventsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -41,7 +42,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center group flex-shrink-0 py-1">
             <div className="relative flex flex-shrink-0 items-center justify-center">
               <Image 
-                src="/logo.png" 
+                src={settings.logoUrl} 
                 alt="VowNest Collective Logo" 
                 width={200} 
                 height={70}
@@ -178,7 +179,7 @@ export function Navbar() {
                 <div className="flex items-center py-2">
                   <div className="flex items-center justify-center">
                     <Image 
-                      src="/logo.png" 
+                      src={settings.logoUrl} 
                       alt="VowNest Collective Logo" 
                       width={200} 
                       height={70}
