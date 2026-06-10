@@ -102,7 +102,7 @@ export default function MyTicketsPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="pt-24 pb-12 border-b border-slate-100">
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <div className="flex items-center justify-center gap-3">
               <div className="h-[1px] w-12 bg-[#608d64]/30" />
@@ -121,7 +121,7 @@ export default function MyTicketsPage() {
         </div>
       </div>
 
-      <main className="container mx-auto px-6 py-16">
+      <main className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto space-y-12">
           {/* Search Form */}
           <Card className="border-none shadow-none bg-[#fdfcf9] rounded-[40px] border border-slate-100">

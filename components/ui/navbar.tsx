@@ -39,7 +39,7 @@ export function Navbar() {
   return (
     <>
       <header className="w-full bg-white/80 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-200/60">
-        <div className="container mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-1 group flex-shrink-0 py-1">
             {settings.logoUrl && (
               <Image 
@@ -117,7 +117,7 @@ export function Navbar() {
                 {!isAuthenticated ? (
                   <>
                     <Link href="/auth/signin">
-                      <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-50 px-6 h-11 rounded-xl transition-all">
+                      <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-50 px-4 h-11 rounded-xl transition-all">
                         <TranslatedText text="Sign In" />
                       </Button>
                     </Link>
@@ -134,7 +134,7 @@ export function Navbar() {
                         user?.role === 'service_provider' ? '/provider/dashboard' :
                           '/customer/dashboard'
                     }>
-                      <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-50 h-11 rounded-xl px-6">
+                      <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 hover:bg-slate-50 h-11 rounded-xl px-4">
                         <LayoutDashboard className="h-4 w-4 mr-2" />
                         <TranslatedText text="Dashboard" />
                       </Button>
@@ -143,7 +143,7 @@ export function Navbar() {
                       variant="outline"
                       size="sm"
                       onClick={() => logout()}
-                      className="border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 h-11 rounded-xl px-6 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                      className="border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-100 h-11 rounded-xl px-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
                     >
                       <LogOut className="h-4 w-4 mr-2" />
                       <TranslatedText text="Logout" />
@@ -203,7 +203,7 @@ export function Navbar() {
 
               {/* Navigation Narrative */}
               <div className="space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 px-6">Explore Portals</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-6 px-4">Explore Portals</p>
                 <nav className="space-y-1">
                   {[
                     { href: "/", label: "Home", icon: Home },
@@ -213,7 +213,7 @@ export function Navbar() {
                       key={item.label}
                       href={item.href}
                       onClick={toggleMenu}
-                      className="flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
+                      className="flex items-center justify-between px-4 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
                     >
                       <div className="flex items-center space-x-4">
                         <item.icon className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
@@ -229,7 +229,7 @@ export function Navbar() {
                   <div className="space-y-1">
                     <button
                       onClick={() => setMobileEventsOpen(!mobileEventsOpen)}
-                      className="w-full flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group text-left"
+                      className="w-full flex items-center justify-between px-4 py-5 rounded-2xl hover:bg-slate-50 transition-all group text-left"
                     >
                       <div className="flex items-center space-x-4">
                         <Calendar className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
@@ -273,7 +273,7 @@ export function Navbar() {
                   <a
                     href="/about"
                     onClick={toggleMenu}
-                    className="flex items-center justify-between px-6 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
+                    className="flex items-center justify-between px-4 py-5 rounded-2xl hover:bg-slate-50 transition-all group"
                   >
                     <div className="flex items-center space-x-4">
                       <Info className="h-4 w-4 text-slate-400 group-hover:text-[#668c65] transition-colors" />
@@ -347,5 +347,6 @@ export function Navbar() {
     </>
   );
 }
+
 
 

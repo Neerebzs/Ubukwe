@@ -194,7 +194,7 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-4">
             {/* Elegant Category Banner (only for non-'all') */}
             {selectedCategory !== "all" && currentCategory && (
               <div className="mb-14 px-8 md:px-16 py-12 md:py-16 bg-white rounded-[40px] border border-slate-100 shadow-xl shadow-slate-100/50 relative overflow-hidden group">
@@ -335,3 +335,4 @@ export default function ServicesPage() {
     </div>
   )
 }
+

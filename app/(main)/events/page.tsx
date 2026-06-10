@@ -84,7 +84,7 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
       {/* Hero Section */}
-      <div className="container mx-auto px-6 py-12 md:py-20">
+      <div className="container mx-auto px-4 py-12 md:py-20">
         <div className="max-w-4xl space-y-6">
           <div className="flex items-center gap-3">
             <div className="h-[1px] w-12 bg-[#608d64]/30" />
@@ -103,7 +103,7 @@ export default function EventsPage() {
 
       {/* Categories & Filter Bar */}
       <div className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-y border-slate-100/50">
-        <div className="container mx-auto px-6 py-6">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
               {categories.map((category) => (
@@ -153,7 +153,7 @@ export default function EventsPage() {
       </div>
 
       {/* Content Section */}
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-4 py-16">
         <div className="space-y-12">
           {/* Section Header */}
           <div className="flex items-center justify-between">
@@ -202,3 +202,4 @@ export default function EventsPage() {
     </div>
   )
 }
+
