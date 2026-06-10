@@ -1,7 +1,10 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
 import { ArrowLeft, CalendarX } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 const cancellationTiers = [
     { timing: "30+ days before event", refund: "100% minus 10% platform commission", example: "90,000 RWF" },
@@ -12,6 +15,8 @@ const cancellationTiers = [
 ]
 
 export default function CancellationPolicyPage() {
+    const { settings } = useSystemSettings()
+    const address = [settings.contactLocationLine1, settings.contactLocationLine2].filter(Boolean).join(", ")
     return (
         <div className="min-h-screen bg-[#FCFBF9] text-slate-900 pb-20">
             {/* Header Section */}
@@ -164,9 +169,9 @@ export default function CancellationPolicyPage() {
                             </p>
                             <ul className="list-none pl-0 mt-4 space-y-2">
                                 <li><strong>Company:</strong> Neere Business Group Ltd (operating VowNest)</li>
-                                <li><strong>Email:</strong> vownest@zohomail.com</li>
-                                <li><strong>Phone:</strong> +250 791 287 640</li>
-                                <li><strong>Address:</strong> Muhabura Building, KN 7 Ave, Kigali, Rwanda</li>
+                                {settings.contactEmail && <li><strong>Email:</strong> {settings.contactEmail}</li>}
+                                {settings.contactPhone && <li><strong>Phone:</strong> {settings.contactPhone}</li>}
+                                {address && <li><strong>Address:</strong> {address}</li>}
                                 <li><strong>Hours:</strong> Monday–Friday 8:00 AM – 6:00 PM, Saturday 9:00 AM – 3:00 PM (Rwanda Time)</li>
                             </ul>
                             <p className="mt-4">

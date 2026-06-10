@@ -1,9 +1,14 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
 import { ArrowLeft, FileText, Scale, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 export default function TermsAndConditionsPage() {
+    const { settings } = useSystemSettings()
+    const address = [settings.contactLocationLine1, settings.contactLocationLine2].filter(Boolean).join(", ")
     return (
         <div className="min-h-screen bg-[#FCFBF9] text-slate-900 pb-20">
             {/* Header Section */}
@@ -47,7 +52,7 @@ export default function TermsAndConditionsPage() {
                                 Introduction & Acceptance
                             </h2>
                             <p>
-                                Welcome to VowNest ("Platform", "we", "us", or "our"), owned and operated by <strong>Neere Business Group Ltd</strong>, a company registered in Rwanda with offices at Muhabura Building, KN 7 Ave, Kigali, Rwanda. These Terms & Conditions constitute a legally binding agreement made between you (whether personally or on behalf of an entity) and Neere Business Group Ltd concerning your access to and use of our web application.
+                                Welcome to VowNest ("Platform", "we", "us", or "our"), owned and operated by <strong>Neere Business Group Ltd</strong>, a company registered in Rwanda{address ? ` with offices at ${address}` : ""}. These Terms & Conditions constitute a legally binding agreement made between you (whether personally or on behalf of an entity) and Neere Business Group Ltd concerning your access to and use of our web application.
                             </p>
                             <p className="mt-4">
                                 By accessing the Platform, you agree that you have read, understood, and agree to be bound by all of these Terms of Service. If you do not agree with all of these Terms, then you are expressly prohibited from using the Platform and you must discontinue use immediately.
@@ -144,9 +149,9 @@ export default function TermsAndConditionsPage() {
                             <p>Questions about these Terms? Reach us at:</p>
                             <ul className="list-none pl-0 mt-4 space-y-2">
                                 <li><strong>Company:</strong> Neere Business Group Ltd (operating VowNest)</li>
-                                <li><strong>Email:</strong> vownest@zohomail.com</li>
-                                <li><strong>Phone:</strong> +250 791 287 640</li>
-                                <li><strong>Address:</strong> Muhabura Building, KN 7 Ave, Kigali, Rwanda</li>
+                                {settings.contactEmail && <li><strong>Email:</strong> {settings.contactEmail}</li>}
+                                {settings.contactPhone && <li><strong>Phone:</strong> {settings.contactPhone}</li>}
+                                {address && <li><strong>Address:</strong> {address}</li>}
                             </ul>
                             <p className="mt-4">
                                 See also our <Link href="/privacy" className="text-[#668c65] font-semibold hover:underline">Privacy Policy</Link>, <Link href="/refund-policy" className="text-[#668c65] font-semibold hover:underline">Refund Policy</Link>, and <Link href="/cancellation-policy" className="text-[#668c65] font-semibold hover:underline">Cancellation Policy</Link>.

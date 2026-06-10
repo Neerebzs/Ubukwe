@@ -1,7 +1,10 @@
+"use client"
+
 import React from "react"
 import Link from "next/link"
 import { ArrowLeft, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSystemSettings } from "@/contexts/system-settings-context"
 
 const refundTiers = [
     { timing: "30+ days before event", refund: "100% minus 10% platform commission", example: "90,000 RWF" },
@@ -11,6 +14,8 @@ const refundTiers = [
 ]
 
 export default function RefundPolicyPage() {
+    const { settings } = useSystemSettings()
+    const address = [settings.contactLocationLine1, settings.contactLocationLine2].filter(Boolean).join(", ")
     return (
         <div className="min-h-screen bg-[#FCFBF9] text-slate-900 pb-20">
             {/* Header Section */}
@@ -133,7 +138,7 @@ export default function RefundPolicyPage() {
                                 <li>Attach supporting evidence where applicable (photos, communications, documentation for force majeure).</li>
                                 <li>Our team reviews standard requests within <strong>3–5 business days</strong> (complex cases up to 10, disputes up to 14). We may contact you or the service provider for more information.</li>
                                 <li>You will be notified of the decision by email. Denied requests include an explanation and the option to appeal.</li>
-                                <li>You can also email <strong>vownest@zohomail.com</strong> with your booking reference, event date, and reason.</li>
+                                <li>You can also email <strong>{settings.contactEmail || "our support team"}</strong> with your booking reference, event date, and reason.</li>
                             </ul>
                         </section>
 
@@ -184,9 +189,9 @@ export default function RefundPolicyPage() {
                             <p>For refund-related inquiries:</p>
                             <ul className="list-none pl-0 mt-4 space-y-2">
                                 <li><strong>Company:</strong> Neere Business Group Ltd (operating VowNest)</li>
-                                <li><strong>Email:</strong> vownest@zohomail.com</li>
-                                <li><strong>Phone:</strong> +250 791 287 640</li>
-                                <li><strong>Address:</strong> Muhabura Building, KN 7 Ave, Kigali, Rwanda</li>
+                                {settings.contactEmail && <li><strong>Email:</strong> {settings.contactEmail}</li>}
+                                {settings.contactPhone && <li><strong>Phone:</strong> {settings.contactPhone}</li>}
+                                {address && <li><strong>Address:</strong> {address}</li>}
                                 <li><strong>Hours:</strong> Monday–Friday, 8:00 AM – 6:00 PM (Rwanda Time)</li>
                             </ul>
                             <p className="mt-4">
