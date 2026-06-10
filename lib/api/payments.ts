@@ -1,30 +1,41 @@
 import { apiClient, API_ENDPOINTS } from "../api";
 
 /**
- * DPO Pay hosted-page payments.
+ * IremboPay payments — kept entirely in-app (no redirect).
  *
- * Flow (redirect — the customer pays on DPO's hosted payment page):
- *   1. POST /payments                → backend registers the transaction with DPO
- *                                      (createToken) and returns a payment_url
- *   2. window.location = payment_url → customer pays on the DPO page (card / mobile money)
- *   3. DPO redirects back            → /payment/callback?payment_id=...&TransactionToken=...
- *   4. POST /{id}/verify-dpo         → backend verifies with DPO and confirms the booking
+ *   • Mobile Money: the backend creates an invoice and pushes a prompt to the
+ *     customer's phone. The UI then polls `verifyPayment` until it settles.
+ *   • Card: the backend creates an invoice; the UI opens IremboPay's secure
+ *     inline widget (a modal over the page) with the invoice number + public key,
+ *     then verifies once the widget reports success.
  *
- * Usage from your UI:
- *   await startDpoPayment({ bookingId, paymentMethod: "mobile_money" });
- *   // the browser navigates away; the /payment/callback page completes the flow
+ * Typical usage from a page:
+ *   const cfg = await createPayment({ bookingId, paymentMethod: "mobile_money", phoneNumber, provider });
+ *   const payment = await pollPaymentStatus(cfg.payment_id, { onUpdate: setStatus });
+ *
+ *   const cfg = await createPayment({ bookingId, paymentMethod: "card" });
+ *   await openIrembopayWidget(cfg);            // resolves when the customer pays
+ *   const payment = await verifyPayment(cfg.payment_id);
  */
 
 export type PaymentMethod = "mobile_money" | "card" | "bank_transfer" | "cash";
+export type MomoProvider = "MTN" | "AIRTEL";
 
-// Config the backend returns to start the DPO redirect
-export interface DpoPaymentConfig {
-  payment_id: string;
-  payment_url: string;
-  trans_token: string;
-  tx_ref: string;
+/** Browser-safe bits the widget needs, returned on every create/initiate call. */
+export interface IrembopayWidgetConfig {
+  invoice_number: string;
+  payment_method: string;
   amount: number;
   currency: string;
+  momo_initiated?: boolean;
+  momo_message?: string | null;
+  public_key?: string | null;
+  widget_script_url?: string | null;
+  environment?: string | null;
+}
+
+export interface PaymentInitResponse extends IrembopayWidgetConfig {
+  payment_id: string;
 }
 
 export interface Payment {
@@ -39,57 +50,45 @@ export interface Payment {
   paid_at?: string | null;
 }
 
-/** Create the payment on the backend and get the DPO hosted page URL. */
+const DEFAULT_WIDGET_SRC = "https://dashboard.irembopay.com/assets/payment/inline.js";
+
+declare global {
+  interface Window {
+    // IremboPay inline.js global (loaded on demand for card payments)
+    IremboPay?: any;
+  }
+}
+
+// ── Booking payments ─────────────────────────────────────────────────────────
+
+/** Create a booking payment. For mobile_money, pass phoneNumber + provider. */
 export async function createPayment(params: {
   bookingId: string;
   paymentMethod: PaymentMethod;
+  phoneNumber?: string;
+  provider?: MomoProvider;
   notes?: string;
-}): Promise<DpoPaymentConfig> {
-  const response = await apiClient.post<DpoPaymentConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
+}): Promise<PaymentInitResponse> {
+  const response = await apiClient.post<PaymentInitResponse>(API_ENDPOINTS.PAYMENTS.CREATE, {
     booking_id: params.bookingId,
     payment_method: params.paymentMethod,
+    phone_number: params.phoneNumber,
+    provider: params.provider,
     notes: params.notes,
   });
-  return response.data as DpoPaymentConfig;
+  return response.data as PaymentInitResponse;
 }
 
-/**
- * Confirm a DPO transaction on the backend after the redirect back.
- * The token is optional — the backend falls back to the one stored at creation.
- */
-export async function verifyPayment(paymentId: string, transactionToken?: string): Promise<Payment> {
-  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY_DPO(paymentId), {
-    transaction_token: transactionToken || undefined,
-  });
+/** Verify a booking payment's invoice; confirms the booking on success. Safe to poll. */
+export async function verifyPayment(paymentId: string): Promise<Payment> {
+  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY(paymentId), {});
   return response.data as Payment;
 }
 
-/** Fetch a payment's current state (used by the callback page to poll pending payments). */
+/** Fetch a payment's current state. */
 export async function getPayment(paymentId: string): Promise<Payment> {
   const response = await apiClient.get<Payment>(API_ENDPOINTS.PAYMENTS.GET(paymentId));
   return response.data as Payment;
-}
-
-/**
- * End-to-end hosted-page payment: create → redirect to DPO.
- * This navigates the browser away; on return, /payment/callback verifies and
- * shows the result. Resolves with the created config just before redirecting
- * (useful for storing context), so callers should not expect to keep running.
- */
-export async function startDpoPayment(params: {
-  bookingId: string;
-  paymentMethod: PaymentMethod;
-  notes?: string;
-}): Promise<DpoPaymentConfig> {
-  if (typeof window === "undefined") {
-    throw new Error("DPO payments can only be started in the browser");
-  }
-  const config = await createPayment(params);
-  if (!config?.payment_url) {
-    throw new Error("The server did not return a DPO payment URL");
-  }
-  window.location.assign(config.payment_url);
-  return config;
 }
 
 // ── Ticket orders (event tickets, public endpoints) ─────────────────────────
@@ -103,13 +102,8 @@ export interface TicketOrderItemInput {
   }>;
 }
 
-export interface TicketOrderConfig {
+export interface TicketOrderInitResponse extends IrembopayWidgetConfig {
   order_id: string;
-  payment_url: string;
-  trans_token: string;
-  tx_ref: string;
-  amount: number;
-  currency: string;
 }
 
 export interface SettledTicketOrder {
@@ -137,47 +131,149 @@ export interface SettledTicketOrder {
   }>;
 }
 
-/** Create a pending ticket order (one DPO charge for the whole checkout). */
+/** Create a ticket order. For mobile_money, pass phoneNumber + provider. */
 export async function initiateTicketOrder(params: {
   eventId: string;
   customerEmail: string;
   paymentMethod: "card" | "mobile_money";
+  phoneNumber?: string;
+  provider?: MomoProvider;
   items: TicketOrderItemInput[];
-}): Promise<TicketOrderConfig> {
-  const response = await apiClient.post<TicketOrderConfig>(API_ENDPOINTS.TICKET_ORDERS.INITIATE, {
+}): Promise<TicketOrderInitResponse> {
+  const response = await apiClient.post<TicketOrderInitResponse>(API_ENDPOINTS.TICKET_ORDERS.INITIATE, {
     event_id: params.eventId,
     customer_email: params.customerEmail,
     payment_method: params.paymentMethod,
+    phone_number: params.phoneNumber,
+    provider: params.provider,
     items: params.items,
   });
-  return response.data as TicketOrderConfig;
+  return response.data as TicketOrderInitResponse;
 }
 
-/**
- * Verify a ticket order after the redirect back from DPO. Issues the tickets
- * on success (idempotent — safe to call again).
- */
-export async function verifyTicketOrder(orderId: string, transactionToken?: string): Promise<SettledTicketOrder> {
-  const response = await apiClient.post<SettledTicketOrder>(API_ENDPOINTS.TICKET_ORDERS.VERIFY(orderId), {
-    transaction_token: transactionToken || undefined,
-  });
+/** Verify a ticket order's invoice; issues tickets on success (idempotent). Safe to poll. */
+export async function verifyTicketOrder(orderId: string): Promise<SettledTicketOrder> {
+  const response = await apiClient.post<SettledTicketOrder>(API_ENDPOINTS.TICKET_ORDERS.VERIFY(orderId), {});
   return response.data as SettledTicketOrder;
 }
 
-/** End-to-end ticket payment: create the order → redirect to the DPO page. */
-export async function startTicketDpoPayment(params: {
-  eventId: string;
-  customerEmail: string;
-  paymentMethod: "card" | "mobile_money";
-  items: TicketOrderItemInput[];
-}): Promise<TicketOrderConfig> {
+// ── IremboPay inline widget (card payments) ─────────────────────────────────
+
+let widgetScriptPromise: Promise<void> | null = null;
+
+/** Inject IremboPay's inline.js once and resolve when window.IremboPay is ready. */
+export function loadIrembopayScript(scriptUrl?: string | null): Promise<void> {
   if (typeof window === "undefined") {
-    throw new Error("DPO payments can only be started in the browser");
+    return Promise.reject(new Error("IremboPay widget can only load in the browser"));
   }
-  const config = await initiateTicketOrder(params);
-  if (!config?.payment_url) {
-    throw new Error("The server did not return a DPO payment URL");
+  if (window.IremboPay) return Promise.resolve();
+  if (widgetScriptPromise) return widgetScriptPromise;
+
+  const src = scriptUrl || DEFAULT_WIDGET_SRC;
+  widgetScriptPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing && window.IremboPay) {
+      resolve();
+      return;
+    }
+    const script = existing ?? document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      widgetScriptPromise = null;
+      reject(new Error("Failed to load the IremboPay payment widget"));
+    };
+    if (!existing) document.body.appendChild(script);
+  });
+  return widgetScriptPromise;
+}
+
+/**
+ * Open IremboPay's inline card widget for an invoice. Resolves when the customer
+ * completes payment, rejects if they close it or it errors. The caller should
+ * then verify with the backend (verifyPayment / verifyTicketOrder).
+ */
+export async function openIrembopayWidget(config: IrembopayWidgetConfig): Promise<void> {
+  if (!config.public_key) {
+    throw new Error("Card payments are not configured (missing IremboPay public key)");
   }
-  window.location.assign(config.payment_url);
-  return config;
+  await loadIrembopayScript(config.widget_script_url);
+  const IremboPay = window.IremboPay;
+  if (!IremboPay?.initiate) {
+    throw new Error("The IremboPay widget failed to initialise");
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    IremboPay.initiate({
+      publicKey: config.public_key,
+      invoiceNumber: config.invoice_number,
+      locale: IremboPay.locale?.EN ?? "EN",
+      callback: (err: any, _resp: any) => {
+        if (settled) return;
+        settled = true;
+        if (err) {
+          reject(new Error(err?.message || "Payment was not completed"));
+        } else {
+          resolve();
+        }
+      },
+    });
+  });
+}
+
+// ── Polling helpers (mobile money & post-widget confirmation) ───────────────
+
+export interface PollOptions {
+  intervalMs?: number;
+  timeoutMs?: number;
+  onUpdate?: (status: string) => void;
+}
+
+/** Poll verifyPayment until the payment completes or fails (or times out). */
+export async function pollPaymentStatus(
+  paymentId: string,
+  opts: PollOptions = {}
+): Promise<Payment> {
+  const intervalMs = opts.intervalMs ?? 3000;
+  const timeoutMs = opts.timeoutMs ?? 120000;
+  const deadline = Date.now() + timeoutMs;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let payment: Payment;
+    try {
+      payment = await verifyPayment(paymentId);
+    } catch {
+      payment = await getPayment(paymentId);
+    }
+    opts.onUpdate?.(payment.status);
+    if (payment.status === "completed" || payment.status === "failed") {
+      return payment;
+    }
+    if (Date.now() >= deadline) return payment; // still pending — let the UI decide
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
+/** Poll verifyTicketOrder until the order settles or fails (or times out). */
+export async function pollTicketOrder(
+  orderId: string,
+  opts: PollOptions = {}
+): Promise<SettledTicketOrder> {
+  const intervalMs = opts.intervalMs ?? 3000;
+  const timeoutMs = opts.timeoutMs ?? 120000;
+  const deadline = Date.now() + timeoutMs;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const order = await verifyTicketOrder(orderId);
+    opts.onUpdate?.(order.status);
+    if (order.status === "completed" || order.status === "failed") {
+      return order;
+    }
+    if (Date.now() >= deadline) return order;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,9 @@ import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, M
 import { usePublicEvent } from "@/hooks/useCustomerEvents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TicketGraphic } from "@/components/customer/ticket-graphic";
-import { startTicketDpoPayment, verifyTicketOrder } from "@/lib/api/payments";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { payForTickets, type CheckoutPhase } from "@/lib/payments/checkout";
+import type { MomoProvider, SettledTicketOrder } from "@/lib/api/payments";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { toast } from "sonner";
@@ -54,15 +56,11 @@ const generateBarcode = async (data: string): Promise<string> => {
 export default function EventTicketingPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const eventId = params.eventId as string;
-
-  // Present when DPO redirects the customer back after payment
-  const returnedOrderId = searchParams.get("order_id");
 
   const { data: event, isLoading, error } = usePublicEvent(eventId);
 
-  const [currentStep, setCurrentStep] = useState<Step>(returnedOrderId ? "verifying" : "selection");
+  const [currentStep, setCurrentStep] = useState<Step>("selection");
   const [tickets, setTickets] = useState<Record<string, number>>({});
   const [purchaseData, setPurchaseData] = useState<any>(null);
   const [userInfo, setUserInfo] = useState({
@@ -72,55 +70,33 @@ export default function EventTicketingPage() {
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("mobile_money");
-  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentPhase, setPaymentPhase] = useState<CheckoutPhase | null>(null);
+  const [momoPhone, setMomoPhone] = useState("");
+  const [momoProvider, setMomoProvider] = useState<MomoProvider>("MTN");
   const [failureMessage, setFailureMessage] = useState("");
-  const verifyStartedRef = useRef(false);
 
-  // Back from the DPO hosted page: verify the order, then show the tickets
-  useEffect(() => {
-    if (!returnedOrderId || verifyStartedRef.current) return;
-    verifyStartedRef.current = true;
-
-    (async () => {
-      try {
-        const result = await verifyTicketOrder(
-          returnedOrderId,
-          searchParams.get("TransactionToken") || searchParams.get("TransID") || undefined
-        );
-
-        if (result.status === "completed" && result.tickets?.length) {
-          const generated = [];
-          for (const ticket of result.tickets) {
-            const qrCodeUrl = await generateQRCode(ticket.ticket_number);
-            const barcodeUrl = await generateBarcode(ticket.ticket_number);
-            generated.push({
-              id: ticket.ticket_id,
-              ticket_number: ticket.ticket_number,
-              holder_name: ticket.holder_name,
-              holder_email: ticket.holder_email,
-              qrCode: qrCodeUrl,
-              barcode: barcodeUrl,
-              totalPrice: ticket.price,
-              ticketTypeName: ticket.ticket_type,
-            });
-          }
-          setPurchaseData({ holderEmail: result.customer_email, holderName: "Guest" });
-          setPurchasedTickets(generated);
-          setCurrentStep("success");
-          toast.success(`Successfully purchased ${generated.length} ticket${generated.length > 1 ? "s" : ""}!`);
-        } else if (result.status === "pending") {
-          setFailureMessage("The payment was not completed. You can try again below.");
-          setCurrentStep("failed");
-        } else {
-          setFailureMessage(result.reason || "The payment failed. No money was taken for unconfirmed payments.");
-          setCurrentStep("failed");
-        }
-      } catch (err: any) {
-        setFailureMessage(err?.response?.data?.detail || err?.message || "We could not verify your payment.");
-        setCurrentStep("failed");
-      }
-    })();
-  }, [returnedOrderId, searchParams]);
+  // Render a settled order: generate QR + barcode per ticket and show them.
+  const showSettledTickets = async (result: SettledTicketOrder) => {
+    const generated = [];
+    for (const ticket of result.tickets || []) {
+      const qrCodeUrl = await generateQRCode(ticket.ticket_number);
+      const barcodeUrl = await generateBarcode(ticket.ticket_number);
+      generated.push({
+        id: ticket.ticket_id,
+        ticket_number: ticket.ticket_number,
+        holder_name: ticket.holder_name,
+        holder_email: ticket.holder_email,
+        qrCode: qrCodeUrl,
+        barcode: barcodeUrl,
+        totalPrice: ticket.price,
+        ticketTypeName: ticket.ticket_type,
+      });
+    }
+    setPurchasedTickets(generated);
+    setCurrentStep("success");
+    toast.success(`Successfully purchased ${generated.length} ticket${generated.length > 1 ? "s" : ""}!`);
+  };
 
   if (isLoading) {
     return (
@@ -228,32 +204,55 @@ export default function EventTicketingPage() {
     setCurrentStep("payment");
   };
 
-  // Create the order on the backend and redirect to the DPO hosted page.
-  // On return, the order_id query param triggers verification above.
-  const handlePayWithDpo = async () => {
+  // Pay in-app via IremboPay (no redirect).
+  //   • Mobile money → push a prompt to the phone, then poll.
+  //   • Card → open IremboPay's secure inline widget, then verify.
+  const handlePay = async () => {
     if (!purchaseData) return;
 
-    setIsRedirectingToPayment(true);
-    try {
-      const items = purchaseData.selectedTickets.map((item: any) => ({
-        ticket_type_id: item.ticketTypeId,
-        tickets: Array(item.quantity).fill(null).map(() => ({
-          holder_email: purchaseData.holderEmail,
-          holder_name: purchaseData.holderName || "Guest",
-          holder_phone: purchaseData.holderPhone || "",
-        })),
-      }));
+    if (paymentMethod === "mobile_money" && !/^07\d{8}$/.test(momoPhone.trim())) {
+      toast.error("Enter a valid Mobile Money number in the format 07XXXXXXXX");
+      return;
+    }
 
-      await startTicketDpoPayment({
+    const items = purchaseData.selectedTickets.map((item: any) => ({
+      ticket_type_id: item.ticketTypeId,
+      tickets: Array(item.quantity).fill(null).map(() => ({
+        holder_email: purchaseData.holderEmail,
+        holder_name: purchaseData.holderName || "Guest",
+        holder_phone: momoPhone.trim() || purchaseData.holderPhone || "",
+      })),
+    }));
+
+    setIsProcessingPayment(true);
+    setCurrentStep("verifying");
+    try {
+      const result = await payForTickets({
         eventId,
         customerEmail: purchaseData.holderEmail,
-        paymentMethod,
+        method: paymentMethod,
+        phoneNumber: momoPhone.trim(),
+        provider: momoProvider,
         items,
+        onPhase: setPaymentPhase,
       });
-      // The browser is navigating to DPO — nothing more to do here.
+      await showSettledTickets(result);
     } catch (error: any) {
-      setIsRedirectingToPayment(false);
-      toast.error(error?.response?.data?.detail || error?.message || "Failed to start the payment");
+      setFailureMessage(error?.response?.data?.detail || error?.message || "The payment could not be completed.");
+      setCurrentStep("failed");
+    } finally {
+      setIsProcessingPayment(false);
+      setPaymentPhase(null);
+    }
+  };
+
+  // Phase label for the processing screen.
+  const paymentPhaseLabel = (phase: CheckoutPhase | null): string => {
+    switch (phase) {
+      case "prompt_sent": return "Approve the payment prompt on your phone…";
+      case "widget": return "Complete your card payment in the secure window…";
+      case "verifying": return "Confirming your payment and issuing your tickets…";
+      default: return "Starting your payment…";
     }
   };
 
@@ -632,25 +631,53 @@ export default function EventTicketingPage() {
                     </div>
                   </div>
 
+                  {paymentMethod === "mobile_money" && (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="momoPhone" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobile Money number</Label>
+                        <Input
+                          id="momoPhone"
+                          inputMode="numeric"
+                          placeholder="07XXXXXXXX"
+                          value={momoPhone}
+                          onChange={(e) => setMomoPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
+                          className="h-14 rounded-2xl border-slate-200"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Provider</Label>
+                        <Select value={momoProvider} onValueChange={(v) => setMomoProvider(v as MomoProvider)}>
+                          <SelectTrigger className="h-14 rounded-2xl border-slate-200">
+                            <SelectValue placeholder="Select provider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MTN">MTN MoMo</SelectItem>
+                            <SelectItem value="AIRTEL">Airtel Money</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
                     <Shield className="h-5 w-5 text-[#608d64] shrink-0 mt-0.5" />
                     <p>
-                      <strong className="text-slate-700">Secure payment via DPO Pay.</strong>{" "}
-                      You will be redirected to our payment partner's secure page to complete the{" "}
-                      {paymentMethod === "mobile_money" ? "mobile money" : "card"} payment.
-                      We never see or store your card or PIN details.
+                      <strong className="text-slate-700">Secure payment via IremboPay.</strong>{" "}
+                      {paymentMethod === "mobile_money"
+                        ? "You stay right here — we'll send a payment prompt to your phone (MTN MoMo & Airtel Money). Approve it to get your tickets."
+                        : "A secure card window opens over this page. We never see or store your card or PIN details."}
                     </p>
                   </div>
 
                   <Button
-                    onClick={handlePayWithDpo}
-                    disabled={isRedirectingToPayment}
+                    onClick={handlePay}
+                    disabled={isProcessingPayment}
                     className="w-full h-20 rounded-full bg-[#608d64] text-white hover:bg-slate-900 text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl shadow-[#608d64]/20"
                   >
-                    {isRedirectingToPayment ? (
+                    {isProcessingPayment ? (
                       <>
                         <Loader2 className="mr-4 h-6 w-6 animate-spin" />
-                        Redirecting...
+                        Processing…
                       </>
                     ) : (
                       <>
@@ -666,10 +693,9 @@ export default function EventTicketingPage() {
             {currentStep === "verifying" && (
               <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in duration-700">
                 <Loader2 className="h-14 w-14 text-[#608d64] animate-spin" />
-                <h2 className="font-serif italic text-4xl text-slate-900">Verifying your payment…</h2>
+                <h2 className="font-serif italic text-4xl text-slate-900">Processing your payment…</h2>
                 <p className="text-slate-500 text-sm max-w-md text-center">
-                  Please wait while we confirm your transaction with DPO Pay and issue your tickets.
-                  Do not close this page.
+                  {paymentPhaseLabel(paymentPhase)} Please keep this page open.
                 </p>
               </div>
             )}
@@ -682,9 +708,8 @@ export default function EventTicketingPage() {
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <Button
                     onClick={() => {
-                      verifyStartedRef.current = false;
-                      router.replace(`/events/${eventId}/tickets`);
-                      setCurrentStep("selection");
+                      setFailureMessage("");
+                      setCurrentStep("payment");
                     }}
                     className="h-14 px-8 bg-[#608d64] text-white hover:bg-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-[#608d64]/20"
                   >

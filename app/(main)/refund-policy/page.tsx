@@ -54,10 +54,10 @@ export default function RefundPolicyPage() {
                                 Overview
                             </h2>
                             <p>
-                                VowNest, operated by <strong>Neere Business Group Ltd</strong>, is an online marketplace connecting customers with wedding and event service providers in Rwanda. All payments on the platform are collected by Neere Business Group Ltd and processed securely through our payment partner, <strong>DPO Pay</strong> (cards and mobile money).
+                                VowNest, operated by <strong>Neere Business Group Ltd</strong>, is an online marketplace connecting customers with wedding and event service providers in Rwanda. All payments on the platform are collected by Neere Business Group Ltd and processed securely through our payment partner, <strong>IremboPay</strong> (cards and mobile money).
                             </p>
                             <p className="mt-4">
-                                <strong>Refunds are issued by the platform</strong>, not by individual service providers. When a refund is approved, Neere Business Group Ltd returns the funds to your original payment method via DPO Pay. Where a service provider's portion of a payment has already been disbursed, the platform recovers that amount from the provider — this never affects your refund timeline.
+                                <strong>Refunds are issued by the platform</strong>, not by individual service providers. When a refund is approved, Neere Business Group Ltd returns the funds to your original payment method via IremboPay. Where a service provider's portion of a payment has already been disbursed, the platform recovers that amount from the provider — this never affects your refund timeline.
                             </p>
                         </section>
 
@@ -149,7 +149,7 @@ export default function RefundPolicyPage() {
                             </p>
                             <ul className="list-disc pl-5 mt-4 space-y-2">
                                 <li><strong>Mobile Money (MTN MoMo / Airtel Money):</strong> processed within 1–3 business days; funds appear immediately after processing.</li>
-                                <li><strong>Credit/Debit Card (via DPO Pay):</strong> processed within 5–7 business days; funds appear in your account within 7–14 business days depending on your bank.</li>
+                                <li><strong>Credit/Debit Card (via IremboPay):</strong> processed within 5–7 business days; funds appear in your account within 7–14 business days depending on your bank.</li>
                                 <li><strong>Bank Transfer:</strong> processed within 3–5 business days; funds appear within 5–10 business days.</li>
                             </ul>
                             <p className="mt-4">

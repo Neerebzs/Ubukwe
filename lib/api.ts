@@ -93,14 +93,15 @@ export const API_ENDPOINTS = {
     MARK_READ: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}/read`,
     UNREAD_COUNT: `/api/${API_VERSION}/messages/unread-count`,
   },
-  // Payment endpoints (DPO Pay hosted page)
+  // Payment endpoints (IremboPay — in-app: mobile money push + card widget)
   PAYMENTS: {
     CREATE: `/api/${API_VERSION}/payments`,
-    VERIFY_DPO: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify-dpo`,
+    VERIFY: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify`,
     GET: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}`,
     LIST: `/api/${API_VERSION}/payments`,
+    CONFIG: `/api/${API_VERSION}/payments/config`,
   },
-  // Ticket order payments (DPO Pay hosted page; public — anonymous purchases)
+  // Ticket order payments (IremboPay; public — anonymous purchases)
   TICKET_ORDERS: {
     INITIATE: `/api/${API_VERSION}/tickets/purchase/initiate`,
     VERIFY: (orderId: string) => `/api/${API_VERSION}/tickets/purchase/${orderId}/verify`,

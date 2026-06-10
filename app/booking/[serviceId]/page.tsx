@@ -16,7 +16,9 @@ import {
   ChevronRight, Loader2, AlertTriangle
 } from "lucide-react"
 import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
-import { startDpoPayment } from "@/lib/api/payments"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { payForBooking, type CheckoutPhase } from "@/lib/payments/checkout"
+import type { MomoProvider } from "@/lib/api/payments"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -64,7 +66,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     acceptedContract: false,
     paymentMethod: "momo" as "card" | "momo",
   })
-  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [paymentPhase, setPaymentPhase] = useState<CheckoutPhase | null>(null)
+  const [momoPhone, setMomoPhone] = useState("")
+  const [momoProvider, setMomoProvider] = useState<MomoProvider>("MTN")
 
   // Fetch actual service data
   const { data: service, isLoading: isServiceLoading, error } = useQuery({
@@ -203,24 +208,49 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     createBookingMutation.mutate(bookingPayload);
   }
 
-  // Step 3: create the payment on the backend and redirect to the DPO hosted
-  // page. On return, /payment/callback verifies and confirms the booking.
+  // Step 3: pay in-app via IremboPay (no redirect).
+  //   • Mobile money → push a prompt to the customer's phone, then poll.
+  //   • Card → open IremboPay's secure inline widget, then verify.
   const handlePaymentConfirmation = async () => {
     if (!bookingId) {
       toast.error('Booking ID not found. Please try again.');
       return;
     }
-    setIsRedirectingToPayment(true);
+    const method: "card" | "mobile_money" =
+      bookingData.paymentMethod === "momo" ? "mobile_money" : "card";
+
+    if (method === "mobile_money" && !/^07\d{8}$/.test(momoPhone.trim())) {
+      toast.error('Enter a valid Mobile Money number in the format 07XXXXXXXX');
+      return;
+    }
+
+    setIsProcessingPayment(true);
     try {
-      await startDpoPayment({
+      await payForBooking({
         bookingId,
-        paymentMethod: bookingData.paymentMethod === "momo" ? "mobile_money" : "card",
+        method,
+        phoneNumber: momoPhone.trim(),
+        provider: momoProvider,
+        onPhase: setPaymentPhase,
       });
-      // The browser is navigating to DPO — nothing more to do here.
+      toast.success('Payment received — your booking is confirmed!');
+      setCurrentStep(4);
     } catch (error: any) {
-      setIsRedirectingToPayment(false);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start the payment';
+      const errorMessage = error.response?.data?.detail || error.message || 'The payment could not be completed';
       toast.error(errorMessage);
+    } finally {
+      setIsProcessingPayment(false);
+      setPaymentPhase(null);
+    }
+  }
+
+  // Human-readable label for the pay button while a payment is in progress.
+  const paymentPhaseLabel = (phase: CheckoutPhase | null): string => {
+    switch (phase) {
+      case "prompt_sent": return "Approve the prompt on your phone…";
+      case "widget": return "Complete payment in the window…";
+      case "verifying": return "Confirming your payment…";
+      default: return "Starting payment…";
     }
   }
 
@@ -596,14 +626,41 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </div>
                 </div>
 
+                {bookingData.paymentMethod === "momo" && (
+                  <div className="grid gap-4 sm:grid-cols-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                      <Label htmlFor="momoPhone" className="text-sm font-medium">Mobile Money number</Label>
+                      <Input
+                        id="momoPhone"
+                        inputMode="numeric"
+                        placeholder="07XXXXXXXX"
+                        value={momoPhone}
+                        onChange={(e) => setMomoPhone(e.target.value.replace(/[^\d]/g, "").slice(0, 10))}
+                        className="h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Provider</Label>
+                      <Select value={momoProvider} onValueChange={(v) => setMomoProvider(v as MomoProvider)}>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MTN">MTN MoMo</SelectItem>
+                          <SelectItem value="AIRTEL">Airtel Money</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 flex gap-3 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Shield className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                   <p>
-                    <strong>Secure payment via DPO Pay.</strong> You will be redirected to our payment
-                    partner's secure page to complete the{" "}
-                    {bookingData.paymentMethod === "momo" ? "mobile money" : "card"} payment.
-                    {bookingData.paymentMethod === "momo" && " MTN MoMo and Airtel Money are supported."}{" "}
-                    We never see or store your card or PIN details.
+                    <strong>Secure payment via IremboPay.</strong> You stay right here —{" "}
+                    {bookingData.paymentMethod === "momo"
+                      ? "we'll send a payment prompt to your phone (MTN MoMo & Airtel Money). Approve it to confirm."
+                      : "a secure card window opens over this page. We never see or store your card or PIN details."}
                   </p>
                 </div>
 
@@ -637,13 +694,13 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                     disabled={
                       !bookingId ||
                       !bookingData.acceptedContract ||
-                      isRedirectingToPayment
+                      isProcessingPayment
                     }
                   >
-                    {isRedirectingToPayment ? (
+                    {isProcessingPayment ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecting to DPO Pay...
+                        {paymentPhaseLabel(paymentPhase)}
                       </>
                     ) : (
                       <>Pay Securely • {pricing.total.toLocaleString()} RWF</>
@@ -659,9 +716,9 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-6 animate-bounce">
                 <CheckCircle className="h-10 w-10 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold mb-2">Booking Requested!</h2>
+              <h2 className="text-3xl font-bold mb-2">Payment Successful!</h2>
               <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-                We've sent your request to <strong>{service.business_name}</strong>. They will respond within 24 hours.
+                Your payment is confirmed and your booking with <strong>{service.business_name}</strong> is secured. A confirmation has been sent to your email.
               </p>
 
               <div className="bg-gray-50 border border-dashed border-stone-200 bg-stone-50 rounded-xl rounded-2xl p-6 mb-8 inline-block min-w-[300px]">

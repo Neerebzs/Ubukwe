@@ -100,7 +100,7 @@ export default function ContactPage() {
                         <div>
                             <h2 className="text-xl font-serif text-slate-900 mb-2">Company Information</h2>
                             <p className="text-slate-600 font-light leading-relaxed">
-                                VowNest is owned and operated by <strong className="font-semibold text-slate-900">Neere Business Group Ltd</strong>, a company registered in Rwanda, with its offices at Muhabura Building, KN 7 Ave, Kigali, Rwanda. Payments on the platform are processed securely by our payment partner, DPO Pay.
+                                VowNest is owned and operated by <strong className="font-semibold text-slate-900">Neere Business Group Ltd</strong>, a company registered in Rwanda, with its offices at Muhabura Building, KN 7 Ave, Kigali, Rwanda. Payments on the platform are processed securely by our payment partner, IremboPay.
                             </p>
                             <p className="text-sm text-slate-500 mt-4 font-light">
                                 Helpful links:{" "}

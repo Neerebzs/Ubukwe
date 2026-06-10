@@ -23,7 +23,7 @@ export const usePublicEvents = (category?: string) => {
 };
 
 // NOTE: the old usePurchaseTicket mutation was removed — tickets are now paid
-// via DPO Pay; see startTicketDpoPayment/verifyTicketOrder in lib/api/payments.ts.
+// via IremboPay; see payForTickets in lib/payments/checkout.ts.
 
 // Fetch customer's tickets
 export const useMyTickets = () => {
