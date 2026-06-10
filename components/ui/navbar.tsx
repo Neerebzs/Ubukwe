@@ -40,7 +40,7 @@ export function Navbar() {
     <>
       <header className="w-full bg-white/80 backdrop-blur-xl z-50 top-0 fixed border-b border-slate-200/60">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0 py-1">
+          <Link href="/" className="flex items-center gap-1 group flex-shrink-0 py-1">
             {settings.logoUrl && (
               <Image 
                 src={settings.logoUrl} 
@@ -56,11 +56,11 @@ export function Navbar() {
             </span>
           </Link>
 
-          <AISearch className="relative flex-1 max-w-sm sm:max-w-md mx-3 sm:mx-6 lg:mx-12" />
+          <AISearch className="relative flex-1 max-w-sm sm:max-w-md mx-6" />
 
           {/* Desktop Navigation */}
           {isMobile === false && (
-            <div className="hidden md:flex items-center space-x-10">
+            <div className="hidden md:flex items-center space-x-6">
               <nav className="flex space-x-8 items-center">
                 <a href="/" className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 hover:text-slate-900 transition-all relative group py-2">
                   <TranslatedText text="Home" />

@@ -398,8 +398,8 @@ export default function HomePage() {
       </section>
 
       {/* Modernized Stats Section */}
-      <section className="py-20 md:py-28 px-6 relative bg-white border-y border-slate-50">
-        <div className="container mx-auto max-w-6xl">
+      <section className="py-20 md:py-28 relative bg-white border-y border-slate-50">
+        <div className="container mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="group text-center space-y-4">
@@ -419,8 +419,8 @@ export default function HomePage() {
       </section>
 
       {/* Modernized Services Section */}
-      <section className="py-24 md:py-32 px-6 relative bg-slate-50/30">
-        <div className="container mx-auto max-w-7xl">
+      <section className="py-24 md:py-32 relative bg-slate-50/30">
+        <div className="container mx-auto max-w-7xl px-6">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
             <div className="max-w-2xl space-y-4">
               <div className="flex items-center gap-2 text-[#668c65]">
@@ -470,8 +470,8 @@ export default function HomePage() {
       </section>
 
       {/* Modernized How It Works Section */}
-      <section className="py-24 md:py-32 px-6 relative bg-white">
-        <div className="container mx-auto max-w-5xl">
+      <section className="py-24 md:py-32 relative bg-white">
+        <div className="container mx-auto max-w-5xl px-6">
           <div className="text-center mb-20 space-y-4">
             <h2 className="text-5xl md:text-6xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Simple Three-Step Planning" />
@@ -510,11 +510,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 md:py-32 px-6 relative bg-[#f7f9fa] overflow-hidden">
+      <section className="py-24 md:py-32 relative bg-[#f7f9fa] overflow-hidden">
         {/* Background Leaf Motif */}
         <div className="leaf-bg opacity-20" />
-
-        <div className="container mx-auto max-w-7xl relative z-10">
+        <div className="container mx-auto max-w-7xl px-6 relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
             {/* Left Column: Circular Wreath Image */}
@@ -591,8 +590,8 @@ export default function HomePage() {
       </section>
 
       {/* Modernized FAQ Section */}
-      <section className="py-24 md:py-32 px-6 relative bg-white border-t border-slate-50">
-        <div className="container mx-auto max-w-3xl">
+      <section className="py-24 md:py-32 relative bg-white border-t border-slate-50">
+        <div className="container mx-auto max-w-3xl px-6">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-5xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Common Questions" />
