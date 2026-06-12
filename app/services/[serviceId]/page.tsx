@@ -804,24 +804,24 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                     </div>
                                     <h2 className="text-4xl md:text-5xl font-serif italic text-slate-900 leading-tight">The Portfolio.</h2>
                                 </div>
-                                <TabsList className="bg-slate-50 p-1.5 rounded-full border border-slate-100 flex h-auto flex-wrap justify-center gap-1">
+                                <TabsList className="bg-slate-50 p-1 rounded-2xl md:rounded-full border border-slate-100 flex h-auto flex-nowrap md:flex-wrap overflow-x-auto justify-start md:justify-end gap-0.5 w-full md:w-auto max-w-full scrollbar-hide items-center">
                                     {service.gallery.photos.length > 0 && (
-                                        <TabsTrigger value="visual-art" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                        <TabsTrigger value="visual-art" className="rounded-full px-4 py-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium whitespace-nowrap flex-shrink-0">
                                             Visual Art
                                         </TabsTrigger>
                                     )}
                                     {service.gallery.videos.length > 0 && (
-                                        <TabsTrigger value="cinema" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                        <TabsTrigger value="cinema" className="rounded-full px-4 py-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium whitespace-nowrap flex-shrink-0">
                                             Cinema
                                         </TabsTrigger>
                                     )}
                                     {service.gallery.reels.length > 0 && (
-                                        <TabsTrigger value="live-stories" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                        <TabsTrigger value="live-stories" className="rounded-full px-4 py-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium whitespace-nowrap flex-shrink-0">
                                             Live Stories
                                         </TabsTrigger>
                                     )}
                                     {service.promotionalMedia.offers.length > 0 && (
-                                        <TabsTrigger value="exclusives" className="rounded-full px-6 py-2.5 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium">
+                                        <TabsTrigger value="exclusives" className="rounded-full px-4 py-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all text-sm font-medium whitespace-nowrap flex-shrink-0">
                                             Exclusives
                                         </TabsTrigger>
                                     )}
@@ -854,10 +854,10 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
                             {service.gallery.videos.length > 0 && (
                                 <TabsContent value="cinema" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 pb-8 pt-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-3 md:gap-6 pb-8 pt-6">
                                         {service.gallery.videos.map((video: any, i: number) => (
                                             <div key={i} className="w-full">
-                                                <div className="relative aspect-video rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
+                                                <div className="relative aspect-video md:aspect-[4/3] lg:aspect-[4/3] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
                                                     <video
                                                         src={video.url}
                                                         controls

@@ -57,7 +57,7 @@ export function ServiceCard({
   return (
     <Link href={`/services/${id}`}>
       <Card className="group overflow-hidden border border-slate-100 bg-white hover:shadow-2xl hover:border-sage-100 transition-all duration-500 rounded-[32px]">
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative aspect-[3/2] overflow-hidden">
           {/* Sliding images */}
           <div
             className="flex h-full transition-transform duration-500 ease-in-out"
@@ -120,34 +120,23 @@ export function ServiceCard({
           </div>
         </div>
 
-        <CardContent className="p-6 space-y-4">
-          <div className="space-y-2">
+        <CardContent className="p-4 space-y-3">
+          <div className="space-y-1">
             <div className="flex items-center gap-2 text-slate-400">
               <MapPin className="h-3.5 w-3.5" />
               <span className="text-[11px] font-bold uppercase tracking-widest">{location}</span>
             </div>
-            <h3 className="font-serif italic text-2xl text-slate-900 line-clamp-1 group-hover:text-sage-600 transition-colors">
+            <h3 className="font-serif italic text-xl text-slate-900 line-clamp-1 group-hover:text-sage-600 transition-colors">
               {title}
             </h3>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
-                {provider.charAt(0)}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Provider</span>
-                <span className="text-xs font-bold text-slate-600 line-clamp-1">{provider}</span>
-              </div>
+          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <span className="text-sm font-black text-slate-900">{rating.toFixed(1)}</span>
             </div>
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                <span className="text-sm font-black text-slate-900">{rating.toFixed(1)}</span>
-              </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{bookings} bookings</span>
-            </div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{bookings} bookings</span>
           </div>
         </CardContent>
       </Card>
