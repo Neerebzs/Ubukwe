@@ -376,12 +376,21 @@ class ApiClient {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
+    validateNid: async (nidFile: File) => {
+      const formData = new FormData();
+      formData.append('nid_file', nidFile);
+      return axiosInstance.post<any>('/api/v1/provider/validate-nid', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000, // 60s — OCR + liveness check can be slow
+      });
+    },
     submitDocuments: async (nidFile: File, faceFile: File) => {
       const formData = new FormData();
       formData.append('nid_file', nidFile);
       formData.append('face_file', faceFile);
       return axiosInstance.post<any>('/api/v1/provider/documents', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000, // 120s — DeepFace model load + inference can be very slow on first run
       });
     },
     submitOnboarding: async (data: any, rdbFile: File, businessLogoFile?: File | null) => {      const formData = new FormData();
@@ -420,6 +429,7 @@ class ApiClient {
 
       return axiosInstance.post<any>('/api/v1/provider/onboarding', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000, // 120s — two Cloudinary uploads run in parallel but can still be slow
       });
     },
     updateOnboarding: async (data: any, rdbFile?: File | null, businessLogoFile?: File | null) => {
@@ -452,6 +462,7 @@ class ApiClient {
         if (businessLogoFile) formData.append('business_logo', businessLogoFile);
         return axiosInstance.put<any>('/api/v1/provider/onboarding', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120000, // 120s — same as submit
         });
       }
 

@@ -22,6 +22,7 @@ import {
   ValidationError,
 } from "@/lib/validation/onboarding-schema"
 import { useRef } from "react"
+import { validateNationalID, type NIDValidationResult } from "@/lib/validation/nid-validator"
 
 interface ServiceCategory {
   id: string
@@ -41,6 +42,9 @@ export default function ProviderOnboarding() {
   const [categories, setCategories] = useState<ServiceCategory[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [isResubmission, setIsResubmission] = useState(false) // true when updating existing application
+  const [isValidatingID, setIsValidatingID] = useState(false)
+  const [nidValidation, setNidValidation] = useState<NIDValidationResult | null>(null)
+  const [nidValidationProgress, setNidValidationProgress] = useState<{ pct: number; label: string } | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -234,13 +238,52 @@ export default function ProviderOnboarding() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleFileUpload = (type: keyof typeof documents, files: FileList | null) => {
+  const handleFileUpload = async (type: keyof typeof documents, files: FileList | null) => {
     if (!files) return
     if (type === "portfolio") {
       setDocuments((prev) => ({
         ...prev,
         portfolio: [...prev.portfolio, ...Array.from(files)],
       }))
+    } else if (type === "idDocument") {
+      const file = files[0]
+
+      // Reset previous result
+      setNidValidation(null)
+      setNidValidationProgress(null)
+      setIsValidatingID(true)
+
+      const toastId = toast.loading("Validating National ID…")
+
+      try {
+        const result = await validateNationalID(file, (pct, label) => {
+          setNidValidationProgress({ pct, label })
+        })
+
+        setNidValidation(result)
+
+        if (result.valid) {
+          toast.success(
+            `National ID verified ✓  (confidence ${result.score}%)`,
+            { id: toastId }
+          )
+          setDocuments((prev) => ({ ...prev, [type]: file }))
+        } else {
+          toast.error(result.error ?? "National ID validation failed.", { id: toastId })
+          // Clear the file so user must re-upload
+          setDocuments((prev) => ({ ...prev, [type]: null }))
+          // Reset the file input
+          const input = document.getElementById("idDocument") as HTMLInputElement | null
+          if (input) input.value = ""
+        }
+      } catch (err) {
+        console.error("NID validation error:", err)
+        toast.error("Could not validate the ID. Please try again.", { id: toastId })
+        setDocuments((prev) => ({ ...prev, [type]: null }))
+      } finally {
+        setIsValidatingID(false)
+        setNidValidationProgress(null)
+      }
     } else {
       setDocuments((prev) => ({
         ...prev,
@@ -768,29 +811,158 @@ export default function ProviderOnboarding() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div>
+                  {/* ── National ID upload ─────────────────────────────── */}
+                  <div className="space-y-3">
                     <Label>National ID Document *</Label>
-                    <div className="border-2 border-dashed rounded-lg p-6 text-center">
+
+                    {/* Drop zone */}
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+                        documents.idDocument
+                          ? "border-sage-400 bg-sage-50"
+                          : nidValidation && !nidValidation.valid
+                          ? "border-red-300 bg-red-50"
+                          : isValidatingID
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-slate-200 hover:border-sage-300"
+                      }`}
+                    >
                       <input
                         type="file"
                         id="idDocument"
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         onChange={(e) => handleFileUpload("idDocument", e.target.files)}
                         className="hidden"
+                        disabled={isValidatingID}
                       />
-                      <label htmlFor="idDocument" className="cursor-pointer">
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm font-medium">Click to upload National ID</p>
+                      <label
+                        htmlFor="idDocument"
+                        className={`block ${isValidatingID ? "cursor-wait" : "cursor-pointer"}`}
+                      >
+                        {isValidatingID ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                            <p className="text-sm font-medium text-amber-700">
+                              {nidValidationProgress?.label ?? "Validating…"}
+                            </p>
+                            {nidValidationProgress && (
+                              <div className="w-full bg-amber-100 rounded-full h-1.5">
+                                <div
+                                  className="bg-amber-500 h-1.5 rounded-full transition-all duration-300"
+                                  style={{ width: `${nidValidationProgress.pct}%` }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : documents.idDocument ? (
+                          <div className="flex flex-col items-center gap-2 text-sage-700">
+                            <CheckCircle className="w-8 h-8 text-sage-600" />
+                            <p className="text-sm font-semibold">{documents.idDocument.name}</p>
+                            <p className="text-xs text-slate-500">
+                              {(documents.idDocument.size / 1024).toFixed(0)} KB
+                            </p>
+                            <span className="text-xs text-sage-600 underline">Click to replace</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                            <p className="text-sm font-medium">Click to upload National ID</p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              Front side only · JPEG / PNG · Max 10 MB
+                            </p>
+                          </>
+                        )}
                       </label>
-                      {documents.idDocument && (
-                        <div className="mt-2 flex items-center justify-center gap-2 text-sm">
-                          <FileText className="w-4 h-4" />
-                          {documents.idDocument.name}
-                        </div>
-                      )}
                     </div>
+
+                    {/* Validation result panel */}
+                    {nidValidation && !isValidatingID && (
+                      <div
+                        className={`rounded-xl border p-4 space-y-3 ${
+                          nidValidation.valid
+                            ? "border-sage-200 bg-sage-50"
+                            : "border-red-200 bg-red-50"
+                        }`}
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {nidValidation.valid ? (
+                              <CheckCircle className="w-4 h-4 text-sage-600" />
+                            ) : (
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                            )}
+                            <span
+                              className={`text-sm font-semibold ${
+                                nidValidation.valid ? "text-sage-800" : "text-red-700"
+                              }`}
+                            >
+                              {nidValidation.valid ? "ID Verified" : "Verification Failed"}
+                            </span>
+                          </div>
+                          {/* Score badge */}
+                          <span
+                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                              nidValidation.score >= 70
+                                ? "bg-sage-100 text-sage-700"
+                                : nidValidation.score >= 40
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {nidValidation.score}% confidence
+                          </span>
+                        </div>
+
+                        {/* Error message */}
+                        {nidValidation.error && (
+                          <p className="text-xs text-red-700 leading-relaxed">{nidValidation.error}</p>
+                        )}
+
+                        {/* Per-check list */}
+                        <ul className="space-y-1">
+                          {nidValidation.checks.map((c, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs">
+                              {c.passed ? (
+                                <CheckCircle className="w-3.5 h-3.5 text-sage-500 mt-0.5 flex-shrink-0" />
+                              ) : (
+                                <AlertCircle className="w-3.5 h-3.5 text-red-400 mt-0.5 flex-shrink-0" />
+                              )}
+                              <span className={c.passed ? "text-slate-600" : "text-red-600"}>
+                                <span className="font-medium">{c.name}:</span> {c.detail}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Extracted data preview */}
+                        {nidValidation.valid && nidValidation.extractedData && (
+                          <div className="border-t border-sage-200 pt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            {nidValidation.extractedData.idNumber && (
+                              <>
+                                <span className="text-slate-500">ID No.</span>
+                                <span className="font-mono text-slate-700">{nidValidation.extractedData.idNumber}</span>
+                              </>
+                            )}
+                            {nidValidation.extractedData.name && (
+                              <>
+                                <span className="text-slate-500">Name</span>
+                                <span className="text-slate-700">{nidValidation.extractedData.name}</span>
+                              </>
+                            )}
+                            {nidValidation.extractedData.dateOfBirth && (
+                              <>
+                                <span className="text-slate-500">DOB</span>
+                                <span className="text-slate-700">{nidValidation.extractedData.dateOfBirth}</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
+                  {/* ── Selfie ─────────────────────────────────────────── */}
                   <div>
                     <Label>Selfie Photo *</Label>
                     <button

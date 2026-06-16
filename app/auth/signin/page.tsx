@@ -13,7 +13,7 @@ import { LoginRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
 
 export default function SignInPage() {
-  const { settings } = useSystemSettings();
+  const { settings, isLoading: isLoadingSettings } = useSystemSettings();
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -67,8 +67,59 @@ export default function SignInPage() {
     }
   }
 
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
+        {/* Visual Narrative Side - Desktop only Skeleton */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-100 animate-pulse" />
+        
+        {/* Interaction Side Skeleton */}
+        <div className="flex-1 flex flex-col bg-slate-900 px-8 lg:px-24 pt-32 pb-20 relative overflow-hidden lg:overflow-y-auto">
+          <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
+            <div className="space-y-4">
+              <div className="h-4 w-32 bg-white/10 animate-pulse rounded" />
+              <div className="h-12 w-full bg-white/10 animate-pulse rounded-lg" />
+              <div className="h-4 w-3/4 bg-white/10 animate-pulse rounded" />
+            </div>
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                  <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                  <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                </div>
+              </div>
+              <div className="h-16 w-full bg-white/10 animate-pulse rounded-2xl" />
+            </div>
+            <div className="pt-8 border-t border-white/5 space-y-4 flex flex-col items-center">
+              <div className="h-4 w-48 bg-white/10 animate-pulse rounded" />
+              <div className="h-12 w-40 bg-white/10 animate-pulse rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
+      {/* Full Page Loading Overlay */}
+      {(isLoggingIn || isAuthenticated) && (
+        <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
+           <div className="relative flex items-center justify-center">
+             <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
+             <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
+             <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
+           </div>
+           <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
+             {isAuthenticated ? "Preparing Dashboard..." : "Authenticating..."}
+           </p>
+        </div>
+      )}
+
       {/* Visual Narrative Side - Desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img

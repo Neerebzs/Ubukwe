@@ -82,25 +82,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="max-w-4xl space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="h-[1px] w-12 bg-[#608d64]/30" />
-            <span className="text-[10px] font-black text-[#608d64] uppercase tracking-[0.4em]">
-              <TranslatedText text="The Collective Calendar" />
-            </span>
-          </div>
-          <h1 className="font-serif italic text-6xl md:text-8xl text-slate-900 leading-[0.9] tracking-tight">
-            Curated <span className="text-slate-400 not-italic font-light">Gatherings.</span>
-          </h1>
-          <p className="font-sans text-slate-500 text-lg md:text-xl max-w-2xl leading-relaxed font-light mt-8">
-            <TranslatedText text="Discover exclusive events, workshops, and traditional showcases curated to inspire your wedding journey in Rwanda." />
-          </p>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-4 md:pt-8">
       {/* Categories & Filter Bar */}
       <div className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-y border-slate-100/50">
         <div className="container mx-auto px-4 py-6">

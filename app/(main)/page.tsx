@@ -6,7 +6,7 @@ import { Users, Music, Utensils, MapPin, Palette, Mic, Star, ArrowRight, Heart, 
 import Link from "next/link"
 import React, { useState, useRef, useEffect } from "react";
 import { TranslatedText } from "@/components/translated-text";
-import { PublicBottomNav } from "@/components/ui/public-bottom-nav";
+
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePublicEvents } from "@/hooks/useCustomerEvents";
@@ -15,7 +15,7 @@ import { SupportWidget } from "@/components/SupportWidget";
 import { useSystemSettings } from "@/contexts/system-settings-context";
 
 export default function HomePage() {
-  const { settings } = useSystemSettings();
+  const { settings, isLoading: isLoadingSettings } = useSystemSettings();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -79,7 +79,7 @@ export default function HomePage() {
 
   // Combine events and offers
   const promotions = [...dynamicEvents, ...offers];
-  const isLoading = isLoadingEvents || isLoadingOffers;
+  const isLoadingEventsAndOffers = isLoadingEvents || isLoadingOffers;
 
   const services = [
     {
@@ -147,19 +147,49 @@ export default function HomePage() {
     { number: "24/7", label: "Support", icon: <Clock className="h-6 w-6" /> },
   ];
 
-  if (isLoading) {
+  if (isLoadingSettings || isLoadingEventsAndOffers) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white space-y-6">
-        <div className="relative flex items-center justify-center">
-           <div className="absolute w-20 h-20 rounded-full border-[3px] border-slate-100" />
-           <div className="absolute w-20 h-20 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
-           <Heart className="w-8 h-8 text-[#668c65] animate-pulse" />
-        </div>
-        <div className="text-center space-y-2">
-          <h3 className="font-serif italic text-2xl text-sage-950">
-            <TranslatedText text="Preparing Details..." />
-          </h3>
-        </div>
+      <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
+        <section className="relative w-full overflow-hidden min-h-[90vh] flex items-center pt-20 bg-white">
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="grid lg:grid-cols-12 gap-12 items-center">
+              {/* Left Column Skeleton */}
+              <div className="lg:col-span-6 space-y-10">
+                <div className="space-y-6">
+                  <div className="h-4 w-48 bg-slate-200 animate-pulse rounded" />
+                  <div className="space-y-4">
+                    <div className="h-20 w-full bg-slate-200 animate-pulse rounded-lg" />
+                    <div className="h-20 w-3/4 bg-slate-200 animate-pulse rounded-lg" />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-4 w-full bg-slate-200 animate-pulse rounded" />
+                    <div className="h-4 w-5/6 bg-slate-200 animate-pulse rounded" />
+                    <div className="h-4 w-4/6 bg-slate-200 animate-pulse rounded" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="h-16 w-48 bg-slate-200 animate-pulse rounded-full" />
+                  <div className="flex -space-x-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-slate-200 animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column Skeleton */}
+              <div className="lg:col-span-6 relative h-[600px] hidden lg:block">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-[380px] h-[540px] z-20">
+                    <div className="w-full h-full overflow-hidden rounded-[200px] bg-slate-200 animate-pulse border-8 border-white shadow-2xl" />
+                  </div>
+                  {/* Secondary Circular Image Skeleton */}
+                  <div className="absolute left-[-40px] bottom-10 w-48 h-48 z-30 rounded-full bg-slate-200 animate-pulse border-8 border-white shadow-xl" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
@@ -224,12 +254,16 @@ export default function HomePage() {
                 {/* Main Arch Image */}
                 <div className="relative w-[380px] h-[540px] z-20 group">
                   <div className="absolute inset-0 border-[1px] border-slate-200 rounded-[200px] -m-4 group-hover:m-0 transition-all duration-700" />
-                  <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white">
-                    <img
-                      src={settings.homeHeroImageUrl}
-                      className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
-                      alt="Rwandan Wedding"
-                    />
+                  <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white relative">
+                    {isLoadingSettings ? (
+                      <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+                    ) : (
+                      <img
+                        src={settings.homeHeroImageUrl}
+                        className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
+                        alt="Rwandan Wedding"
+                      />
+                    )}
                   </div>
                   {/* Floating badge */}
                   <div className="absolute -right-12 top-20 bg-white p-6 rounded-3xl shadow-2xl animate-float z-30 border border-slate-50">
@@ -259,6 +293,7 @@ export default function HomePage() {
 
 
       {/* Full-Height Background Promotional Carousel */}
+      {(isLoadingEventsAndOffers || promotions.length > 0) && (
       <section
         className="py-20 md:py-32 px-0 relative bg-[#fcfbf9] overflow-hidden group/carousel"
         onMouseEnter={() => setIsHovered(true)}
@@ -297,7 +332,7 @@ export default function HomePage() {
             ref={carouselRef}
             className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 px-4 scroll-smooth"
           >
-            {isLoading ? (
+            {isLoadingEventsAndOffers ? (
               Array.from({ length: 3 }).map((_, index) => (
                 <div
                   key={`loading-${index}`}
@@ -396,6 +431,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Modernized Stats Section */}
       <section className="py-20 md:py-28 relative bg-white border-y border-slate-50">
@@ -625,9 +661,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Mobile Bottom Navigation - Only on mobile */}
-      <PublicBottomNav />
 
       {/* Support Widget */}
       <SupportWidget />

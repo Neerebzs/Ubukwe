@@ -27,6 +27,7 @@ interface SystemSettingsContextType {
   settings: SystemSettings;
   updateSettings: (newSettings: Partial<SystemSettings>) => void;
   resetSettings: () => void;
+  isLoading: boolean;
 }
 
 const SystemSettingsContext = createContext<SystemSettingsContextType | undefined>(undefined);
@@ -88,14 +89,14 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
   if (!mounted) {
     // Return children with default settings initially to prevent layout flash on SSR
     return (
-      <SystemSettingsContext.Provider value={{ settings: defaultSettings, updateSettings, resetSettings }}>
+      <SystemSettingsContext.Provider value={{ settings: defaultSettings, updateSettings, resetSettings, isLoading: true }}>
         {children}
       </SystemSettingsContext.Provider>
     );
   }
 
   return (
-    <SystemSettingsContext.Provider value={{ settings, updateSettings, resetSettings }}>
+    <SystemSettingsContext.Provider value={{ settings, updateSettings, resetSettings, isLoading: false }}>
       {children}
     </SystemSettingsContext.Provider>
   );

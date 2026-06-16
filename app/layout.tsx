@@ -35,6 +35,7 @@ export const viewport: Viewport = {
 
 
 import { SystemSettingsProvider } from "@/contexts/system-settings-context"
+import { Toaster } from "@/components/ui/toaster"
 
 
 
@@ -59,6 +60,7 @@ export default function RootLayout({
             <QueryProvider>
               <MobileMenuProvider>
                 <Suspense fallback={null}>{children}</Suspense>
+                <Toaster />
               </MobileMenuProvider>
             </QueryProvider>
           </I18nProvider>

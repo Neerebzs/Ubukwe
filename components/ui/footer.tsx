@@ -6,12 +6,22 @@ import Image from "next/image";
 import { Instagram, Facebook, Twitter, Mail, MapPin, Phone } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { useSystemSettings } from "@/contexts/system-settings-context";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
   const { settings } = useSystemSettings();
+  const pathname = usePathname();
+
+  const hideOnMobilePaths = [
+    /^\/services(\/.*)?$/,
+    /^\/events(\/.*)?$/,
+    /^\/about$/,
+  ];
+
+  const shouldHideOnMobile = hideOnMobilePaths.some(regex => regex.test(pathname || ""));
 
   return (
-    <footer className="bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10">
+    <footer className={`bg-[#fcfbf9] border-t border-primary/10 pt-20 pb-10 ${shouldHideOnMobile ? "hidden md:block" : ""}`}>
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Section */}

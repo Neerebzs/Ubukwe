@@ -22,7 +22,7 @@ interface FormErrors {
 }
 
 export default function SignUpPage() {
-  const { settings } = useSystemSettings();
+  const { settings, isLoading: isLoadingSettings } = useSystemSettings();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -102,8 +102,81 @@ export default function SignUpPage() {
     register(registerData)
   }
 
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
+        {/* Visual Narrative Side - Desktop only Skeleton */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-100 animate-pulse" />
+        
+        {/* Interaction Side Skeleton */}
+        <div className="flex-1 flex flex-col bg-slate-900 px-6 md:px-8 lg:px-24 pt-32 pb-20 relative overflow-x-hidden lg:overflow-y-auto">
+          <div className="w-full max-w-xl mx-auto relative z-10 space-y-12">
+            <div className="space-y-4">
+              <div className="h-4 w-32 bg-white/10 animate-pulse rounded" />
+              <div className="h-12 w-full bg-white/10 animate-pulse rounded-lg" />
+              <div className="h-4 w-3/4 bg-white/10 animate-pulse rounded" />
+            </div>
+            <div className="space-y-10">
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="h-4 w-32 bg-white/10 animate-pulse rounded" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="h-24 w-full bg-white/10 animate-pulse rounded-2xl" />
+                    <div className="h-24 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                </div>
+                <div className="h-[1px] w-full bg-white/5" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2 md:col-span-2">
+                    <div className="h-4 w-32 bg-white/10 animate-pulse rounded" />
+                    <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                    <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                    <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                    <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
+                    <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+                  </div>
+                </div>
+              </div>
+              <div className="h-16 w-full bg-white/10 animate-pulse rounded-2xl" />
+            </div>
+            <div className="pt-8 border-t border-white/5 space-y-4 flex flex-col items-center">
+              <div className="h-4 w-48 bg-white/10 animate-pulse rounded" />
+              <div className="h-12 w-40 bg-white/10 animate-pulse rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
+      {/* Full Page Loading Overlay */}
+      {(isRegistering || isAuthenticated) && (
+        <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
+           <div className="relative flex items-center justify-center">
+             <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
+             <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
+             <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
+           </div>
+           <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
+             {isAuthenticated ? "Preparing Dashboard..." : "Registering..."}
+           </p>
+        </div>
+      )}
+
       {/* Visual Narrative Side - Desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img

@@ -17,7 +17,7 @@ export function Navbar() {
   const isMobile = useIsMobile();
   const { isMenuOpen, toggleMenu } = useMobileMenu();
   const { user, isAuthenticated, logout } = useAuth();
-  const { settings } = useSystemSettings();
+  const { settings, isLoading } = useSystemSettings();
   const [eventsDropdownOpen, setEventsDropdownOpen] = React.useState(false);
   const [mobileEventsOpen, setMobileEventsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);

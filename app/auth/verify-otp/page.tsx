@@ -113,9 +113,17 @@ function VerifyOtpForm() {
             }
 
             const { apiClient } = await import('@/lib/api')
-            await apiClient.post(`/api/v1/auth/verify-otp`, { email, otp: otpValue, reset_token: resetToken })
+            const response = await apiClient.post(`/api/v1/auth/verify-otp`, { email, otp: otpValue, reset_token: resetToken })
+
+            // Use the fresh password_reset token returned by the server,
+            // NOT the original OTP token stored in sessionStorage
+            const passwordResetToken = (response.data as any)?.reset_token
+            if (!passwordResetToken) {
+                throw new Error("Verification failed — no reset token returned. Please try again.")
+            }
+
             toast.success("OTP verified successfully!")
-            router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(resetToken)}`)
+            router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(passwordResetToken)}`)
         } catch (err: any) {
             toast.error(err.message || "Invalid or expired code")
         } finally {

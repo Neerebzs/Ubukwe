@@ -107,7 +107,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FCFBF9] flex flex-col md:pl-10 mx-auto pt-20">
+    <div className="min-h-screen bg-[#FCFBF9] flex flex-col md:pl-10 mx-auto pt-4 md:pt-8">
       <div className="flex flex-1 flex-col md:flex-row relative">
 
         {/* Decorative Background Mesh */}
@@ -119,36 +119,27 @@ export default function ServicesPage() {
           
           {/* Aesthetic Hero Header & Search */}
           <div className="px-6 pt-4 pb-4 md:pt-6 md:pb-6 lg:pt-8 lg:pb-6">
-            <div className="max-w-4xl mx-auto text-left space-y-4 mb-8 animate-in fade-in slide-in-from-left-4 duration-1000">
-              <div className="flex items-center justify-start gap-4">
-                <div className="h-[1px] w-8 sm:w-12 bg-[#668c65]/30" />
-                <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px] sm:text-xs">
-                  Exclusive Directory
-                </span>
-              </div>
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-slate-900 leading-[1.1] md:leading-[1] tracking-tight w-full break-words">
-                <span className="block font-light">Explore Services</span>
-              </h1>
-            </div>
+
 
             {/* Redesigned Search & Discovery Bar */}
             <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-              <div className="relative group shadow-2xl shadow-slate-200/50 rounded-[32px] md:rounded-full border border-white bg-white/70 backdrop-blur-xl p-2 sm:p-2.5 flex flex-col md:flex-row gap-3">
-                <div className="flex-1 relative flex items-center">
-                    <Search className="absolute left-6 text-slate-400 h-5 w-5 transition-colors group-focus-within:text-[#668c65]" />
+              <div className="relative group shadow-2xl shadow-slate-200/50 rounded-[32px] md:rounded-full border border-white bg-white/70 backdrop-blur-xl p-2 sm:p-2.5 flex flex-row items-center gap-2 sm:gap-3">
+                <div className="flex-1 relative flex items-center min-w-0">
+                    <Search className="absolute left-4 sm:left-6 text-slate-400 h-5 w-5 transition-colors group-focus-within:text-[#668c65]" />
                     <Input
                       placeholder="What service are you looking for?"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-14 h-14 md:h-16 bg-transparent border-none rounded-full shadow-none focus-visible:ring-0 text-slate-800 text-base md:text-lg placeholder:text-slate-400 w-full"
+                      className="pl-12 sm:pl-14 h-14 md:h-16 bg-transparent border-none rounded-full shadow-none focus-visible:ring-0 text-slate-800 text-sm sm:text-base md:text-lg placeholder:text-slate-400 w-full truncate"
                     />
                 </div>
                 
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                   <SheetTrigger asChild>
-                     <Button className="h-14 md:h-16 px-8 rounded-[24px] md:rounded-full bg-slate-900 hover:bg-[#668c65] text-white font-bold tracking-widest uppercase text-[10px] md:text-xs transition-colors w-full md:w-auto shadow-md">
+                     <Button className="h-14 md:h-16 px-5 sm:px-8 rounded-[24px] md:rounded-full bg-slate-900 hover:bg-[#668c65] text-white font-bold tracking-widest uppercase text-[10px] md:text-xs transition-colors w-auto shrink-0 shadow-md whitespace-nowrap">
                         <SlidersHorizontal className="h-4 w-4 md:mr-3 mr-2" />
-                        All Filters
+                        <span className="hidden min-[380px]:inline">All Filters</span>
+                        <span className="min-[380px]:hidden">Filters</span>
                      </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[340px] sm:w-[400px] p-0 border-l-slate-100">

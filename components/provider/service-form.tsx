@@ -599,13 +599,13 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         }
         return true
         
-      case 3: // Gallery - Require at least 2 photos
+      case 3: // Gallery — require at least 2 photos, block with toast but keep button always clickable
         const photoCount = formData.gallery.filter(item => item.type === "image").length
         if (photoCount < 2) {
           toast({
             variant: "destructive",
-            title: "Photos Required",
-            description: `Please add at least 2 photos to showcase your service. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}.`
+            title: "At Least 2 Photos Required",
+            description: `Please upload at least 2 photos to showcase your service. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}.`,
           })
           return false
         }
@@ -835,23 +835,13 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       return
     }
 
-    // Validate gallery - require at least 2 photos
-    if (formData.gallery.length < 2) {
-      toast({
-        variant: "destructive",
-        title: "Gallery Required",
-        description: "Please add at least 2 photos to showcase your service."
-      })
-      return
-    }
-
-    // Count photos (images only, not videos/reels)
+    // Gallery — require at least 2 photos before publishing
     const photoCount = formData.gallery.filter(item => item.type === "image").length
     if (photoCount < 2) {
       toast({
         variant: "destructive",
-        title: "Photos Required",
-        description: `Please add at least 2 photos. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}.`
+        title: "At Least 2 Photos Required",
+        description: `Please upload at least 2 photos before publishing. You currently have ${photoCount} photo${photoCount === 1 ? '' : 's'}. Go back to the Gallery step to add more.`,
       })
       return
     }
@@ -897,7 +887,7 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
       // Validate we still have at least 2 photos after upload
       const uploadedPhotoCount = galleryUrls.filter(item => item.type === "image").length
       if (uploadedPhotoCount < 2) {
-        throw new Error(`Only ${uploadedPhotoCount} photo(s) were uploaded successfully. Please ensure at least 2 photos are uploaded.`)
+        throw new Error(`Only ${uploadedPhotoCount} photo(s) were successfully uploaded. Please ensure at least 2 photos are included.`)
       }
 
       // Step 2: Create the final data with uploaded gallery URLs
@@ -922,10 +912,10 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
         throw new Error("Gallery data is empty in payload. Cannot submit service without media.")
       }
 
-      // Final validation: Check payload has at least 2 photos
+      // Final payload safety check
       const finalPhotoCount = finalData.gallery.filter(i => i.type === "image").length
       if (finalPhotoCount < 2) {
-        throw new Error(`Payload validation failed: Only ${finalPhotoCount} photo(s) in final data. At least 2 photos required.`)
+        throw new Error(`Upload failed: only ${finalPhotoCount} photo(s) in final data. At least 2 photos are required.`)
       }
 
       setUploadProgress(75)
@@ -1480,8 +1470,9 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
                         </div>
                       </TabsContent>
                     </Tabs>
+                  </div>
 
-                    {/* Display uploaded media */}
+                  {/* Display uploaded media */}
                     {formData.gallery.filter(item => !item.contentType).length > 0 && (
                       <div className="space-y-4 mt-6">
                         <div className="flex items-center justify-between">
@@ -1524,7 +1515,6 @@ export function ServiceForm({ initialData, onSave, onCancel }: ServiceFormProps)
               )}
             </div>
           </div>
-            </div>
         )}
 
         {/* Step 4: Contact Info */}
