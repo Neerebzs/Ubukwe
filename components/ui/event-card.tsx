@@ -65,16 +65,7 @@ export function EventCard({ id, title, image, time, location, organizer, price, 
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
-                {organizer.charAt(0)}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Presenter</span>
-                <span className="text-[10px] font-black text-slate-700 tracking-wide">{organizer}</span>
-              </div>
-            </div>
-            <div className="text-right">
+            <div className="text-right w-full">
               <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">Access</span>
               <span className="text-[10px] font-black text-[#668c65] tracking-wide">{price}</span>
             </div>

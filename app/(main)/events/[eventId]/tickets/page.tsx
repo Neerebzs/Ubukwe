@@ -168,6 +168,9 @@ export default function EventTicketingPage() {
 
   const totalTickets = Object.values(tickets).reduce((sum, count) => sum + count, 0);
 
+  // Determine if the event date is in the past
+  const isPastEvent = event ? new Date(event.event_date) < new Date(new Date().toDateString()) : false;
+
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -332,6 +335,28 @@ export default function EventTicketingPage() {
 
           {/* Right Side: Ticketing */}
           <div className="lg:col-span-12 xl:col-span-7 space-y-16">
+            {/* ── Past event — hide all ticketing UI ── */}
+            {isPastEvent ? (
+              <div className="flex flex-col items-center justify-center py-24 space-y-6 text-center">
+                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Calendar className="h-9 w-9 text-slate-300" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-serif italic text-3xl text-slate-400">This event has passed</h3>
+                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                    Tickets are no longer available for past events
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/events")}
+                  className="rounded-full border-slate-200 text-slate-500 hover:text-slate-900 text-[10px] font-black uppercase tracking-widest px-8 h-12"
+                >
+                  Browse Upcoming Events
+                </Button>
+              </div>
+            ) : (
+              <>
             {currentStep === "selection" && (
               <>
                 {/* Event Highlights Section */}
@@ -768,6 +793,8 @@ export default function EventTicketingPage() {
                   ))}
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
         </div>
