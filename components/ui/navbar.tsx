@@ -58,12 +58,10 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Search Bar - desktop only, grows to fill centre space */}
-          {!isMobile && (
-            <div className="flex-1 mx-8 max-w-xl">
-              <AISearch />
-            </div>
-          )}
+          {/* Search Bar - desktop only via CSS (avoids hydration flash from isMobile) */}
+          <div className="flex-1 mx-8 max-w-xl hidden md:block">
+            <AISearch />
+          </div>
 
           {/* Navigation & Actions */}
           <div className="flex items-center gap-8">
