@@ -119,6 +119,48 @@ export const authApi = {
   }): Promise<ApiResponse> {
     return apiClient.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data);
   },
+
+  // Google OAuth 2.0 login — send the authorization code received from Google popup
+  async googleLogin(code: string): Promise<any> {
+    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, { code });
+    return response;
+  },
+
+  // ── Two-Factor Authentication ──────────────────────────────────────────────
+
+  // Get current 2FA status
+  async get2FAStatus(): Promise<ApiResponse> {
+    return apiClient.get(API_ENDPOINTS.AUTH.TWO_FA_STATUS);
+  },
+
+  // Initiate 2FA setup — returns secret + QR code
+  async setup2FA(): Promise<ApiResponse> {
+    return apiClient.post(API_ENDPOINTS.AUTH.TWO_FA_SETUP, {});
+  },
+
+  // Confirm 2FA setup with first OTP code — returns backup codes
+  async verify2FASetup(code: string): Promise<ApiResponse> {
+    return apiClient.post(API_ENDPOINTS.AUTH.TWO_FA_VERIFY, { code });
+  },
+
+  // Verify TOTP during login (accepts 6-digit code or 12-char backup code)
+  async verify2FALogin(pre_auth_token: string, code: string): Promise<any> {
+    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.TWO_FA_LOGIN, {
+      pre_auth_token,
+      code,
+    });
+    return response;
+  },
+
+  // Disable 2FA — requires current password + TOTP
+  async disable2FA(password: string, code: string): Promise<ApiResponse> {
+    return apiClient.post(API_ENDPOINTS.AUTH.TWO_FA_DISABLE, { password, code });
+  },
+
+  // Regenerate backup codes — requires valid TOTP
+  async regenerateBackupCodes(code: string): Promise<ApiResponse> {
+    return apiClient.post(API_ENDPOINTS.AUTH.TWO_FA_REGENERATE_BACKUP, { code });
+  },
 };
 
 // Token management utilities

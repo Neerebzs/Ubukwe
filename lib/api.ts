@@ -22,6 +22,15 @@ export const API_ENDPOINTS = {
     UPDATE_PROFILE: `/api/${API_VERSION}/auth/update-profile`,
     GET_ME: `/api/${API_VERSION}/auth/me`,
     REGISTER_TEAM: `/api/${API_VERSION}/auth/register-team`,
+    // Google OAuth
+    GOOGLE_LOGIN: `/api/${API_VERSION}/auth/google`,
+    // Two-Factor Authentication
+    TWO_FA_SETUP: `/api/${API_VERSION}/auth/2fa/setup`,
+    TWO_FA_VERIFY: `/api/${API_VERSION}/auth/2fa/verify`,
+    TWO_FA_LOGIN: `/api/${API_VERSION}/auth/2fa/login`,
+    TWO_FA_DISABLE: `/api/${API_VERSION}/auth/2fa/disable`,
+    TWO_FA_REGENERATE_BACKUP: `/api/${API_VERSION}/auth/2fa/regenerate-backup-codes`,
+    TWO_FA_STATUS: `/api/${API_VERSION}/auth/2fa/status`,
   },
   // Admin endpoints
   ADMIN: {
@@ -140,6 +149,34 @@ export interface AuthResponse {
   token_type: string;
   refresh_token?: string;
   user?: User;
+  // 2FA intermediate response fields
+  two_factor_required?: boolean;
+  pre_auth_token?: string;
+}
+
+export interface TwoFAStatus {
+  two_factor_enabled: boolean;
+  two_factor_enabled_at: string | null;
+  last_2fa_verification: string | null;
+  backup_codes_remaining: number;
+}
+
+export interface TwoFASetupResponse {
+  secret: string;
+  qr_code: string; // data:image/png;base64,...
+  message: string;
+}
+
+export interface TwoFAVerifyResponse {
+  message: string;
+  backup_codes: string[];
+}
+
+export interface TwoFALoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: User;
 }
 
 export interface User {
@@ -151,6 +188,7 @@ export interface User {
   is_verified: boolean;
   phone_number?: string;
   profile_image_url?: string;
+  avatar?: string;
   onboarding_completed: boolean;
   business_type?: string;
   years_experience?: number;
@@ -160,6 +198,12 @@ export interface User {
   city?: string;
   country?: string;
   location?: string;
+  // Auth / security
+  provider?: 'local' | 'google';
+  email_verified?: boolean;
+  two_factor_enabled?: boolean;
+  login_method?: 'email' | 'google';
+  last_login?: string;
 }
 
 // Wedding & Planning Types

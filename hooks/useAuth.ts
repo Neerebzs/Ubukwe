@@ -5,12 +5,15 @@ import { authApi, tokenManager, userManager } from '../lib/auth';
 import { LoginRequest, RegisterRequest, User } from '../lib/api';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { initiateGoogleLogin } from '@/lib/googleOAuth';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 // Query keys
 export const authKeys = {
   all: ['auth'] as const,
   user: () => [...authKeys.all, 'user'] as const,
   profile: () => [...authKeys.all, 'profile'] as const,
+  twoFAStatus: () => [...authKeys.all, '2fa-status'] as const,
 };
 
 // Custom hook for authentication state
@@ -80,6 +83,12 @@ export const useAuth = () => {
       }
 
       toast.success('Login successful!');
+
+      // Track analytics
+      trackEvent(AnalyticsEvent.LOGIN, {
+        userId: finalUser?.id,
+        userRole: finalUser?.role,
+      });
 
       // Redirect to appropriate dashboard based on user role
       if (finalUser?.role === 'admin') {
@@ -197,6 +206,140 @@ export const useAuth = () => {
     },
   });
 
+  // ── Google OAuth Login ─────────────────────────────────────────────────────
+
+  const googleLoginMutation = useMutation({
+    mutationFn: async (): Promise<{ requiresTwoFactor: boolean; preAuthToken?: string; user?: any }> => {
+      // Step 1: Open Google popup and get authorization code
+      const { code } = await initiateGoogleLogin();
+
+      // Step 2: Exchange code with backend
+      const response = await authApi.googleLogin(code);
+      const data = response.data ?? response;
+
+      // Step 3a: 2FA required → return pre_auth_token for caller to handle
+      if (data?.two_factor_required) {
+        return {
+          requiresTwoFactor: true,
+          preAuthToken: data.pre_auth_token,
+          user: data.user,
+        };
+      }
+
+      // Step 3b: No 2FA — process tokens immediately
+      const accessToken = data?.access_token ?? data?.accessToken;
+      const refreshToken = data?.refresh_token ?? data?.refreshToken ?? accessToken;
+      const user = data?.user;
+
+      if (!accessToken) throw new Error('No access token received from Google login.');
+
+      tokenManager.setTokens(accessToken, refreshToken);
+
+      let finalUser = user;
+      if (!finalUser) {
+        try {
+          const r = await authApi.getMe();
+          finalUser = r.data;
+        } catch {}
+      }
+
+      if (finalUser) {
+        userManager.setUser(finalUser);
+        queryClient.setQueryData(authKeys.user(), finalUser);
+      }
+
+      return { requiresTwoFactor: false, user: finalUser };
+    },
+    onSuccess: (result) => {
+      if (result.requiresTwoFactor) {
+        // Caller handles the 2FA flow — just track the attempt
+        trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
+          userId: result.user?.id,
+          twoFactorRequired: true,
+        });
+        return;
+      }
+
+      const finalUser = result.user;
+      trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
+        userId: finalUser?.id,
+        userRole: finalUser?.role,
+      });
+
+      toast.success('Signed in with Google!');
+
+      if (finalUser?.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (finalUser?.role === 'service_provider') {
+        router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
+      } else {
+        router.push('/customer/dashboard');
+      }
+    },
+    onError: (error: Error) => {
+      const msg = error.message || 'Google sign-in failed.';
+      if (msg === 'Google sign-in was cancelled.') return; // User closed popup
+      toast.error(msg);
+    },
+  });
+
+  // ── 2FA Login ─────────────────────────────────────────────────────────────
+
+  const twoFALoginMutation = useMutation({
+    mutationFn: async ({
+      preAuthToken,
+      code,
+    }: {
+      preAuthToken: string;
+      code: string;
+    }) => {
+      const response = await authApi.verify2FALogin(preAuthToken, code);
+      const data = response.data ?? response;
+
+      const accessToken = data?.access_token ?? data?.accessToken;
+      const refreshToken = data?.refresh_token ?? data?.refreshToken ?? accessToken;
+      const user = data?.user;
+
+      if (!accessToken) throw new Error('No token received after 2FA verification.');
+
+      tokenManager.setTokens(accessToken, refreshToken);
+
+      let finalUser = user;
+      if (!finalUser) {
+        try {
+          const r = await authApi.getMe();
+          finalUser = r.data;
+        } catch {}
+      }
+
+      if (finalUser) {
+        userManager.setUser(finalUser);
+        queryClient.setQueryData(authKeys.user(), finalUser);
+      }
+
+      return finalUser;
+    },
+    onSuccess: (finalUser) => {
+      toast.success('Two-factor authentication verified!');
+      trackEvent(AnalyticsEvent.LOGIN, {
+        userId: finalUser?.id,
+        userRole: finalUser?.role,
+        method: '2fa',
+      });
+
+      if (finalUser?.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (finalUser?.role === 'service_provider') {
+        router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
+      } else {
+        router.push('/customer/dashboard');
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Invalid verification code.');
+    },
+  });
+
   // Refresh user data
   const refreshUser = async () => {
     try {
@@ -227,6 +370,10 @@ export const useAuth = () => {
     changePassword: changePasswordMutation.mutateAsync,
     forgotPassword: forgotPasswordMutation.mutateAsync,
     resetPassword: resetPasswordMutation.mutateAsync,
+    // Google OAuth
+    loginWithGoogle: googleLoginMutation.mutateAsync,
+    // 2FA
+    verifyTwoFactor: twoFALoginMutation.mutateAsync,
 
     // Mutation states
     isLoggingIn: loginMutation.isPending,
@@ -236,6 +383,8 @@ export const useAuth = () => {
     isChangingPassword: changePasswordMutation.isPending,
     isSendingResetEmail: forgotPasswordMutation.isPending,
     isResettingPassword: resetPasswordMutation.isPending,
+    isGoogleLoggingIn: googleLoginMutation.isPending,
+    isVerifyingTwoFactor: twoFALoginMutation.isPending,
 
     // Utility functions
     refreshUser,

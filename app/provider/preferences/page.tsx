@@ -11,10 +11,13 @@ import { ArrowLeft, Bell, Globe, Moon, Sun, Mail, MessageSquare, Calendar, Shiel
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { TwoFactorSettings } from "@/components/security/TwoFactorSettings";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProviderPreferencesPage() {
   const router = useRouter();
   const { language, setLanguage } = useTranslation();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Notification preferences
@@ -387,6 +390,9 @@ export default function ProviderPreferencesPage() {
               {isLoading ? "Saving..." : "Save Preferences"}
             </Button>
           </div>
+
+          {/* ── Two-Factor Authentication ── */}
+          <TwoFactorSettings userEmail={user?.email ?? ""} />
         </div>
       </div>
     </div>

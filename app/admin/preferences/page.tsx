@@ -11,10 +11,13 @@ import { ArrowLeft, Bell, Globe, Moon, Sun, Shield, Eye, Database } from "lucide
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useTranslation } from "@/hooks/useTranslation";
+import { TwoFactorSettings } from "@/components/security/TwoFactorSettings";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AdminPreferencesPage() {
   const router = useRouter();
   const { language, setLanguage } = useTranslation();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const [notifications, setNotifications] = useState({
@@ -378,6 +381,9 @@ export default function AdminPreferencesPage() {
               {isLoading ? "Saving..." : "Save Preferences"}
             </Button>
           </div>
+
+          {/* ── Two-Factor Authentication ── */}
+          <TwoFactorSettings userEmail={user?.email ?? ""} />
         </div>
       </div>
     </div>

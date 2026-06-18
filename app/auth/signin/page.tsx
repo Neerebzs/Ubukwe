@@ -2,58 +2,168 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Eye, EyeOff, Home } from "lucide-react"
+import { Loader2, Eye, EyeOff, Home, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
+import { trackEvent, AnalyticsEvent } from "@/lib/analytics"
 
+// ── Google SVG icon (official brand colors) ───────────────────────────────────
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
+  )
+}
+
+// ── 2FA code entry panel ───────────────────────────────────────────────────────
+function TwoFAPanel({
+  preAuthToken,
+  isVerifying,
+  onVerify,
+  onCancel,
+}: {
+  preAuthToken: string
+  isVerifying: boolean
+  onVerify: (code: string) => void
+  onCancel: () => void
+}) {
+  const [code, setCode] = useState("")
+  const [error, setError] = useState("")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!code.trim()) {
+      setError("Enter your 6-digit code or a backup code.")
+      return
+    }
+    setError("")
+    onVerify(code.trim())
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Icon */}
+      <div className="flex flex-col items-center space-y-4">
+        <div className="h-16 w-16 rounded-full bg-[#608d64]/15 border border-[#608d64]/30 flex items-center justify-center">
+          <ShieldCheck className="h-7 w-7 text-[#608d64]" />
+        </div>
+        <div className="text-center space-y-1">
+          <h2 className="text-2xl font-serif italic text-white">Verify Your Identity</h2>
+          <p className="text-slate-400 text-xs font-medium tracking-wide">
+            Enter the 6-digit code from your authenticator app, or a backup code.
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="totp-code" className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">
+            Authentication Code
+          </Label>
+          <Input
+            id="totp-code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="000000"
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value.replace(/\s/g, ""))
+              setError("")
+            }}
+            maxLength={12}
+            className={`h-14 bg-white/5 border-white/10 text-white text-center text-xl font-mono tracking-[0.5em] rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all ${error ? "border-red-500/50 bg-red-500/5" : ""}`}
+            disabled={isVerifying}
+            autoFocus
+          />
+          {error && (
+            <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{error}</p>
+          )}
+        </div>
+
+        <Button
+          type="submit"
+          disabled={isVerifying || !code.trim()}
+          className="w-full h-14 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] transition-all duration-500 active:scale-[0.98]"
+        >
+          {isVerifying ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+              Verifying
+            </span>
+          ) : (
+            "Verify & Sign In"
+          )}
+        </Button>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-full text-[9px] font-black text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors"
+        >
+          ← Back to sign in
+        </button>
+      </form>
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function SignInPage() {
-  const { settings, isLoading: isLoadingSettings } = useSystemSettings();
+  const { settings, isLoading: isLoadingSettings } = useSystemSettings()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
 
-  const { login, isLoggingIn, isAuthenticated } = useAuth()
+  // 2FA state
+  const [twoFARequired, setTwoFARequired] = useState(false)
+  const [preAuthToken, setPreAuthToken] = useState("")
 
-  // Redirect if already authenticated - let useAuth handle role-based routing
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      // The useAuth hook will handle the redirect based on user role
-      // No need to hardcode the redirect here
-    }
-  }, [isAuthenticated])
+  const {
+    login,
+    isLoggingIn,
+    isAuthenticated,
+    loginWithGoogle,
+    isGoogleLoggingIn,
+    verifyTwoFactor,
+    isVerifyingTwoFactor,
+  } = useAuth()
+
+  const isAnyLoading = isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor || isAuthenticated
 
   const validateForm = (): boolean => {
     const newErrors: { email?: string; password?: string } = {}
-
-    if (!email) {
-      newErrors.email = 'Email is required'
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address'
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required'
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-    }
-
+    if (!email) newErrors.email = "Email is required"
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Enter a valid email address"
+    if (!password) newErrors.password = "Password is required"
+    else if (password.length < 6) newErrors.password = "Password must be at least 6 characters"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
     const loginData: LoginRequest = {
       email: email.trim().toLowerCase(),
@@ -61,66 +171,87 @@ export default function SignInPage() {
     }
 
     try {
+      // The login mutation now may return a 2FA pre_auth_token if 2FA is enabled.
+      // We detect it by examining the raw backend response before the mutation
+      // processes it.  We call the API directly here to intercept the 2FA signal.
+      const { authApi } = await import("@/lib/auth")
+      const response = await authApi.login(loginData)
+      const data = response?.data ?? response
+
+      if (data?.two_factor_required) {
+        setPreAuthToken(data.pre_auth_token)
+        setTwoFARequired(true)
+        return
+      }
+
+      // No 2FA — delegate to the standard login mutation path
       await login(loginData)
-    } catch {
-      // Error is handled by useAuth's onError (toast)
+    } catch (err: any) {
+      // Error handled by useAuth toast
     }
   }
 
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await loginWithGoogle()
+      if (result?.requiresTwoFactor) {
+        setPreAuthToken(result.preAuthToken ?? "")
+        setTwoFARequired(true)
+      }
+    } catch {
+      // handled by mutation onError
+    }
+  }
+
+  const handleTwoFAVerify = async (code: string) => {
+    await verifyTwoFactor({ preAuthToken, code })
+  }
+
+  const handleCancelTwoFA = () => {
+    setTwoFARequired(false)
+    setPreAuthToken("")
+  }
+
+  // ── Loading skeleton ───────────────────────────────────────────────────────
   if (isLoadingSettings) {
     return (
       <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
-        {/* Visual Narrative Side - Desktop only Skeleton */}
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-100 animate-pulse" />
-        
-        {/* Interaction Side Skeleton */}
         <div className="flex-1 flex flex-col bg-slate-900 px-8 lg:px-24 pt-32 pb-20 relative overflow-hidden lg:overflow-y-auto">
           <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
             <div className="space-y-4">
               <div className="h-4 w-32 bg-white/10 animate-pulse rounded" />
               <div className="h-12 w-full bg-white/10 animate-pulse rounded-lg" />
-              <div className="h-4 w-3/4 bg-white/10 animate-pulse rounded" />
             </div>
             <div className="space-y-8">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
-                  <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-4 w-24 bg-white/10 animate-pulse rounded" />
-                  <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
-                </div>
-              </div>
+              <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
+              <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
               <div className="h-16 w-full bg-white/10 animate-pulse rounded-2xl" />
-            </div>
-            <div className="pt-8 border-t border-white/5 space-y-4 flex flex-col items-center">
-              <div className="h-4 w-48 bg-white/10 animate-pulse rounded" />
-              <div className="h-12 w-40 bg-white/10 animate-pulse rounded-xl" />
+              <div className="h-14 w-full bg-white/10 animate-pulse rounded-2xl" />
             </div>
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
-      {/* Full Page Loading Overlay */}
-      {(isLoggingIn || isAuthenticated) && (
+      {/* Full page loading overlay */}
+      {isAnyLoading && (
         <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
-           <div className="relative flex items-center justify-center">
-             <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
-             <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
-             <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
-           </div>
-           <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
-             {isAuthenticated ? "Preparing Dashboard..." : "Authenticating..."}
-           </p>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
+            <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
+          </div>
+          <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
+            {isAuthenticated ? "Preparing Dashboard..." : "Authenticating..."}
+          </p>
         </div>
       )}
 
-      {/* Visual Narrative Side - Desktop only */}
+      {/* Visual narrative side — desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img
           src={settings.authBackgroundImageUrl}
@@ -135,13 +266,11 @@ export default function SignInPage() {
             </div>
             <span className="text-3xl font-serif italic tracking-tight">VowNest</span>
           </Link>
-
           <div className="max-w-md space-y-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.5em] opacity-60">The Collective Spirit</p>
             <h2 className="text-6xl font-serif italic leading-[1.1]">Where Artistry Meets Your Eternal Story.</h2>
             <div className="h-[2px] w-24 bg-[#608d64]" />
           </div>
-
           <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
             <span>© 2024 Rwanda</span>
             <span>Est. Traditions</span>
@@ -149,13 +278,11 @@ export default function SignInPage() {
         </div>
       </div>
 
-      {/* Interaction Side */}
+      {/* Interaction side */}
       <div className="flex-1 flex flex-col bg-slate-900 px-8 lg:px-24 pt-32 pb-20 relative overflow-hidden lg:overflow-y-auto">
-        {/* Subtle background texture */}
-        <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+        <div className="absolute top-0 right-0 h-96 w-96 bg-[#608d64]/10 blur-[120px] rounded-full -mr-48 -mt-48 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 h-96 w-96 bg-slate-500/10 blur-[120px] rounded-full -ml-48 -mb-48 pointer-events-none" />
 
-        {/* Return to Home - Modern Right Alignment */}
         <div className="absolute top-8 right-8 lg:right-12 z-20">
           <Link
             href="/"
@@ -167,95 +294,146 @@ export default function SignInPage() {
         </div>
 
         <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
-          {/* Header */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Welcome Back</p>
-              <h1 className="text-5xl font-serif italic text-white leading-tight">Return to the Collective</h1>
-            </div>
-            <p className="text-slate-400 text-sm font-medium tracking-wide">
-              Continue your journey in curating timeless moments.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1">
-                  <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Email Address</Label>
-                  {errors.email && <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">{errors.email}</span>}
+          {twoFARequired ? (
+            /* ── 2FA panel ── */
+            <TwoFAPanel
+              preAuthToken={preAuthToken}
+              isVerifying={isVerifyingTwoFactor}
+              onVerify={handleTwoFAVerify}
+              onCancel={handleCancelTwoFA}
+            />
+          ) : (
+            <>
+              {/* ── Header ── */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">Welcome Back</p>
+                  <h1 className="text-5xl font-serif italic text-white leading-tight">Return to the Collective</h1>
                 </div>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@artistry.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
-                  }}
-                  className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.email ? 'border-red-500/50 bg-red-500/5' : ''}`}
+                <p className="text-slate-400 text-sm font-medium tracking-wide">
+                  Continue your journey in curating timeless moments.
+                </p>
+              </div>
+
+              {/* ── Google sign-in ── */}
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isGoogleLoggingIn || isLoggingIn}
+                  className="w-full h-14 bg-white hover:bg-slate-100 text-slate-800 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-black/20 transition-all duration-300 active:scale-[0.98] border border-slate-200"
+                >
+                  {isGoogleLoggingIn ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
+                  ) : (
+                    <GoogleIcon className="h-5 w-5 flex-shrink-0" />
+                  )}
+                  <span>{isGoogleLoggingIn ? "Connecting to Google..." : "Continue with Google"}</span>
+                </Button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">or sign in with email</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+              </div>
+
+              {/* ── Email form ── */}
+              <form onSubmit={handleEmailSubmit} className="space-y-8">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center px-1">
+                      <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        Email Address
+                      </Label>
+                      {errors.email && (
+                        <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">{errors.email}</span>
+                      )}
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="name@artistry.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (errors.email) setErrors((p) => ({ ...p, email: undefined }))
+                      }}
+                      className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.email ? "border-red-500/50 bg-red-500/5" : ""}`}
+                      disabled={isLoggingIn}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center px-1">
+                      <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        Secure Password
+                      </Label>
+                      <Link
+                        href="/auth/forgot-password"
+                        className="text-[9px] font-black text-[#608d64] uppercase tracking-widest hover:text-[#608d64]/80 transition-colors"
+                      >
+                        Reset Access
+                      </Link>
+                    </div>
+                    <div className="relative group">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value)
+                          if (errors.password) setErrors((p) => ({ ...p, password: undefined }))
+                        }}
+                        className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.password ? "border-red-500/50 bg-red-500/5" : ""}`}
+                        disabled={isLoggingIn}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoggingIn}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.password}</p>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
                   disabled={isLoggingIn}
-                />
+                >
+                  {isLoggingIn ? (
+                    <span className="flex items-center gap-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+                      <span>Authenticating</span>
+                    </span>
+                  ) : (
+                    "Enter Collection"
+                  )}
+                </Button>
+              </form>
+
+              <div className="pt-8 border-t border-white/5 text-center space-y-4">
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                  New to the Rwanda Collective?
+                </p>
+                <Link
+                  href="/auth/signup"
+                  className="inline-block px-10 py-4 rounded-xl border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-white/5 hover:border-white/20 transition-all"
+                >
+                  Begin Your Presence
+                </Link>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex justify-between items-center px-1">
-                  <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Secure Password</Label>
-                  <Link href="/auth/forgot-password" className="text-[9px] font-black text-[#608d64] uppercase tracking-widest hover:text-[#608d64]/80 transition-colors">
-                    Reset Access
-                  </Link>
-                </div>
-                <div className="relative group">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                      if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
-                    }}
-                    className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.password ? 'border-red-500/50 bg-red-500/5' : ''}`}
-                    disabled={isLoggingIn}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoggingIn}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-[9px] font-black text-red-400 uppercase tracking-wider px-1">{errors.password}</p>}
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-16 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] shadow-2xl shadow-[#608d64]/10 transition-all duration-500 active:scale-[0.98]"
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? (
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
-                  <span>Authenticating</span>
-                </div>
-              ) : (
-                'Enter Collection'
-              )}
-            </Button>
-          </form>
-
-          <div className="pt-8 border-t border-white/5 text-center space-y-4">
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-              New to the Rwanda Collective?
-            </p>
-            <Link href="/auth/signup" className="inline-block px-10 py-4 rounded-xl border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-white/5 hover:border-white/20 transition-all">
-              Begin Your Presence
-            </Link>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
