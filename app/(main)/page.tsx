@@ -13,6 +13,7 @@ import { usePublicEvents } from "@/hooks/useCustomerEvents";
 import { useOffers } from "@/hooks/useOffers";
 import { SupportWidget } from "@/components/SupportWidget";
 import { useSystemSettings } from "@/contexts/system-settings-context";
+import { PopularServicesSection } from "@/components/home/PopularServicesSection";
 
 export default function HomePage() {
   const { settings, isLoading: isLoadingSettings } = useSystemSettings();
@@ -432,6 +433,9 @@ export default function HomePage() {
         </div>
       </section>
       )}
+
+      {/* ── Popular Services ── */}
+      <PopularServicesSection />
 
       {/* Modernized Stats Section */}
       <section className="py-20 md:py-28 relative bg-white border-y border-slate-50">
