@@ -148,52 +148,9 @@ export default function HomePage() {
     { number: "24/7", label: "Support", icon: <Clock className="h-6 w-6" /> },
   ];
 
-  if (isLoadingSettings || isLoadingEventsAndOffers) {
-    return (
-      <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
-        <section className="relative w-full overflow-hidden min-h-[90vh] pt-12 lg:pt-20 bg-white">
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="grid lg:grid-cols-12 gap-12 items-center">
-              {/* Left Column Skeleton */}
-              <div className="lg:col-span-6 space-y-10">
-                <div className="space-y-6">
-                  <div className="h-4 w-48 bg-slate-200 animate-pulse rounded" />
-                  <div className="space-y-4">
-                    <div className="h-20 w-full bg-slate-200 animate-pulse rounded-lg" />
-                    <div className="h-20 w-3/4 bg-slate-200 animate-pulse rounded-lg" />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="h-4 w-full bg-slate-200 animate-pulse rounded" />
-                    <div className="h-4 w-5/6 bg-slate-200 animate-pulse rounded" />
-                    <div className="h-4 w-4/6 bg-slate-200 animate-pulse rounded" />
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className="h-16 w-48 bg-slate-200 animate-pulse rounded-full" />
-                  <div className="flex -space-x-4">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-slate-200 animate-pulse" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column Skeleton */}
-              <div className="lg:col-span-6 relative h-[600px] hidden lg:block">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-[380px] h-[540px] z-20">
-                    <div className="w-full h-full overflow-hidden rounded-[200px] bg-slate-200 animate-pulse border-8 border-white shadow-2xl" />
-                  </div>
-                  {/* Secondary Circular Image Skeleton */}
-                  <div className="absolute left-[-40px] bottom-10 w-48 h-48 z-30 rounded-full bg-slate-200 animate-pulse border-8 border-white shadow-xl" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  // No full-page loading gate — each section handles its own loading state.
+  // isLoadingSettings only prevents showing broken image URLs in the hero,
+  // so we guard just the hero image src, not the whole page render.
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
