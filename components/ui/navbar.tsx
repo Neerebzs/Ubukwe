@@ -40,7 +40,7 @@ export function Navbar() {
   return (
     <>
       <header className="w-full fixed top-0 z-50 bg-white">
-        <div className="container mx-auto px-6 py-6 flex items-center justify-between gap-12">
+        <div className="container mx-auto px-4 py-6 flex items-center justify-between gap-12">
           {/* Logo / Brand — always show VOWNEST text in brand green, logo image alongside if set */}
           <Link href="/" className="flex items-center gap-1.5 flex-shrink-0 group transition-opacity hover:opacity-80">
             {settings.logoUrl && (
