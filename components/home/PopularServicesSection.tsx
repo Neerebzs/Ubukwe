@@ -225,10 +225,8 @@ export function PopularServicesSection() {
   const { data: services, isLoading, isError } = usePopularServices(8, activeCategory);
 
   // Don't render the section at all if there's an error and no data
-  if (isError && !services?.length) return null;
-
-  return (
-    <section className="py-24 md:py-32 relative bg-white overflow-hidden">
+  if (isError && !services?.length) return null;  return (
+    <section className="py-14 md:py-20 relative bg-white overflow-hidden">
       {/* Subtle background texture */}
       <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
         style={{ backgroundImage: `radial-gradient(circle at 1px 1px, #668c65 1px, transparent 0)`, backgroundSize: "40px 40px" }}
@@ -237,7 +235,7 @@ export function PopularServicesSection() {
       <div className="container mx-auto max-w-7xl px-4 relative z-10">
 
         {/* Section header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-[1px] w-8 bg-[#668c65]/50" />
@@ -268,7 +266,7 @@ export function PopularServicesSection() {
         </div>
 
         {/* Category filter tabs */}
-        <div className="flex gap-2 flex-wrap mb-10">
+        <div className="flex gap-2 flex-wrap mb-7">
           {CATEGORY_TABS.map((tab) => (
             <button
               key={tab.label}
@@ -301,7 +299,7 @@ export function PopularServicesSection() {
             </div>
 
             {/* Bottom CTA */}
-            <div className="mt-16 text-center">
+            <div className="mt-10 text-center">
               <div className="inline-flex flex-col items-center gap-4">
                 <p className="text-slate-400 text-sm font-medium">
                   <TranslatedText text="Discover 500+ verified wedding providers across Rwanda" />

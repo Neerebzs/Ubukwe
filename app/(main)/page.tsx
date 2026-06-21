@@ -296,11 +296,11 @@ export default function HomePage() {
       {/* Full-Height Background Promotional Carousel */}
       {(isLoadingEventsAndOffers || promotions.length > 0) && (
       <section
-        className="py-20 md:py-32 px-0 relative bg-[#fcfbf9] overflow-hidden group/carousel"
+        className="py-12 md:py-16 px-0 relative bg-[#fcfbf9] overflow-hidden group/carousel"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-full max-w-7xl mx-auto px-4 mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="w-full max-w-7xl mx-auto px-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-[#668c65]" />
@@ -331,7 +331,7 @@ export default function HomePage() {
         <div className="w-full max-w-7xl mx-auto">
           <div
             ref={carouselRef}
-            className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 px-4 scroll-smooth"
+            className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-6 px-4 scroll-smooth"
           >
             {isLoadingEventsAndOffers ? (
               Array.from({ length: 3 }).map((_, index) => (
@@ -438,7 +438,7 @@ export default function HomePage() {
       <PopularServicesSection />
 
       {/* Modernized Stats Section */}
-      <section className="py-20 md:py-28 relative bg-white border-y border-slate-50">
+      <section className="py-12 md:py-16 relative bg-white border-y border-slate-50">
         <div className="container mx-auto max-w-6xl px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -459,9 +459,9 @@ export default function HomePage() {
       </section>
 
       {/* Modernized Services Section */}
-      <section className="py-24 md:py-32 relative bg-slate-50/30">
+      <section className="py-14 md:py-20 relative bg-slate-50/30">
         <div className="container mx-auto max-w-7xl px-4">
-          <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-10 gap-8">
             <div className="max-w-2xl space-y-4">
               <div className="flex items-center gap-2 text-[#668c65]">
                 <Sparkles className="h-5 w-5" />
@@ -510,9 +510,9 @@ export default function HomePage() {
       </section>
 
       {/* Modernized How It Works Section */}
-      <section className="py-24 md:py-32 relative bg-white">
+      <section className="py-14 md:py-20 relative bg-white">
         <div className="container mx-auto max-w-5xl px-4">
-          <div className="text-center mb-20 space-y-4">
+          <div className="text-center mb-12 space-y-4">
             <h2 className="text-5xl md:text-6xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Simple Three-Step Planning" />
             </h2>
@@ -550,7 +550,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 md:py-32 relative bg-[#f7f9fa] overflow-hidden">
+      <section className="py-14 md:py-20 relative bg-[#f7f9fa] overflow-hidden">
         {/* Background Leaf Motif */}
         <div className="leaf-bg opacity-20" />
         <div className="container mx-auto max-w-7xl px-4 relative z-10">
@@ -630,9 +630,9 @@ export default function HomePage() {
       </section>
 
       {/* Modernized FAQ Section */}
-      <section className="py-24 md:py-32 relative bg-white border-t border-slate-50">
+      <section className="py-14 md:py-20 relative bg-white border-t border-slate-50">
         <div className="container mx-auto max-w-3xl px-4">
-          <div className="text-center mb-16 space-y-4">
+          <div className="text-center mb-10 space-y-4">
             <h2 className="text-5xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Common Questions" />
             </h2>
