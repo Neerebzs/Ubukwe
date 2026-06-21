@@ -16,7 +16,7 @@ import { useSystemSettings } from "@/contexts/system-settings-context";
 export function Navbar() {
   const isMobile = useIsMobile();
   const { isMenuOpen, toggleMenu } = useMobileMenu();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isLoading: isAuthLoading } = useAuth();
   const { settings } = useSystemSettings();
   const [eventsDropdownOpen, setEventsDropdownOpen] = React.useState(false);
   const [mobileEventsOpen, setMobileEventsOpen] = React.useState(false);
@@ -40,7 +40,7 @@ export function Navbar() {
   return (
     <>
       <header className="w-full fixed top-0 z-50 bg-white">
-        <div className="container mx-auto px-6 py-6 flex items-center justify-between gap-12">
+        <div className="container mx-auto px-4 py-6 flex items-center justify-between gap-12">
           {/* Logo / Brand — always show VOWNEST text in brand green, logo image alongside if set */}
           <Link href="/" className="flex items-center gap-1.5 flex-shrink-0 group transition-opacity hover:opacity-80">
             {settings.logoUrl && (
@@ -117,45 +117,49 @@ export function Navbar() {
 
             <div className="flex items-center gap-5">
               
-              {/* Sign In / Get Started — desktop only */}
-              {!isMobile && !isAuthenticated && (
-                <>
-                  <Link href="/auth/signin">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-(--primary) hover:text-(--primary)/60 transition-all cursor-pointer">
-                      <TranslatedText text="Sign In" />
-                    </span>
-                  </Link>
-                  <Link href="/auth/signup">
-                    <Button className="bg-(--primary) text-white text-[11px] font-bold uppercase tracking-[0.25em] px-8 h-12 rounded-full hover:bg-(--primary)/90 transition-all border-none shadow-none">
-                      <TranslatedText text="Get Started" />
+              {/* Auth / Dashboard buttons — desktop only */}
+              {!isMobile && (
+                isAuthLoading ? (
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-4 bg-slate-100 animate-pulse rounded" />
+                    <div className="w-32 h-12 bg-slate-100 animate-pulse rounded-full" />
+                  </div>
+                ) : !isAuthenticated ? (
+                  <>
+                    <Link href="/auth/signin">
+                      <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-(--primary) hover:text-(--primary)/60 transition-all cursor-pointer">
+                        <TranslatedText text="Sign In" />
+                      </span>
+                    </Link>
+                    <Link href="/auth/signup">
+                      <Button className="bg-(--primary) text-white text-[11px] font-bold uppercase tracking-[0.25em] px-8 h-12 rounded-full hover:bg-(--primary)/90 transition-all border-none shadow-none">
+                        <TranslatedText text="Get Started" />
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Link href={
+                      user?.role === 'admin' ? '/admin/dashboard' :
+                        user?.role === 'service_provider' ? '/provider/dashboard' :
+                          '/customer/dashboard'
+                    }>
+                      <Button className="bg-(--primary) text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-full px-5 h-11 shadow-none">
+                        <LayoutDashboard className="h-4 w-4 mr-2 text-white/40" />
+                        <TranslatedText text="Dashboard" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => logout()}
+                      className="h-11 w-11 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
+                      title="Logout"
+                    >
+                      <LogOut className="h-4 w-4" />
                     </Button>
-                  </Link>
-                </>
-              )}
-
-              {/* Dashboard + logout — desktop only */}
-              {!isMobile && isAuthenticated && (
-                <div className="flex items-center gap-3">
-                  <Link href={
-                    user?.role === 'admin' ? '/admin/dashboard' :
-                      user?.role === 'service_provider' ? '/provider/dashboard' :
-                        '/customer/dashboard'
-                  }>
-                    <Button className="bg-(--primary) text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-full px-5 h-11 shadow-none">
-                      <LayoutDashboard className="h-4 w-4 mr-2 text-white/40" />
-                      <TranslatedText text="Dashboard" />
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => logout()}
-                    className="h-11 w-11 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
-                    title="Logout"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
+                  </div>
+                )
               )}
             </div>
 
