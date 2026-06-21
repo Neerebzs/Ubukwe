@@ -151,7 +151,7 @@ export default function HomePage() {
   if (isLoadingSettings || isLoadingEventsAndOffers) {
     return (
       <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
-        <section className="relative w-full overflow-hidden min-h-[90vh] flex items-center pt-20 bg-white">
+        <section className="relative w-full overflow-hidden min-h-[90vh] pt-12 lg:pt-20 bg-white">
           <div className="container mx-auto px-4 relative z-10">
             <div className="grid lg:grid-cols-12 gap-12 items-center">
               {/* Left Column Skeleton */}
@@ -197,8 +197,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-hidden pb-16 md:pb-0">
-      {/* Editorial Hero Section */}
-      <section className="relative w-full overflow-hidden min-h-[90vh] flex items-center pt-20 bg-white">
+      {/* Editorial Hero Section — desktop only */}
+      <section className="hidden md:block relative w-full overflow-hidden min-h-[90vh] pt-12 lg:pt-20 bg-white">
         {/* Subtle Decorative Elements */}
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
@@ -300,7 +300,7 @@ export default function HomePage() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-full max-w-7xl mx-auto px-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="container mx-auto px-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-[#668c65]" />
@@ -328,7 +328,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="w-full max-w-7xl mx-auto">
+        <div className="container mx-auto">
           <div
             ref={carouselRef}
             className="flex gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-6 px-4 scroll-smooth"
@@ -439,7 +439,7 @@ export default function HomePage() {
 
       {/* Modernized Stats Section */}
       <section className="py-12 md:py-16 relative bg-white border-y border-slate-50">
-        <div className="container mx-auto max-w-6xl px-4">
+        <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="group text-center space-y-4">
@@ -458,102 +458,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Modernized Services Section */}
-      <section className="py-14 md:py-20 relative bg-slate-50/30">
-        <div className="container mx-auto max-w-7xl px-4">
-          <div className="flex flex-col md:flex-row items-end justify-between mb-10 gap-8">
-            <div className="max-w-2xl space-y-4">
-              <div className="flex items-center gap-2 text-[#668c65]">
-                <Sparkles className="h-5 w-5" />
-                <span className="font-outfit font-bold tracking-widest uppercase text-xs">
-                  <TranslatedText text="Categories" />
-                </span>
-              </div>
-              <h2 className="text-5xl md:text-6xl font-black text-sage-950 leading-tight">
-                <TranslatedText text="Everything for Your Celebration" />
-              </h2>
-            </div>
-            <p className="text-lg text-sage-500 max-w-md font-medium leading-relaxed">
-              <TranslatedText text="Explore our curated directory of luxury wedding providers. Each service is hand-vetted to ensure the highest standards of excellence." />
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <div
-                key={index}
-                className="group p-10 bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-[#668c65]/30 transition-all duration-500 flex flex-col items-center text-center space-y-6"
-              >
-                <div className={cn("w-20 h-20 rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6", service.color)}>
-                  {service.icon}
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-black text-sage-950 tracking-tight">
-                    <TranslatedText text={service.title} />
-                  </h3>
-                  <p className="text-sage-500 text-sm font-medium leading-relaxed">
-                    <TranslatedText text={service.description} />
-                  </p>
-                </div>
-                <div className="pt-4 w-full">
-                  <Link href="/services">
-                    <Button variant="outline" className="w-full h-14 rounded-2xl border-sage-100 font-bold hover:bg-sage-950 hover:text-white transition-all">
-                      <TranslatedText text="Explore Providers" />
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Modernized How It Works Section */}
-      <section className="py-14 md:py-20 relative bg-white">
-        <div className="container mx-auto max-w-5xl px-4">
-          <div className="text-center mb-12 space-y-4">
-            <h2 className="text-5xl md:text-6xl font-black text-sage-950 tracking-tight">
-              <TranslatedText text="Simple Three-Step Planning" />
-            </h2>
-            <p className="text-lg text-sage-500 max-w-2xl mx-auto font-medium">
-              <TranslatedText text="We've streamlined the journey from your engagement to your dream wedding day." />
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-12 relative">
-            {/* Connecting Line (Desktop) */}
-            <div className="hidden md:block absolute top-[60px] left-[15%] right-[15%] h-[2px] bg-slate-100 z-0" />
-
-            {[
-              { step: "01", title: "Discover", desc: "Browse hand-vetted portfolios and secure your favorites.", icon: <Search className="h-6 w-6" /> },
-              { step: "02", title: "Collaborate", desc: "Connect directly with providers to discuss your vision.", icon: <Users className="h-6 w-6" /> },
-              { step: "03", title: "Celebrate", desc: "Enjoy your perfect moment with everything in place.", icon: <Sparkles className="h-6 w-6" /> },
-            ].map((item, index) => (
-              <div key={index} className="relative z-10 flex flex-col items-center text-center group">
-                <div className="w-24 h-24 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center mb-8 shadow-sm group-hover:border-[#668c65] group-hover:shadow-xl transition-all duration-500">
-                  <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center text-xl font-black">
-                    {item.step}
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">
-                    <TranslatedText text={item.title} />
-                  </h3>
-                  <p className="text-slate-500 font-medium leading-relaxed">
-                    <TranslatedText text={item.desc} />
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="py-14 md:py-20 relative bg-[#f7f9fa] overflow-hidden">
         {/* Background Leaf Motif */}
         <div className="leaf-bg opacity-20" />
-        <div className="container mx-auto max-w-7xl px-4 relative z-10">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
             {/* Left Column: Circular Wreath Image */}
@@ -631,7 +539,7 @@ export default function HomePage() {
 
       {/* Modernized FAQ Section */}
       <section className="py-14 md:py-20 relative bg-white border-t border-slate-50">
-        <div className="container mx-auto max-w-3xl px-4">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-10 space-y-4">
             <h2 className="text-5xl font-black text-sage-950 tracking-tight">
               <TranslatedText text="Common Questions" />
