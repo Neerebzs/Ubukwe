@@ -151,6 +151,35 @@ export default function SignInPage() {
 
   const isAnyLoading = isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor || isAuthenticated
 
+  // ── Handle full-page redirect fallback (mobile — popup blocked) ──────────────
+  // When Google redirects back via /auth/google/callback on mobile,
+  // the callback page stores the code in sessionStorage and redirects here
+  // with ?google=1. We pick it up and complete the login flow.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("google") !== "1") return
+
+    const code = sessionStorage.getItem("google_oauth_code")
+    if (!code) return
+
+    sessionStorage.removeItem("google_oauth_code")
+    // Remove the query param without a page reload
+    window.history.replaceState({}, "", "/auth/signin")
+
+    // Trigger the Google login with the stored code
+    ;(async () => {
+      try {
+        const result = await loginWithGoogle({ _codeOverride: code } as any)
+        if (result?.requiresTwoFactor) {
+          setPreAuthToken(result.preAuthToken ?? "")
+          setTwoFARequired(true)
+        }
+      } catch {
+        // handled by mutation onError toast
+      }
+    })()
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
   const validateForm = (): boolean => {
     const newErrors: { email?: string; password?: string } = {}
     if (!email) newErrors.email = "Email is required"

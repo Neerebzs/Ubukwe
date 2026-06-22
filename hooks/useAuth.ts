@@ -209,9 +209,15 @@ export const useAuth = () => {
   // ── Google OAuth Login ─────────────────────────────────────────────────────
 
   const googleLoginMutation = useMutation({
-    mutationFn: async (): Promise<{ requiresTwoFactor: boolean; preAuthToken?: string; user?: any }> => {
-      // Step 1: Open Google popup and get authorization code
-      const { code } = await initiateGoogleLogin();
+    mutationFn: async (opts?: { _codeOverride?: string }): Promise<{ requiresTwoFactor: boolean; preAuthToken?: string; user?: any }> => {
+      // Step 1: Get authorization code — either from override (mobile redirect) or popup
+      let code: string;
+      if (opts?._codeOverride) {
+        code = opts._codeOverride;
+      } else {
+        const result = await initiateGoogleLogin();
+        code = result.code;
+      }
 
       // Step 2: Exchange code with backend
       const response = await authApi.googleLogin(code);

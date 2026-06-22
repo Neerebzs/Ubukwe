@@ -1,88 +1,108 @@
 /**
- * Google OAuth 2.0 — Authorization Code Flow via Popup
+ * Google OAuth 2.0 — Authorization Code Flow
  *
- * Opens a Google sign-in popup, captures the authorization code via the
- * redirect to `postmessage`, and returns it for exchange with the backend.
- *
- * Why popup / postmessage?
- *   - No page navigation → seamless UX
- *   - Works on mobile browsers and desktop
- *   - Compatible with future mobile app (PKCE extension)
+ * Two modes:
+ *   1. Popup (desktop) — opens /auth/google/callback in a popup window.
+ *      The callback page sends the code back via postMessage then closes.
+ *   2. Full-page redirect (mobile — popup blocked) — redirects the current
+ *      tab to Google. The callback page stores the code in sessionStorage
+ *      and redirects to /auth/signin?google=1 which reads it.
  */
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-const GOOGLE_OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+
+// Must exactly match one of the Authorized redirect URIs in Google Cloud Console
+function getRedirectUri(): string {
+  if (typeof window === "undefined") return "";
+  const origin = window.location.origin; // https://www.vownests.com or http://localhost:3000
+  return `${origin}/auth/google/callback`;
+}
 
 export interface GoogleOAuthResult {
   code: string;
 }
 
-/**
- * Initiate Google OAuth 2.0 Authorization Code Flow in a popup window.
- * Returns the authorization code when the user completes Google sign-in.
- *
- * @throws Error if the popup is blocked, user cancels, or Google returns an error.
- */
-export async function initiateGoogleLogin(): Promise<GoogleOAuthResult> {
+function buildAuthUrl(): string {
   if (!GOOGLE_CLIENT_ID) {
     throw new Error(
-      'NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured. ' +
-      'Add it to your .env.local file.'
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set. Add it to your environment variables."
     );
   }
-
-  // Build the Google OAuth authorization URL
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: 'postmessage',   // tells Google to use postMessage to the opener
-    response_type: 'code',
-    scope: 'openid email profile',
-    access_type: 'offline',
-    prompt: 'select_account',      // always show account picker
+    redirect_uri: getRedirectUri(),
+    response_type: "code",
+    scope: "openid email profile",
+    access_type: "offline",
+    prompt: "select_account",
   });
+  return `${GOOGLE_OAUTH_URL}?${params.toString()}`;
+}
 
-  const authUrl = `${GOOGLE_OAUTH_URL}?${params.toString()}`;
+/**
+ * Try to open a popup. Returns the popup window or null if blocked.
+ */
+function openPopup(url: string): Window | null {
+  const width = 500;
+  const height = 620;
+  const left = Math.round(window.screenX + (window.innerWidth - width) / 2);
+  const top = Math.round(window.screenY + (window.innerHeight - height) / 2);
+  return window.open(
+    url,
+    "google-oauth",
+    `width=${width},height=${height},left=${left},top=${top},` +
+      "scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no"
+  );
+}
+
+/**
+ * Initiate Google OAuth.
+ *
+ * - On desktop: opens a popup, waits for postMessage from /auth/google/callback.
+ * - On mobile (popup blocked): redirects the whole page.
+ *   The caller must handle the `google_oauth_code` from sessionStorage
+ *   on the next render (signin page checks `?google=1`).
+ *
+ * @throws Error if the user cancels or Google returns an error.
+ */
+export async function initiateGoogleLogin(): Promise<GoogleOAuthResult> {
+  if (typeof window === "undefined") throw new Error("Must be called in a browser.");
+
+  const authUrl = buildAuthUrl();
 
   return new Promise((resolve, reject) => {
-    // Open a centered popup
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.innerWidth - width) / 2;
-    const top = window.screenY + (window.innerHeight - height) / 2;
+    const popup = openPopup(authUrl);
 
-    const popup = window.open(
-      authUrl,
-      'google-oauth',
-      `width=${width},height=${height},left=${left},top=${top},` +
-        'scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
-    );
-
-    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      reject(new Error('Popup was blocked. Please allow popups for this site.'));
+    // Popup blocked → fall back to full-page redirect (common on mobile)
+    if (!popup || popup.closed) {
+      window.location.href = authUrl;
+      // This promise never resolves — the page navigates away.
+      // The signin page handles the code on return via sessionStorage.
       return;
     }
 
-    // Listen for the authorization code message from Google's redirect
+    // Listen for the code posted by /auth/google/callback
     const messageHandler = (event: MessageEvent) => {
-      // Security: only accept messages from accounts.google.com
-      // (Google uses postMessage from the popup to the opener)
-      if (!event.origin.includes('accounts.google.com')) {
-        // Also accept from our own origin (some setups)
-        if (event.origin !== window.location.origin) return;
-      }
+      // Only accept messages from our own origin
+      if (event.origin !== window.location.origin) return;
 
       const data = event.data;
+      if (!data) return;
 
-      // Google sends the code in different formats depending on config
-      if (data?.code) {
+      if (data.code) {
         cleanup();
         resolve({ code: data.code });
         return;
       }
 
-      if (data?.error) {
+      if (data.error) {
         cleanup();
-        reject(new Error(`Google OAuth error: ${data.error}`));
+        const msg =
+          data.error === "access_denied"
+            ? "Google sign-in was cancelled."
+            : `Google sign-in failed: ${data.error}`;
+        reject(new Error(msg));
         return;
       }
     };
@@ -91,41 +111,16 @@ export async function initiateGoogleLogin(): Promise<GoogleOAuthResult> {
     const pollTimer = setInterval(() => {
       if (popup.closed) {
         cleanup();
-        reject(new Error('Google sign-in was cancelled.'));
+        reject(new Error("Google sign-in was cancelled."));
       }
     }, 500);
 
     const cleanup = () => {
-      window.removeEventListener('message', messageHandler);
+      window.removeEventListener("message", messageHandler);
       clearInterval(pollTimer);
       if (!popup.closed) popup.close();
     };
 
-    window.addEventListener('message', messageHandler);
-
-    // Fallback: check popup URL for the code (for backends that redirect to a page)
-    const urlPollTimer = setInterval(() => {
-      try {
-        if (popup.closed) return;
-        const popupUrl = popup.location.href;
-        if (popupUrl && popupUrl !== 'about:blank') {
-          const url = new URL(popupUrl);
-          const code = url.searchParams.get('code');
-          const error = url.searchParams.get('error');
-
-          if (code) {
-            clearInterval(urlPollTimer);
-            cleanup();
-            resolve({ code });
-          } else if (error) {
-            clearInterval(urlPollTimer);
-            cleanup();
-            reject(new Error(`Google OAuth error: ${error}`));
-          }
-        }
-      } catch {
-        // Cross-origin access — popup is still on Google's domain, skip
-      }
-    }, 200);
+    window.addEventListener("message", messageHandler);
   });
 }
