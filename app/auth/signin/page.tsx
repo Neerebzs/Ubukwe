@@ -4,12 +4,16 @@ import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Eye, EyeOff, Home, ShieldCheck } from "lucide-react"
+import { Loader2, Eye, EyeOff, Home, ShieldCheck, Users, Briefcase } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
 import { trackEvent, AnalyticsEvent } from "@/lib/analytics"
+import { apiClient } from "@/lib/api"
+import { tokenManager, userManager } from "@/lib/auth"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 // ── Google SVG icon (official brand colors) ───────────────────────────────────
 function GoogleIcon({ className }: { className?: string }) {
@@ -35,7 +39,87 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
-// ── 2FA code entry panel ───────────────────────────────────────────────────────
+// ── Role selection panel (new Google users) ───────────────────────────────────
+function RoleSelectPanel({
+  onSelect,
+  isLoading,
+}: {
+  onSelect: (role: "event_owner" | "service_provider") => void
+  isLoading: boolean
+}) {
+  const [selected, setSelected] = useState<"event_owner" | "service_provider" | null>(null)
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center space-y-3">
+        <div className="h-16 w-16 rounded-full bg-[#608d64]/15 border border-[#608d64]/30 flex items-center justify-center mx-auto">
+          <Users className="h-7 w-7 text-[#608d64]" />
+        </div>
+        <h2 className="text-2xl font-serif italic text-white">Welcome to VowNest</h2>
+        <p className="text-slate-400 text-sm font-medium">
+          How will you be using the platform?
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Customer */}
+        <button
+          type="button"
+          onClick={() => setSelected("event_owner")}
+          className={`p-6 rounded-2xl border-2 transition-all duration-300 text-left space-y-3 ${
+            selected === "event_owner"
+              ? "bg-white/10 border-[#608d64] shadow-lg shadow-[#608d64]/20"
+              : "bg-white/5 border-white/10 hover:bg-white/[0.08]"
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selected === "event_owner" ? "bg-[#608d64]/30" : "bg-white/10"}`}>
+            <Users className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <p className={`text-[11px] font-black uppercase tracking-widest ${selected === "event_owner" ? "text-white" : "text-slate-300"}`}>Customer</p>
+            <p className="text-[9px] text-slate-500 mt-0.5">Planning a wedding</p>
+          </div>
+        </button>
+
+        {/* Service Provider */}
+        <button
+          type="button"
+          onClick={() => setSelected("service_provider")}
+          className={`p-6 rounded-2xl border-2 transition-all duration-300 text-left space-y-3 ${
+            selected === "service_provider"
+              ? "bg-white/10 border-[#608d64] shadow-lg shadow-[#608d64]/20"
+              : "bg-white/5 border-white/10 hover:bg-white/[0.08]"
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selected === "service_provider" ? "bg-[#608d64]/30" : "bg-white/10"}`}>
+            <Briefcase className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <p className={`text-[11px] font-black uppercase tracking-widest ${selected === "service_provider" ? "text-white" : "text-slate-300"}`}>Artisan</p>
+            <p className="text-[9px] text-slate-500 mt-0.5">Offering services</p>
+          </div>
+        </button>
+      </div>
+
+      <Button
+        disabled={!selected || isLoading}
+        onClick={() => selected && onSelect(selected)}
+        className="w-full h-14 bg-white hover:bg-[#8ca88b] text-slate-900 rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] transition-all duration-500 active:scale-[0.98]"
+      >
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
+            Setting up...
+          </span>
+        ) : (
+          "Continue"
+        )}
+      </Button>
+    </div>
+  )
+}
+
+
 function TwoFAPanel({
   preAuthToken,
   isVerifying,
@@ -130,6 +214,7 @@ function TwoFAPanel({
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SignInPage() {
   const { settings, isLoading: isLoadingSettings } = useSystemSettings()
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -138,6 +223,11 @@ export default function SignInPage() {
   // 2FA state
   const [twoFARequired, setTwoFARequired] = useState(false)
   const [preAuthToken, setPreAuthToken] = useState("")
+
+  // Google new-user role selection state
+  const [roleSelectNeeded, setRoleSelectNeeded] = useState(false)
+  const [roleSelectLoading, setRoleSelectLoading] = useState(false)
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<any>(null)
 
   const {
     login,
@@ -200,23 +290,17 @@ export default function SignInPage() {
     }
 
     try {
-      // The login mutation now may return a 2FA pre_auth_token if 2FA is enabled.
-      // We detect it by examining the raw backend response before the mutation
-      // processes it.  We call the API directly here to intercept the 2FA signal.
-      const { authApi } = await import("@/lib/auth")
-      const response = await authApi.login(loginData)
-      const data = response?.data ?? response
-
+      // Use the login mutation directly — it handles token storage, redirect, and errors.
+      // We intercept the raw response only to detect a 2FA requirement.
+      const result = await login(loginData) as any
+      // If backend returned two_factor_required, show 2FA panel
+      const data = result?.data ?? result
       if (data?.two_factor_required) {
-        setPreAuthToken(data.pre_auth_token)
+        setPreAuthToken(data.pre_auth_token ?? "")
         setTwoFARequired(true)
-        return
       }
-
-      // No 2FA — delegate to the standard login mutation path
-      await login(loginData)
-    } catch (err: any) {
-      // Error handled by useAuth toast
+    } catch {
+      // Errors are handled by the mutation's onError (toast)
     }
   }
 
@@ -226,9 +310,44 @@ export default function SignInPage() {
       if (result?.requiresTwoFactor) {
         setPreAuthToken(result.preAuthToken ?? "")
         setTwoFARequired(true)
+        return
+      }
+      // New Google user with no role set — show role picker
+      const u = result?.user ?? userManager.getUser()
+      if (u && (!u.role || u.role === "event_owner") && !u.onboarding_completed && u.provider === "google") {
+        // Check if this is truly a new account (no username means just created)
+        const isNewUser = !u.username || u.username === u.email?.split("@")[0]
+        if (isNewUser) {
+          setPendingGoogleUser(u)
+          setRoleSelectNeeded(true)
+          return
+        }
       }
     } catch {
       // handled by mutation onError
+    }
+  }
+
+  const handleRoleSelect = async (role: "event_owner" | "service_provider") => {
+    if (!pendingGoogleUser) return
+    setRoleSelectLoading(true)
+    try {
+      // Update the user's role via the profile endpoint
+      await apiClient.put(`/api/v1/auth/update-profile`, { role })
+      const updatedUser = { ...pendingGoogleUser, role }
+      userManager.setUser(updatedUser)
+      setRoleSelectNeeded(false)
+      setPendingGoogleUser(null)
+      // Redirect based on role
+      if (role === "service_provider") {
+        router.push("/provider/dashboard?tab=onboarding")
+      } else {
+        router.push("/customer/dashboard")
+      }
+    } catch {
+      toast.error("Failed to set role. Please try again.")
+    } finally {
+      setRoleSelectLoading(false)
     }
   }
 
@@ -324,12 +443,16 @@ export default function SignInPage() {
 
         <div className="w-full max-w-sm mx-auto relative z-10 space-y-12">
           {twoFARequired ? (
-            /* ── 2FA panel ── */
             <TwoFAPanel
               preAuthToken={preAuthToken}
               isVerifying={isVerifyingTwoFactor}
               onVerify={handleTwoFAVerify}
               onCancel={handleCancelTwoFA}
+            />
+          ) : roleSelectNeeded ? (
+            <RoleSelectPanel
+              onSelect={handleRoleSelect}
+              isLoading={roleSelectLoading}
             />
           ) : (
             <>

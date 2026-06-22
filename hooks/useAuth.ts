@@ -59,14 +59,29 @@ export const useAuth = () => {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // Exponential backoff
     onSuccess: async (data) => {
-      const { user, accessToken, refreshToken } = data.data;
+      // Raw backend response shape: { status, message, data: { two_factor_required?, pre_auth_token?, access_token?, user? } }
+      const payload = data?.data ?? data as any;
+
+      // 2FA required — don't issue tokens yet, just return so the caller can show the panel
+      if (payload?.two_factor_required) {
+        return; // caller (handleEmailSubmit) checks the return value for this
+      }
+
+      const accessToken = payload?.accessToken ?? payload?.access_token;
+      const refreshToken = payload?.refreshToken ?? payload?.refresh_token ?? accessToken;
+      const userFromPayload = payload?.user;
+
+      if (!accessToken) {
+        toast.error('Login failed. No token received.');
+        return;
+      }
 
       // Store tokens
       tokenManager.setTokens(accessToken, refreshToken);
 
-      let finalUser = user;
+      let finalUser = userFromPayload;
 
-      // If user data is missing from login response (common with some backends), fetch it
+      // If user data is missing from login response, fetch it
       if (!finalUser) {
         try {
           const response = await authApi.getMe();
@@ -78,7 +93,6 @@ export const useAuth = () => {
 
       if (finalUser) {
         userManager.setUser(finalUser);
-        // Update query cache
         queryClient.setQueryData(authKeys.user(), finalUser);
       }
 
@@ -94,7 +108,6 @@ export const useAuth = () => {
       if (finalUser?.role === 'admin') {
         router.push('/admin/dashboard');
       } else if (finalUser?.role === 'service_provider') {
-        // Redirect unverified providers to onboarding
         if (!finalUser?.is_verified) {
           router.push('/provider/dashboard?tab=onboarding');
         } else {
