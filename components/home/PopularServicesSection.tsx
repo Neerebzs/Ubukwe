@@ -260,7 +260,7 @@ export function PopularServicesSection() {
           </div>
 
           {/* Custom navigation controls & View All button on top right */}
-          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end flex-shrink-0">
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-end flex-shrink-0">
             {/* Swiper Arrow navigation controls */}
             <div className="flex items-center gap-2">
               <button className="popular-prev w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white active:scale-95 transition-all flex items-center justify-center border border-slate-100 shadow-sm cursor-pointer disabled:opacity-40 disabled:hover:bg-slate-50 disabled:hover:text-slate-500">
