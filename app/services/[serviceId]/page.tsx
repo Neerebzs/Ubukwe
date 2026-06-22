@@ -1251,46 +1251,39 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             {/* Sticky Action Footer / Booking Bar — visible on mobile/tablet only */}
             <div className={cn(
                 "fixed bottom-0 left-0 right-0 z-50 transition-transform duration-700 md:bottom-8 md:left-1/2 md:-translate-x-1/2 md:max-w-4xl w-full",
-                "px-6 md:px-0",
+                "px-0 md:px-6",
                 "lg:hidden"
             )}>
-                <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 p-4 md:px-10 md:py-6 md:rounded-[40px] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
+                <div className="bg-slate-900/95 backdrop-blur-xl border-t md:border border-white/10 p-3.5 px-6 md:px-10 md:py-6 rounded-none md:rounded-[40px] shadow-2xl flex flex-row items-center justify-between gap-4 overflow-hidden relative group">
                     {/* Background Light Effect */}
                     <div className="absolute top-0 right-0 h-32 w-32 bg-[#668c65]/20 blur-[60px] -mr-16 -mt-16 group-hover:bg-[#668c65]/40 transition-colors" />
 
-                    <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                {selectedPackage ? `Selected: ${selectedPackage.name}` : "Artisan Investment"}
+                    <div className="flex items-center gap-4 text-left">
+                        <div className="space-y-0.5">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[130px] sm:max-w-none">
+                                {selectedPackage ? `${selectedPackage.name}` : "Artisan Investment"}
                             </p>
-                            <div className="flex items-baseline gap-2 justify-center md:justify-start">
-                                <span className={cn("text-white font-black", selectedPackage ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl")}>
+                            <div className="flex items-baseline gap-1.5 justify-start">
+                                <span className={cn("text-white font-black text-sm sm:text-2xl md:text-3xl")}>
                                     {selectedPackage 
                                         ? selectedPackage.price.toLocaleString() 
                                         : `${service.price_range.min.toLocaleString()} - ${service.price_range.max.toLocaleString()}`}
                                 </span>
-                                <span className="text-xs font-bold text-slate-500 uppercase">RWF</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase">RWF</span>
                             </div>
-                        </div>
-                        <div className="hidden lg:block h-10 w-[1px] bg-white/10" />
-                        <div className="hidden lg:flex items-center gap-4">
-                            <div className="flex -space-x-2">
-                                {[1,2,3].map(i => <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800" />)}
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Limited Slots Available</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="flex items-center gap-3 w-auto">
                         <Button 
-                            className="flex-1 md:flex-none h-14 md:h-16 px-10 rounded-2xl bg-[#668c65] text-white hover:bg-white hover:text-slate-900 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
+                            className="h-12 md:h-16 px-6 md:px-10 rounded-xl md:rounded-3xl bg-[#668c65] text-white hover:bg-white hover:text-slate-900 font-bold uppercase tracking-[0.2em] text-[10px] transition-all"
                             onClick={(e) => handleBookingClick(e, `/booking/${service.id}?packageId=${selectedPackage?.id}&packageName=${encodeURIComponent(selectedPackage?.name || "")}`)}
                         >
-                            Confirm Booking
+                            Book<span className="hidden xs:inline"> Now</span>
                         </Button>
                         <Button 
                             variant="outline" 
-                            className="h-14 md:h-16 px-8 rounded-2xl border-white/10 bg-transparent text-white hover:bg-white/5 font-bold uppercase tracking-[0.2em] text-[10px] transition-all hidden sm:flex"
+                            className="h-12 md:h-16 px-6 md:px-8 rounded-xl md:rounded-3xl border-white/10 bg-transparent text-white hover:bg-white/5 font-bold uppercase tracking-[0.2em] text-[10px] transition-all hidden sm:flex"
                             onClick={handleInquiryClick}
                         >
                            Inquiry
@@ -1322,15 +1315,30 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
             {/* Lightbox Dialog (Keep Existing) */}
             <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-                <DialogContent className="max-w-[90vw] md:max-w-5xl h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none flex items-center justify-center">
+                <DialogContent showCloseButton={false} className="max-w-[90vw] md:max-w-5xl h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none flex items-center justify-center">
                    <DialogTitle className="sr-only">Image Gallery</DialogTitle>
                    <DialogDescription className="sr-only">Viewing image in full screen</DialogDescription>
                    {selectedImage && (
-                       <div className="relative w-full h-full flex flex-col items-center justify-center group/lightbox">
+                       <div 
+                           className="relative w-full h-full flex flex-col items-center justify-center group/lightbox"
+                           onClick={() => setSelectedImage(null)}
+                       >
+                           {/* Modern Close Button */}
+                           <button 
+                               className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-all duration-300 border border-white/10 hover:scale-105 active:scale-95"
+                               onClick={(e) => {
+                                   e.stopPropagation();
+                                   setSelectedImage(null);
+                               }}
+                           >
+                               <X className="h-5 w-5" />
+                           </button>
+
                            <img 
                                src={selectedImage.url} 
                                alt={selectedImage.caption || "Gallery visual"} 
-                               className="max-w-full max-h-full object-contain rounded-2xl" 
+                               className="max-w-full max-h-full object-contain rounded-2xl select-none" 
+                               onClick={(e) => e.stopPropagation()}
                            />
 
                            {/* Navigation Arrows */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,17 @@ import {
   TrendingUp,
   Heart,
   Eye,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePopularServices } from "@/hooks/usePopularServices";
 import { TranslatedText } from "@/components/translated-text";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 
 // ── Category filter tabs ───────────────────────────────────────────────────────
 
@@ -194,6 +201,33 @@ export function PopularServicesSection() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
   const tabsRef = useRef<HTMLDivElement>(null);
   const { data: services, isLoading, isError } = usePopularServices(8, activeCategory);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <section className="py-12 md:py-20 relative bg-white overflow-hidden animate-pulse">
+        <div className="container mx-auto max-w-7xl px-4 relative z-10">
+          <div className="space-y-3 mb-8">
+            <div className="h-4 w-24 bg-slate-100 rounded" />
+            <div className="h-8 w-64 bg-slate-100 rounded" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-[24px] overflow-hidden border border-slate-100 p-4 space-y-4">
+                <div className="h-40 bg-slate-100 rounded-2xl" />
+                <div className="h-4 bg-slate-100 rounded w-3/4" />
+                <div className="h-3 bg-slate-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (isError && !services?.length) return null;
 
@@ -225,13 +259,24 @@ export function PopularServicesSection() {
             </p>
           </div>
 
-          {/* CTA — inline on mobile, end of row on desktop */}
-          <div className="flex-shrink-0">
-            <Link href="/services">
+          {/* Custom navigation controls & View All button on top right */}
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end flex-shrink-0">
+            {/* Swiper Arrow navigation controls */}
+            <div className="flex items-center gap-2">
+              <button className="popular-prev w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white active:scale-95 transition-all flex items-center justify-center border border-slate-100 shadow-sm cursor-pointer disabled:opacity-40 disabled:hover:bg-slate-50 disabled:hover:text-slate-500">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button className="popular-next w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white active:scale-95 transition-all flex items-center justify-center border border-slate-100 shadow-sm cursor-pointer disabled:opacity-40 disabled:hover:bg-slate-50 disabled:hover:text-slate-500">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* View All Button */}
+            <Link href="/services" className="hidden sm:block">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 md:h-14 px-6 md:px-8 rounded-full border-slate-200 font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-500 group w-full sm:w-auto"
+                className="h-10 px-5 rounded-full border-slate-200 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-500 group"
               >
                 <TranslatedText text="View All" />
                 <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -270,11 +315,37 @@ export function PopularServicesSection() {
           </div>
         ) : services && services.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            <Swiper
+              modules={[Navigation, Pagination]}
+              navigation={{
+                prevEl: ".popular-prev",
+                nextEl: ".popular-next",
+              }}
+              pagination={{ clickable: true }}
+              spaceBetween={16}
+              slidesPerView={1.2}
+              breakpoints={{
+                640: {
+                  slidesPerView: 2.2,
+                  spaceBetween: 20,
+                },
+                768: {
+                  slidesPerView: 2.5,
+                  spaceBetween: 24,
+                },
+                1024: {
+                  slidesPerView: 4,
+                  spaceBetween: 24,
+                },
+              }}
+              className="popular-services-swiper pb-12"
+            >
               {services.map((service, index) => (
-                <ServiceCard key={service.id} service={service} index={index} />
+                <SwiperSlide key={service.id} className="h-auto">
+                  <ServiceCard service={service} index={index} />
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
 
             {/* Bottom CTA */}
             <div className="mt-8 md:mt-10 text-center">
@@ -315,9 +386,26 @@ export function PopularServicesSection() {
         )}
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .popular-services-swiper .swiper-pagination-bullet {
+          background: #cbd5e1;
+          opacity: 0.6;
+          width: 8px;
+          height: 8px;
+          margin: 0 4px !important;
+        }
+        .popular-services-swiper .swiper-pagination-bullet-active {
+          opacity: 1;
+          background: #668c65;
+          width: 18px;
+          border-radius: 4px;
+        }
+        .popular-services-swiper .swiper-button-next,
+        .popular-services-swiper .swiper-button-prev {
+          display: none !important;
+        }
       `}</style>
     </section>
   );

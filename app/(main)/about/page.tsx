@@ -6,10 +6,10 @@ import { ArrowRight, Sparkles, Heart, Globe, Users, ShieldCheck } from "lucide-r
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-24">
+    <div className="min-h-screen bg-white text-slate-900 pb-16 md:pb-0 pt-4">
 
       {/* Editorial Hero */}
-      <section className="relative py-24 md:py-32 overflow-hidden">
+      <section className="relative pt-8 pb-24 md:pt-12 md:pb-32 overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-[#fdfcf9] -z-10" />
         <div className="container mx-auto px-6">
           <div className="max-w-4xl space-y-8">
