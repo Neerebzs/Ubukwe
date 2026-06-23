@@ -1,0 +1,47 @@
+# ── Documentation files (not tracked) ────────────────────────────────────────
+*.md
+!README.md
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.npm
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+.eggs/
+.pytest_cache/
+*.onnx
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.json.bak
+demo-service-payload.json
+update_ui.py
+package-lock.json
