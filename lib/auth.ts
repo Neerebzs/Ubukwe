@@ -122,7 +122,16 @@ export const authApi = {
 
   // Google OAuth 2.0 login — send the authorization code received from Google popup
   async googleLogin(code: string): Promise<any> {
-    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, { code });
+    // Send the redirect_uri so the backend uses the same value the frontend used with Google.
+    // This prevents redirect_uri_mismatch errors when www vs non-www differs.
+    const redirect_uri = typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/google/callback`
+      : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vownests.com'}/auth/google/callback`;
+
+    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, {
+      code,
+      redirect_uri,
+    });
     return response;
   },
 
