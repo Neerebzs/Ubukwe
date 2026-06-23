@@ -619,7 +619,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             </div>
 
             {/* Immersive Editorial Hero Section */}
-            <section className="relative w-full min-h-[95vh] flex items-center pt-20 bg-white overflow-hidden">
+            <section className="relative w-full min-h-[95vh] flex items-center pt-[72px] md:pt-20 bg-white overflow-hidden">
                 {/* Subtle Decorative Elements */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
@@ -791,7 +791,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
             {/* Gallery Tabs Section (Visual Art, Cinema, Live Stories, Artisan Exclusives) */}
             {(service.gallery.photos.length > 0 || service.gallery.videos.length > 0 || service.gallery.reels.length > 0 || service.promotionalMedia.offers.length > 0) && (
-                <section className="py-24 bg-white group/carousel"
+                <section className="pt-0.5 pb-8 md:py-24 bg-white group/carousel"
                     onMouseEnter={() => setIsHovered(true)}
                     onMouseLeave={() => setIsHovered(false)}>
                     <div className="container mx-auto px-6 max-w-7xl">
@@ -951,7 +951,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 </section>
             )}
              {/* Artisan Collections (Pricing) Section */}
-            <section id="collections" className="py-32 bg-[#FCFBF9] relative">
+            <section id="collections" className="pt-0.5 pb-8 md:py-32 bg-[#FCFBF9] relative">
                 <div className="container mx-auto px-6 md:px-12 max-w-6xl">
                     <div className="text-center mb-20 space-y-4">
                         <div className="flex items-center justify-center gap-2 text-[#668c65]">
@@ -1061,7 +1061,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
 
 
               {/* The Narrative / Experience Section */}
-            <section className="py-32 bg-[#FCFBF9] relative overflow-hidden">
+            <section className="pt-0.5 pb-8 md:py-32 bg-[#FCFBF9] relative overflow-hidden">
                 <div className="container mx-auto px-6 md:px-12 max-w-6xl relative z-10">
                     <div className="grid lg:grid-cols-2 gap-20 items-center">
                         <div className="order-2 lg:order-1 relative">
@@ -1108,7 +1108,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             </section>
 
              {/* Stats Summary - Floating Style */}
-            <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
+            <section className="pt-0.5 pb-8 md:py-20 bg-slate-900 text-white relative overflow-hidden">
                 <div className="container mx-auto px-6 md:px-12 max-w-6xl">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
                         {[
@@ -1132,7 +1132,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             </section>
 
             {/* Client Stories (Reviews) Section */}
-            <section className="py-32 bg-white relative overflow-hidden">
+            <section className="pt-0.5 pb-8 md:py-32 bg-white relative overflow-hidden">
                  <div className="container mx-auto px-6 md:px-12 max-w-7xl">
                     <div className="grid lg:grid-cols-2 gap-20 items-center">
                         <div className="relative group">
@@ -1214,7 +1214,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
            
 
             {/* Practicalities (FAQ) Section */}
-            <section className="py-32 bg-[#FCFBF9] border-t border-slate-100">
+            <section className="pt-0.5 pb-8 md:py-32 bg-[#FCFBF9] border-t border-slate-100">
                 <div className="container mx-auto max-w-3xl px-6 md:px-12">
                     <div className="text-center mb-16 space-y-4">
                         <h2 className="text-5xl font-serif italic text-slate-900">Essential Enquiries.</h2>
