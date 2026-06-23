@@ -314,14 +314,11 @@ export default function SignInPage() {
       }
       // New Google user with no role set — show role picker
       const u = result?.user ?? userManager.getUser()
-      if (u && (!u.role || u.role === "event_owner") && !u.onboarding_completed && u.provider === "google") {
-        // Check if this is truly a new account (no username means just created)
-        const isNewUser = !u.username || u.username === u.email?.split("@")[0]
-        if (isNewUser) {
-          setPendingGoogleUser(u)
-          setRoleSelectNeeded(true)
-          return
-        }
+      if (u && !u.onboarding_completed && u.provider === "google") {
+        // Show role selection for new Google users (onboarding_completed = false)
+        setPendingGoogleUser(u)
+        setRoleSelectNeeded(true)
+        return
       }
     } catch {
       // handled by mutation onError
@@ -332,9 +329,12 @@ export default function SignInPage() {
     if (!pendingGoogleUser) return
     setRoleSelectLoading(true)
     try {
-      // Update the user's role via the profile endpoint
-      await apiClient.put(`/api/v1/auth/update-profile`, { role })
-      const updatedUser = { ...pendingGoogleUser, role }
+      // Update the user's role and mark onboarding as complete
+      await apiClient.put(`/api/v1/auth/update-profile`, { 
+        role,
+        onboarding_completed: true  // Mark onboarding complete after role selection
+      })
+      const updatedUser = { ...pendingGoogleUser, role, onboarding_completed: true }
       userManager.setUser(updatedUser)
       setRoleSelectNeeded(false)
       setPendingGoogleUser(null)
