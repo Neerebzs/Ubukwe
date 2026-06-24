@@ -237,9 +237,20 @@ export default function SignInPage() {
     isGoogleLoggingIn,
     verifyTwoFactor,
     isVerifyingTwoFactor,
+    user,
   } = useAuth()
 
-  const isAnyLoading = isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor || isAuthenticated
+  // Show loading only when actually processing, not when waiting for role selection
+  const isAnyLoading = (isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor) && !roleSelectNeeded
+
+  // ── Detect Google user needing role selection ─────────────────────────────
+  // This handles cases where the user is already authenticated but hasn't completed onboarding
+  React.useEffect(() => {
+    if (user && !user.onboarding_completed && !roleSelectNeeded && !twoFARequired) {
+      setPendingGoogleUser(user)
+      setRoleSelectNeeded(true)
+    }
+  }, [user, roleSelectNeeded, twoFARequired])
 
   // ── Handle full-page redirect fallback (mobile — popup blocked) ──────────────
   // When Google redirects back via /auth/google/callback on mobile,
@@ -312,14 +323,16 @@ export default function SignInPage() {
         setTwoFARequired(true)
         return
       }
-      // New Google user with no role set — show role picker
+      // The useAuth hook will NOT redirect if onboarding is incomplete
+      // Check if user needs role selection after successful Google login
       const u = result?.user ?? userManager.getUser()
-      if (u && !u.onboarding_completed && u.provider === "google") {
+      if (u && !u.onboarding_completed) {
         // Show role selection for new Google users (onboarding_completed = false)
         setPendingGoogleUser(u)
         setRoleSelectNeeded(true)
         return
       }
+      // If we get here, user has completed onboarding - useAuth will handle redirect
     } catch {
       // handled by mutation onError
     }

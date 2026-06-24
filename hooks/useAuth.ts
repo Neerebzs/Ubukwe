@@ -104,7 +104,10 @@ export const useAuth = () => {
         userRole: finalUser?.role,
       });
 
+      // ═══════════════════════════════════════════════════════════════════════
       // Redirect to appropriate dashboard based on user role
+      // Email login users should always have a valid role (event_owner or service_provider)
+      // ═══════════════════════════════════════════════════════════════════════
       if (finalUser?.role === 'admin') {
         router.push('/admin/dashboard');
       } else if (finalUser?.role === 'service_provider') {
@@ -113,8 +116,13 @@ export const useAuth = () => {
         } else {
           router.push('/provider/dashboard');
         }
-      } else {
+      } else if (finalUser?.role === 'event_owner') {
         router.push('/customer/dashboard');
+      } else {
+        // This shouldn't happen for email login, but handle edge case
+        toast.error('Invalid user role. Please contact support.');
+        tokenManager.clearTokens();
+        userManager.clearUser();
       }
     },
     onError: (error: Error) => {
@@ -280,6 +288,23 @@ export const useAuth = () => {
       }
 
       const finalUser = result.user;
+      
+      // ═══════════════════════════════════════════════════════════════════════
+      // CRITICAL: Check if user needs to complete onboarding (role selection)
+      // ═══════════════════════════════════════════════════════════════════════
+      // New Google users have role='USER' (placeholder) and onboarding_completed=false
+      // They MUST select a role before accessing any dashboard
+      if (finalUser && !finalUser.onboarding_completed) {
+        // Don't redirect yet - let signin page show role selection modal
+        trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
+          userId: finalUser?.id,
+          userRole: finalUser?.role,
+          onboardingRequired: true,
+        });
+        toast.success('Welcome! Please select your role to continue.');
+        return; // Stay on signin page, role selection modal will appear
+      }
+
       trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
         userId: finalUser?.id,
         userRole: finalUser?.role,
@@ -287,12 +312,17 @@ export const useAuth = () => {
 
       toast.success('Signed in with Google!');
 
+      // Only redirect if onboarding is complete and user has a valid role
       if (finalUser?.role === 'admin') {
         router.push('/admin/dashboard');
       } else if (finalUser?.role === 'service_provider') {
         router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
-      } else {
+      } else if (finalUser?.role === 'event_owner') {
         router.push('/customer/dashboard');
+      } else {
+        // Fallback: if role is still 'USER' or invalid, show role selection
+        toast.error('Please complete your profile setup.');
+        return; // Stay on signin page
       }
     },
     onError: (error: Error) => {
@@ -346,12 +376,15 @@ export const useAuth = () => {
         method: '2fa',
       });
 
+      // Redirect based on role (2FA users should have completed onboarding)
       if (finalUser?.role === 'admin') {
         router.push('/admin/dashboard');
       } else if (finalUser?.role === 'service_provider') {
         router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
-      } else {
+      } else if (finalUser?.role === 'event_owner') {
         router.push('/customer/dashboard');
+      } else {
+        toast.error('Invalid user role. Please contact support.');
       }
     },
     onError: (error: Error) => {
