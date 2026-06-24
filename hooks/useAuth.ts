@@ -8,6 +8,60 @@ import { useRouter } from 'next/navigation';
 import { initiateGoogleLogin } from '@/lib/googleOAuth';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ROLE VALIDATION CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+// Only these 3 roles can access dashboards:
+const VALID_ROLES = {
+  ADMIN: 'admin',
+  SERVICE_PROVIDER: 'service_provider',
+  EVENT_OWNER: 'event_owner',
+} as const;
+
+// Type for valid roles
+type ValidRole = typeof VALID_ROLES[keyof typeof VALID_ROLES];
+
+/**
+ * Checks if a role is valid for dashboard access.
+ * 
+ * Valid roles:
+ * - 'admin' → Admin dashboard
+ * - 'service_provider' → Provider dashboard
+ * - 'event_owner' → Customer dashboard
+ * 
+ * Any other role (including 'USER' placeholder) is INVALID.
+ */
+function isValidRole(role: string | undefined | null): role is ValidRole {
+  if (!role) return false;
+  return (
+    role === VALID_ROLES.ADMIN ||
+    role === VALID_ROLES.SERVICE_PROVIDER ||
+    role === VALID_ROLES.EVENT_OWNER
+  );
+}
+
+/**
+ * Gets the correct dashboard path for a valid role.
+ * Returns null if role is invalid.
+ */
+function getDashboardPath(user: User | null | undefined): string | null {
+  if (!user || !isValidRole(user.role)) {
+    return null;
+  }
+
+  switch (user.role) {
+    case VALID_ROLES.ADMIN:
+      return '/admin/dashboard';
+    case VALID_ROLES.SERVICE_PROVIDER:
+      return user.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding';
+    case VALID_ROLES.EVENT_OWNER:
+      return '/customer/dashboard';
+    default:
+      return null;
+  }
+}
+// ═══════════════════════════════════════════════════════════════════════════
+
 // Query keys
 export const authKeys = {
   all: ['auth'] as const,
@@ -105,21 +159,15 @@ export const useAuth = () => {
       });
 
       // ═══════════════════════════════════════════════════════════════════════
-      // Redirect to appropriate dashboard based on user role
-      // Email login users should always have a valid role (event_owner or service_provider)
+      // STRICT ROLE VALIDATION: Redirect to appropriate dashboard
       // ═══════════════════════════════════════════════════════════════════════
-      if (finalUser?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (finalUser?.role === 'service_provider') {
-        if (!finalUser?.is_verified) {
-          router.push('/provider/dashboard?tab=onboarding');
-        } else {
-          router.push('/provider/dashboard');
-        }
-      } else if (finalUser?.role === 'event_owner') {
-        router.push('/customer/dashboard');
+      const dashboardPath = getDashboardPath(finalUser);
+      
+      if (dashboardPath) {
+        router.push(dashboardPath);
       } else {
-        // This shouldn't happen for email login, but handle edge case
+        // BLOCK: Invalid role - should never happen for email login but handle edge case
+        console.error(`Invalid role detected: ${finalUser?.role}. Only 'admin', 'service_provider', or 'event_owner' allowed.`);
         toast.error('Invalid user role. Please contact support.');
         tokenManager.clearTokens();
         userManager.clearUser();
@@ -288,7 +336,7 @@ export const useAuth = () => {
       }
 
       const finalUser = result.user;
-      
+
       // ═══════════════════════════════════════════════════════════════════════
       // CRITICAL: Check if user needs to complete onboarding (role selection)
       // ═══════════════════════════════════════════════════════════════════════
@@ -312,16 +360,19 @@ export const useAuth = () => {
 
       toast.success('Signed in with Google!');
 
-      // Only redirect if onboarding is complete and user has a valid role
-      if (finalUser?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (finalUser?.role === 'service_provider') {
-        router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
-      } else if (finalUser?.role === 'event_owner') {
-        router.push('/customer/dashboard');
+      // ═══════════════════════════════════════════════════════════════════════
+      // STRICT ROLE VALIDATION: Only these 3 roles can access dashboards
+      // ═══════════════════════════════════════════════════════════════════════
+      const dashboardPath = getDashboardPath(finalUser);
+      
+      if (dashboardPath) {
+        router.push(dashboardPath);
       } else {
-        // Fallback: if role is still 'USER' or invalid, show role selection
-        toast.error('Please complete your profile setup.');
+        // BLOCK: Invalid role (including 'USER' placeholder)
+        console.error(`Invalid role detected: ${finalUser?.role}. Only 'admin', 'service_provider', or 'event_owner' allowed.`);
+        toast.error('Invalid user role. Please complete your profile setup.');
+        tokenManager.clearTokens();
+        userManager.clearUser();
         return; // Stay on signin page
       }
     },
@@ -376,15 +427,19 @@ export const useAuth = () => {
         method: '2fa',
       });
 
-      // Redirect based on role (2FA users should have completed onboarding)
-      if (finalUser?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (finalUser?.role === 'service_provider') {
-        router.push(finalUser.is_verified ? '/provider/dashboard' : '/provider/dashboard?tab=onboarding');
-      } else if (finalUser?.role === 'event_owner') {
-        router.push('/customer/dashboard');
+      // ═══════════════════════════════════════════════════════════════════════
+      // STRICT ROLE VALIDATION: Redirect based on role
+      // ═══════════════════════════════════════════════════════════════════════
+      const dashboardPath = getDashboardPath(finalUser);
+      
+      if (dashboardPath) {
+        router.push(dashboardPath);
       } else {
+        // BLOCK: Invalid role
+        console.error(`Invalid role detected: ${finalUser?.role}. Only 'admin', 'service_provider', or 'event_owner' allowed.`);
         toast.error('Invalid user role. Please contact support.');
+        tokenManager.clearTokens();
+        userManager.clearUser();
       }
     },
     onError: (error: Error) => {
