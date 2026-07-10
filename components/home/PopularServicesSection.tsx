@@ -372,7 +372,7 @@ export function PopularServicesSection() {
         )}
       </div>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{__html: `
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .popular-services-swiper .swiper-pagination-bullet {
@@ -392,7 +392,7 @@ export function PopularServicesSection() {
         .popular-services-swiper .swiper-button-prev {
           display: none !important;
         }
-      `}</style>
+      `}} />
     </section>
   );
 }
