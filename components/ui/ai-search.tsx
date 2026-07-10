@@ -174,11 +174,11 @@ export function AISearch({ className, open, onClose }: AISearchProps) {
           />
         </div>
 
-        {/* Red search button */}
+        {/* Search button — system primary colour */}
         <button
           type="button"
           onClick={handleSearchSubmit}
-          className="h-[50px] w-[54px] flex-shrink-0 flex items-center justify-center rounded-r-full bg-[#e8392a] hover:bg-[#cc2f22] transition-colors"
+          className="h-[50px] w-[54px] flex-shrink-0 flex items-center justify-center rounded-r-full bg-(--primary) hover:bg-(--primary)/90 transition-colors"
           aria-label="Search"
         >
           <Search className="h-[17px] w-[17px] text-white" />
@@ -225,12 +225,12 @@ export function AISearch({ className, open, onClose }: AISearchProps) {
                 />
               </div>
 
-              {/* Search button */}
+              {/* Search button — system primary colour */}
               <button
                 type="button"
                 onClick={e => { e.stopPropagation(); query.trim() && search(query, location); }}
                 disabled={!query.trim() || isLoading}
-                className="h-11 w-11 flex items-center justify-center rounded-full bg-[#e8392a] hover:bg-[#cc2f22] disabled:bg-slate-200 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                className="h-11 w-11 flex items-center justify-center rounded-full bg-(--primary) hover:bg-(--primary)/90 disabled:bg-slate-200 disabled:cursor-not-allowed transition-colors flex-shrink-0"
               >
                 {isLoading
                   ? <Loader2 className="h-4 w-4 text-white animate-spin" />
