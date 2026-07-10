@@ -59,7 +59,7 @@ export function Navbar() {
           </Link>
 
           {/* Search Bar - desktop only via CSS (avoids hydration flash from isMobile) */}
-          <div className="flex-1 mx-8 max-w-xl hidden md:block">
+          <div className="flex-1 mx-6 max-w-2xl hidden md:block">
             <AISearch />
           </div>
 
