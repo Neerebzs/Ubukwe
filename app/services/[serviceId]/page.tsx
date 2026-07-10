@@ -35,6 +35,20 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     const [isFavorite, setIsFavorite] = useState(false)
     const [selectedPackage, setSelectedPackage] = useState<any>(null)
     const [selectedImage, setSelectedImage] = useState<{url: string, caption?: string, index?: number} | null>(null)
+    const [mediaViewerOpen, setMediaViewerOpen] = useState(false)
+    const [mediaViewerIndex, setMediaViewerIndex] = useState(0)
+
+    // Keyboard navigation for media viewer
+    React.useEffect(() => {
+        if (!mediaViewerOpen) return
+        const handleKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setMediaViewerOpen(false)
+            if (e.key === "ArrowRight") setMediaViewerIndex(prev => prev + 1)
+            if (e.key === "ArrowLeft") setMediaViewerIndex(prev => prev - 1)
+        }
+        window.addEventListener("keydown", handleKey)
+        return () => window.removeEventListener("keydown", handleKey)
+    }, [mediaViewerOpen])
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [pendingBookingUrl, setPendingBookingUrl] = useState("")
     const [authModalContext, setAuthModalContext] = useState("")
@@ -838,7 +852,11 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                             <div key={i} className="w-full">
                                                 <div 
                                                     className="relative aspect-square md:aspect-[4/5] rounded-2xl md:rounded-[32px] overflow-hidden group/item cursor-pointer shadow-md hover:shadow-xl transition-all duration-700"
-                                                    onClick={() => setSelectedImage({url: item.url, caption: item.caption, index: i})}
+                                                    onClick={() => {
+                                                        setMediaViewerIndex(i)
+                                                        setMediaViewerOpen(true)
+                                                        setSelectedImage({url: item.url, caption: item.caption, index: i})
+                                                    }}
                                                 >
                                                     <img src={item.url} alt="Still art" className="absolute inset-0 w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-1000" />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-40 group-hover/item:opacity-70 transition-opacity" />
@@ -860,14 +878,27 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-6 gap-3 md:gap-6 pb-8 pt-6">
                                         {service.gallery.videos.map((video: any, i: number) => (
                                             <div key={i} className="w-full">
-                                                <div className="relative aspect-video md:aspect-[4/3] lg:aspect-[4/3] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
-                                                    <video
-                                                        src={video.url}
-                                                        controls
-                                                        preload="metadata"
-                                                        poster={video.thumbnail && !video.thumbnail.endsWith('.mp4') && !video.thumbnail.endsWith('.mov') ? video.thumbnail : undefined}
-                                                        className="w-full h-full object-contain bg-black"
-                                                    />
+                                                <div 
+                                                    className="relative aspect-video md:aspect-[4/3] lg:aspect-[4/3] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900 cursor-pointer group/item"
+                                                    onClick={() => {
+                                                        const offset = service.gallery.photos.length
+                                                        setMediaViewerIndex(offset + i)
+                                                        setMediaViewerOpen(true)
+                                                        setSelectedImage({url: video.url, caption: video.title, index: offset + i})
+                                                    }}
+                                                >
+                                                    {video.thumbnail && !video.thumbnail.endsWith('.mp4') && !video.thumbnail.endsWith('.mov') ? (
+                                                        <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                                                            <Play className="w-10 h-10 text-white/40" />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/30 group-hover/item:bg-black/50 transition-colors flex items-center justify-center">
+                                                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                            <Play className="h-5 w-5 text-white fill-white ml-0.5" />
+                                                        </div>
+                                                    </div>
                                                     {video.title && (
                                                         <div className="absolute bottom-0 left-0 right-0 px-4 py-3 md:px-6 md:py-4 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
                                                             <p className="text-sm font-serif italic text-white line-clamp-1">{video.title}</p>
@@ -885,14 +916,27 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6 pb-8 pt-6">
                                         {service.gallery.reels.map((reel: any, i: number) => (
                                             <div key={i} className="w-full">
-                                                <div className="relative aspect-[9/16] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900">
-                                                    <video
-                                                        src={reel.url}
-                                                        controls
-                                                        preload="metadata"
-                                                        poster={reel.thumbnail && !reel.thumbnail.endsWith('.mp4') && !reel.thumbnail.endsWith('.mov') ? reel.thumbnail : undefined}
-                                                        className="w-full h-full object-contain bg-black"
-                                                    />
+                                                <div 
+                                                    className="relative aspect-[9/16] rounded-2xl md:rounded-[32px] overflow-hidden shadow-md hover:shadow-xl transition-all duration-700 bg-slate-900 cursor-pointer group/item"
+                                                    onClick={() => {
+                                                        const offset = service.gallery.photos.length + service.gallery.videos.length
+                                                        setMediaViewerIndex(offset + i)
+                                                        setMediaViewerOpen(true)
+                                                        setSelectedImage({url: reel.url, caption: reel.title, index: offset + i})
+                                                    }}
+                                                >
+                                                    {reel.thumbnail && !reel.thumbnail.endsWith('.mp4') && !reel.thumbnail.endsWith('.mov') ? (
+                                                        <img src={reel.thumbnail} alt={reel.title} className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                                                            <Play className="w-8 h-8 text-white/40" />
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute inset-0 bg-black/30 group-hover/item:bg-black/50 transition-colors flex items-center justify-center">
+                                                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center group-hover/item:scale-110 transition-transform">
+                                                            <Play className="h-4 w-4 text-white fill-white ml-0.5" />
+                                                        </div>
+                                                    </div>
                                                     {reel.title && (
                                                         <div className="absolute bottom-0 left-0 right-0 px-3 py-2 md:px-4 md:py-3 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
                                                             <p className="text-xs font-serif italic text-white line-clamp-1">{reel.title}</p>
@@ -1316,73 +1360,169 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 contextMessage={authModalContext || "Sign in or create a free account to continue booking this service. After logging in, you'll be taken directly to the booking details page."}
             />
 
-            {/* Lightbox Dialog (Keep Existing) */}
-            <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-                <DialogContent showCloseButton={false} className="max-w-[90vw] md:max-w-5xl h-[90vh] p-0 overflow-hidden border-none bg-transparent shadow-none flex items-center justify-center">
-                   <DialogTitle className="sr-only">Image Gallery</DialogTitle>
-                   <DialogDescription className="sr-only">Viewing image in full screen</DialogDescription>
-                   {selectedImage && (
-                       <div 
-                           className="relative w-full h-full flex flex-col items-center justify-center group/lightbox"
-                           onClick={() => setSelectedImage(null)}
-                       >
-                           {/* Modern Close Button */}
-                           <button 
-                               className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-12 h-12 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-all duration-300 border border-white/10 hover:scale-105 active:scale-95"
-                               onClick={(e) => {
-                                   e.stopPropagation();
-                                   setSelectedImage(null);
-                               }}
-                           >
-                               <X className="h-5 w-5" />
-                           </button>
+            {/* ── Immersive Media Viewer (Instagram / TikTok style) ─────────── */}
+            <AnimatePresence>
+            {mediaViewerOpen && (() => {
+                // Build a flat list of ALL media: photos → videos → reels
+                const allMedia: Array<{url: string; caption?: string; type: 'photo'|'video'|'reel'}> = [
+                    ...service.gallery.photos.map((p: any) => ({ url: p.url, caption: p.caption, type: 'photo' as const })),
+                    ...service.gallery.videos.map((v: any) => ({ url: v.url, caption: v.title, type: 'video' as const })),
+                    ...service.gallery.reels.map((r: any) => ({ url: r.url, caption: r.title, type: 'reel' as const })),
+                ]
+                if (allMedia.length === 0) return null
 
-                           <img 
-                               src={selectedImage.url} 
-                               alt={selectedImage.caption || "Gallery visual"} 
-                               className="max-w-full max-h-full object-contain rounded-2xl select-none" 
-                               onClick={(e) => e.stopPropagation()}
-                           />
+                const clampedIndex = Math.min(mediaViewerIndex, allMedia.length - 1)
+                const current = allMedia[clampedIndex]
 
-                           {/* Navigation Arrows */}
-                           {selectedImage.index !== undefined && service.gallery.photos.length > 1 && (
-                               <>
-                                   <button 
-                                       className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 md:opacity-100 group-hover/lightbox:opacity-100 disabled:opacity-0 z-50"
-                                       onClick={(e) => {
-                                           e.stopPropagation();
-                                           const prevIndex = selectedImage.index! > 0 ? selectedImage.index! - 1 : service.gallery.photos.length - 1;
-                                           const prevItem = service.gallery.photos[prevIndex];
-                                           setSelectedImage({ url: prevItem.url, caption: prevItem.caption, index: prevIndex });
-                                       }}
-                                   >
-                                       <ChevronLeft className="h-6 w-6" />
-                                   </button>
-                                   <button 
-                                       className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition-all duration-300 opacity-0 md:opacity-100 group-hover/lightbox:opacity-100 disabled:opacity-0 z-50"
-                                       onClick={(e) => {
-                                           e.stopPropagation();
-                                           const nextIndex = selectedImage.index! < service.gallery.photos.length - 1 ? selectedImage.index! + 1 : 0;
-                                           const nextItem = service.gallery.photos[nextIndex];
-                                           setSelectedImage({ url: nextItem.url, caption: nextItem.caption, index: nextIndex });
-                                       }}
-                                   >
-                                       <ChevronRight className="h-6 w-6" />
-                                   </button>
-                               </>
-                           )}
+                const goTo = (idx: number) => setMediaViewerIndex((idx + allMedia.length) % allMedia.length)
 
-                           {selectedImage.caption && (
-                               <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-                                   <div className="bg-black/60 shadow-xl backdrop-blur-md px-6 py-3 rounded-full border border-white/10 z-50">
-                                       <p className="text-white text-sm font-medium italic font-serif">{selectedImage.caption}</p>
-                                   </div>
-                               </div>
-                           )}
-                       </div>
-                   )}
-                </DialogContent>
-            </Dialog>
+                return (
+                    <motion.div
+                        key="media-viewer"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex"
+                        onClick={() => setMediaViewerOpen(false)}
+                    >
+                        {/* ── Left: Thumbnail Strip (desktop only) ─── */}
+                        <div
+                            className="hidden lg:flex flex-col w-[88px] border-r border-white/[0.06] overflow-y-auto scrollbar-hide py-4 gap-2 px-2 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {allMedia.map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => goTo(idx)}
+                                    className={cn(
+                                        "relative w-full aspect-square rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 ring-offset-0",
+                                        idx === clampedIndex
+                                            ? "ring-2 ring-white scale-[1.04] shadow-lg"
+                                            : "opacity-50 hover:opacity-80 hover:scale-[1.02]"
+                                    )}
+                                >
+                                    {item.type === 'photo' ? (
+                                        <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                                            <Play className="w-4 h-4 text-white/60 fill-white/60" />
+                                        </div>
+                                    )}
+                                    {/* type badge */}
+                                    <div className="absolute bottom-1 right-1">
+                                        {item.type === 'video' && <div className="w-4 h-4 rounded-full bg-[#668c65] flex items-center justify-center"><Play className="w-2 h-2 text-white fill-white" /></div>}
+                                        {item.type === 'reel'  && <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center"><Play className="w-2 h-2 text-white fill-white" /></div>}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* ── Center: Main Media ─── */}
+                        <div
+                            className="flex-1 flex flex-col items-center justify-center relative min-w-0"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Top bar */}
+                            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-4 z-10 bg-gradient-to-b from-black/60 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                                        current.type === 'photo' ? "bg-white/10 text-white/80" :
+                                        current.type === 'video' ? "bg-[#668c65]/80 text-white" :
+                                        "bg-rose-500/80 text-white"
+                                    )}>
+                                        {current.type === 'photo' ? 'Photo' : current.type === 'video' ? 'Cinema' : 'Story'}
+                                    </div>
+                                    <span className="text-white/40 text-[11px] font-bold">
+                                        {clampedIndex + 1} / {allMedia.length}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setMediaViewerOpen(false)}
+                                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            {/* Media */}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={clampedIndex}
+                                    initial={{ opacity: 0, scale: 0.97 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 1.02 }}
+                                    transition={{ duration: 0.22, ease: "easeOut" }}
+                                    className="w-full h-full flex items-center justify-center px-16 py-20"
+                                >
+                                    {current.type === 'photo' ? (
+                                        <img
+                                            src={current.url}
+                                            alt={current.caption || ''}
+                                            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl select-none"
+                                            draggable={false}
+                                        />
+                                    ) : (
+                                        <video
+                                            key={current.url}
+                                            src={current.url}
+                                            controls
+                                            autoPlay
+                                            className={cn(
+                                                "max-h-full object-contain rounded-2xl shadow-2xl",
+                                                current.type === 'reel' ? "max-w-[380px]" : "max-w-full w-full"
+                                            )}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Prev / Next arrows */}
+                            {allMedia.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={() => goTo(clampedIndex - 1)}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => goTo(clampedIndex + 1)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        <ChevronRight className="h-5 w-5" />
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Caption + dot strip (bottom) */}
+                            <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex flex-col items-center gap-3 bg-gradient-to-t from-black/60 to-transparent pt-10 pointer-events-none">
+                                {current.caption && (
+                                    <p className="text-white font-serif italic text-base text-center line-clamp-2 drop-shadow-lg">
+                                        {current.caption}
+                                    </p>
+                                )}
+                                {/* Dot strip — mobile only (desktop uses thumbnail strip) */}
+                                <div className="flex lg:hidden items-center gap-1.5 pointer-events-auto">
+                                    {allMedia.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => goTo(idx)}
+                                            className={cn(
+                                                "rounded-full transition-all duration-300",
+                                                idx === clampedIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/30 hover:bg-white/60"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )
+            })()}
+            </AnimatePresence>
 
             <style jsx>{`
                 .scrollbar-hide::-webkit-scrollbar {
