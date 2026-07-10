@@ -9,7 +9,9 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import {
   Calendar, MapPin, Search, Music, Palette, UtensilsCrossed,
-  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark, Loader2, X, CalendarDays
+  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark, Loader2, X, CalendarDays,
+  Heart, Briefcase, Users, PartyPopper, Trophy, Laugh,
+  GlassWater, Drama, Handshake, Gift, Star
 } from "lucide-react"
 import Link from "next/link"
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav"
@@ -29,13 +31,42 @@ export default function EventsPage() {
   )
 
   const categories = [
-    { id: "all",               name: "All",              icon: null },
-    { id: "concert",           name: "Music & Concerts", icon: <Music className="h-4 w-4" /> },
-    { id: "cultural_event",    name: "Arts & Culture",   icon: <Palette className="h-4 w-4" /> },
-    { id: "sports_event",      name: "Sports",           icon: <Dumbbell className="h-4 w-4" /> },
-    { id: "festival",          name: "Festival",         icon: <Mic2 className="h-4 w-4" /> },
-    { id: "movie_screening",   name: "Cinema",           icon: <Film className="h-4 w-4" /> },
-    { id: "other",             name: "More",             icon: <MoreHorizontal className="h-4 w-4" /> },
+    // Meta
+    { id: "all",                  name: "All",               icon: null,                                          group: null },
+    // Wedding Events
+    { id: "wedding",              name: "Wedding",            icon: <Heart className="h-4 w-4" />,                group: "Wedding" },
+    { id: "reception",            name: "Reception",          icon: <Heart className="h-4 w-4" />,                group: "Wedding" },
+    { id: "ceremony",             name: "Ceremony",           icon: <Heart className="h-4 w-4" />,                group: "Wedding" },
+    { id: "rehearsal",            name: "Rehearsal",          icon: <Heart className="h-4 w-4" />,                group: "Wedding" },
+    { id: "engagement",           name: "Engagement",         icon: <Heart className="h-4 w-4" />,                group: "Wedding" },
+    // Entertainment
+    { id: "concert",              name: "Concert",            icon: <Music className="h-4 w-4" />,                group: "Entertainment" },
+    { id: "festival",             name: "Festival",           icon: <Mic2 className="h-4 w-4" />,                 group: "Entertainment" },
+    { id: "comedy_show",          name: "Comedy Show",        icon: <Laugh className="h-4 w-4" />,                group: "Entertainment" },
+    { id: "theater",              name: "Theater",            icon: <Drama className="h-4 w-4" />,                group: "Entertainment" },
+    { id: "movie_screening",      name: "Cinema",             icon: <Film className="h-4 w-4" />,                 group: "Entertainment" },
+    // Sports
+    { id: "sports_event",         name: "Sports",             icon: <Dumbbell className="h-4 w-4" />,             group: "Sports" },
+    { id: "tournament",           name: "Tournament",         icon: <Trophy className="h-4 w-4" />,               group: "Sports" },
+    // Business
+    { id: "conference",           name: "Conference",         icon: <Briefcase className="h-4 w-4" />,            group: "Business" },
+    { id: "seminar",              name: "Seminar",            icon: <Briefcase className="h-4 w-4" />,            group: "Business" },
+    { id: "workshop",             name: "Workshop",           icon: <Briefcase className="h-4 w-4" />,            group: "Business" },
+    { id: "networking",           name: "Networking",         icon: <Handshake className="h-4 w-4" />,            group: "Business" },
+    { id: "trade_show",           name: "Trade Show",         icon: <Briefcase className="h-4 w-4" />,            group: "Business" },
+    // Social & Community
+    { id: "party",                name: "Party",              icon: <PartyPopper className="h-4 w-4" />,          group: "Social" },
+    { id: "fundraiser",           name: "Fundraiser",         icon: <Gift className="h-4 w-4" />,                 group: "Social" },
+    { id: "charity_event",        name: "Charity",            icon: <Gift className="h-4 w-4" />,                 group: "Social" },
+    { id: "community_gathering",  name: "Community",          icon: <Users className="h-4 w-4" />,                group: "Social" },
+    // Cultural & Arts
+    { id: "exhibition",           name: "Exhibition",         icon: <Palette className="h-4 w-4" />,              group: "Cultural" },
+    { id: "art_show",             name: "Art Show",           icon: <Palette className="h-4 w-4" />,              group: "Cultural" },
+    { id: "cultural_event",       name: "Cultural",           icon: <Star className="h-4 w-4" />,                 group: "Cultural" },
+    // Food & Drink
+    { id: "wine_tasting",         name: "Wine Tasting",       icon: <GlassWater className="h-4 w-4" />,           group: "Food & Drink" },
+    // Other
+    { id: "other",                name: "Other",              icon: <MoreHorizontal className="h-4 w-4" />,       group: null },
   ]
 
   // Filter events based on active tab — past events are always excluded
@@ -99,21 +130,36 @@ export default function EventsPage() {
       <div className="sticky top-20 z-40 bg-white/80 backdrop-blur-xl border-y border-slate-100/50">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  variant="ghost"
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`h-11 px-6 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${selectedCategory === category.id
-                      ? "bg-[#608d64] text-white shadow-lg shadow-[#608d64]/20"
-                      : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                    }`}
-                >
-                  {category.icon && <span className="mr-3 scale-110">{category.icon}</span>}
-                  <span>{category.name}</span>
-                </Button>
-              ))}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 md:pb-0">
+              {(() => {
+                const rendered: JSX.Element[] = []
+                let lastGroup: string | null = undefined as any
+                categories.forEach((category) => {
+                  // Insert a thin divider when group changes (skip for "all" and null groups)
+                  if (category.group !== lastGroup && lastGroup !== undefined && category.group !== null && lastGroup !== null) {
+                    rendered.push(
+                      <div key={`sep-${category.id}`} className="h-6 w-[1px] bg-slate-100 flex-shrink-0" />
+                    )
+                  }
+                  lastGroup = category.group
+                  rendered.push(
+                    <Button
+                      key={category.id}
+                      variant="ghost"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`h-9 px-4 rounded-full text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                        selectedCategory === category.id
+                          ? "bg-[#608d64] text-white shadow-lg shadow-[#608d64]/20"
+                          : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                      }`}
+                    >
+                      {category.icon && <span className="mr-2">{category.icon}</span>}
+                      <span>{category.name}</span>
+                    </Button>
+                  )
+                })
+                return rendered
+              })()}
             </div>
 
             <div className="flex items-center gap-6 md:border-l md:border-slate-100 md:pl-8 overflow-hidden">
