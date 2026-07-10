@@ -10,6 +10,9 @@ const nextConfig = {
     unoptimized: true,
   },
 
+  // Swiper is an ESM-only package — must be transpiled for Next.js App Router
+  transpilePackages: ["swiper"],
+
   // ── HTTP Cache-Control headers ──────────────────────────────────────────────
   // Prevents browsers and CDNs from caching HTML pages.
   // Next.js already sets content-hash filenames on all JS/CSS chunks so those
