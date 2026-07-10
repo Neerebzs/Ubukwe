@@ -1364,17 +1364,71 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             <AnimatePresence>
             {mediaViewerOpen && (() => {
                 // Build a flat list of ALL media: photos → videos → reels
-                const allMedia: Array<{url: string; caption?: string; type: 'photo'|'video'|'reel'}> = [
-                    ...service.gallery.photos.map((p: any) => ({ url: p.url, caption: p.caption, type: 'photo' as const })),
-                    ...service.gallery.videos.map((v: any) => ({ url: v.url, caption: v.title, type: 'video' as const })),
-                    ...service.gallery.reels.map((r: any) => ({ url: r.url, caption: r.title, type: 'reel' as const })),
+                const allMedia: Array<{url: string; caption?: string; type: 'photo'|'video'|'reel'; thumbnail?: string}> = [
+                    ...service.gallery.photos.map((p: any) => ({ url: p.url, caption: p.caption, type: 'photo' as const, thumbnail: p.url })),
+                    ...service.gallery.videos.map((v: any) => ({ url: v.url, caption: v.title, type: 'video' as const, thumbnail: v.thumbnail || null })),
+                    ...service.gallery.reels.map((r: any)  => ({ url: r.url, caption: r.title, type: 'reel'  as const, thumbnail: r.thumbnail || null })),
                 ]
                 if (allMedia.length === 0) return null
 
-                const clampedIndex = Math.min(mediaViewerIndex, allMedia.length - 1)
+                const clampedIndex = Math.min(Math.max(mediaViewerIndex, 0), allMedia.length - 1)
                 const current = allMedia[clampedIndex]
-
                 const goTo = (idx: number) => setMediaViewerIndex((idx + allMedia.length) % allMedia.length)
+
+                // ── Thumbnail component — shows image or video-frame thumbnail ──
+                const MediaThumb = ({ item, idx }: { item: typeof allMedia[0]; idx: number }) => {
+                    const isActive = idx === clampedIndex
+                    return (
+                        <button
+                            onClick={() => goTo(idx)}
+                            className={cn(
+                                "relative flex-shrink-0 rounded-xl overflow-hidden transition-all duration-200",
+                                // Desktop: square, stacked vertically
+                                "lg:w-full lg:aspect-square",
+                                // Mobile: fixed size in horizontal strip
+                                "w-14 h-14 lg:h-auto",
+                                isActive
+                                    ? "ring-2 ring-white shadow-lg scale-[1.06] opacity-100"
+                                    : "opacity-50 hover:opacity-80 hover:scale-[1.03]"
+                            )}
+                        >
+                            {item.thumbnail && !item.thumbnail.endsWith('.mp4') && !item.thumbnail.endsWith('.mov') ? (
+                                // Has a real image thumbnail (photos + videos/reels that provided one)
+                                <img src={item.thumbnail} alt="" className="w-full h-full object-cover bg-slate-800" />
+                            ) : item.type === 'photo' ? (
+                                <img src={item.url} alt="" className="w-full h-full object-cover bg-slate-800" />
+                            ) : (
+                                // Video/reel with no thumbnail → render hidden video to show first frame
+                                <div className="relative w-full h-full bg-slate-800">
+                                    <video
+                                        src={item.url + '#t=0.5'}
+                                        preload="metadata"
+                                        muted
+                                        playsInline
+                                        className="w-full h-full object-cover"
+                                        onLoadedData={(e) => {
+                                            const v = e.currentTarget
+                                            v.currentTime = 0.5
+                                        }}
+                                    />
+                                </div>
+                            )}
+                            {/* Type badge */}
+                            <div className="absolute bottom-1 right-1 z-10">
+                                {item.type === 'video' && (
+                                    <div className="w-4 h-4 rounded-full bg-[#668c65] flex items-center justify-center shadow-md">
+                                        <Play className="w-2 h-2 text-white fill-white" />
+                                    </div>
+                                )}
+                                {item.type === 'reel' && (
+                                    <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center shadow-md">
+                                        <Play className="w-2 h-2 text-white fill-white" />
+                                    </div>
+                                )}
+                            </div>
+                        </button>
+                    )
+                }
 
                 return (
                     <motion.div
@@ -1383,48 +1437,26 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.25 }}
-                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex"
+                        className="fixed inset-0 z-[100] bg-black/97 backdrop-blur-xl flex flex-col lg:flex-row"
                         onClick={() => setMediaViewerOpen(false)}
                     >
                         {/* ── Left: Thumbnail Strip (desktop only) ─── */}
                         <div
-                            className="hidden lg:flex flex-col w-[88px] border-r border-white/[0.06] overflow-y-auto scrollbar-hide py-4 gap-2 px-2 flex-shrink-0"
+                            className="hidden lg:flex flex-col w-[96px] border-r border-white/[0.07] overflow-y-auto scrollbar-hide py-4 gap-2 px-2 flex-shrink-0"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {allMedia.map((item, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => goTo(idx)}
-                                    className={cn(
-                                        "relative w-full aspect-square rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 ring-offset-0",
-                                        idx === clampedIndex
-                                            ? "ring-2 ring-white scale-[1.04] shadow-lg"
-                                            : "opacity-50 hover:opacity-80 hover:scale-[1.02]"
-                                    )}
-                                >
-                                    {item.type === 'photo' ? (
-                                        <img src={item.url} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                                            <Play className="w-4 h-4 text-white/60 fill-white/60" />
-                                        </div>
-                                    )}
-                                    {/* type badge */}
-                                    <div className="absolute bottom-1 right-1">
-                                        {item.type === 'video' && <div className="w-4 h-4 rounded-full bg-[#668c65] flex items-center justify-center"><Play className="w-2 h-2 text-white fill-white" /></div>}
-                                        {item.type === 'reel'  && <div className="w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center"><Play className="w-2 h-2 text-white fill-white" /></div>}
-                                    </div>
-                                </button>
+                                <MediaThumb key={idx} item={item} idx={idx} />
                             ))}
                         </div>
 
                         {/* ── Center: Main Media ─── */}
                         <div
-                            className="flex-1 flex flex-col items-center justify-center relative min-w-0"
+                            className="flex-1 flex flex-col min-w-0 min-h-0"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Top bar */}
-                            <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-4 z-10 bg-gradient-to-b from-black/60 to-transparent">
+                            <div className="flex items-center justify-between px-4 py-3 z-10 bg-gradient-to-b from-black/70 to-transparent flex-shrink-0">
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
                                         "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
@@ -1434,7 +1466,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                     )}>
                                         {current.type === 'photo' ? 'Photo' : current.type === 'video' ? 'Cinema' : 'Story'}
                                     </div>
-                                    <span className="text-white/40 text-[11px] font-bold">
+                                    <span className="text-white/40 text-[11px] font-bold tabular-nums">
                                         {clampedIndex + 1} / {allMedia.length}
                                     </span>
                                 </div>
@@ -1446,75 +1478,89 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 </button>
                             </div>
 
-                            {/* Media */}
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={clampedIndex}
-                                    initial={{ opacity: 0, scale: 0.97 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 1.02 }}
-                                    transition={{ duration: 0.22, ease: "easeOut" }}
-                                    className="w-full h-full flex items-center justify-center px-16 py-20"
-                                >
-                                    {current.type === 'photo' ? (
-                                        <img
-                                            src={current.url}
-                                            alt={current.caption || ''}
-                                            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl select-none"
-                                            draggable={false}
-                                        />
-                                    ) : (
-                                        <video
-                                            key={current.url}
-                                            src={current.url}
-                                            controls
-                                            autoPlay
-                                            className={cn(
-                                                "max-h-full object-contain rounded-2xl shadow-2xl",
-                                                current.type === 'reel' ? "max-w-[380px]" : "max-w-full w-full"
-                                            )}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    )}
-                                </motion.div>
-                            </AnimatePresence>
-
-                            {/* Prev / Next arrows */}
-                            {allMedia.length > 1 && (
-                                <>
-                                    <button
-                                        onClick={() => goTo(clampedIndex - 1)}
-                                        className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95"
+                            {/* Media area — swipeable */}
+                            <div
+                                className="flex-1 flex items-center justify-center relative min-h-0 px-12 lg:px-16 py-2"
+                                onTouchStart={(e) => {
+                                    const touch = e.touches[0]
+                                    ;(e.currentTarget as any)._touchStartX = touch.clientX
+                                }}
+                                onTouchEnd={(e) => {
+                                    const startX = (e.currentTarget as any)._touchStartX ?? 0
+                                    const endX = e.changedTouches[0].clientX
+                                    const diff = startX - endX
+                                    if (Math.abs(diff) > 50) goTo(diff > 0 ? clampedIndex + 1 : clampedIndex - 1)
+                                }}
+                            >
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={clampedIndex}
+                                        initial={{ opacity: 0, x: 30 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -30 }}
+                                        transition={{ duration: 0.2, ease: "easeOut" }}
+                                        className="w-full h-full flex items-center justify-center"
                                     >
-                                        <ChevronLeft className="h-5 w-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => goTo(clampedIndex + 1)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95"
-                                    >
-                                        <ChevronRight className="h-5 w-5" />
-                                    </button>
-                                </>
-                            )}
+                                        {current.type === 'photo' ? (
+                                            <img
+                                                src={current.url}
+                                                alt={current.caption || ''}
+                                                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl select-none"
+                                                draggable={false}
+                                            />
+                                        ) : (
+                                            <video
+                                                key={current.url}
+                                                src={current.url}
+                                                controls
+                                                autoPlay
+                                                playsInline
+                                                className={cn(
+                                                    "max-h-full object-contain rounded-2xl shadow-2xl",
+                                                    current.type === 'reel' ? "w-full max-w-[300px] sm:max-w-[380px]" : "w-full max-w-full"
+                                                )}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        )}
+                                    </motion.div>
+                                </AnimatePresence>
 
-                            {/* Caption + dot strip (bottom) */}
-                            <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 flex flex-col items-center gap-3 bg-gradient-to-t from-black/60 to-transparent pt-10 pointer-events-none">
-                                {current.caption && (
-                                    <p className="text-white font-serif italic text-base text-center line-clamp-2 drop-shadow-lg">
+                                {/* Prev / Next arrows */}
+                                {allMedia.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={() => goTo(clampedIndex - 1)}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95 z-10"
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => goTo(clampedIndex + 1)}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 border border-white/10 text-white flex items-center justify-center backdrop-blur-md transition-all hover:scale-105 active:scale-95 z-10"
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Caption */}
+                            {current.caption && (
+                                <div className="flex-shrink-0 px-6 py-2 flex justify-center">
+                                    <p className="text-white/80 font-serif italic text-sm text-center line-clamp-2 drop-shadow-lg max-w-lg">
                                         {current.caption}
                                     </p>
-                                )}
-                                {/* Dot strip — mobile only (desktop uses thumbnail strip) */}
-                                <div className="flex lg:hidden items-center gap-1.5 pointer-events-auto">
-                                    {allMedia.map((_, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => goTo(idx)}
-                                            className={cn(
-                                                "rounded-full transition-all duration-300",
-                                                idx === clampedIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/30 hover:bg-white/60"
-                                            )}
-                                        />
+                                </div>
+                            )}
+
+                            {/* ── Bottom: Horizontal Thumbnail Strip (mobile/tablet) ── */}
+                            <div
+                                className="lg:hidden flex-shrink-0 px-3 py-3 border-t border-white/[0.07]"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                                    {allMedia.map((item, idx) => (
+                                        <MediaThumb key={idx} item={item} idx={idx} />
                                     ))}
                                 </div>
                             </div>
