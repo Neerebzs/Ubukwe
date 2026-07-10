@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { apiClient, API_ENDPOINTS } from '@/lib/api';
 import { Tag } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys, slowQueryOptions } from '@/lib/cache';
 
 export interface Offer {
   id: string;
@@ -123,46 +125,27 @@ const extractValidOffers = (services: ServiceWithOffers[]): Offer[] => {
 };
 
 export const useOffers = () => {
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Fetch all services
-        const response = await apiClient.get<ServiceWithOffers[]>(API_ENDPOINTS.SERVICES.SEARCH);
-        
-        if (response.status === 'success' && response.data) {
-          // Extract valid offers from services
-          const validOffers = extractValidOffers(response.data);
-          setOffers(validOffers);
-        } else {
-          setOffers([]);
-        }
-      } catch (err: any) {
-        console.error('Error fetching offers:', err);
-        setError(err.message || 'Failed to fetch offers');
-        setOffers([]);
-      } finally {
-        setIsLoading(false);
+  // Use TanStack Query so the result is cached and shared with other
+  // components that call usePublicServices — no duplicate API calls.
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.public.services(),
+    queryFn: async () => {
+      const response = await apiClient.get<ServiceWithOffers[]>(API_ENDPOINTS.SERVICES.SEARCH);
+      if (response.status === 'success' && response.data) {
+        return response.data;
       }
-    };
-
-    fetchOffers();
-  }, []);
+      return [];
+    },
+    // Offers are derived from service gallery — slow-changing content.
+    ...slowQueryOptions,
+    select: (services) => extractValidOffers(services),
+  });
 
   return {
-    offers,
+    offers: data ?? [],
     isLoading,
-    error,
-    refetch: () => {
-      setIsLoading(true);
-      // Re-run the effect
-    }
+    error: error ? (error as Error).message : null,
+    refetch,
   };
 };
 

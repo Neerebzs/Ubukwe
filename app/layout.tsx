@@ -141,18 +141,18 @@ export default function RootLayout({
         `}} />
         
         <PWARegister />
-        <SystemSettingsProvider>
-          <I18nProvider>
-            <QueryProvider>
+        <QueryProvider>
+          <SystemSettingsProvider>
+            <I18nProvider>
               <MobileMenuProvider>
                 {/* PageViewTracker has its own internal Suspense for useSearchParams */}
                 <PageViewTracker />
                 <Suspense fallback={null}>{children}</Suspense>
                 <Toaster />
               </MobileMenuProvider>
-            </QueryProvider>
-          </I18nProvider>
-        </SystemSettingsProvider>
+            </I18nProvider>
+          </SystemSettingsProvider>
+        </QueryProvider>
       </body>
     </html>
   )

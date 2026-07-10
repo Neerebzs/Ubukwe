@@ -14,6 +14,7 @@ import { ServiceCard } from "@/components/ui/service-card"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { CategorySidebar } from "@/components/ui/category-sidebar"
 import { cn } from "@/lib/utils"
+import { queryKeys, slowQueryOptions, staticQueryOptions } from "@/lib/cache"
 
 export default function ServicesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -21,7 +22,7 @@ export default function ServicesPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   const { data: servicesResponse, isLoading: servicesLoading, error: servicesError } = useQuery({
-    queryKey: ["public-services", selectedCategory],
+    queryKey: queryKeys.public.services(selectedCategory !== "all" ? selectedCategory : undefined),
     queryFn: async () => {
       const params = new URLSearchParams()
       if (selectedCategory !== "all") {
@@ -31,15 +32,20 @@ export default function ServicesPage() {
       const url = `${API_ENDPOINTS.SERVICES.SEARCH}${params.toString() ? `?${params.toString()}` : ''}`
       const response = await apiClient.get<ProviderService[]>(url)
       return response.data
-    }
+    },
+    // Public service listing changes slowly — 5-minute stale window prevents
+    // redundant refetches as the user switches categories.
+    ...slowQueryOptions,
   })
 
   const { data: categoriesResponse } = useQuery({
-    queryKey: ["public-categories"],
+    queryKey: queryKeys.public.categories(),
     queryFn: async () => {
       const response = await apiClient.categories.getAll<ServiceCategory[]>()
       return response.data
-    }
+    },
+    // Categories almost never change — cache aggressively.
+    ...staticQueryOptions,
   })
 
   const isLoading = servicesLoading

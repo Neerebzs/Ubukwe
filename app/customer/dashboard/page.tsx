@@ -34,6 +34,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
+import { queryKeys, dynamicQueryOptions } from "@/lib/cache";
 function CustomerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,7 +46,7 @@ function CustomerDashboardContent() {
   const { user, logout } = useAuth();
 
   const { data: weddingResponse, isLoading: isWeddingLoading } = useQuery({
-    queryKey: ["wedding-me"],
+    queryKey: queryKeys.wedding.mine(),
     queryFn: async () => {
       try {
         const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
@@ -58,7 +59,9 @@ function CustomerDashboardContent() {
         if (err.message.includes("404")) return null;
         throw err;
       }
-    }
+    },
+    // Wedding data is personal — always fetch fresh on mount
+    ...dynamicQueryOptions,
   });
 
   const currentWedding = weddingResponse || null;

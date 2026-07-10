@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import { StatCard } from "./stat-card";
 import { cn } from "@/lib/utils";
+import { queryKeys, dynamicQueryOptions } from "@/lib/cache";
 
 interface AdminOverviewProps {
   // Optional — component fetches its own data but accepts overrides
@@ -56,43 +57,46 @@ export function AdminOverview({ onTabChange }: AdminOverviewProps) {
 
   // ── Platform stats ─────────────────────────────────────────────────────────
   const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ["admin-platform-stats"],
+    queryKey: queryKeys.admin.stats(),
     queryFn: async () => {
       const res = await apiClient.admin.stats.get();
       return res.data as any;
     },
+    // Admin stats are dynamic — must reflect latest bookings and payments
+    ...dynamicQueryOptions,
     refetchInterval: 60_000,
   });
 
   // ── Recent activity ────────────────────────────────────────────────────────
   const { data: activityRaw = [], isLoading: activityLoading } = useQuery({
-    queryKey: ["admin-recent-activity"],
+    queryKey: queryKeys.admin.recentActivity(),
     queryFn: async () => {
       const res = await apiClient.admin.stats.getRecentActivity(10);
       const data = res.data as any;
       return Array.isArray(data) ? data : [];
     },
+    ...dynamicQueryOptions,
     refetchInterval: 30_000,
   });
 
   // ── Pending onboarding applications ───────────────────────────────────────
   const { data: pendingOnboarding = [], isLoading: onboardingLoading } = useQuery({
-    queryKey: ["admin-pending-onboarding"],
+    queryKey: queryKeys.admin.onboarding({ status: 'pending' }),
     queryFn: async () => {
       const res = await apiClient.admin.onboarding.getAll("pending");
       const data = res.data as any;
-      // Backend returns { data: [...] } or array directly
       const list = Array.isArray(data?.data) ? data.data
         : Array.isArray(data?.onboarding) ? data.onboarding
         : Array.isArray(data) ? data : [];
       return list.slice(0, 5); // show top 5
     },
+    ...dynamicQueryOptions,
     refetchInterval: 60_000,
   });
 
   // ── Growth chart ───────────────────────────────────────────────────────────
   const { data: chartData = [] } = useQuery({
-    queryKey: ["admin-growth-chart"],
+    queryKey: queryKeys.admin.revenueAnalytics('monthly'),
     queryFn: async () => {
       const [usersRes, revenueRes] = await Promise.all([
         apiClient.admin.stats.getUserAnalytics(),

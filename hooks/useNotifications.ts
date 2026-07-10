@@ -2,69 +2,48 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsAPI, Notification } from '@/lib/api/notifications';
+import { queryKeys, realtimeQueryOptions, invalidateNotifications } from '@/lib/cache';
 import { toast } from 'sonner';
 
-export const notificationKeys = {
-  all: ['notifications'] as const,
-  list: (unreadOnly?: boolean) => [...notificationKeys.all, 'list', { unreadOnly }] as const,
-  unreadCount: () => [...notificationKeys.all, 'unread-count'] as const,
-};
+// Re-export for any component that imported keys directly from this file
+export const notificationKeys = queryKeys.notifications;
 
 export const useNotifications = (unreadOnly: boolean = false, limit: number = 50) => {
   const queryClient = useQueryClient();
 
-  // Get notifications
+  // ── Notification list ────────────────────────────────────────────────────
+  // Real-time: staleTime 0 + 60 s poll. Users must always see fresh data.
   const { data: notifications = [], isLoading, error, refetch } = useQuery({
-    queryKey: notificationKeys.list(unreadOnly),
-    queryFn: async () => {
-      try {
-        console.log('🔔 useNotifications: Fetching notifications...');
-        const result = await notificationsAPI.getNotifications(unreadOnly, limit);
-        console.log('🔔 useNotifications: Received notifications:', result);
-        return result;
-      } catch (err) {
-        console.error('❌ useNotifications: Error fetching notifications:', err);
-        throw err;
-      }
-    },
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    queryKey: queryKeys.notifications.list(unreadOnly),
+    queryFn: () => notificationsAPI.getNotifications(unreadOnly, limit),
+    ...realtimeQueryOptions,
   });
 
-  // Get unread count
+  // ── Unread badge count ───────────────────────────────────────────────────
+  // Separate query so the badge can update independently of the full list.
   const { data: unreadCount = 0, refetch: refetchUnreadCount } = useQuery({
-    queryKey: notificationKeys.unreadCount(),
-    queryFn: async () => {
-      try {
-        console.log('🔔 useNotifications: Fetching unread count...');
-        const result = await notificationsAPI.getUnreadCount();
-        console.log('🔔 useNotifications: Received unread count:', result);
-        return result;
-      } catch (err) {
-        console.error('❌ useNotifications: Error fetching unread count:', err);
-        return 0;
-      }
-    },
-    staleTime: 30 * 1000,
-    refetchInterval: 60 * 1000,
+    queryKey: queryKeys.notifications.unreadCount(),
+    queryFn: () => notificationsAPI.getUnreadCount(),
+    ...realtimeQueryOptions,
   });
 
-  // Mark as read mutation
+  // ── Mark single notification as read ────────────────────────────────────
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => notificationsAPI.markAsRead(notificationId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      // Invalidate both the list and the unread count badge
+      invalidateNotifications(queryClient);
     },
     onError: () => {
       toast.error('Failed to mark notification as read');
     },
   });
 
-  // Mark all as read mutation
+  // ── Mark all notifications as read ──────────────────────────────────────
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationsAPI.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all });
+      invalidateNotifications(queryClient);
       toast.success('All notifications marked as read');
     },
     onError: () => {

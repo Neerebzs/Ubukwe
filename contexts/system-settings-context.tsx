@@ -1,7 +1,20 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/**
+ * System Settings Context
+ *
+ * CACHING STRATEGY:
+ * System settings (logo, hero image, contact info) are quasi-static data.
+ * They change only when an admin explicitly updates them, so we can safely
+ * use a long staleTime (1 hour) to avoid redundant API calls on every page
+ * visit. After an admin update, `invalidateSystemSettings()` busts the cache
+ * and every consumer re-fetches automatically — no manual refresh required.
+ */
+
+import React, { createContext, useContext } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { queryKeys, staticQueryOptions, invalidateSystemSettings } from '@/lib/cache';
 
 export interface SystemSettings {
   logoUrl: string;
@@ -25,78 +38,84 @@ const defaultSettings: SystemSettings = {
 
 interface SystemSettingsContextType {
   settings: SystemSettings;
-  updateSettings: (newSettings: Partial<SystemSettings>) => void;
-  resetSettings: () => void;
+  updateSettings: (newSettings: Partial<SystemSettings>) => Promise<void>;
+  resetSettings: () => Promise<void>;
   isLoading: boolean;
 }
 
 const SystemSettingsContext = createContext<SystemSettingsContextType | undefined>(undefined);
 
 export function SystemSettingsProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<SystemSettings>(defaultSettings);
-  const [mounted, setMounted] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let mounted = true;
+  // Fetch system settings — static cache, 1-hour staleTime
+  const { data: settings = defaultSettings, isLoading } = useQuery<SystemSettings>({
+    queryKey: queryKeys.public.systemSettings(),
+    queryFn: async () => {
+      const response = await apiClient.admin.systemSettings.get();
+      // Backend wraps response as { success: true, data: { logoUrl, ... } }
+      const payload = (response.data as any)?.data ?? response.data;
+      return payload ? { ...defaultSettings, ...payload } : defaultSettings;
+    },
+    // System settings rarely change — serve from cache for 1 hour
+    ...staticQueryOptions,
+  });
 
-    async function loadSettings() {
-      try {
-        const response = await apiClient.admin.systemSettings.get();
-        // Backend wraps response as { success: true, data: { logoUrl, ... } }
-        const payload = (response.data as any)?.data ?? response.data;
-        if (mounted && payload) {
-          setSettings(prev => ({ ...prev, ...payload }));
-        }
-      } catch (e) {
-        console.error("Failed to load global system settings from backend", e);
-      } finally {
-        if (mounted) {
-          setMounted(true);
-        }
-      }
-    }
-
-    loadSettings();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+  /**
+   * Persist updated settings and immediately bust the local cache so all
+   * consumers re-render with the new values — no reload needed.
+   */
   const updateSettings = async (newSettings: Partial<SystemSettings>) => {
     const updated = { ...settings, ...newSettings };
-    setSettings(updated); // optimistic
+
+    // Optimistic update — paint the new values immediately
+    queryClient.setQueryData<SystemSettings>(
+      queryKeys.public.systemSettings(),
+      updated,
+    );
+
     try {
       const response = await apiClient.admin.systemSettings.update(updated);
-      // Sync with what the server actually saved
       const saved = (response.data as any)?.data ?? null;
-      if (saved) setSettings(prev => ({ ...prev, ...saved }));
+
+      if (saved) {
+        // Sync with the value the server actually persisted
+        queryClient.setQueryData<SystemSettings>(
+          queryKeys.public.systemSettings(),
+          { ...defaultSettings, ...saved },
+        );
+      }
+
+      // Bust both admin and public caches so all pages reflect the change
+      invalidateSystemSettings(queryClient);
     } catch (e) {
+      // Rollback on failure
+      queryClient.setQueryData(queryKeys.public.systemSettings(), settings);
       console.error("Failed to persist system settings to backend", e);
+      throw e;
     }
   };
 
+  /**
+   * Reset all settings to defaults and persist to the backend.
+   */
   const resetSettings = async () => {
-    setSettings(defaultSettings);
+    // Optimistic update
+    queryClient.setQueryData(queryKeys.public.systemSettings(), defaultSettings);
+
     try {
       await apiClient.admin.systemSettings.update(defaultSettings);
+      invalidateSystemSettings(queryClient);
     } catch (e) {
+      // Rollback on failure
+      queryClient.setQueryData(queryKeys.public.systemSettings(), settings);
       console.error("Failed to reset system settings on backend", e);
+      throw e;
     }
   };
 
-  // Only render children when mounted if relying on local storage to prevent hydration mismatch
-  if (!mounted) {
-    // Return children with default settings initially to prevent layout flash on SSR
-    return (
-      <SystemSettingsContext.Provider value={{ settings: defaultSettings, updateSettings, resetSettings, isLoading: true }}>
-        {children}
-      </SystemSettingsContext.Provider>
-    );
-  }
-
   return (
-    <SystemSettingsContext.Provider value={{ settings, updateSettings, resetSettings, isLoading: false }}>
+    <SystemSettingsContext.Provider value={{ settings, updateSettings, resetSettings, isLoading }}>
       {children}
     </SystemSettingsContext.Provider>
   );

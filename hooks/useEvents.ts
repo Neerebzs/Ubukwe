@@ -1,230 +1,220 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { eventAPI, Event, EventAnalytics, TicketType } from "@/lib/api/events";
+import { eventAPI } from "@/lib/api/events";
+import {
+  queryKeys,
+  dynamicQueryOptions,
+  invalidateEvents,
+} from "@/lib/cache";
 
-// Fetch all events
+// ── Queries ──────────────────────────────────────────────────────────────────
+
+/** Provider's own event list. Dynamic — event status changes must always be fresh. */
 export const useEvents = (status?: string) => {
   return useQuery({
-    queryKey: ["events", status],
+    queryKey: queryKeys.events.list(status),
     queryFn: () => eventAPI.getEvents(status),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...dynamicQueryOptions,
   });
 };
 
-// Fetch single event
+/** Single event detail. Dynamic for the same reason as the list. */
 export const useEvent = (eventId: string) => {
   return useQuery({
-    queryKey: ["event", eventId],
+    queryKey: queryKeys.events.detail(eventId),
     queryFn: () => eventAPI.getEvent(eventId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!eventId,
+    ...dynamicQueryOptions,
   });
 };
 
-// Create event mutation
+/** Ticket types for an event. Rarely changes but must be accurate at purchase time. */
+export const useTicketTypes = (eventId: string) => {
+  return useQuery({
+    queryKey: queryKeys.events.ticketTypes(eventId),
+    queryFn: () => eventAPI.getTicketTypes(eventId),
+    enabled: !!eventId,
+    ...dynamicQueryOptions,
+  });
+};
+
+/** All tickets sold for an event. Dynamic — check-in state changes in real time. */
+export const useTickets = (eventId: string) => {
+  return useQuery({
+    queryKey: queryKeys.events.tickets(eventId),
+    queryFn: () => eventAPI.getTickets(eventId),
+    enabled: !!eventId,
+    ...dynamicQueryOptions,
+  });
+};
+
+/** Event analytics. Allow 2-minute stale window — analytics can lag slightly. */
+export const useEventAnalytics = (eventId: string) => {
+  return useQuery({
+    queryKey: queryKeys.events.analytics(eventId),
+    queryFn: () => eventAPI.getEventAnalytics(eventId),
+    enabled: !!eventId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+/** Ticket inspectors. Dynamic — inspectors can be added/removed before the event. */
+export const useInspectors = (eventId: string) => {
+  return useQuery({
+    queryKey: queryKeys.events.inspectors(eventId),
+    queryFn: () => eventAPI.getInspectors(eventId),
+    enabled: !!eventId,
+    ...dynamicQueryOptions,
+  });
+};
+
+// ── Mutations ────────────────────────────────────────────────────────────────
+
 export const useCreateEvent = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: eventAPI.createEvent,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      invalidateEvents(queryClient);
     },
   });
 };
 
-// Update event mutation
 export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, data }: { eventId: string; data: any }) =>
       eventAPI.updateEvent(eventId, data),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      invalidateEvents(queryClient, eventId);
     },
   });
 };
 
-// Delete event mutation
 export const useDeleteEvent = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: eventAPI.deleteEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+    onSuccess: (_, eventId) => {
+      invalidateEvents(queryClient, eventId);
     },
   });
 };
 
-// Publish event mutation
 export const usePublishEvent = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: eventAPI.publishEvent,
     onSuccess: (_, eventId) => {
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      invalidateEvents(queryClient, eventId);
     },
   });
 };
 
-// Cancel event mutation
 export const useCancelEvent = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: eventAPI.cancelEvent,
     onSuccess: (_, eventId) => {
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      invalidateEvents(queryClient, eventId);
     },
   });
 };
 
-// Ticket Types
-export const useTicketTypes = (eventId: string) => {
-  return useQuery({
-    queryKey: ["ticketTypes", eventId],
-    queryFn: () => eventAPI.getTicketTypes(eventId),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!eventId,
-  });
-};
+// ── Ticket Type Mutations ────────────────────────────────────────────────────
 
 export const useCreateTicketType = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, data }: { eventId: string; data: any }) =>
       eventAPI.createTicketType(eventId, data),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["ticketTypes", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.ticketTypes(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
   });
 };
 
 export const useUpdateTicketType = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       eventId,
       ticketTypeId,
       data,
-    }: {
-      eventId: string;
-      ticketTypeId: string;
-      data: any;
-    }) => eventAPI.updateTicketType(eventId, ticketTypeId, data),
+    }: { eventId: string; ticketTypeId: string; data: any }) =>
+      eventAPI.updateTicketType(eventId, ticketTypeId, data),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["ticketTypes", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.ticketTypes(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
   });
 };
 
 export const useDeleteTicketType = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, ticketTypeId }: { eventId: string; ticketTypeId: string }) =>
       eventAPI.deleteTicketType(eventId, ticketTypeId),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["ticketTypes", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.ticketTypes(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
   });
 };
 
-// Tickets
-export const useTickets = (eventId: string) => {
-  return useQuery({
-    queryKey: ["tickets", eventId],
-    queryFn: () => eventAPI.getTickets(eventId),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!eventId,
-  });
-};
+// ── Ticket Mutations ─────────────────────────────────────────────────────────
 
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       eventId,
       ticketTypeId,
       data,
-    }: {
-      eventId: string;
-      ticketTypeId: string;
-      data: any;
-    }) => eventAPI.createTicket(eventId, ticketTypeId, data),
+    }: { eventId: string; ticketTypeId: string; data: any }) =>
+      eventAPI.createTicket(eventId, ticketTypeId, data),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["tickets", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
   });
 };
 
 export const useCheckInTicket = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, ticketId }: { eventId: string; ticketId: string }) =>
       eventAPI.checkInTicket(eventId, ticketId),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["tickets", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.tickets(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.analytics(eventId) });
     },
   });
 };
 
-// Analytics
-export const useEventAnalytics = (eventId: string) => {
-  return useQuery({
-    queryKey: ["eventAnalytics", eventId],
-    queryFn: () => eventAPI.getEventAnalytics(eventId),
-    staleTime: 1000 * 60 * 2, // 2 minutes for analytics
-    enabled: !!eventId,
-  });
-};
-
-// Inspectors
-export const useInspectors = (eventId: string) => {
-  return useQuery({
-    queryKey: ["inspectors", eventId],
-    queryFn: () => eventAPI.getInspectors(eventId),
-    staleTime: 1000 * 60 * 5,
-    enabled: !!eventId,
-  });
-};
+// ── Inspector Mutations ──────────────────────────────────────────────────────
 
 export const useCreateInspector = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, data }: { eventId: string; data: { name: string; email: string; phone_number: string } }) =>
       eventAPI.createInspector(eventId, data),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["inspectors", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.inspectors(eventId) });
     },
   });
 };
 
 export const useDeleteInspector = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ eventId, inspectorId }: { eventId: string; inspectorId: string }) =>
       eventAPI.deleteInspector(eventId, inspectorId),
     onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ["inspectors", eventId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.events.inspectors(eventId) });
     },
   });
 };

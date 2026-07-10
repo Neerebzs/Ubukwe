@@ -62,13 +62,19 @@ function getDashboardPath(user: User | null | undefined): string | null {
 }
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Query keys
+// Query keys — backward-compatible shim.
+// Components that imported `authKeys.user()` continue to work unchanged.
+import { queryKeys, profileQueryOptions } from '@/lib/cache';
+
 export const authKeys = {
-  all: ['auth'] as const,
-  user: () => [...authKeys.all, 'user'] as const,
-  profile: () => [...authKeys.all, 'profile'] as const,
-  twoFAStatus: () => [...authKeys.all, '2fa-status'] as const,
+  all: queryKeys.auth,
+  user: () => queryKeys.auth.user(),
+  profile: () => queryKeys.auth.profile(),
+  twoFAStatus: () => queryKeys.auth.twoFAStatus(),
 };
+
+// Convenience shorthand for auth keys used throughout this file
+const authQueryKeys = queryKeys.auth;
 
 // Custom hook for authentication state
 export const useAuth = () => {
@@ -77,7 +83,7 @@ export const useAuth = () => {
 
   // Get current user
   const { data: user, isLoading: isUserLoading } = useQuery({
-    queryKey: authKeys.user(),
+    queryKey: authQueryKeys.user(),
     queryFn: async () => {
       if (!tokenManager.isAuthenticated()) {
         return null;
@@ -86,8 +92,7 @@ export const useAuth = () => {
       const response = await authApi.getMe();
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: false,
+    ...profileQueryOptions,
   });
 
   const isAuthenticated = !!user && tokenManager.isAuthenticated();
@@ -147,7 +152,7 @@ export const useAuth = () => {
 
       if (finalUser) {
         userManager.setUser(finalUser);
-        queryClient.setQueryData(authKeys.user(), finalUser);
+        queryClient.setQueryData(authQueryKeys.user(), finalUser);
       }
 
       toast.success('Login successful!');
@@ -231,7 +236,7 @@ export const useAuth = () => {
       // Update user data
       if (updatedUser) {
         userManager.setUser(updatedUser);
-        queryClient.setQueryData(authKeys.user(), updatedUser);
+        queryClient.setQueryData(authQueryKeys.user(), updatedUser);
       }
 
       toast.success('Profile updated successfully');
@@ -320,7 +325,7 @@ export const useAuth = () => {
 
       if (finalUser) {
         userManager.setUser(finalUser);
-        queryClient.setQueryData(authKeys.user(), finalUser);
+        queryClient.setQueryData(authQueryKeys.user(), finalUser);
       }
 
       return { requiresTwoFactor: false, user: finalUser };
@@ -414,7 +419,7 @@ export const useAuth = () => {
 
       if (finalUser) {
         userManager.setUser(finalUser);
-        queryClient.setQueryData(authKeys.user(), finalUser);
+        queryClient.setQueryData(authQueryKeys.user(), finalUser);
       }
 
       return finalUser;
@@ -454,7 +459,7 @@ export const useAuth = () => {
       const updatedUser = response.data;
       if (updatedUser) {
         userManager.setUser(updatedUser);
-        queryClient.setQueryData(authKeys.user(), updatedUser);
+        queryClient.setQueryData(authQueryKeys.user(), updatedUser);
       }
       return updatedUser;
     } catch (error) {
@@ -501,9 +506,9 @@ export const useAuth = () => {
 // Hook for user profile
 export const useUserProfile = () => {
   return useQuery({
-    queryKey: authKeys.profile(),
+    queryKey: authQueryKeys.profile(),
     queryFn: authApi.getProfile,
     enabled: tokenManager.isAuthenticated(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    ...profileQueryOptions,
   });
 };

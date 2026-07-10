@@ -6,12 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { queryKeys, dynamicQueryOptions } from "@/lib/cache";
 
 export default function AIAssistantPage() {
   const router = useRouter();
 
   const { data: wedding, isLoading } = useQuery<Wedding | null>({
-    queryKey: ["wedding-me"],
+    queryKey: queryKeys.wedding.mine(),
     queryFn: async () => {
       try {
         const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
@@ -24,7 +25,8 @@ export default function AIAssistantPage() {
         throw err;
       }
     },
-    staleTime: 1000 * 60 * 5,
+    // Wedding data — always fetch fresh
+    ...dynamicQueryOptions,
   });
 
   if (isLoading) {

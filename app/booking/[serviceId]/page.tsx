@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
+import { queryKeys, dynamicQueryOptions, slowQueryOptions } from "@/lib/cache"
 
 /** Category names / slugs that indicate a venue service */
 const VENUE_KEYWORDS = ["venue", "venue booking", "hall", "garden", "resort", "hotel", "lodge", "estate"]
@@ -66,9 +67,9 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
   })
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false)
 
-  // Fetch actual service data
+  // Fetch actual service data — slow-changing (service info rarely changes mid-booking)
   const { data: service, isLoading: isServiceLoading, error } = useQuery({
-    queryKey: ["service", params.serviceId],
+    queryKey: queryKeys.public.services(params.serviceId),
     queryFn: async () => {
       try {
         const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
@@ -77,12 +78,13 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
         console.error(`❌ BookingPage: Fetch error:`, err);
         throw err;
       }
-    }
+    },
+    ...slowQueryOptions,
   })
 
-  // Fetch user's wedding details
+  // Fetch user's wedding details — dynamic (date/venue can change)
   const { data: wedding, isLoading: isWeddingLoading } = useQuery({
-    queryKey: ["wedding-me"],
+    queryKey: queryKeys.wedding.mine(),
     queryFn: async () => {
       try {
         const response = await apiClient.get<Wedding>(API_ENDPOINTS.WEDDING.ME);
@@ -92,18 +94,21 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
         throw err;
       }
     },
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
+    ...dynamicQueryOptions,
   })
 
   // Fetch booked dates for venue services so we can disable them in the calendar
   const { data: venueBookedDatesData } = useQuery({
-    queryKey: ["venue-booked-dates", params.serviceId],
+    queryKey: ['venue-booked-dates', params.serviceId],
     queryFn: async () => {
       const response = await apiClient.get<{ booked_dates: string[] }>(
         `/api/v1/bookings/venue-availability/${params.serviceId}`
       )
       return (response as any).data || response
     },
+    // Booked dates change as bookings are made — fetch fresh
+    ...dynamicQueryOptions,
     // Only fetch once we know the service is a venue
     enabled: !!service && isVenueService(service),
   })

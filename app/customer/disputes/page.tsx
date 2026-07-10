@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, AlertCircle, Clock, CheckCircle, MessageSquare, FileText, Search, ShieldCheck, Camera, X } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { queryKeys, dynamicQueryOptions, invalidateDisputes } from "@/lib/cache"
 
 interface Dispute {
   id: string
@@ -46,22 +47,23 @@ export default function DisputesPage() {
   const [selectedBookingName, setSelectedBookingName] = useState<string>("")
 
   const { data: disputes = [], isLoading } = useQuery<Dispute[]>({
-    queryKey: ["my-disputes"],
+    queryKey: queryKeys.disputes.myList(),
     queryFn: async () => {
       const res = await axiosInstance.get<Dispute[]>("/api/v1/disputes/my")
       return res.data ?? []
     },
+    // Disputes are transactional — always fetch fresh
+    ...dynamicQueryOptions,
   })
 
   const { data: completedBookings = [] } = useQuery({
-    queryKey: ["completed-bookings"],
+    queryKey: queryKeys.bookings.list({ role: 'customer', status: 'completed' }),
     queryFn: async () => {
       const res = await apiClient.bookings.getAll({ role: "customer", status: "completed" })
-      // Some API returns { data: [...] }, others raw array. lib/api-client handles some, 
-      // but let's be safe based on the dashboard patterns.
       const bookings = Array.isArray((res as any).data) ? (res as any).data : (Array.isArray(res) ? res : [])
       return bookings
-    }
+    },
+    ...dynamicQueryOptions,
   })
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +111,7 @@ export default function DisputesPage() {
     },
     onSuccess: () => {
       toast.success("Dispute filed successfully. Our team will review it within 1 business day.")
-      queryClient.invalidateQueries({ queryKey: ["my-disputes"] })
+      invalidateDisputes(queryClient)
       setForm({ booking_id: "", respondent_id: "", title: "", category: "", description: "" })
       setProofImage(null)
       setImagePreview(null)

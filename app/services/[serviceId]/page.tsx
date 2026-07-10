@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils"
 import React, { useRef, useEffect } from "react"
 import { AuthModal } from "@/components/auth-modal"
 import { motion, AnimatePresence } from "framer-motion"
+import { queryKeys, slowQueryOptions } from "@/lib/cache"
 
 export default function ServiceDetailsPage({ params }: { params: { serviceId: string } }) {
     // All hooks must be called before any conditional returns
@@ -207,7 +208,7 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
     };
 
     const { data: serviceRes, isLoading, error } = useQuery({
-        queryKey: ["service-detail", params.serviceId],
+        queryKey: queryKeys.provider.serviceDetail(params.serviceId),
         queryFn: async () => {
             try {
                 const response = await apiClient.get<ProviderService>(API_ENDPOINTS.SERVICES.DETAILS(params.serviceId));
@@ -220,13 +221,14 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                 throw error;
             }
         },
-        retry: false,
-        refetchOnWindowFocus: false,
+        // Service details are slow-changing — 5-min stale prevents redundant
+        // refetches as the user navigates the gallery tabs.
+        ...slowQueryOptions,
     });
 
     // Fetch featured testimonials for this service
     const { data: serviceReviews } = useQuery({
-        queryKey: ["service-reviews-featured", params.serviceId],
+        queryKey: queryKeys.reviews.byService(params.serviceId),
         queryFn: async () => {
             try {
                 const { apiClient: ac } = await import("@/lib/api-client")
@@ -238,7 +240,8 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             }
         },
         enabled: !!params.serviceId,
-        refetchOnWindowFocus: false,
+        // Reviews change slowly — cache for 5 minutes
+        ...slowQueryOptions,
     });
 
     // Hero image slideshow — auto-advances every 4 s, pauses when gallery carousel is hovered
@@ -619,86 +622,86 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
             </div>
 
             {/* Immersive Editorial Hero Section */}
-            <section className="relative w-full min-h-[95vh] flex items-center pt-[72px] md:pt-20 bg-white overflow-hidden">
+            <section className="relative w-full min-h-[60vh] sm:min-h-[75vh] lg:min-h-[95vh] flex items-center pt-[72px] md:pt-20 bg-white overflow-hidden">
                 {/* Subtle Decorative Elements */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
 
-                <div className="container mx-auto px-6 relative z-10">
-                    <div className="grid lg:grid-cols-12 gap-12 items-center">
-                        <div className="lg:col-span-6 space-y-10 animate-in fade-in slide-in-from-left duration-1000">
+                <div className="container mx-auto px-4 sm:px-6 relative z-10">
+                    <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-8 lg:gap-12 items-center">
+                        <div className="col-span-1 lg:col-span-6 space-y-4 sm:space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-left duration-1000">
                                 <motion.div 
                                     className="space-y-6"
                                     initial={{ opacity: 0, x: -30 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.8, ease: "easeOut" }}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-[1px] w-12 bg-[#668c65]/30" />
-                                        <span className="text-[#668c65] font-bold tracking-[0.4em] uppercase text-[10px]">
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                        <div className="h-[1px] w-6 sm:w-12 bg-[#668c65]/30 hidden sm:block" />
+                                        <span className="text-[#668c65] font-bold tracking-[0.2em] sm:tracking-[0.4em] uppercase text-[9px] sm:text-[10px] leading-tight">
                                             {service.category} • {service.location}
                                         </span>
                                     </div>
 
-                                    <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-slate-900 leading-[1.15] md:leading-[1] tracking-tight break-words">
+                                    <h1 className="font-serif text-xl sm:text-3xl md:text-5xl lg:text-7xl xl:text-8xl text-slate-900 leading-[1.2] md:leading-[1.1] lg:leading-[1] tracking-tight break-words">
                                         <span className="block font-light whitespace-normal">
                                             {service.title.split(' ').length > 2 
                                                 ? service.title.split(' ').slice(0, 2).join(' ') 
                                                 : service.title.split(' ')[0]}
                                         </span>
-                                        <span className="block italic font-medium ml-2 sm:ml-4 md:ml-12 text-[#668c65] whitespace-normal break-words">
+                                        <span className="block italic font-medium ml-1 sm:ml-3 md:ml-8 lg:ml-12 text-[#668c65] whitespace-normal break-words">
                                             {service.title.split(' ').length > 2 
                                                 ? service.title.split(' ').slice(2).join(' ') 
                                                 : service.title.split(' ').slice(1).join(' ')}
                                         </span>
                                     </h1>
 
-                                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 pt-4">
-                                        <div className="flex items-center gap-1">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:gap-6 pt-2 sm:pt-4">
+                                        <div className="flex items-center gap-0.5 sm:gap-1">
                                             {[1, 2, 3, 4, 5].map((s) => (
-                                                <Star key={s} className={`h-4 w-4 ${s <= Math.round(service.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                                                <Star key={s} className={`h-3 w-3 sm:h-4 sm:w-4 ${s <= Math.round(service.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
                                             ))}
-                                            <span className="ml-1 sm:ml-2 font-bold text-slate-900">{service.rating.toFixed(1)}</span>
+                                            <span className="ml-1 sm:ml-2 font-bold text-slate-900 text-xs sm:text-sm">{service.rating.toFixed(1)}</span>
                                         </div>
                                         <div className="h-4 w-[1px] bg-slate-200 hidden sm:block" />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] sm:tracking-widest mt-1 sm:mt-0">
-                                            {service.reviews.summary.total} Verified Reviews
+                                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] sm:tracking-widest">
+                                            {service.reviews.summary.total} Reviews
                                         </p>
                                     </div>
                                 </motion.div>
 
                                 <motion.div 
-                                    className="flex flex-wrap items-center gap-6"
+                                    className="flex flex-wrap items-center gap-3 sm:gap-6"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.8, delay: 0.4 }}
                                 >
                                     <Button 
                                         size="lg" 
-                                        className="h-16 px-10 rounded-full bg-[#668c65] hover:bg-slate-900 text-white font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+                                        className="h-10 sm:h-14 lg:h-16 px-5 sm:px-8 lg:px-10 rounded-full bg-[#668c65] hover:bg-slate-900 text-white font-bold text-sm sm:text-base lg:text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
                                         onClick={() => document.getElementById('collections')?.scrollIntoView({ behavior: 'smooth' })}
                                     >
                                         View Collections
-                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                        <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                                     </Button>
-                                    <div className="flex -space-x-4">
+                                    <div className="hidden sm:flex -space-x-4">
                                       {[1, 2, 3].map(i => (
-                                        <div key={i} className="w-12 h-12 rounded-full border-4 border-white overflow-hidden bg-slate-100 italic font-serif flex items-center justify-center text-slate-300 text-xs">
+                                        <div key={i} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white overflow-hidden bg-slate-100 italic font-serif flex items-center justify-center text-slate-300 text-xs">
                                             P
                                         </div>
                                       ))}
-                                      <div className="w-12 h-12 rounded-full border-4 border-white bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-xs">
+                                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white bg-[#668c65]/10 flex items-center justify-center text-[#668c65] font-bold text-xs">
                                         +{service.stats.eventsCompleted}
                                       </div>
                                     </div>
-                                    <p className="text-sm font-bold text-slate-400 font-outfit uppercase tracking-widest">
+                                    <p className="hidden sm:block text-xs sm:text-sm font-bold text-slate-400 font-outfit uppercase tracking-widest">
                                       Trusted for {service.stats.yearsExperience}+ Years
                                     </p>
                                 </motion.div>
                         </div>
 
                         <motion.div 
-                            className="lg:col-span-6 relative h-[600px] flex items-center justify-center px-4"
+                            className="col-span-1 lg:col-span-6 relative h-[220px] sm:h-[380px] md:h-[480px] lg:h-[600px] flex items-center justify-center px-2 sm:px-4"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, delay: 0.2 }}
@@ -757,24 +760,24 @@ export default function ServiceDetailsPage({ params }: { params: { serviceId: st
                                 
                                 {/* Floating Badge */}
                                 <motion.div 
-                                    className="absolute right-0 lg:-right-8 top-1/4 bg-white p-3 md:p-6 rounded-3xl shadow-2xl z-30 border border-slate-50 text-center"
+                                    className="absolute right-0 lg:-right-8 top-1/4 bg-white p-2 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-2xl z-30 border border-slate-50 text-center"
                                     animate={{ y: [0, -10, 0] }}
                                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                                 >
-                                    <Heart className="w-4 h-4 md:w-6 md:h-6 text-rose-500 fill-rose-500 mx-auto mb-1 md:mb-2" />
-                                    <p className="font-serif italic text-sm md:text-lg text-slate-900">Premium</p>
-                                    <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selection</p>
+                                    <Heart className="w-3 h-3 sm:w-5 sm:h-5 md:w-6 md:h-6 text-rose-500 fill-rose-500 mx-auto mb-1 md:mb-2" />
+                                    <p className="font-serif italic text-xs sm:text-base md:text-lg text-slate-900">Premium</p>
+                                    <p className="text-[6px] sm:text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selection</p>
                                 </motion.div>
 
                                 {/* Experience Badge */}
                                 <motion.div 
-                                    className="absolute left-0 lg:-left-12 bottom-1/4 bg-[#668c65] p-3 md:p-6 rounded-3xl shadow-2xl z-30 text-white text-center"
+                                    className="absolute left-0 lg:-left-12 bottom-1/4 bg-[#668c65] p-2 sm:p-4 md:p-6 rounded-2xl sm:rounded-3xl shadow-2xl z-30 text-white text-center"
                                     animate={{ y: [0, 10, 0] }}
                                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                                 >
-                                    <Award className="w-4 h-4 md:w-6 md:h-6 text-white mx-auto mb-1 md:mb-2" />
-                                    <p className="font-serif italic text-sm md:text-lg leading-tight">Expert</p>
-                                    <p className="text-[7px] md:text-[8px] font-black uppercase tracking-widest opacity-70">Experience</p>
+                                    <Award className="w-3 h-3 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white mx-auto mb-1 md:mb-2" />
+                                    <p className="font-serif italic text-xs sm:text-base md:text-lg leading-tight">Expert</p>
+                                    <p className="text-[5px] sm:text-[7px] md:text-[8px] font-black uppercase tracking-widest opacity-70">Experience</p>
                                 </motion.div>
                             </div>
 

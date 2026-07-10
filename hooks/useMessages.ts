@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@/lib/api-client';
 import { API_ENDPOINTS } from '@/lib/api';
 import { tokenManager } from '@/lib/auth';
+import { queryKeys, CONVERSATIONS_POLL_INTERVAL } from '@/lib/cache';
 
 export interface ChatMessage {
   id: string;
@@ -32,19 +33,22 @@ export interface Conversation {
 // ── Conversations (REST, poll every 20s) ──────────────────────────────────────
 export function useConversations() {
   return useQuery<Conversation[]>({
-    queryKey: ['conversations'],
+    queryKey: queryKeys.messages.conversations(),
     queryFn: async () => {
       const res = await axiosInstance.get<Conversation[]>(API_ENDPOINTS.MESSAGES.CONVERSATIONS);
       return res.data ?? [];
     },
-    refetchInterval: 20_000,
+    // Conversations are real-time — short stale, poll every 20 s
+    staleTime: 0,
+    refetchInterval: CONVERSATIONS_POLL_INTERVAL,
+    refetchOnWindowFocus: true,
   });
 }
 
 // ── Message history (REST, initial load only) ─────────────────────────────────
 export function useMessageHistory(otherUserId: string | null) {
   return useQuery<ChatMessage[]>({
-    queryKey: ['message-history', otherUserId],
+    queryKey: queryKeys.messages.history(otherUserId ?? ''),
     queryFn: async () => {
       if (!otherUserId) return [];
       const res = await axiosInstance.get<ChatMessage[]>(
@@ -53,7 +57,8 @@ export function useMessageHistory(otherUserId: string | null) {
       return res.data ?? [];
     },
     enabled: !!otherUserId,
-    staleTime: Infinity, // WebSocket keeps it fresh
+    // WebSocket appends new messages — no need to poll here
+    staleTime: Infinity,
   });
 }
 
@@ -77,16 +82,16 @@ export function useMessagesSocket(otherUserId: string | null) {
   }, [otherUserId]);
 
   const appendMessage = useCallback((msg: ChatMessage) => {
-    // Append to history cache
+    // Append to history cache using the centralized key
     queryClient.setQueryData<ChatMessage[]>(
-      ['message-history', otherUserId],
+      queryKeys.messages.history(otherUserId ?? ''),
       (prev = []) => {
         if (prev.some(m => m.id === msg.id)) return prev; // dedupe
         return [...prev, msg];
       }
     );
     // Refresh conversations sidebar
-    queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.messages.conversations() });
   }, [otherUserId, queryClient]);
 
   const connect = useCallback(() => {
@@ -107,7 +112,7 @@ export function useMessagesSocket(otherUserId: string | null) {
         // read_receipt — mark all messages in this conversation as read
         if (data.type === 'read_receipt') {
           queryClient.setQueryData<ChatMessage[]>(
-            ['message-history', otherUserId],
+            queryKeys.messages.history(otherUserId ?? ''),
             (prev = []) => prev.map(m => ({ ...m, read: true }))
           );
           return;

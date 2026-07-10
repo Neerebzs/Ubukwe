@@ -1,45 +1,59 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { customerEventAPI, PublicEvent, TicketPurchaseResponse } from "@/lib/api/customer-events";
+import { useQuery } from "@tanstack/react-query";
+import { customerEventAPI } from "@/lib/api/customer-events";
+import {
+  queryKeys,
+  slowQueryOptions,
+  dynamicQueryOptions,
+} from "@/lib/cache";
 
-// Fetch public event details
+/**
+ * Public event detail.
+ * Slow-changing (event info rarely changes once published) — 5-min stale.
+ */
 export const usePublicEvent = (eventId: string) => {
   return useQuery({
-    queryKey: ["public-event", eventId],
+    queryKey: queryKeys.public.event(eventId),
     queryFn: () => customerEventAPI.getEvent(eventId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!eventId,
+    ...slowQueryOptions,
   });
 };
 
-// Fetch public events list
+/**
+ * Public events listing.
+ * Slow-changing — 5-min stale is appropriate for the public-facing catalog.
+ */
 export const usePublicEvents = (category?: string) => {
   return useQuery({
-    queryKey: ["public-events", category],
+    queryKey: queryKeys.public.events(category),
     queryFn: () => customerEventAPI.getEvents(category),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...slowQueryOptions,
   });
 };
 
-// NOTE: the old usePurchaseTicket mutation was removed — tickets are now paid
-// via DPO Pay; see startTicketDpoPayment/verifyTicketOrder in lib/api/payments.ts.
-
-// Fetch customer's tickets
+/**
+ * Customer's purchased tickets.
+ * Dynamic — ticket status (check-in state, payment) must always be fresh.
+ */
 export const useMyTickets = () => {
   return useQuery({
-    queryKey: ["my-tickets"],
+    queryKey: queryKeys.tickets.mine(),
     queryFn: () => customerEventAPI.getMyTickets(),
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    ...dynamicQueryOptions,
   });
 };
 
-// Fetch single ticket
+/**
+ * Single ticket detail.
+ * Dynamic for the same reason as the list.
+ */
 export const useTicket = (ticketId: string) => {
   return useQuery({
-    queryKey: ["ticket", ticketId],
+    queryKey: queryKeys.tickets.detail(ticketId),
     queryFn: () => customerEventAPI.getTicket(ticketId),
-    staleTime: 1000 * 60 * 5, // 5 minutes
     enabled: !!ticketId,
+    ...dynamicQueryOptions,
   });
 };

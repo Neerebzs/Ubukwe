@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Users, Ticket, DollarSign, Calendar } from "lucide-react";
+import { queryKeys, dynamicQueryOptions } from "@/lib/cache";
 
 interface Event {
   id: string;
@@ -21,11 +22,13 @@ interface Event {
 
 export default function EventAnalyticsPage() {
   const { data: events = [], isLoading } = useQuery<Event[]>({
-    queryKey: ["provider-events-analytics"],
+    queryKey: queryKeys.events.list(),
     queryFn: async () => {
       const res = await axiosInstance.get<any>("/api/v1/provider/events");
       return res.data?.data ?? res.data ?? [];
     },
+    // Event data is transactional — ticket sales update in real time
+    ...dynamicQueryOptions,
   });
 
   const totalRevenue = events.reduce((s, e) => s + (e.revenue ?? 0), 0);

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { ProviderService } from "@/lib/api";
+import { queryKeys, slowQueryOptions } from "@/lib/cache";
 
 export interface PopularService extends ProviderService {
   // All fields already on ProviderService; this alias improves readability
@@ -24,9 +25,10 @@ async function fetchPopularServices(limit = 8, category?: string): Promise<Popul
 
 export function usePopularServices(limit = 8, category?: string) {
   return useQuery({
-    queryKey: ["popular-services", limit, category],
+    queryKey: queryKeys.public.popularServices(limit, category),
     queryFn: () => fetchPopularServices(limit, category),
-    staleTime: 1000 * 60 * 5, // 5 minutes — popular list changes slowly
-    retry: 2,
+    // Popular services change slowly — 5-minute stale window avoids
+    // redundant API calls when the user navigates back to the home page.
+    ...slowQueryOptions,
   });
 }

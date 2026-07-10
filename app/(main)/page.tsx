@@ -257,7 +257,7 @@ export default function HomePage() {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="container mx-auto px-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="container mx-auto px-4 mb-8 flex flex-row items-end justify-between gap-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Sparkles className="h-4 w-4 text-[#668c65]" />
@@ -265,22 +265,22 @@ export default function HomePage() {
                 <TranslatedText text="Curated Exclusives" />
               </span>
             </div>
-            <h2 className="text-5xl md:text-6xl font-serif italic text-sage-950 leading-tight">
+            <h2 className="text-3xl md:text-4xl font-serif italic text-sage-950 leading-tight">
               <TranslatedText text="Limited Moments." />
             </h2>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={() => scroll("left")}
-              className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
+              className="w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
             >
-              <ChevronLeft className="h-6 w-6 group-hover/btn:-translate-x-1 transition-transform" />
+              <ChevronLeft className="h-4 w-4 group-hover/btn:-translate-x-0.5 transition-transform" />
             </button>
             <button
               onClick={() => scroll("right")}
-              className="w-14 h-14 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
+              className="w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:bg-sage-950 hover:text-white hover:border-sage-950 transition-all duration-500 flex items-center justify-center group/btn"
             >
-              <ChevronRight className="h-6 w-6 group-hover/btn:translate-x-1 transition-transform" />
+              <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>
@@ -306,7 +306,10 @@ export default function HomePage() {
                   className="flex-shrink-0 w-[75vw] sm:w-[55vw] md:w-[35vw] lg:w-[310px] snap-center"
                 >
                   {/* Premium Full-Height Background Card */}
-                  <div className="group relative h-[390px] rounded-[2.5rem] overflow-hidden bg-slate-900 border border-slate-100/10 shadow-lg hover:shadow-2xl transition-all duration-700">
+                  <Link
+                    href={promo.type === "event" ? `/events/${promo.id}/tickets` : `/services/${promo.serviceId || promo.id}`}
+                    className="group relative h-[390px] rounded-[2.5rem] overflow-hidden bg-slate-900 border border-slate-100/10 shadow-lg hover:shadow-2xl transition-all duration-700 block cursor-pointer"
+                  >
                     {/* Background Image */}
                     <img
                       src={promo.image}
@@ -356,17 +359,15 @@ export default function HomePage() {
                           <Clock className="w-3.5 h-3.5" />
                           <span>Until {promo.validUntil}</span>
                         </div>
-                        <Link href={promo.type === "event" ? `/events/${promo.id}/tickets` : `/services/${promo.serviceId || promo.id}`}>
-                          <Button variant="ghost" className="h-10 px-0 flex items-center text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-transparent group/btn">
+                        <Button variant="ghost" className="h-10 px-0 flex items-center text-white font-black text-[10px] uppercase tracking-[0.2em] hover:bg-transparent group/btn">
                             <TranslatedText text="Explore" />
                             <div className="ml-3 w-8 h-[1px] bg-white/30 group-hover/btn:w-12 group-hover/btn:bg-[#668c65] transition-all duration-500 relative">
                                <ArrowRight className="absolute -right-1 -top-1.5 w-3 h-3 group-hover/btn:translate-x-1 group-hover/btn:text-[#668c65] transition-all" />
                             </div>
                           </Button>
-                        </Link>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               ))
             ) : (

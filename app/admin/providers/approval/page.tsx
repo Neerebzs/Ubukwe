@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CheckCircle, XCircle, FileText, Eye } from "lucide-react"
 import Link from "next/link"
+import { queryKeys, dynamicQueryOptions } from "@/lib/cache"
 
 interface Application {
   id: string
@@ -21,11 +22,13 @@ interface Application {
 
 export default function ProviderApprovalPage() {
   const { data: applications = [], isLoading } = useQuery<Application[]>({
-    queryKey: ["admin-onboarding-pending"],
+    queryKey: queryKeys.admin.onboarding({ status: 'pending' }),
     queryFn: async () => {
       const res = await axiosInstance.get<any>("/api/v1/admin/onboarding?status=pending")
       return res.data?.data ?? res.data ?? []
     },
+    // Admin approval queue — always fetch fresh so new submissions appear immediately
+    ...dynamicQueryOptions,
   })
 
   if (isLoading) {
