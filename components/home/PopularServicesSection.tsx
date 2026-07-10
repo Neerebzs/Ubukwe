@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  Star,
-  MapPin,
   ArrowRight,
   Sparkles,
   Heart,
@@ -128,39 +126,24 @@ function ServiceCard({ service, index }: { service: any; index: number }) {
         </div>
       </div>
 
-      {/* Text — clean, like Airbnb */}
-      <div className="mt-2.5 px-0.5 space-y-0.5">
-        {/* location + rating */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 min-w-0">
-            <MapPin className="h-3 w-3 text-slate-400 flex-shrink-0" />
-            <span className="text-[12px] font-semibold text-slate-500 truncate">
-              {service.city || service.location || "Rwanda"}
-            </span>
-          </div>
-          {service.rating > 0 ? (
-            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-              <Star className="h-3 w-3 fill-slate-900 text-slate-900" />
-              <span className="text-[13px] font-semibold text-slate-900">{service.rating.toFixed(2)}</span>
-            </div>
-          ) : (
-            <span className="text-[12px] text-slate-400 flex-shrink-0 ml-2">New</span>
-          )}
-        </div>
-
-        {/* title */}
-        <p className="text-[14px] font-semibold text-slate-800 line-clamp-1 leading-snug">
+      {/* Text — clean, Airbnb style */}
+      <div className="mt-2 px-0.5">
+        {/* Title */}
+        <p className="text-[14px] font-semibold text-slate-900 line-clamp-1 leading-snug">
           {service.name}
         </p>
 
-        {/* provider */}
+        {/* Provider */}
         {service.business_name && (
-          <p className="text-[13px] text-slate-400 truncate leading-snug">{service.business_name}</p>
+          <p className="text-[13px] text-slate-400 truncate leading-snug mt-0.5">{service.business_name}</p>
         )}
 
-        {/* price */}
-        <p className="text-[14px] font-semibold text-slate-900 pt-0.5">
-          {formatPrice(service.price_range_min, service.price_range_max)}
+        {/* Price · rating inline, like Airbnb */}
+        <p className="text-[13px] text-slate-500 mt-0.5">
+          <span className="font-semibold text-slate-900">{formatPrice(service.price_range_min, service.price_range_max)}</span>
+          {service.rating > 0 && (
+            <span className="ml-1.5">· ★ {service.rating.toFixed(2)}</span>
+          )}
         </p>
       </div>
     </Link>

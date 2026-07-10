@@ -88,7 +88,7 @@ export function Navbar() {
             : "border-b border-slate-100"}
         `}
       >
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-[70px] flex items-center gap-4 lg:gap-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-10 h-[68px] flex items-center gap-4 lg:gap-6">
 
           {/* ── Brand — desktop only ───────────────────────────────────────── */}
           <Link href="/" className="hidden md:flex items-center gap-2.5 flex-shrink-0 group mr-2">
@@ -114,32 +114,21 @@ export function Navbar() {
             <AISearch />
           </div>
 
-          {/* ── Mobile top bar: logo + search pill + menu ───────────────── */}
-          <div className="flex md:hidden items-center gap-2 w-full">
-            {/* Brand (compact) */}
-            <Link href="/" className="flex items-center gap-1.5 flex-shrink-0">
-              {settings.logoUrl && (
-                <Image src={settings.logoUrl} alt="VowNest" width={28} height={28}
-                  className="object-contain h-7 w-auto" priority />
-              )}
-              <span className="font-serif italic text-[18px] font-bold" style={{ color: BRAND_GREEN }}>
-                VowNest
-              </span>
-            </Link>
-
-            {/* Search pill — Airbnb style, grows to fill space */}
+          {/* ── Mobile top bar: full-width search pill like Airbnb ──────────── */}
+          <div className="flex md:hidden items-center gap-3 w-full">
+            {/* Full-width search pill — tapping opens search overlay */}
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="flex-1 flex items-center gap-2.5 h-11 px-4 rounded-full border border-slate-200 bg-white shadow-sm active:scale-[0.98] transition-all"
+              className="flex-1 flex items-center gap-3 h-12 px-5 rounded-full border border-slate-200 bg-white shadow-sm active:scale-[0.98] transition-all"
             >
-              <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
-              <span className="text-[13px] text-slate-400 font-medium truncate">Start your search</span>
+              <Search className="h-4 w-4 text-slate-500 flex-shrink-0" />
+              <span className="text-[14px] text-slate-500 font-medium">Start your search</span>
             </button>
 
-            {/* Menu icon */}
+            {/* Menu icon — slim circle */}
             <button
               onClick={toggleMenu}
-              className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all active:scale-95"
+              className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-all active:scale-95"
             >
               {isMenuOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
             </button>
