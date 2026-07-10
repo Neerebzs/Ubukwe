@@ -3,16 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Star,
   MapPin,
   ArrowRight,
   Sparkles,
-  Users,
-  TrendingUp,
   Heart,
-  Eye,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -83,93 +79,89 @@ function formatPrice(min?: number | null, max?: number | null): string {
   return `From ${fmt(min || max!)}`;
 }
 
-// ── Individual service card ────────────────────────────────────────────────────
+// ── Individual service card — Airbnb style ────────────────────────────────────
 
 function ServiceCard({ service, index }: { service: any; index: number }) {
   const [imgError, setImgError] = useState(false);
-  const [wishlist, setWishlist] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const image = imgError ? "/beautiful-garden-wedding-venue-rwanda.jpg" : getServiceImage(service);
-  const isTopPick = index < 3;
+
+  const prev = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); };
+  const next = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); };
 
   return (
     <Link href={`/services/${service.id}`} className="block group">
-      <div className="relative bg-white rounded-[24px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:border-[#668c65]/20 transition-all duration-500 hover:-translate-y-1">
+      {/* Image — square aspect, edge-to-edge rounded corners */}
+      <div
+        className="relative w-full aspect-square overflow-hidden rounded-2xl"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <img
+          src={image}
+          alt={service.name}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+        />
 
-        {/* Image */}
-        <div className="relative h-44 sm:h-48 overflow-hidden bg-slate-100">
-          <img
-            src={image}
-            alt={service.name}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        {/* Subtle gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
 
-          {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-            {isTopPick && (
-              <Badge className="bg-[#668c65] text-white border-0 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 shadow-lg">
-                <TrendingUp className="w-2.5 h-2.5 mr-1" />
-                Top Pick
-              </Badge>
-            )}
-          </div>
+        {/* Heart */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSaved(v => !v); }}
+          className="absolute top-3 right-3 z-10 flex items-center justify-center transition-transform active:scale-90"
+          aria-label="Save"
+        >
+          <Heart className={cn(
+            "h-6 w-6 drop-shadow-md transition-all duration-200",
+            saved ? "fill-rose-500 text-rose-500" : "fill-white/30 text-white stroke-[1.5]"
+          )} />
+        </button>
 
-          {/* Wishlist */}
-          <button
-            onClick={(e) => { e.preventDefault(); setWishlist((w) => !w); }}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md active:scale-95 transition-transform duration-150"
-            aria-label="Save to wishlist"
-          >
-            <Heart className={cn("w-3.5 h-3.5 transition-colors duration-200", wishlist ? "fill-rose-500 text-rose-500" : "text-slate-400")} />
-          </button>
-
-          {/* Quick view — desktop hover only */}
-          <div className="hidden md:flex absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 p-3">
-            <div className="flex items-center justify-center gap-2 w-full bg-white/95 backdrop-blur-sm rounded-xl py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 shadow-lg">
-              <Eye className="w-3 h-3" />
-              <TranslatedText text="View Details" />
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-2.5">
-          <span className="inline-block text-[9px] font-black uppercase tracking-[0.2em] text-[#668c65] bg-[#668c65]/8 px-2 py-0.5 rounded-full">
+        {/* Category pill */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className="px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-sm text-[11px] font-semibold text-slate-800 shadow-sm leading-none">
             {service.category}
           </span>
+        </div>
+      </div>
 
-          <h3 className="font-black text-slate-900 text-base leading-snug tracking-tight line-clamp-1 group-hover:text-[#668c65] transition-colors duration-300">
-            {service.name}
-          </h3>
-
-          {service.business_name && (
-            <div className="text-xs text-slate-400 font-medium truncate flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
-                {service.provider_logo ? (
-                  <img src={service.provider_logo} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-[#668c65]/20 flex items-center justify-center text-[7px] font-black text-[#668c65]">
-                    {(service.business_name || "P").charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <span className="truncate">{service.business_name}</span>
-            </div>
-          )}
-
-          <StarRating rating={service.rating || 0} />
-
-          <div className="flex items-center justify-between pt-0.5">
-            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium min-w-0">
-              <MapPin className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{service.city || service.location || "Rwanda"}</span>
-            </div>
-            <span className="text-[10px] font-black text-slate-700 flex-shrink-0 ml-2">
-              {formatPrice(service.price_range_min, service.price_range_max)}
+      {/* Text — clean, like Airbnb */}
+      <div className="mt-2.5 px-0.5 space-y-0.5">
+        {/* location + rating */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 min-w-0">
+            <MapPin className="h-3 w-3 text-slate-400 flex-shrink-0" />
+            <span className="text-[12px] font-semibold text-slate-500 truncate">
+              {service.city || service.location || "Rwanda"}
             </span>
           </div>
+          {service.rating > 0 ? (
+            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+              <Star className="h-3 w-3 fill-slate-900 text-slate-900" />
+              <span className="text-[13px] font-semibold text-slate-900">{service.rating.toFixed(2)}</span>
+            </div>
+          ) : (
+            <span className="text-[12px] text-slate-400 flex-shrink-0 ml-2">New</span>
+          )}
         </div>
+
+        {/* title */}
+        <p className="text-[14px] font-semibold text-slate-800 line-clamp-1 leading-snug">
+          {service.name}
+        </p>
+
+        {/* provider */}
+        {service.business_name && (
+          <p className="text-[13px] text-slate-400 truncate leading-snug">{service.business_name}</p>
+        )}
+
+        {/* price */}
+        <p className="text-[14px] font-semibold text-slate-900 pt-0.5">
+          {formatPrice(service.price_range_min, service.price_range_max)}
+        </p>
       </div>
     </Link>
   );
@@ -179,18 +171,11 @@ function ServiceCard({ service, index }: { service: any; index: number }) {
 
 function ServiceCardSkeleton() {
   return (
-    <div className="bg-white rounded-[24px] overflow-hidden border border-slate-100">
-      <div className="h-44 bg-slate-100 animate-pulse" />
-      <div className="p-4 space-y-2.5">
-        <div className="h-3 w-16 bg-slate-100 animate-pulse rounded-full" />
-        <div className="h-4 w-3/4 bg-slate-100 animate-pulse rounded" />
-        <div className="h-3 w-1/2 bg-slate-100 animate-pulse rounded" />
-        <div className="h-3 w-24 bg-slate-100 animate-pulse rounded" />
-        <div className="flex justify-between pt-1">
-          <div className="h-3 w-16 bg-slate-100 animate-pulse rounded" />
-          <div className="h-3 w-20 bg-slate-100 animate-pulse rounded" />
-        </div>
-      </div>
+    <div className="space-y-2.5">
+      <div className="aspect-square bg-slate-100 animate-pulse rounded-2xl" />
+      <div className="h-3.5 bg-slate-100 animate-pulse rounded w-3/4" />
+      <div className="h-3 bg-slate-100 animate-pulse rounded w-1/2" />
+      <div className="h-3 bg-slate-100 animate-pulse rounded w-1/3" />
     </div>
   );
 }
@@ -215,12 +200,13 @@ export function PopularServicesSection() {
             <div className="h-4 w-24 bg-slate-100 rounded" />
             <div className="h-8 w-64 bg-slate-100 rounded" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-[24px] overflow-hidden border border-slate-100 p-4 space-y-4">
-                <div className="h-40 bg-slate-100 rounded-2xl" />
-                <div className="h-4 bg-slate-100 rounded w-3/4" />
-                <div className="h-3 bg-slate-100 rounded w-1/2" />
+              <div key={i} className="space-y-2.5">
+                <div className="aspect-square bg-slate-100 animate-pulse rounded-2xl" />
+                <div className="h-3.5 bg-slate-100 animate-pulse rounded w-3/4" />
+                <div className="h-3 bg-slate-100 animate-pulse rounded w-1/2" />
+                <div className="h-3 bg-slate-100 animate-pulse rounded w-1/3" />
               </div>
             ))}
           </div>
@@ -306,9 +292,9 @@ export function PopularServicesSection() {
           ))}
         </div>
 
-        {/* Service grid — 2 cols on mobile, 2 on sm, 4 on lg */}
+        {/* Service grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <ServiceCardSkeleton key={i} />
             ))}
@@ -322,23 +308,23 @@ export function PopularServicesSection() {
                 nextEl: ".popular-next",
               }}
               pagination={{ clickable: true }}
-              spaceBetween={16}
-              slidesPerView={1.2}
+              spaceBetween={12}
+              slidesPerView={2}
               breakpoints={{
                 640: {
-                  slidesPerView: 2.2,
-                  spaceBetween: 20,
+                  slidesPerView: 2,
+                  spaceBetween: 16,
                 },
                 768: {
-                  slidesPerView: 2.5,
-                  spaceBetween: 24,
+                  slidesPerView: 3,
+                  spaceBetween: 20,
                 },
                 1024: {
                   slidesPerView: 4,
                   spaceBetween: 24,
                 },
               }}
-              className="popular-services-swiper pb-12"
+              className="popular-services-swiper pb-10"
             >
               {services.map((service, index) => (
                 <SwiperSlide key={service.id} className="h-auto">

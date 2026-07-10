@@ -90,8 +90,8 @@ export function Navbar() {
       >
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 h-[70px] flex items-center gap-4 lg:gap-6">
 
-          {/* ── Brand ──────────────────────────────────────────────────────── */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group mr-2">
+          {/* ── Brand — desktop only ───────────────────────────────────────── */}
+          <Link href="/" className="hidden md:flex items-center gap-2.5 flex-shrink-0 group mr-2">
             {settings.logoUrl && (
               <Image
                 src={settings.logoUrl}
@@ -109,15 +109,41 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* ── Search bar — stretches to fill space ───────────────────────── */}
+          {/* ── Search bar — desktop only ───────────────────────────────────── */}
           <div className="flex-1 min-w-0 max-w-[600px] hidden md:block">
             <AISearch />
           </div>
 
-          {/* spacer for mobile */}
-          <div className="flex-1 md:hidden" />
+          {/* ── Mobile top bar: logo + search pill + menu ───────────────── */}
+          <div className="flex md:hidden items-center gap-2 w-full">
+            {/* Brand (compact) */}
+            <Link href="/" className="flex items-center gap-1.5 flex-shrink-0">
+              {settings.logoUrl && (
+                <Image src={settings.logoUrl} alt="VowNest" width={28} height={28}
+                  className="object-contain h-7 w-auto" priority />
+              )}
+              <span className="font-serif italic text-[18px] font-bold" style={{ color: BRAND_GREEN }}>
+                VowNest
+              </span>
+            </Link>
 
-          {/* ── Desktop: nav + auth ────────────────────────────────────────── */}
+            {/* Search pill — Airbnb style, grows to fill space */}
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="flex-1 flex items-center gap-2.5 h-11 px-4 rounded-full border border-slate-200 bg-white shadow-sm active:scale-[0.98] transition-all"
+            >
+              <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
+              <span className="text-[13px] text-slate-400 font-medium truncate">Start your search</span>
+            </button>
+
+            {/* Menu icon */}
+            <button
+              onClick={toggleMenu}
+              className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all active:scale-95"
+            >
+              {isMenuOpen ? <XIcon className="h-4 w-4" /> : <MenuIcon className="h-4 w-4" />}
+            </button>
+          </div>
           <div className="hidden md:flex items-center gap-1 ml-auto flex-shrink-0">
 
             {/* Nav links */}
