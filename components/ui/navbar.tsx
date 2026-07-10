@@ -92,30 +92,21 @@ export function Navbar() {
 
           {/* ── Brand ──────────────────────────────────────────────────────── */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group mr-2">
-            {settings.logoUrl ? (
+            {settings.logoUrl && (
               <Image
                 src={settings.logoUrl}
                 alt="VowNest"
-                width={110} height={36}
+                width={36} height={36}
                 className="object-contain h-9 w-auto"
                 priority
               />
-            ) : (
-              <>
-                <div
-                  className="h-9 w-9 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${BRAND_GREEN}, #4a6b49)` }}
-                >
-                  <span className="font-serif italic text-white text-[18px] font-bold leading-none">V</span>
-                </div>
-                <span
-                  className="font-serif italic text-[22px] font-bold tracking-tight hidden sm:block"
-                  style={{ color: BRAND_DARK }}
-                >
-                  VowNest
-                </span>
-              </>
             )}
+            <span
+              className="font-serif italic text-[22px] font-bold tracking-tight"
+              style={{ color: BRAND_GREEN }}
+            >
+              VowNest
+            </span>
           </Link>
 
           {/* ── Search bar — stretches to fill space ───────────────────────── */}
@@ -317,13 +308,15 @@ export function Navbar() {
             {/* Drawer top */}
             <div className="flex items-center justify-between px-6 h-[70px] border-b border-slate-100 flex-shrink-0">
               <div className="flex items-center gap-2.5">
-                <div
-                  className="h-8 w-8 rounded-xl flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${BRAND_GREEN}, #4a6b49)` }}
-                >
-                  <span className="font-serif italic text-white text-[16px] font-bold leading-none">V</span>
-                </div>
-                <span className="font-serif italic text-[20px] font-bold" style={{ color: BRAND_DARK }}>VowNest</span>
+                {settings.logoUrl && (
+                  <Image
+                    src={settings.logoUrl}
+                    alt="VowNest"
+                    width={32} height={32}
+                    className="object-contain h-8 w-auto"
+                  />
+                )}
+                <span className="font-serif italic text-[20px] font-bold" style={{ color: BRAND_GREEN }}>VowNest</span>
               </div>
               <button
                 onClick={toggleMenu}
