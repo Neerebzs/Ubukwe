@@ -5,19 +5,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import {
   Calendar, MapPin, Search, Music, Palette, UtensilsCrossed,
-  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark, Loader2
+  Dumbbell, Mic2, Film, MoreHorizontal, Bookmark, Loader2, X, CalendarDays
 } from "lucide-react"
 import Link from "next/link"
 import { PublicBottomNav } from "@/components/ui/public-bottom-nav"
 import { TranslatedText } from "@/components/translated-text"
 import { EventCard } from "@/components/ui/event-card"
 import { usePublicEvents } from "@/hooks/useCustomerEvents"
+import { format, isSameDay, startOfDay } from "date-fns"
 
 export default function EventsPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [selectedCategory, setSelectedCategory] = useState("all")
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   const { data: events = [], isLoading, error } = usePublicEvents(
     selectedCategory !== "all" ? selectedCategory : undefined
@@ -33,10 +38,10 @@ export default function EventsPage() {
     { id: "other",             name: "More",             icon: <MoreHorizontal className="h-4 w-4" /> },
   ]
 
-  // Filter events based on active tab
+  // Filter events based on active tab — past events are always excluded
   const getFilteredEvents = () => {
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = startOfDay(now)
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
     const weekendStart = new Date(today)
@@ -44,20 +49,27 @@ export default function EventsPage() {
     weekendStart.setDate(weekendStart.getDate() + daysUntilWeekend)
 
     return events.filter((event: any) => {
-      const eventDate = new Date(event.event_date)
-      const eventDay = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate())
+      const eventDay = startOfDay(new Date(event.event_date))
+
+      // Always exclude events that have already passed
+      if (eventDay < today) return false
+
+      // Date picker filter takes priority over tab filters
+      if (selectedDate) {
+        return isSameDay(eventDay, selectedDate)
+      }
 
       switch (activeTab) {
         case "happening-now":
-          return eventDay.getTime() === today.getTime()
+          return isSameDay(eventDay, today)
         case "today":
-          return eventDay.getTime() === today.getTime()
+          return isSameDay(eventDay, today)
         case "tomorrow":
-          return eventDay.getTime() === tomorrow.getTime()
+          return isSameDay(eventDay, tomorrow)
         case "weekend":
           return eventDay >= weekendStart
         default:
-          return true
+          return true // "all" — only upcoming events (past already excluded above)
       }
     })
   }
@@ -125,9 +137,15 @@ export default function EventsPage() {
               <Button
                 variant="outline"
                 size="icon"
-                className="rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 transition-all flex-shrink-0"
+                onClick={() => setDatePickerOpen(true)}
+                className={`rounded-xl border-slate-200 transition-all flex-shrink-0 ${
+                  selectedDate
+                    ? "bg-[#608d64] text-white border-[#608d64] hover:bg-[#4e7252] hover:border-[#4e7252]"
+                    : "text-slate-400 hover:text-slate-900"
+                }`}
+                title={selectedDate ? `Filtered: ${format(selectedDate, "MMM d, yyyy")}` : "Filter by date"}
               >
-                <Calendar className="h-4 w-4" />
+                <CalendarDays className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -142,11 +160,23 @@ export default function EventsPage() {
             <div className="flex items-center gap-4">
               <div className="h-2 w-2 bg-[#608d64] rounded-full animate-pulse" />
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.3em]">
-                <TranslatedText text={`${activeTab.replace('-', ' ')} Collection`} />
+                {selectedDate
+                  ? <span>{format(selectedDate, "MMMM d, yyyy")}</span>
+                  : <TranslatedText text={`${activeTab.replace('-', ' ')} Collection`} />
+                }
               </h2>
+              {selectedDate && (
+                <button
+                  onClick={() => setSelectedDate(undefined)}
+                  className="flex items-center gap-1.5 bg-[#608d64]/10 text-[#608d64] rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest hover:bg-[#608d64]/20 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                  Clear Date
+                </button>
+              )}
             </div>
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {filteredEvents.length} Gatherings Found
+              {filteredEvents.length} Gathering{filteredEvents.length !== 1 ? "s" : ""} Found
             </div>
           </div>
 
@@ -181,6 +211,68 @@ export default function EventsPage() {
       </div>
 
       <PublicBottomNav />
+
+      {/* Date Picker Modal */}
+      <Dialog open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+        <DialogContent className="sm:max-w-sm p-0 overflow-hidden rounded-3xl border-0 shadow-2xl">
+          {/* Header */}
+          <div className="bg-[#608d64] px-6 pt-6 pb-5">
+            <DialogTitle className="text-white font-serif italic text-2xl leading-tight">
+              Pick a Date
+            </DialogTitle>
+            <DialogDescription className="text-white/70 text-[11px] font-bold uppercase tracking-[0.2em] mt-1">
+              Browse events on a specific day
+            </DialogDescription>
+            {selectedDate && (
+              <div className="mt-3 inline-flex items-center gap-2 bg-white/20 rounded-full px-3 py-1">
+                <CalendarDays className="h-3.5 w-3.5 text-white" />
+                <span className="text-white text-xs font-bold">{format(selectedDate, "EEEE, MMMM d")}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Calendar */}
+          <div className="px-4 py-4 flex justify-center">
+            <CalendarComponent
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                setSelectedDate(date)
+                setDatePickerOpen(false)
+              }}
+              disabled={{ before: startOfDay(new Date()) }}
+              className="rounded-xl"
+              classNames={{
+                day: "relative w-full h-full p-0 text-center group/day aspect-square select-none",
+              }}
+            />
+          </div>
+
+          {/* Footer actions */}
+          <div className="px-6 pb-6 flex items-center gap-3">
+            {selectedDate && (
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-sm"
+                onClick={() => {
+                  setSelectedDate(undefined)
+                  setDatePickerOpen(false)
+                }}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Clear Filter
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              className="flex-1 rounded-full text-slate-400 hover:text-slate-600 font-bold text-sm"
+              onClick={() => setDatePickerOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
