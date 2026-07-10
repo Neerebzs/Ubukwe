@@ -60,7 +60,6 @@ export function AISearch({ className, open, onClose }: AISearchProps) {
   const [error, setError] = useState<string | null>(null);
 
   const panelRef      = useRef<HTMLDivElement>(null);
-  const modalInputRef = useRef<HTMLInputElement>(null);
   const modalPanelRef = useRef<HTMLDivElement>(null);
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -188,74 +187,14 @@ export function AISearch({ className, open, onClose }: AISearchProps) {
         </button>
       </div>
 
-      {/* ── Dropdown panel ── */}
+          {/* ── Dropdown panel ── */}
       {isOpen && (
         <div
           ref={modalPanelRef}
           onMouseDown={e => e.stopPropagation()}
-          className="absolute top-[calc(100%+10px)] left-1/2 -translate-x-1/2 w-[660px] max-w-[95vw] bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/60 z-[200] max-h-[80vh] flex flex-col overflow-hidden"
+          className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-full min-w-[480px] max-w-[660px] bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/60 z-[200] max-h-[70vh] flex flex-col overflow-hidden"
         >
-          {/* Panel header */}
-          <div className="sticky top-0 z-10 bg-white px-5 pt-5 pb-4 border-b border-slate-50">
-            <div className="flex items-center gap-3">
-
-              {/* Query field */}
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                <input
-                  ref={modalInputRef}
-                  type="text"
-                  value={query}
-                  onChange={e => handleInput(e.target.value)}
-                  onMouseDown={e => e.stopPropagation()}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); query.trim() && search(query, location); } }}
-                  placeholder="Ask AI — find venues, photographers…"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-full py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all"
-                />
-              </div>
-
-              {/* Location field */}
-              <div className="relative w-36 flex-shrink-0">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={location}
-                  onChange={e => setLocation(e.target.value)}
-                  onMouseDown={e => e.stopPropagation()}
-                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); query.trim() && search(query, location); } }}
-                  placeholder="Location"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-full py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all"
-                />
-              </div>
-
-              {/* Search button — brand green */}
-              <button
-                type="button"
-                onClick={e => { e.stopPropagation(); query.trim() && search(query, location); }}
-                disabled={!query.trim() || isLoading}
-                className="h-11 w-11 flex items-center justify-center rounded-full disabled:bg-slate-200 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                style={{ background: "#668c65" }}
-                onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#527052"; }}
-                onMouseLeave={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "#668c65"; }}
-              >
-                {isLoading
-                  ? <Loader2 className="h-4 w-4 text-white animate-spin" />
-                  : <Search className="h-4 w-4 text-white" />
-                }
-              </button>
-
-              {/* Close button */}
-              <button
-                type="button"
-                onClick={handleClose}
-                className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors flex-shrink-0"
-              >
-                <X className="h-5 w-5 text-slate-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable results */}
+          {/* Scrollable results — no repeated inputs, panel is results-only */}
           <div className="overflow-y-auto">
 
             {isLoading && (
