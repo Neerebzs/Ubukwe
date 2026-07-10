@@ -61,6 +61,7 @@ export function AISearch({ className, open, onClose }: AISearchProps) {
 
   const panelRef      = useRef<HTMLDivElement>(null);
   const modalPanelRef = useRef<HTMLDivElement>(null);
+  const modalInputRef = useRef<HTMLInputElement>(null);
   const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const API_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:4000").replace(/\/+$/, "");

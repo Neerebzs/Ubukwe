@@ -7,7 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   MenuIcon, XIcon, Home, Briefcase, Info, Calendar,
-  LogOut, LayoutDashboard, ChevronDown, Ticket, Search,
+  LogOut, LayoutDashboard, ChevronDown, Ticket,
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,7 +43,6 @@ export function Navbar() {
   const [eventsOpen,     setEventsOpen]     = React.useState(false);
   const [userMenuOpen,   setUserMenuOpen]   = React.useState(false);
   const [mobileEventsOpen, setMobileEventsOpen] = React.useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = React.useState(false);
 
   const eventsRef  = React.useRef<HTMLDivElement>(null);
   const userRef    = React.useRef<HTMLDivElement>(null);
@@ -88,7 +87,7 @@ export function Navbar() {
             : "border-b border-slate-100"}
         `}
       >
-        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-10 h-[68px] flex items-center gap-4 lg:gap-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-10 h-auto md:h-[68px] py-2.5 md:py-0 flex items-center gap-3 lg:gap-6">
 
           {/* ── Brand — desktop only ───────────────────────────────────────── */}
           <Link href="/" className="hidden md:flex items-center gap-2.5 flex-shrink-0 group mr-2">
@@ -114,18 +113,33 @@ export function Navbar() {
             <AISearch />
           </div>
 
-          {/* ── Mobile top bar: full-width search pill like Airbnb ──────────── */}
-          <div className="flex md:hidden items-center gap-3 w-full">
-            {/* Full-width search pill — tapping opens search overlay */}
-            <button
-              onClick={() => setMobileSearchOpen(true)}
-              className="flex-1 flex items-center gap-3 h-12 px-5 rounded-full border border-slate-200 bg-white shadow-sm active:scale-[0.98] transition-all"
-            >
-              <Search className="h-4 w-4 text-slate-500 flex-shrink-0" />
-              <span className="text-[14px] text-slate-500 font-medium">Start your search</span>
-            </button>
+          {/* ── Mobile top bar ──────────────────────────────────────────────── */}
+          <div className="flex md:hidden items-center gap-2.5 w-full min-w-0">
+            {/* Brand logo — mobile */}
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+              {settings.logoUrl && (
+                <Image
+                  src={settings.logoUrl}
+                  alt="VowNest"
+                  width={30} height={30}
+                  className="object-contain h-8 w-auto"
+                  priority
+                />
+              )}
+              <span
+                className="hidden sm:block font-serif italic text-[18px] font-bold tracking-tight leading-none"
+                style={{ color: BRAND_GREEN }}
+              >
+                VowNest
+              </span>
+            </Link>
 
-            {/* Menu icon — slim circle */}
+            {/* Real AISearch — same component as desktop */}
+            <div className="flex-1 min-w-0">
+              <AISearch />
+            </div>
+
+            {/* Hamburger */}
             <button
               onClick={toggleMenu}
               className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-all active:scale-95"
@@ -278,37 +292,11 @@ export function Navbar() {
             )}
           </div>
 
-          {/* ── Mobile: search + hamburger ─────────────────────────────────── */}
-          <div className="flex md:hidden items-center gap-1 ml-auto">
-            <button
-              onClick={() => setMobileSearchOpen(true)}
-              className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-all active:scale-95"
-            >
-              <Search className="h-[18px] w-[18px]" />
-            </button>
-            <button
-              onClick={toggleMenu}
-              className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-700 transition-all active:scale-95"
-            >
-              {isMenuOpen ? <XIcon className="h-[18px] w-[18px]" /> : <MenuIcon className="h-[18px] w-[18px]" />}
-            </button>
-          </div>
+
 
         </div>
       </header>
 
-      {/* ══════════════════════ MOBILE SEARCH OVERLAY ══════════════════════ */}
-      {isMobile && mobileSearchOpen && (
-        <div className="fixed inset-0 z-[110]">
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={() => setMobileSearchOpen(false)}
-          />
-          <div className="relative z-10 bg-white px-4 pt-3 pb-3 border-b border-slate-100 shadow-md">
-            <AISearch open={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} />
-          </div>
-        </div>
-      )}
 
       {/* ════════════════════════ MOBILE DRAWER ════════════════════════════ */}
       {isMobile && isMenuOpen && (
