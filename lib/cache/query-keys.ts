@@ -132,7 +132,22 @@ export const queryKeys = {
     taskStats: () => ['wedding', 'task-stats'] as const,
     guests: (id: string) => ['wedding', 'guests', id] as const,
     invitations: (id: string) => ['wedding', 'invitations', id] as const,
+    website: (id: string) => ['wedding', 'website', id] as const,
+    customDomain: (id: string) => ['wedding', 'custom-domain', id] as const,
+    gifts: (id: string) => ['wedding', 'gifts', id] as const,
+    giftsSummary: (id: string) => ['wedding', 'gifts-summary', id] as const,
+    mcProgram: (id: string) => ['wedding', 'mc-program', id] as const,
+    team: (id: string) => ['wedding', 'team', id] as const,
+    guestbook: (id: string) => ['wedding', 'guestbook', id] as const,
+    analytics: (id: string) => ['wedding', 'analytics', id] as const,
+    announcements: (id: string) => ['wedding', 'announcements', id] as const,
+    gallery: (id: string) => ['wedding', 'gallery', id] as const,
+    events: (id: string) => ['wedding', 'events', id] as const,
+    timeline: (id: string) => ['wedding', 'timeline', id] as const,
   },
+
+  publicWebsite: (slug: string, preview?: string) =>
+    ['public-website', slug, { preview }] as const,
 
   // ── EVENTS (provider-owned) ─────────────────────────────────────────────────
   events: {

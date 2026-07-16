@@ -8,6 +8,20 @@ let baseUrl = rawBaseUrl.startsWith('http') ? rawBaseUrl : `https://${rawBaseUrl
 const API_BASE_URL = baseUrl.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 const API_VERSION = 'v1';
 
+/** Append preview + wedding privacy access_token for public wedding GET APIs. */
+function publicWeddingQs(slug: string, preview?: string, accessToken?: string): string {
+  const params = new URLSearchParams();
+  if (preview) params.set('preview', preview);
+  const token =
+    accessToken ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem(`wedding-access-${slug}`) || undefined
+      : undefined);
+  if (token) params.set('access_token', token);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 export const API_ENDPOINTS = {
   // Auth endpoints
   AUTH: {
@@ -46,12 +60,26 @@ export const API_ENDPOINTS = {
     ACTIVATE_PROVIDER: `/api/${API_VERSION}/admin/providers`, // + /:id/activate
   },
   // Provider endpoints
-  PROVIDER: {
+    PROVIDER: {
     GET_PROFILE: `/api/${API_VERSION}/provider/profile`,
     UPDATE_PROFILE: `/api/${API_VERSION}/provider/profile`,
     ONBOARDING_STATUS: `/api/${API_VERSION}/provider/onboarding/status`,
     UPLOAD_DOCUMENTS: `/api/${API_VERSION}/provider/profile/upload-documents`,
     SERVICES: `/api/${API_VERSION}/provider/services/`,
+    WORKFORCE: {
+      DASHBOARD: `/api/${API_VERSION}/provider/workforce/dashboard`,
+      WORKERS: `/api/${API_VERSION}/provider/workforce/workers`,
+      TEAMS: `/api/${API_VERSION}/provider/workforce/teams`,
+      EVENTS: `/api/${API_VERSION}/provider/workforce/events`,
+      PAYROLL: `/api/${API_VERSION}/provider/workforce/payroll`,
+      ROLE_RATES: `/api/${API_VERSION}/provider/workforce/role-rates`,
+      COMMISSION_PLANS: `/api/${API_VERSION}/provider/workforce/commission-plans`,
+      LEAVE: `/api/${API_VERSION}/provider/workforce/leave`,
+      DOCUMENTS: `/api/${API_VERSION}/provider/workforce/documents`,
+      PERFORMANCE: `/api/${API_VERSION}/provider/workforce/performance`,
+      SETTINGS: `/api/${API_VERSION}/provider/workforce/settings`,
+      REPORTS: (type: string) => `/api/${API_VERSION}/provider/workforce/reports/${type}`,
+    },
   },
   // File Upload endpoints
   UPLOAD: {
@@ -76,6 +104,47 @@ export const API_ENDPOINTS = {
     DASHBOARD_SUMMARY: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/dashboard-summary`,
     CATEGORY_INSIGHTS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/category-insights`,
     RECALCULATE_SPENDING: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/recalculate-spending`,
+    WEBSITE: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website`,
+    WEBSITE_PUBLISH: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/publish`,
+    WEBSITE_UNPUBLISH: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/unpublish`,
+    WEBSITE_ARCHIVE: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/archive`,
+    WEBSITE_PREVIEW_URL: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/preview-url`,
+    SLUG_CHECK: `/api/${API_VERSION}/wedding/slugs/check`,
+    WEBSITE_SECTIONS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections`,
+    WEBSITE_SECTIONS_REORDER: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections/reorder`,
+    WEBSITE_SECTIONS_TRASH: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections/trash`,
+    WEBSITE_SECTION: (weddingId: string, sectionId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections/${sectionId}`,
+    WEBSITE_SECTION_RESTORE: (weddingId: string, sectionId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections/${sectionId}/restore`,
+    WEBSITE_SECTION_DUPLICATE: (weddingId: string, sectionId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/sections/${sectionId}/duplicate`,
+    GIFTS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts`,
+    GIFTS_SUMMARY: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/summary`,
+    GIFT_APPROVE: (weddingId: string, giftId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/${giftId}/approve`,
+    GIFT_REJECT: (weddingId: string, giftId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/${giftId}/reject`,
+    GIFT_RECEIVED: (weddingId: string, giftId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/${giftId}/received`,
+    GIFT_THANK_YOU: (weddingId: string, giftId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/${giftId}/thank-you`,
+    GIFTS_EXPORT: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gifts/export`,
+    MC_PROGRAM: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/mc-program`,
+    MC_PROGRAM_ITEM: (weddingId: string, itemId: string) => `/api/${API_VERSION}/wedding/${weddingId}/mc-program/${itemId}`,
+    MC_ACCESS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/mc-access`,
+    TEAM: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/team`,
+    TEAM_INVITE: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/team/invite`,
+    TEAM_MEMBER: (weddingId: string, roleId: string) => `/api/${API_VERSION}/wedding/${weddingId}/team/${roleId}`,
+    TEAM_ACCEPT: `/api/${API_VERSION}/wedding/team/accept-invite`,
+    GUESTBOOK: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/guestbook`,
+    GUESTBOOK_ENTRY: (weddingId: string, entryId: string) => `/api/${API_VERSION}/wedding/${weddingId}/guestbook/${entryId}`,
+    WEBSITE_ANALYTICS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/analytics`,
+    CUSTOM_DOMAIN: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/custom-domain`,
+    CUSTOM_DOMAIN_VERIFY: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/website/custom-domain/verify`,
+    ANNOUNCEMENTS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/announcements`,
+    ANNOUNCEMENT: (weddingId: string, id: string) => `/api/${API_VERSION}/wedding/${weddingId}/announcements/${id}`,
+    GALLERY: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gallery`,
+    GALLERY_ITEM: (weddingId: string, itemId: string) => `/api/${API_VERSION}/wedding/${weddingId}/gallery/${itemId}`,
+    EVENTS: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/events`,
+    EVENT: (weddingId: string, eventId: string) => `/api/${API_VERSION}/wedding/${weddingId}/events/${eventId}`,
+    EVENTS_SEED: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/events/seed`,
+    TIMELINE: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/timeline`,
+    TIMELINE_ITEM: (weddingId: string, itemId: string) => `/api/${API_VERSION}/wedding/${weddingId}/timeline/${itemId}`,
+    TIMELINE_SEED: (weddingId: string) => `/api/${API_VERSION}/wedding/${weddingId}/timeline/seed`,
   },
   // Public Service endpoints
   SERVICES: {
@@ -86,6 +155,22 @@ export const API_ENDPOINTS = {
   // Public endpoints
   PUBLIC: {
     CATEGORIES: `/api/${API_VERSION}/public/categories`,
+    WEDDING_SITE: (slug: string) => `/api/${API_VERSION}/public/w/${slug}`,
+    WEDDING_VERIFY_ACCESS: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/verify-access`,
+    WEDDING_RSVP: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/rsvp`,
+    WEDDING_GIFTS: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/gifts`,
+    WEDDING_GIFTS_PUBLIC: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/gifts/public`,
+    WEDDING_GIFTS_PAY: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/gifts/pay`,
+    WEDDING_GIFTS_VERIFY: `/api/${API_VERSION}/public/gifts/verify-payment`,
+    WEDDING_MC: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/mc`,
+    WEDDING_MC_COMPLETE: (slug: string, itemId: string) => `/api/${API_VERSION}/public/w/${slug}/mc/program/${itemId}/complete`,
+    WEDDING_MC_NOTES: (slug: string, itemId: string) => `/api/${API_VERSION}/public/w/${slug}/mc/program/${itemId}/notes`,
+    WEDDING_GUESTBOOK: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/guestbook`,
+    WEDDING_GALLERY: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/gallery`,
+    WEDDING_EVENTS: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/events`,
+    WEDDING_TIMELINE: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/timeline`,
+    CAPTCHA_STATUS: `/api/${API_VERSION}/public/captcha-status`,
+    RESOLVE_DOMAIN: `/api/${API_VERSION}/public/resolve-domain`,
   },
   // Notifications endpoints
   NOTIFICATIONS: {
@@ -218,6 +303,177 @@ export interface Wedding {
   spent: string;  // Decimal from backend
   created_at: string;
   updated_at?: string;
+}
+
+export interface WeddingWebsiteSection {
+  id: string;
+  website_id: string;
+  section_type: string;
+  title?: string;
+  content: Record<string, unknown>;
+  sort_order: number;
+  is_visible: boolean;
+  deleted_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WeddingWebsite {
+  id: string;
+  wedding_id: string;
+  slug: string;
+  slug_type: "custom" | "auto";
+  status: "draft" | "preview" | "published" | "archived";
+  theme_id: string;
+  theme_config: Record<string, unknown>;
+  couple_profile: Record<string, unknown>;
+  privacy_mode: string;
+  guest_access_config: Record<string, unknown>;
+  seo_config: Record<string, unknown>;
+  custom_domain?: string | null;
+  custom_domain_verified: boolean;
+  has_custom_domain?: boolean;
+  published_at?: string | null;
+  archived_at?: string | null;
+  created_at: string;
+  updated_at?: string;
+  sections?: WeddingWebsiteSection[];
+}
+
+export interface PublicWeddingSite {
+  slug: string;
+  status: string;
+  theme_id: string;
+  theme_config: Record<string, unknown>;
+  couple_profile: Record<string, unknown>;
+  seo_config: Record<string, unknown>;
+  privacy_mode: string;
+  requires_access?: boolean;
+  sections: WeddingWebsiteSection[];
+  wedding: {
+    couple_name: string;
+    wedding_date?: string;
+    venue?: string;
+  };
+}
+
+export interface WeddingGift {
+  id: string;
+  reference_number: string;
+  contributor_name: string;
+  contributor_phone?: string | null;
+  contributor_email?: string | null;
+  relationship: string;
+  gift_type: string;
+  gift_details: Record<string, unknown>;
+  privacy: string;
+  status: string;
+  amount?: string | null;
+  currency: string;
+  thank_you_sent: boolean;
+  received_at?: string | null;
+  created_at: string;
+}
+
+export interface GiftSummary {
+  total_gifts: number;
+  total_amount: string;
+  received_amount: string;
+  pending_count: number;
+  received_count: number;
+  contributors_count: number;
+  popular_gift_type?: string | null;
+  by_type: Record<string, number>;
+}
+
+export interface MCProgramItem {
+  id: string;
+  wedding_id: string;
+  start_time: string;
+  end_time?: string | null;
+  title: string;
+  description?: string | null;
+  responsible_person?: string | null;
+  couple_notes?: string | null;
+  mc_private_notes?: string | null;
+  is_completed: boolean;
+  completed_at?: string | null;
+  sort_order: number;
+}
+
+export interface MCPortalData {
+  wedding: { couple_name: string; wedding_date?: string; venue?: string };
+  access_mode: string;
+  program: MCProgramItem[];
+  announcements?: WeddingAnnouncement[];
+  live_status: {
+    current_activity_id?: string | null;
+    completed_count: number;
+    total_count: number;
+  };
+}
+
+export interface WeddingAnnouncement {
+  id: string;
+  wedding_id: string;
+  website_id: string;
+  title: string;
+  message: string;
+  priority: string;
+  is_active: boolean;
+  notify_mc: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface WeddingGalleryItem {
+  id: string;
+  website_id: string;
+  wedding_id: string;
+  image_url: string;
+  thumbnail_url?: string | null;
+  caption?: string | null;
+  uploader_name?: string | null;
+  source: string;
+  status: string;
+  sort_order: number;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface WeddingEventItem {
+  id: string;
+  wedding_id: string;
+  title: string;
+  event_type: string;
+  event_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  gps_lat?: number | null;
+  gps_lng?: number | null;
+  google_maps_url?: string | null;
+  parking_info?: string | null;
+  dress_code?: string | null;
+  contacts?: { name?: string; phone?: string }[];
+  notes?: string | null;
+  is_public: boolean;
+  sort_order: number;
+}
+
+export interface WeddingTimelineItem {
+  id: string;
+  wedding_id: string;
+  title: string;
+  description?: string | null;
+  event_date?: string | null;
+  event_time?: string | null;
+  location?: string | null;
+  images?: string[];
+  videos?: string[];
+  is_public: boolean;
+  sort_order: number;
 }
 
 export interface WeddingTask {
@@ -868,6 +1124,275 @@ export const apiClient = {
     },
     listTemplates(): Promise<any> {
       return apiClient.get(`/api/v1/invitations/templates`);
+    },
+  },
+  website: {
+    get<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.WEBSITE(weddingId));
+    },
+    create<T>(weddingId: string, data?: { slug?: string; slug_type?: string; theme_id?: string }): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE(weddingId), data || {});
+    },
+    update<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.WEBSITE(weddingId), data);
+    },
+    publish<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_PUBLISH(weddingId), {});
+    },
+    unpublish<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_UNPUBLISH(weddingId), {});
+    },
+    archive<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_ARCHIVE(weddingId), {});
+    },
+    previewUrl<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.WEBSITE_PREVIEW_URL(weddingId));
+    },
+    checkSlug<T>(slug: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.WEDDING.SLUG_CHECK}?slug=${encodeURIComponent(slug)}`);
+    },
+    getPublic<T>(slug: string, preview?: string, accessToken?: string): Promise<ApiResponse<T>> {
+      const params = new URLSearchParams();
+      if (preview) params.set("preview", preview);
+      if (accessToken) params.set("access_token", accessToken);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_SITE(slug)}${qs}`);
+    },
+    verifyAccess<T>(slug: string, data: { password?: string; invite_code?: string }): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.PUBLIC.WEDDING_VERIFY_ACCESS(slug), data);
+    },
+    submitRsvp<T>(slug: string, data: Record<string, unknown>, preview?: string): Promise<ApiResponse<T>> {
+      const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+      return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_RSVP(slug)}${qs}`, data);
+    },
+    updateSection<T>(weddingId: string, sectionId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTION(weddingId, sectionId), data);
+    },
+    createSection<T>(weddingId: string, data: { section_type: string; title?: string; content?: Record<string, unknown> }): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTIONS(weddingId), data);
+    },
+    reorderSections<T>(weddingId: string, sectionIds: string[]): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTIONS_REORDER(weddingId), { section_ids: sectionIds });
+    },
+    deleteSection<T>(weddingId: string, sectionId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTION(weddingId, sectionId));
+    },
+    restoreSection<T>(weddingId: string, sectionId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTION_RESTORE(weddingId, sectionId), {});
+    },
+    duplicateSection<T>(weddingId: string, sectionId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTION_DUPLICATE(weddingId, sectionId), {});
+    },
+    listTrash<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.WEBSITE_SECTIONS_TRASH(weddingId));
+    },
+    getCustomDomain<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.CUSTOM_DOMAIN(weddingId));
+    },
+    setCustomDomain<T>(weddingId: string, domain: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.CUSTOM_DOMAIN(weddingId), { domain });
+    },
+    verifyCustomDomain<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.CUSTOM_DOMAIN_VERIFY(weddingId), {});
+    },
+    removeCustomDomain<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.CUSTOM_DOMAIN(weddingId));
+    },
+  },
+  public: {
+    getCaptchaStatus<T>(): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.PUBLIC.CAPTCHA_STATUS);
+    },
+    resolveDomain<T>(host: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.RESOLVE_DOMAIN}?host=${encodeURIComponent(host)}`);
+    },
+  },
+  gifts: {
+    list<T>(weddingId: string, status?: string): Promise<ApiResponse<T>> {
+      const qs = status ? `?status=${status}` : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.WEDDING.GIFTS(weddingId)}${qs}`);
+    },
+    summary<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.GIFTS_SUMMARY(weddingId));
+    },
+    registerPublic<T>(slug: string, data: Record<string, unknown>, preview?: string): Promise<ApiResponse<T>> {
+      const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+      return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS(slug)}${qs}`, data);
+    },
+    payOnline<T>(slug: string, data: { gift_id?: string; reference_number?: string }, preview?: string): Promise<ApiResponse<T>> {
+      const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+      return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS_PAY(slug)}${qs}`, data);
+    },
+    verifyPayment<T>(contributionId: string, transactionToken?: string): Promise<ApiResponse<T>> {
+      const params = new URLSearchParams({ contribution_id: contributionId });
+      if (transactionToken) params.set("TransactionToken", transactionToken);
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS_VERIFY}?${params}`);
+    },
+    listPublic<T>(slug: string, preview?: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS_PUBLIC(slug)}${publicWeddingQs(slug, preview)}`);
+    },
+    approve<T>(weddingId: string, giftId: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.GIFT_APPROVE(weddingId, giftId), {});
+    },
+    reject<T>(weddingId: string, giftId: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.GIFT_REJECT(weddingId, giftId), {});
+    },
+    markReceived<T>(weddingId: string, giftId: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.GIFT_RECEIVED(weddingId, giftId), {});
+    },
+    thankYou<T>(weddingId: string, giftId: string, message?: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.GIFT_THANK_YOU(weddingId, giftId), { message });
+    },
+    exportCsvUrl(weddingId: string): string {
+      return `${API_BASE_URL}${API_ENDPOINTS.WEDDING.GIFTS_EXPORT(weddingId)}`;
+    },
+  },
+  announcements: {
+    list<T>(weddingId: string, activeOnly?: boolean): Promise<ApiResponse<T>> {
+      const qs = activeOnly ? "?active_only=true" : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.WEDDING.ANNOUNCEMENTS(weddingId)}${qs}`);
+    },
+    create<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.ANNOUNCEMENTS(weddingId), data);
+    },
+    update<T>(weddingId: string, id: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.ANNOUNCEMENT(weddingId, id), data);
+    },
+    delete<T>(weddingId: string, id: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.ANNOUNCEMENT(weddingId, id));
+    },
+  },
+  gallery: {
+    list<T>(weddingId: string, status?: string): Promise<ApiResponse<T>> {
+      const qs = status ? `?status=${status}` : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.WEDDING.GALLERY(weddingId)}${qs}`);
+    },
+    add<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.GALLERY(weddingId), data);
+    },
+    moderate<T>(weddingId: string, itemId: string, status: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.GALLERY_ITEM(weddingId, itemId), { status });
+    },
+    delete<T>(weddingId: string, itemId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.GALLERY_ITEM(weddingId, itemId));
+    },
+    listPublic<T>(slug: string, preview?: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GALLERY(slug)}${publicWeddingQs(slug, preview)}`);
+    },
+    submitPublic<T>(slug: string, data: Record<string, unknown>, preview?: string): Promise<ApiResponse<T>> {
+      const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+      return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GALLERY(slug)}${qs}`, data);
+    },
+  },
+  events: {
+    list<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.EVENTS(weddingId));
+    },
+    create<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.EVENTS(weddingId), data);
+    },
+    seed<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.EVENTS_SEED(weddingId), {});
+    },
+    update<T>(weddingId: string, eventId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.EVENT(weddingId, eventId), data);
+    },
+    delete<T>(weddingId: string, eventId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.EVENT(weddingId, eventId));
+    },
+    listPublic<T>(slug: string, preview?: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_EVENTS(slug)}${publicWeddingQs(slug, preview)}`);
+    },
+  },
+  timeline: {
+    list<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.TIMELINE(weddingId));
+    },
+    create<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.TIMELINE(weddingId), data);
+    },
+    seed<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.TIMELINE_SEED(weddingId), {});
+    },
+    update<T>(weddingId: string, itemId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.TIMELINE_ITEM(weddingId, itemId), data);
+    },
+    delete<T>(weddingId: string, itemId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.TIMELINE_ITEM(weddingId, itemId));
+    },
+    listPublic<T>(slug: string, preview?: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_TIMELINE(slug)}${publicWeddingQs(slug, preview)}`);
+    },
+  },
+  mcPortal: {
+    listProgram<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.MC_PROGRAM(weddingId));
+    },
+    createItem<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.MC_PROGRAM(weddingId), data);
+    },
+    updateItem<T>(weddingId: string, itemId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.MC_PROGRAM_ITEM(weddingId, itemId), data);
+    },
+    deleteItem<T>(weddingId: string, itemId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.MC_PROGRAM_ITEM(weddingId, itemId));
+    },
+    generateAccessLink<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.MC_ACCESS(weddingId), {});
+    },
+    updateAccess<T>(weddingId: string, access_mode: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.MC_ACCESS(weddingId), { access_mode });
+    },
+    getPublic<T>(slug: string, token?: string, preview?: string): Promise<ApiResponse<T>> {
+      const params = new URLSearchParams();
+      if (token) params.set("token", token);
+      if (preview) params.set("preview", preview);
+      const qs = params.toString() ? `?${params}` : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_MC(slug)}${qs}`);
+    },
+    completeActivity<T>(slug: string, itemId: string, token?: string): Promise<ApiResponse<T>> {
+      const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+      return apiClient.put<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_MC_COMPLETE(slug, itemId)}${qs}`, {});
+    },
+    saveNotes<T>(slug: string, itemId: string, notes: string, token?: string): Promise<ApiResponse<T>> {
+      const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+      return apiClient.put<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_MC_NOTES(slug, itemId)}${qs}`, { notes });
+    },
+  },
+  team: {
+    list<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.TEAM(weddingId));
+    },
+    assign<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.TEAM(weddingId), data);
+    },
+    invite<T>(weddingId: string, data: Record<string, unknown>): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.TEAM_INVITE(weddingId), data);
+    },
+    remove<T>(weddingId: string, roleId: string): Promise<ApiResponse<T>> {
+      return apiClient.delete<T>(API_ENDPOINTS.WEDDING.TEAM_MEMBER(weddingId, roleId));
+    },
+    acceptInvite<T>(token: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(API_ENDPOINTS.WEDDING.TEAM_ACCEPT, { token });
+    },
+  },
+  guestbook: {
+    listAdmin<T>(weddingId: string, status?: string): Promise<ApiResponse<T>> {
+      const qs = status ? `?status=${status}` : "";
+      return apiClient.get<T>(`${API_ENDPOINTS.WEDDING.GUESTBOOK(weddingId)}${qs}`);
+    },
+    moderate<T>(weddingId: string, entryId: string, status: string): Promise<ApiResponse<T>> {
+      return apiClient.put<T>(API_ENDPOINTS.WEDDING.GUESTBOOK_ENTRY(weddingId, entryId), { status });
+    },
+    listPublic<T>(slug: string, preview?: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GUESTBOOK(slug)}${publicWeddingQs(slug, preview)}`);
+    },
+    submit<T>(slug: string, data: Record<string, unknown>, preview?: string): Promise<ApiResponse<T>> {
+      const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
+      return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GUESTBOOK(slug)}${qs}`, data);
+    },
+    analytics<T>(weddingId: string): Promise<ApiResponse<T>> {
+      return apiClient.get<T>(API_ENDPOINTS.WEDDING.WEBSITE_ANALYTICS(weddingId));
     },
   },
 };

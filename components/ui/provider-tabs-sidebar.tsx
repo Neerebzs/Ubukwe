@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe, Star } from "lucide-react";
+import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -60,6 +60,7 @@ export function ProviderTabsSidebar({
           title: "Business Setup",
           items: [
             { id: "earnings", label: "My Income", icon: <DollarSign className="w-4 h-4" /> },
+            { id: "workforce", label: "Workforce & Payroll", icon: <Users className="w-4 h-4" /> },
             { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
           ]
         }

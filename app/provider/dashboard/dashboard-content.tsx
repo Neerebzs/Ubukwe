@@ -27,6 +27,7 @@ import { ProviderReviewsView } from "@/components/provider/reviews-view"
 import { ProviderContracts } from "@/components/provider/contracts"
 import { EventsManagement } from "@/components/provider/events-management"
 import { TicketManagementWrapper } from "@/components/provider/ticket-management-wrapper"
+import { WorkforcePayroll } from "@/components/provider/workforce-payroll"
 import { MessagesHub } from "@/components/dashboard/messages-hub"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Plus } from "lucide-react"
@@ -34,7 +35,7 @@ import { TranslatedText } from "@/components/translated-text"
 import { axiosInstance } from "@/lib/api-client"
 
 // Tabs that require approved onboarding
-const PROTECTED_TABS = ["services", "bookings", "events", "tickets", "availability", "gallery", "inquiries", "contracts", "earnings"]
+const PROTECTED_TABS = ["services", "bookings", "events", "tickets", "availability", "gallery", "inquiries", "contracts", "earnings", "workforce"]
 
 type OnboardingStatus = "pending" | "approved" | "rejected" | "requires_revision" | null
 
@@ -206,6 +207,7 @@ export function ProviderDashboardContent() {
       case "onboarding": return <ProviderOnboardingStatus />
       case "reviews": return <ProviderReviewsView />
       case "earnings": return <ProviderEarnings />
+      case "workforce": return <WorkforcePayroll />
       case "profile": return <ProviderProfileSettings />
       case "preferences": return <ProviderPreferencesSettings />
       default: return null

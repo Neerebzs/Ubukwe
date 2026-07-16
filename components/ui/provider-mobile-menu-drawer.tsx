@@ -17,7 +17,8 @@ import {
   Ticket,
   Calendar,
   Globe,
-  Star
+  Star,
+  Users,
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,7 @@ export function ProviderMobileMenuDrawer({
           icon: <DollarSign className="w-4 h-4" />,
           items: [
             { id: "earnings", label: "Earnings", icon: DollarSign },
+            { id: "workforce", label: "Workforce & Payroll", icon: Users },
             { id: "profile", label: "Profile", icon: User },
           ]
         }

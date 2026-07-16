@@ -30,6 +30,7 @@ import { WeddingTasks } from "@/components/customer/wedding-tasks";
 import { CustomerProfileSettings } from "@/components/customer/profile-settings";
 import { CustomerPreferencesSettings } from "@/components/customer/preferences-settings";
 import { AIAssistantDashboard } from "@/components/customer/ai-assistant-dashboard";
+import { WebsiteDashboard } from "@/components/website/website-dashboard";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
 import { Loader2 } from "lucide-react";
@@ -154,6 +155,16 @@ function CustomerDashboardContent() {
 
       case "guests":
         return <GuestManagement />;
+
+      case "website":
+        return currentWedding?.id
+          ? <WebsiteDashboard
+              weddingId={currentWedding.id}
+              coupleName={currentWedding.couple_name}
+              weddingDate={currentWedding.wedding_date}
+              venue={currentWedding.venue}
+            />
+          : <div className="flex items-center justify-center py-20 text-slate-400">Set up your wedding details first to create a website.</div>;
 
       case "bookings":
         return <Bookings />;
