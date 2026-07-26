@@ -1,9 +1,8 @@
 "use client";
 
 import { PublicWeddingSite } from "@/lib/api";
-import { PublicWeddingSiteView } from "@/components/public-wedding/public-wedding-site";
 import { PublicAccessGate } from "@/components/public-wedding/public-access-gate";
-import { buildWeddingJsonLd } from "@/lib/wedding-seo";
+import { GatedPublicHome } from "@/components/public-wedding/gated-views";
 
 interface PublicWeddingWrapperProps {
   slug: string;
@@ -13,22 +12,7 @@ interface PublicWeddingWrapperProps {
 export function PublicWeddingWrapper({ slug, initialSite }: PublicWeddingWrapperProps) {
   return (
     <PublicAccessGate slug={slug} initialSite={initialSite}>
-      {(site) => (
-        <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(
-                buildWeddingJsonLd(
-                  site,
-                  typeof window !== "undefined" ? window.location.origin : "https://vownests.com",
-                ),
-              ),
-            }}
-          />
-          <PublicWeddingSiteView site={site} />
-        </>
-      )}
+      <GatedPublicHome />
     </PublicAccessGate>
   );
 }

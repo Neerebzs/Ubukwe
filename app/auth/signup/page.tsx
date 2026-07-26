@@ -12,6 +12,8 @@ import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
 import { RegisterRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
+import { finishGoogleOAuthReturn } from "@/lib/googleOAuth"
+import { googleSignupPending } from "@/lib/auth"
 
 // ── Google SVG icon (official brand colors) ───────────────────────────────────
 function GoogleIcon({ className }: { className?: string }) {
@@ -31,6 +33,7 @@ interface FormErrors {
   password?: string
   confirmPassword?: string
   phone?: string
+  role?: string
 }
 
 export default function SignUpPage() {
@@ -41,25 +44,55 @@ export default function SignUpPage() {
     password: "",
     confirmPassword: "",
     phone: "",
-    role: "event_owner" as "event_owner" | "service_provider",
+    role: "" as "" | "event_owner" | "service_provider",
   })
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [googleSignupToken, setGoogleSignupToken] = useState<string | null>(null)
+  const [roleSelectNeeded, setRoleSelectNeeded] = useState(false)
+  const [roleSelectLoading, setRoleSelectLoading] = useState(false)
 
   const { register, isRegistering, isAuthenticated, loginWithGoogle, isGoogleLoggingIn } = useAuth()
 
   // Redirect if already authenticated - let useAuth handle role-based routing
   React.useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !roleSelectNeeded) {
       // The useAuth hook will handle the redirect based on user role
-      // No need to hardcode the redirect here
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, roleSelectNeeded])
+
+  // Finish Google OAuth after full-page return
+  React.useEffect(() => {
+    finishGoogleOAuthReturn(async (code, role) => {
+      try {
+        const result = await loginWithGoogle({
+          _codeOverride: code,
+          ...(role ? { role } : {}),
+        } as any)
+        if (result?.needsRoleSelection && result.googleSignupToken) {
+          setGoogleSignupToken(result.googleSignupToken)
+          setRoleSelectNeeded(true)
+          return
+        }
+        const pending = googleSignupPending.read()
+        if (pending?.googleSignupToken) {
+          setGoogleSignupToken(pending.googleSignupToken)
+          setRoleSelectNeeded(true)
+        }
+      } catch {
+        // toast from mutation
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
+
+    if (!formData.role) {
+      newErrors.role = 'Please select Customer or Artisan'
+    }
 
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full name is required'
@@ -108,10 +141,42 @@ export default function SignUpPage() {
       password: formData.password,
       confirmPassword: formData.confirmPassword,
       phone: formData.phone || undefined,
-      role: formData.role,
+      role: formData.role as "event_owner" | "service_provider",
     }
 
     register(registerData)
+  }
+
+  const handleGoogleSignUp = async () => {
+    // Require role before Google for new accounts when possible; if backend still
+    // asks for role (e.g. user skipped), show the role panel with signup token.
+    if (!formData.role) {
+      setErrors((prev) => ({ ...prev, role: 'Please select Customer or Artisan before continuing with Google' }))
+      return
+    }
+    try {
+      const result = await loginWithGoogle({ role: formData.role })
+      if (result?.needsRoleSelection && result.googleSignupToken) {
+        setGoogleSignupToken(result.googleSignupToken)
+        setRoleSelectNeeded(true)
+      }
+    } catch {
+      // handled by mutation toast
+    }
+  }
+
+  const handleDeferredGoogleRole = async (role: "event_owner" | "service_provider") => {
+    if (!googleSignupToken) return
+    setRoleSelectLoading(true)
+    try {
+      await loginWithGoogle({ google_signup_token: googleSignupToken, role })
+      setRoleSelectNeeded(false)
+      setGoogleSignupToken(null)
+    } catch {
+      // toast from mutation
+    } finally {
+      setRoleSelectLoading(false)
+    }
   }
 
   if (isLoadingSettings) {
@@ -176,7 +241,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
       {/* Full Page Loading Overlay */}
-      {(isRegistering || isAuthenticated) && (
+      {(isRegistering || (isAuthenticated && !roleSelectNeeded)) && (
         <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
            <div className="relative flex items-center justify-center">
              <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
@@ -186,6 +251,42 @@ export default function SignUpPage() {
            <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
              {isAuthenticated ? "Preparing Dashboard..." : "Registering..."}
            </p>
+        </div>
+      )}
+
+      {roleSelectNeeded && (
+        <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center px-6">
+          <div className="w-full max-w-md space-y-8">
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl font-serif italic text-white">Choose Your Role</h2>
+              <p className="text-slate-400 text-sm">Select how you will use VowNest. This cannot be skipped.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                disabled={roleSelectLoading}
+                onClick={() => handleDeferredGoogleRole("event_owner")}
+                className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-[#608d64] text-left space-y-2"
+              >
+                <p className="text-[11px] font-black uppercase tracking-widest text-white">Customer</p>
+                <p className="text-[9px] text-slate-500">Planning a wedding</p>
+              </button>
+              <button
+                type="button"
+                disabled={roleSelectLoading}
+                onClick={() => handleDeferredGoogleRole("service_provider")}
+                className="p-6 rounded-2xl border-2 border-white/10 bg-white/5 hover:border-[#608d64] text-left space-y-2"
+              >
+                <p className="text-[11px] font-black uppercase tracking-widest text-white">Artisan</p>
+                <p className="text-[9px] text-slate-500">Offering services</p>
+              </button>
+            </div>
+            {roleSelectLoading && (
+              <div className="flex justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[#608d64]" />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -249,43 +350,20 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSubmit} className="space-y-10">
             <div className="space-y-6">
-              {/* ── Google sign-up ── */}
+              {/* Role Selection — required before email or Google signup */}
               <div className="space-y-4">
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const result = await loginWithGoogle()
-                      // Google login also handles registration — redirect is managed by mutation
-                    } catch {}
-                  }}
-                  disabled={isGoogleLoggingIn || isRegistering}
-                  className="w-full h-14 bg-white hover:bg-slate-100 text-slate-800 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-black/20 transition-all duration-300 active:scale-[0.98] border border-slate-200"
-                >
-                  {isGoogleLoggingIn ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
-                  ) : (
-                    <GoogleIcon className="h-5 w-5 flex-shrink-0" />
-                  )}
-                  <span>{isGoogleLoggingIn ? "Connecting to Google..." : "Continue with Google"}</span>
-                </Button>
-
-                {/* Divider */}
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">or register with email</span>
-                  <div className="flex-1 h-px bg-white/10" />
+                <div className="flex justify-between items-center px-1">
+                  <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Define Your Role *</Label>
+                  {errors.role && <span className="text-[9px] font-black text-red-400 uppercase tracking-wider">{errors.role}</span>}
                 </div>
-              </div>
-
-              {/* Role Selection */}
-              <div className="space-y-4">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">Define Your Role</Label>
                 <RadioGroup
-                  value={formData.role}
-                  onValueChange={(value: "event_owner" | "service_provider") => setFormData({ ...formData, role: value })}
+                  value={formData.role || undefined}
+                  onValueChange={(value: "event_owner" | "service_provider") => {
+                    setFormData({ ...formData, role: value })
+                    if (errors.role) setErrors(prev => ({ ...prev, role: undefined }))
+                  }}
                   className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                  disabled={isRegistering}
+                  disabled={isRegistering || isGoogleLoggingIn}
                 >
                   <label
                     htmlFor="customer"
@@ -308,6 +386,30 @@ export default function SignUpPage() {
                     </div>
                   </label>
                 </RadioGroup>
+              </div>
+
+              {/* ── Google sign-up ── */}
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  onClick={handleGoogleSignUp}
+                  disabled={isGoogleLoggingIn || isRegistering}
+                  className="w-full h-14 bg-white hover:bg-slate-100 text-slate-800 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-black/20 transition-all duration-300 active:scale-[0.98] border border-slate-200"
+                >
+                  {isGoogleLoggingIn ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
+                  ) : (
+                    <GoogleIcon className="h-5 w-5 flex-shrink-0" />
+                  )}
+                  <span>{isGoogleLoggingIn ? "Connecting to Google..." : "Continue with Google"}</span>
+                </Button>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">or register with email</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
               </div>
 
               <div className="h-[1px] w-full bg-white/5" />

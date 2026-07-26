@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PublicAccessGate } from "@/components/public-wedding/public-access-gate";
-import { PublicGallery } from "@/components/public-wedding/public-gallery";
+import { GatedPublicGallery } from "@/components/public-wedding/gated-views";
 import { fetchPublicWeddingSite } from "@/lib/public-wedding";
 
 interface PageProps {
@@ -26,7 +26,7 @@ export default async function GalleryPage({ params, searchParams }: PageProps) {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading gallery...</div>}>
       <PublicAccessGate slug={params.slug} initialSite={site}>
-        {(unlocked) => <PublicGallery site={unlocked} />}
+        <GatedPublicGallery />
       </PublicAccessGate>
     </Suspense>
   );

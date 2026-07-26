@@ -1,26 +1,22 @@
 /**
- * Google OAuth 2.0 — Authorization Code Flow
+ * Google OAuth 2.0 — Authorization Code Flow (full-page redirect).
  *
- * Two modes:
- *   1. Popup (desktop) — opens /auth/google/callback in a popup window.
- *      The callback page sends the code back via postMessage then closes.
- *   2. Full-page redirect (mobile — popup blocked) — redirects the current
- *      tab to Google. The callback page stores the code in sessionStorage
- *      and redirects to /auth/signin?google=1 which reads it.
+ * Popup + COOP was leaving the main window stuck on "Authenticating..." while
+ * the popup (or a mis-classified tab) finished the exchange. Full-page redirect
+ * is the reliable path: Google → /auth/google/callback → /auth/signin?google=1.
  */
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const GOOGLE_OAUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
-// Must exactly match one of the Authorized redirect URIs in Google Cloud Console
+export const GOOGLE_OAUTH_CODE_KEY = "google_oauth_code";
+export const GOOGLE_OAUTH_ROLE_KEY = "google_oauth_role";
+export const GOOGLE_OAUTH_RETURN_KEY = "google_oauth_return";
+export const GOOGLE_OAUTH_PENDING_KEY = "google_oauth_pending";
+
 function getRedirectUri(): string {
   if (typeof window === "undefined") return "";
-  const origin = window.location.origin; // https://www.vownests.com or http://localhost:3000
-  return `${origin}/auth/google/callback`;
-}
-
-export interface GoogleOAuthResult {
-  code: string;
+  return `${window.location.origin}/auth/google/callback`;
 }
 
 function buildAuthUrl(): string {
@@ -40,87 +36,108 @@ function buildAuthUrl(): string {
   return `${GOOGLE_OAUTH_URL}?${params.toString()}`;
 }
 
+export type StartGoogleOAuthOptions = {
+  /** Optional role for signup (event_owner | service_provider). */
+  role?: "event_owner" | "service_provider";
+  /** Where to land after Google (default: current path or /auth/signin). */
+  returnTo?: string;
+};
+
 /**
- * Try to open a popup. Returns the popup window or null if blocked.
+ * Start Google OAuth by navigating this tab to Google.
+ * Does not return — the page unloads.
  */
-function openPopup(url: string): Window | null {
-  const width = 500;
-  const height = 620;
-  const left = Math.round(window.screenX + (window.innerWidth - width) / 2);
-  const top = Math.round(window.screenY + (window.innerHeight - height) / 2);
-  return window.open(
-    url,
-    "google-oauth",
-    `width=${width},height=${height},left=${left},top=${top},` +
-      "scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no"
-  );
+export function startGoogleOAuth(opts: StartGoogleOAuthOptions = {}): void {
+  if (typeof window === "undefined") {
+    throw new Error("Must be called in a browser.");
+  }
+
+  const returnTo =
+    opts.returnTo ||
+    (window.location.pathname.startsWith("/auth/")
+      ? window.location.pathname
+      : "/auth/signin");
+
+  sessionStorage.setItem(GOOGLE_OAUTH_PENDING_KEY, "1");
+  sessionStorage.setItem(GOOGLE_OAUTH_RETURN_KEY, returnTo);
+
+  if (opts.role) {
+    sessionStorage.setItem(GOOGLE_OAUTH_ROLE_KEY, opts.role);
+  } else {
+    sessionStorage.removeItem(GOOGLE_OAUTH_ROLE_KEY);
+  }
+
+  window.location.assign(buildAuthUrl());
 }
 
 /**
- * Initiate Google OAuth.
- *
- * - On desktop: opens a popup, waits for postMessage from /auth/google/callback.
- * - On mobile (popup blocked): redirects the whole page.
- *   The caller must handle the `google_oauth_code` from sessionStorage
- *   on the next render (signin page checks `?google=1`).
- *
- * @throws Error if the user cancels or Google returns an error.
+ * Used by useAuth when no authorization code override is provided.
+ * Navigates away; the returned Promise never settles.
  */
-export async function initiateGoogleLogin(): Promise<GoogleOAuthResult> {
-  if (typeof window === "undefined") throw new Error("Must be called in a browser.");
+export async function initiateGoogleLogin(opts?: {
+  role?: "event_owner" | "service_provider";
+}): Promise<{ code: string }> {
+  startGoogleOAuth({ role: opts?.role });
+  // Page is navigating — keep the caller pending until unload.
+  await new Promise<never>(() => {});
+  throw new Error("Google redirect did not navigate.");
+}
 
-  const authUrl = buildAuthUrl();
+/** Read + clear the one-time code stored by the callback page. */
+export function consumeGoogleOAuthCode(): string | null {
+  if (typeof window === "undefined") return null;
+  const code = sessionStorage.getItem(GOOGLE_OAUTH_CODE_KEY);
+  if (code) sessionStorage.removeItem(GOOGLE_OAUTH_CODE_KEY);
+  sessionStorage.removeItem(GOOGLE_OAUTH_PENDING_KEY);
+  return code;
+}
 
-  return new Promise((resolve, reject) => {
-    const popup = openPopup(authUrl);
+export function consumeGoogleOAuthRole():
+  | "event_owner"
+  | "service_provider"
+  | undefined {
+  if (typeof window === "undefined") return undefined;
+  const role = sessionStorage.getItem(GOOGLE_OAUTH_ROLE_KEY);
+  sessionStorage.removeItem(GOOGLE_OAUTH_ROLE_KEY);
+  if (role === "event_owner" || role === "service_provider") return role;
+  return undefined;
+}
 
-    // Popup blocked → fall back to full-page redirect (common on mobile)
-    if (!popup || popup.closed) {
-      window.location.href = authUrl;
-      // This promise never resolves — the page navigates away.
-      // The signin page handles the code on return via sessionStorage.
-      return;
-    }
+export function getGoogleOAuthReturnPath(): string {
+  if (typeof window === "undefined") return "/auth/signin";
+  const path = sessionStorage.getItem(GOOGLE_OAUTH_RETURN_KEY) || "/auth/signin";
+  // Keep return path until callback reads it; callback clears via this helper
+  sessionStorage.removeItem(GOOGLE_OAUTH_RETURN_KEY);
+  return path.startsWith("/auth/") ? path : "/auth/signin";
+}
 
-    // Listen for the code posted by /auth/google/callback
-    const messageHandler = (event: MessageEvent) => {
-      // Only accept messages from our own origin
-      if (event.origin !== window.location.origin) return;
+type FinishHandler = (
+  code: string,
+  role?: "event_owner" | "service_provider"
+) => Promise<void>;
 
-      const data = event.data;
-      if (!data) return;
+/** Survives React Strict Mode double-mount — only one exchange per return. */
+let googleFinishInFlight: Promise<void> | null = null;
 
-      if (data.code) {
-        cleanup();
-        resolve({ code: data.code });
-        return;
-      }
+/**
+ * If the URL has ?google=1, consume the stored code once and run the handler.
+ * Safe to call from multiple useEffect mounts.
+ */
+export function finishGoogleOAuthReturn(handler: FinishHandler): void {
+  if (typeof window === "undefined") return;
+  if (new URLSearchParams(window.location.search).get("google") !== "1") return;
+  if (googleFinishInFlight) return;
 
-      if (data.error) {
-        cleanup();
-        const msg =
-          data.error === "access_denied"
-            ? "Google sign-in was cancelled."
-            : `Google sign-in failed: ${data.error}`;
-        reject(new Error(msg));
-        return;
-      }
-    };
+  const code = consumeGoogleOAuthCode();
+  const role = consumeGoogleOAuthRole();
 
-    // Poll for popup closure (user closed without completing)
-    const pollTimer = setInterval(() => {
-      if (popup.closed) {
-        cleanup();
-        reject(new Error("Google sign-in was cancelled."));
-      }
-    }, 500);
+  // Clean the query string so refresh doesn't re-trigger
+  const cleanPath = window.location.pathname || "/auth/signin";
+  window.history.replaceState({}, "", cleanPath);
 
-    const cleanup = () => {
-      window.removeEventListener("message", messageHandler);
-      clearInterval(pollTimer);
-      if (!popup.closed) popup.close();
-    };
+  if (!code) return;
 
-    window.addEventListener("message", messageHandler);
+  googleFinishInFlight = handler(code, role).finally(() => {
+    googleFinishInFlight = null;
   });
 }

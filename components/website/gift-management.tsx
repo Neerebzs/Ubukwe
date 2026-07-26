@@ -27,18 +27,34 @@ function unwrap<T>(r: { data?: T } | T): T {
   return r as T;
 }
 
+function normalizeList<T>(raw: unknown): T[] {
+  let cur = raw;
+  while (cur && typeof cur === "object" && !Array.isArray(cur) && "data" in cur) {
+    cur = (cur as { data: unknown }).data;
+  }
+  return Array.isArray(cur) ? (cur as T[]) : [];
+}
+
 export function GiftManagement({ weddingId }: { weddingId: string }) {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<string | undefined>();
 
   const { data: gifts = [], isLoading } = useQuery({
     queryKey: [...queryKeys.wedding.gifts(weddingId), filter],
-    queryFn: async () => unwrap(await apiClient.gifts.list<WeddingGift[]>(weddingId, filter)),
+    queryFn: async () =>
+      normalizeList<WeddingGift>(unwrap(await apiClient.gifts.list(weddingId, filter))),
   });
 
   const { data: summary } = useQuery({
     queryKey: queryKeys.wedding.giftsSummary(weddingId),
-    queryFn: async () => unwrap(await apiClient.gifts.summary<GiftSummary>(weddingId)),
+    queryFn: async () => {
+      const raw = unwrap(await apiClient.gifts.summary<GiftSummary | { data: GiftSummary }>(weddingId));
+      if (raw && typeof raw === "object" && "total_gifts" in raw) return raw as GiftSummary;
+      if (raw && typeof raw === "object" && "data" in raw) {
+        return (raw as { data: GiftSummary }).data;
+      }
+      return undefined;
+    },
   });
 
   const invalidate = () => {

@@ -67,8 +67,18 @@ function unwrapData<T>(response: { data?: T } | T): T {
 
 export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: WebsiteDashboardProps) {
   const queryClient = useQueryClient();
-  const [customSlug, setCustomSlug] = useState("");
-  const [slugType, setSlugType] = useState<"custom" | "auto">("custom");
+  const suggestedSlug = coupleName
+    ? coupleName
+        .toLowerCase()
+        .replace(/\s*&\s*/g, "-")
+        .replace(/\s+and\s+/gi, "-")
+        .replace(/[^a-z0-9-]/g, "")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 80)
+    : "";
+  const [customSlug, setCustomSlug] = useState(suggestedSlug);
+  const [slugType, setSlugType] = useState<"auto" | "custom">("auto");
   const [selectedTheme, setSelectedTheme] = useState("elegant_classic");
   const [copied, setCopied] = useState(false);
 
@@ -85,6 +95,7 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
   const publicBase = typeof window !== "undefined"
     ? window.location.origin
     : "https://vownests.com";
+  const brandHost = "vownests.com";
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: queryKeys.wedding.website(weddingId) });
@@ -92,7 +103,7 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
   const createMutation = useMutation({
     mutationFn: () =>
       apiClient.website.create<WeddingWebsite>(weddingId, {
-        slug: slugType === "custom" ? customSlug || undefined : undefined,
+        slug: slugType === "custom" ? (customSlug || suggestedSlug || undefined) : undefined,
         slug_type: slugType,
         theme_id: selectedTheme,
       }),
@@ -157,9 +168,8 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
   }
 
   if (!website) {
-    const suggestedSlug = coupleName
-      ? coupleName.toLowerCase().replace(/\s*&\s*/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-")
-      : "";
+    const previewSlug =
+      (slugType === "custom" ? customSlug : suggestedSlug) || suggestedSlug || "your-names";
 
     return (
       <div className="max-w-2xl mx-auto py-8 space-y-8">
@@ -171,50 +181,72 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
           <p className="text-slate-500 max-w-md mx-auto">
             Build a beautiful, shareable wedding site — RSVP, gallery, gifts, and more. No coding required.
           </p>
+          {coupleName && (
+            <p className="text-sm text-[#668c65] font-medium">
+              {brandHost}/w/{suggestedSlug || "couple-name"}
+            </p>
+          )}
         </div>
 
         <Card className="border-0 shadow-xl">
           <CardHeader>
             <CardTitle className="font-serif text-xl">Get Started</CardTitle>
-            <CardDescription>Choose your URL and theme to begin</CardDescription>
+            <CardDescription>
+              By default your site uses your couple name: {brandHost}/w/{suggestedSlug || "couple-name"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
               <Label>URL Style</Label>
               <div className="flex gap-3">
                 <Button
-                  variant={slugType === "custom" ? "default" : "outline"}
-                  onClick={() => setSlugType("custom")}
-                  className="flex-1"
-                >
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Custom Slug
-                </Button>
-                <Button
                   variant={slugType === "auto" ? "default" : "outline"}
                   onClick={() => setSlugType("auto")}
                   className="flex-1"
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Auto Generated
+                  Couple Name
+                </Button>
+                <Button
+                  variant={slugType === "custom" ? "default" : "outline"}
+                  onClick={() => {
+                    setSlugType("custom");
+                    if (!customSlug && suggestedSlug) setCustomSlug(suggestedSlug);
+                  }}
+                  className="flex-1"
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Custom Slug
                 </Button>
               </div>
             </div>
 
-            {slugType === "custom" && (
-              <div className="space-y-2">
-                <Label htmlFor="slug">Your URL</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400 whitespace-nowrap">vownests.com/w/</span>
+            <div className="space-y-2">
+              <Label htmlFor="slug">Your public URL</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-400 whitespace-nowrap">{brandHost}/w/</span>
+                {slugType === "custom" ? (
                   <Input
                     id="slug"
                     placeholder={suggestedSlug || "emma-john"}
                     value={customSlug}
-                    onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                    onChange={(e) =>
+                      setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
+                    }
                   />
-                </div>
+                ) : (
+                  <Input
+                    id="slug"
+                    value={suggestedSlug || "couple-name"}
+                    disabled
+                    className="bg-slate-50"
+                  />
+                )}
               </div>
-            )}
+              <p className="text-xs text-slate-400">
+                Guests will visit {brandHost}/w/{previewSlug}
+              </p>
+            </div>
 
             <div className="space-y-2">
               <Label>Theme</Label>
@@ -240,7 +272,7 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
               className="w-full bg-[#0d182a] hover:bg-[#0d182a]/90"
               size="lg"
               onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || (slugType === "custom" && !customSlug && !suggestedSlug)}
             >
               {createMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -264,6 +296,9 @@ export function WebsiteDashboard({ weddingId, coupleName, weddingDate, venue }: 
         <div>
           <h2 className="font-serif text-2xl md:text-3xl text-[#0d182a]">Wedding Website</h2>
           <p className="text-slate-500 text-sm mt-1">Manage and publish your public wedding site</p>
+          <p className="text-sm text-[#668c65] font-medium mt-1 truncate">
+            {brandHost}/w/{website.slug}
+          </p>
         </div>
         <Badge className={`${STATUS_STYLES[website.status] || ""} capitalize px-3 py-1`}>
           {website.status}

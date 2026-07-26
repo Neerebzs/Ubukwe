@@ -39,6 +39,18 @@ const nextConfig = {
   //
   async headers() {
     return [
+      // Allow Google OAuth popups to keep a usable opener relationship.
+      // Without this, Chrome blocks popup.closed / window.opener under COOP.
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
+      },
+
       // ── (1) Next.js static assets: cache forever ──────────────────────────
       {
         source: '/_next/static/(.*)',

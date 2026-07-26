@@ -11,6 +11,7 @@ export function PublicStory({ site }: { site: PublicWeddingSite }) {
     (s) => s.section_type === "love_story" || s.section_type === "couple_profile",
   );
   const content = storySection?.content || {};
+  const photos = (profile.photos as Record<string, string | null>) || {};
 
   const loveStory =
     (profile.love_story as string) ||
@@ -21,6 +22,7 @@ export function PublicStory({ site }: { site: PublicWeddingSite }) {
   const proposal = (profile.proposal_story as string) || "";
   const bride = (profile.bride_name as string) || "";
   const groom = (profile.groom_name as string) || "";
+  const hasPortraits = Boolean(photos.bride || photos.groom);
 
   return (
     <div className="min-h-screen bg-[#f9fafc]">
@@ -32,13 +34,60 @@ export function PublicStory({ site }: { site: PublicWeddingSite }) {
           <ArrowLeft className="h-4 w-4" /> {site.wedding.couple_name}
         </Link>
 
-        <div className="text-center mb-10">
-          <Heart className="h-8 w-8 mx-auto mb-3" style={{ color: accent }} />
-          <h1 className="font-serif text-4xl text-[#0d182a]">Our Story</h1>
-          {(bride || groom) && (
-            <p className="text-slate-500 mt-2">
-              {[bride, groom].filter(Boolean).join(" & ")}
-            </p>
+        <div className="text-center mb-10 space-y-5">
+          {photos.couple ? (
+            <div className="mx-auto h-36 w-36 overflow-hidden rounded-full border-4 shadow-lg"
+              style={{ borderColor: accent + "66" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photos.couple}
+                alt={site.wedding.couple_name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <Heart className="h-8 w-8 mx-auto" style={{ color: accent }} />
+          )}
+          <div>
+            <h1 className="font-serif text-4xl text-[#0d182a]">Our Story</h1>
+            {(bride || groom) && (
+              <p className="text-slate-500 mt-2">
+                {[bride, groom].filter(Boolean).join(" & ")}
+              </p>
+            )}
+          </div>
+
+          {hasPortraits && (
+            <div className="flex flex-wrap items-end justify-center gap-8 pt-2">
+              {photos.bride && (
+                <div className="space-y-2">
+                  <div
+                    className="mx-auto h-24 w-24 overflow-hidden rounded-full border-2 shadow-md"
+                    style={{ borderColor: accent + "55" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photos.bride} alt={bride || "Bride"} className="h-full w-full object-cover" />
+                  </div>
+                  {bride && <p className="font-serif text-sm text-slate-600">{bride}</p>}
+                </div>
+              )}
+              {photos.bride && photos.groom && (
+                <Heart className="mb-10 h-5 w-5 shrink-0" style={{ color: accent }} />
+              )}
+              {photos.groom && (
+                <div className="space-y-2">
+                  <div
+                    className="mx-auto h-24 w-24 overflow-hidden rounded-full border-2 shadow-md"
+                    style={{ borderColor: accent + "55" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photos.groom} alt={groom || "Groom"} className="h-full w-full object-cover" />
+                  </div>
+                  {groom && <p className="font-serif text-sm text-slate-600">{groom}</p>}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

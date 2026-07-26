@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PublicAccessGate } from "@/components/public-wedding/public-access-gate";
-import { PublicTimeline } from "@/components/public-wedding/public-timeline";
+import { GatedPublicTimeline } from "@/components/public-wedding/gated-views";
 import { fetchPublicWeddingSite } from "@/lib/public-wedding";
 
 interface PageProps {
@@ -22,7 +22,7 @@ export default async function TimelinePage({ params, searchParams }: PageProps) 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <PublicAccessGate slug={params.slug} initialSite={site}>
-        {(unlocked) => <PublicTimeline site={unlocked} />}
+        <GatedPublicTimeline />
       </PublicAccessGate>
     </Suspense>
   );

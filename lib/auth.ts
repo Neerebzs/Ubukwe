@@ -4,12 +4,16 @@ import { apiClient, API_ENDPOINTS, LoginRequest, RegisterRequest, AuthResponse, 
 export const authApi = {
   // Register a new user
   async register(data: RegisterRequest): Promise<any> {
+    if (data.role !== 'event_owner' && data.role !== 'service_provider') {
+      throw new Error('Please select whether you are a Customer or an Artisan.');
+    }
+
     const backendData = {
       username: data.email.split('@')[0], // Fallback username
       email: data.email,
       password: data.password,
       full_name: data.full_name,
-      role: data.role === 'service_provider' ? 'service_provider' : 'event_owner',
+      role: data.role,
       phone_number: data.phone,
     };
 
@@ -121,17 +125,32 @@ export const authApi = {
   },
 
   // Google OAuth 2.0 login — send the authorization code received from Google popup
-  async googleLogin(code: string): Promise<any> {
-    // Send the redirect_uri so the backend uses the same value the frontend used with Google.
-    // This prevents redirect_uri_mismatch errors when www vs non-www differs.
+  // For NEW accounts, pass role. If backend returns needs_role_selection, call again
+  // with google_signup_token + role (without re-running Google).
+  async googleLogin(opts: {
+    code?: string;
+    role?: 'event_owner' | 'service_provider';
+    google_signup_token?: string;
+  }): Promise<any> {
     const redirect_uri = typeof window !== 'undefined'
       ? `${window.location.origin}/auth/google/callback`
       : `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.vownests.com'}/auth/google/callback`;
 
-    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, {
-      code,
-      redirect_uri,
-    });
+    const payload: Record<string, string> = {};
+    if (opts.google_signup_token) {
+      payload.google_signup_token = opts.google_signup_token;
+    } else if (opts.code) {
+      payload.code = opts.code;
+      payload.redirect_uri = redirect_uri;
+    } else {
+      throw new Error('Google authorization code is required.');
+    }
+
+    if (opts.role) {
+      payload.role = opts.role;
+    }
+
+    const response = await apiClient.post<any>(API_ENDPOINTS.AUTH.GOOGLE_LOGIN, payload);
     return response;
   },
 
@@ -169,6 +188,41 @@ export const authApi = {
   // Regenerate backup codes — requires valid TOTP
   async regenerateBackupCodes(code: string): Promise<ApiResponse> {
     return apiClient.post(API_ENDPOINTS.AUTH.TWO_FA_REGENERATE_BACKUP, { code });
+  },
+};
+
+/** Pending Google account creation (role not chosen yet). Survives Strict Mode remounts. */
+const GOOGLE_SIGNUP_PENDING_KEY = 'google_signup_pending';
+
+export type PendingGoogleSignup = {
+  googleSignupToken: string;
+  user?: {
+    email?: string;
+    full_name?: string;
+    avatar?: string;
+  } | null;
+};
+
+export const googleSignupPending = {
+  save(payload: PendingGoogleSignup) {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(GOOGLE_SIGNUP_PENDING_KEY, JSON.stringify(payload));
+  },
+  read(): PendingGoogleSignup | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = sessionStorage.getItem(GOOGLE_SIGNUP_PENDING_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.googleSignupToken) return null;
+      return parsed as PendingGoogleSignup;
+    } catch {
+      return null;
+    }
+  },
+  clear() {
+    if (typeof window === 'undefined') return;
+    sessionStorage.removeItem(GOOGLE_SIGNUP_PENDING_KEY);
   },
 };
 

@@ -224,7 +224,8 @@ export interface RegisterRequest {
   password: string;
   confirmPassword: string;
   phone?: string;
-  role?: 'event_owner' | 'service_provider';
+  /** Required — user must explicitly choose; no default */
+  role: 'event_owner' | 'service_provider';
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
 }
@@ -762,23 +763,26 @@ axiosInstance.interceptors.response.use(
     console.log('Current path:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
     console.log('==================================');
 
-    // Treat 203 or 401 as an auth error
-    if ((response?.status === 203 || response?.status === 401) && !originalRequest._retry) {
+    // Treat 203 or 401 as an auth error — but NEVER refresh/retry login/OAuth endpoints.
+    // Retrying /auth/google with a one-time code causes hangs and false "Authenticating..." states.
+    const requestUrl = String(originalRequest?.url || "")
+    const isCredentialAuthRequest =
+      requestUrl.includes("/auth/google") ||
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/2fa/login")
+
+    if (
+      (response?.status === 203 || response?.status === 401) &&
+      !originalRequest._retry &&
+      !isCredentialAuthRequest
+    ) {
       if (typeof window !== 'undefined') {
         const refreshToken = localStorage.getItem('refreshToken');
+        const onAuthPage = window.location.pathname.includes('/auth/');
 
-        // If no refresh token, or already on signin page, just pass through the error
-        if (!refreshToken || window.location.pathname.includes('/auth/signin')) {
-          // Don't clear tokens or redirect during login - just pass the error through
-          if (window.location.pathname.includes('/auth/signin')) {
-            return Promise.reject(error);
-          }
-          
-          // For other pages without refresh token, clear and redirect
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          window.location.href = '/auth/signin';
+        // If no refresh token, or already on an auth page, just pass through the error
+        if (!refreshToken || onAuthPage) {
           return Promise.reject(error);
         }
 
@@ -845,9 +849,13 @@ export const apiClient = {
           if (typeof responseData === 'string') {
             errorMessage = responseData;
           } else if (responseData.detail) {
-            errorMessage = typeof responseData.detail === 'string'
-              ? responseData.detail
-              : JSON.stringify(responseData.detail);
+            if (typeof responseData.detail === 'string') {
+              errorMessage = responseData.detail;
+            } else if (responseData.detail?.message) {
+              errorMessage = responseData.detail.message;
+            } else {
+              errorMessage = JSON.stringify(responseData.detail);
+            }
           } else if (responseData.message) {
             errorMessage = responseData.message;
           } else if (responseData.error) {
@@ -867,21 +875,35 @@ export const apiClient = {
       }
 
       // Handle flat responses vs wrapped responses
-      // Only treat as a wrapped ApiResponse if it has BOTH 'status' (string 'success'/'error')
-      // AND a 'data' key — not just any object that happens to have a 'status' field
-      // (e.g. a service object with status: "active" would otherwise be misidentified).
+      // Backend often returns `{ data: payload }` or `{ data, message }` without a status field.
+      // Only treat objects with a domain `status` (e.g. gift status: "pending") as flat payloads
+      // when they do NOT also look like an API envelope.
       const responseData = response.data;
       if (
         responseData &&
         typeof responseData === 'object' &&
-        'data' in responseData &&
-        'status' in responseData &&
-        (responseData.status === 'success' || responseData.status === 'error')
+        !Array.isArray(responseData) &&
+        'data' in responseData
       ) {
-        return responseData as ApiResponse<T>;
+        const envelopeStatus = (responseData as { status?: unknown }).status;
+        const isApiEnvelope =
+          envelopeStatus === undefined ||
+          envelopeStatus === 'success' ||
+          envelopeStatus === 'error';
+
+        // Prefer envelope unwrap: `{ data: [...] }` / `{ status, data, message }`
+        // Skip when `status` is a domain value (e.g. "pending", "active") on the entity itself.
+        if (isApiEnvelope) {
+          return {
+            status: envelopeStatus === 'error' ? 'error' : 'success',
+            message: (responseData as { message?: string }).message || 'Request successful',
+            data: (responseData as { data: T }).data,
+            statusCode: response.status,
+          };
+        }
       }
 
-      // Fallback for flat responses
+      // Fallback for flat responses (arrays, plain entities)
       return {
         status: 'success',
         message: 'Request successful',
@@ -941,9 +963,13 @@ export const apiClient = {
         if (typeof responseData === 'string') {
           errorMessage = responseData;
         } else if (responseData.detail) {
-          errorMessage = typeof responseData.detail === 'string'
-            ? responseData.detail
-            : JSON.stringify(responseData.detail);
+          if (typeof responseData.detail === 'string') {
+            errorMessage = responseData.detail;
+          } else if (responseData.detail?.message) {
+            errorMessage = responseData.detail.message;
+          } else {
+            errorMessage = JSON.stringify(responseData.detail);
+          }
         } else if (responseData.message) {
           errorMessage = responseData.message;
         } else if (responseData.error) {

@@ -67,64 +67,264 @@ function SectionRenderer({
   const coupleProfile = site.couple_profile || {};
 
   switch (section.section_type) {
-    case "hero":
+    case "hero": {
+      const photos = (coupleProfile.photos as Record<string, string | null>) || {};
+      const couplePhoto =
+        photos.couple ||
+        (content.background_image as string) ||
+        photos.bride ||
+        photos.groom ||
+        null;
+      const secondaryPhoto =
+        photos.bride && photos.bride !== couplePhoto
+          ? photos.bride
+          : photos.groom && photos.groom !== couplePhoto
+            ? photos.groom
+            : photos.groom || photos.bride || null;
+      const displayName =
+        (coupleProfile.display_names as string) ||
+        (content.subheadline as string) ||
+        site.wedding.couple_name;
+      const headline =
+        (content.headline as string) || "We're Getting Married";
+      const loveStory =
+        (coupleProfile.love_story as string) ||
+        (coupleProfile.biography as string) ||
+        `Join us as we celebrate our love and begin forever together.`;
+      const storyPreview =
+        loveStory.length > 180 ? `${loveStory.slice(0, 180).trim()}…` : loveStory;
+      const dateLabel = site.wedding.wedding_date
+        ? new Date(site.wedding.wedding_date).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : null;
+      const nameParts = displayName.split(/\s*&\s*/).map((p) => p.trim()).filter(Boolean);
+
       return (
         <section
-          className="relative min-h-[70vh] flex items-center justify-center text-center px-6"
-          style={{ background: styles.hero, color: "#ffffff" }}
+          className="relative w-full overflow-hidden min-h-[85vh] py-12 lg:py-16"
+          style={{ backgroundColor: styles.bg, color: styles.text }}
         >
-          <div className="relative z-10 max-w-3xl space-y-4">
-            <p className="text-sm uppercase tracking-[0.3em] opacity-80">
-              {(content.headline as string) || "We're Getting Married"}
-            </p>
-            <h1 className="font-serif text-5xl md:text-7xl font-light italic">
-              {(content.subheadline as string) || site.wedding.couple_name}
-            </h1>
-            {site.wedding.wedding_date && (
-              <p className="text-lg opacity-80 mt-4">
-                {new Date(site.wedding.wedding_date).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </p>
-            )}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          />
+
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              {/* Left — couple name + love story */}
+              <div className="lg:col-span-6 space-y-8 lg:space-y-10 animate-in fade-in slide-in-from-left duration-1000">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px w-12" style={{ backgroundColor: styles.accent + "55" }} />
+                    <span
+                      className="font-bold tracking-[0.3em] uppercase text-[10px]"
+                      style={{ color: styles.accent }}
+                    >
+                      {headline}
+                    </span>
+                  </div>
+
+                  <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight">
+                    {nameParts.length >= 2 ? (
+                      <>
+                        <span className="block font-light">{nameParts[0]}</span>
+                        <span
+                          className="block italic font-medium ml-2 md:ml-8"
+                          style={{ color: styles.accent }}
+                        >
+                          &amp; {nameParts[1]}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="block italic font-medium" style={{ color: styles.accent }}>
+                        {displayName}
+                      </span>
+                    )}
+                  </h1>
+
+                  {dateLabel && (
+                    <p className="text-sm md:text-base opacity-60 tracking-wide">{dateLabel}</p>
+                  )}
+
+                  <p className="text-base md:text-lg max-w-lg leading-relaxed font-light opacity-70">
+                    {storyPreview}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4">
+                  <a
+                    href="#our-story"
+                    className="inline-flex h-14 items-center px-8 rounded-full text-white font-semibold shadow-xl transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: styles.accent }}
+                  >
+                    Our Love Story
+                    <Heart className="ml-2 h-4 w-4 fill-current" />
+                  </a>
+                  <Link
+                    href={`/w/${site.slug}/rsvp`}
+                    className="inline-flex h-14 items-center px-8 rounded-full border-2 font-semibold transition-colors"
+                    style={{ borderColor: styles.accent, color: styles.accent }}
+                  >
+                    RSVP
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right — couple image (landing-page arch layout) */}
+              <div className="lg:col-span-6 relative min-h-[420px] md:min-h-[520px] lg:h-[600px]">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-[260px] sm:w-[300px] md:w-[340px] lg:w-[380px] h-[400px] sm:h-[460px] md:h-[500px] lg:h-[540px] z-20 group">
+                    <div
+                      className="absolute inset-0 border rounded-[200px] -m-4 group-hover:m-0 transition-all duration-700"
+                      style={{ borderColor: styles.text + "22" }}
+                    />
+                    <div className="w-full h-full overflow-hidden rounded-[200px] shadow-2xl border-8 border-white relative bg-slate-100">
+                      {couplePhoto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={couplePhoto}
+                          alt={displayName}
+                          className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-1000"
+                        />
+                      ) : (
+                        <div
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+                          style={{ background: styles.hero, color: "#fff" }}
+                        >
+                          <Heart className="h-10 w-10 opacity-80" />
+                          <p className="font-serif italic text-2xl px-6 text-center">{displayName}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="absolute -right-4 sm:-right-10 top-16 sm:top-20 bg-white p-4 sm:p-6 rounded-3xl shadow-2xl animate-float z-30 border border-slate-50">
+                      <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-rose-500 fill-rose-500 mb-1 sm:mb-2" />
+                      <p className="font-serif italic text-lg sm:text-xl text-slate-900">Forever</p>
+                    </div>
+                  </div>
+
+                  {secondaryPhoto && (
+                    <div className="absolute left-2 sm:left-[-20px] lg:left-[-40px] bottom-6 sm:bottom-10 w-28 h-28 sm:w-40 sm:h-40 lg:w-48 lg:h-48 z-30 rounded-full overflow-hidden border-8 border-white shadow-xl hover:scale-110 transition-transform duration-500">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={secondaryPhoto}
+                        alt="Couple portrait"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="absolute right-0 bottom-16 z-10 opacity-5 select-none pointer-events-none hidden md:block">
+                    <span className="font-serif text-[120px] lg:text-[160px] leading-none">
+                      Love
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       );
+    }
 
     case "couple_profile":
-      return (
-        <section className="py-20 px-6" style={{ backgroundColor: styles.bg, color: styles.text }}>
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <Heart className="h-8 w-8 mx-auto" style={{ color: styles.accent }} />
-            <h2 className="font-serif text-4xl">{section.title || "Our Story"}</h2>
-            <p className="text-lg leading-relaxed opacity-80">
-              {(coupleProfile.love_story as string) ||
-                (content.story as string) ||
-                (coupleProfile.biography as string) ||
-                `Join us as ${site.wedding.couple_name} celebrate their love.`}
-            </p>
-          </div>
-        </section>
-      );
+    case "love_story": {
+      const photos = (coupleProfile.photos as Record<string, string | null>) || {};
+      const brideName = (coupleProfile.bride_name as string) || "";
+      const groomName = (coupleProfile.groom_name as string) || "";
+      const displayName =
+        (coupleProfile.display_names as string) || site.wedding.couple_name || "";
+      const hasPortraits = Boolean(photos.bride || photos.groom);
+      const loveStory =
+        (coupleProfile.love_story as string) ||
+        (content.story as string) ||
+        (content.intro as string) ||
+        (coupleProfile.biography as string) ||
+        "";
 
-    case "love_story":
       return (
-        <section className="py-20 px-6" style={{ backgroundColor: styles.bg, color: styles.text }}>
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <Heart className="h-8 w-8 mx-auto" style={{ color: styles.accent }} />
-            <h2 className="font-serif text-4xl">{section.title || "Our Story"}</h2>
-            <p className="opacity-70 max-w-lg mx-auto text-lg leading-relaxed">
-              {(coupleProfile.love_story as string) ||
-                (content.intro as string) ||
-                (content.story as string) ||
-                "Every love story is beautiful, but ours is our favorite."}
-            </p>
+        <section
+          id="our-story"
+          className="py-20 md:py-28 px-6"
+          style={{ backgroundColor: styles.bg, color: styles.text }}
+        >
+          <div className="max-w-3xl mx-auto text-center space-y-10">
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-3">
+                <div className="h-px w-10" style={{ backgroundColor: styles.accent + "55" }} />
+                <Heart className="h-5 w-5" style={{ color: styles.accent }} />
+                <div className="h-px w-10" style={{ backgroundColor: styles.accent + "55" }} />
+              </div>
+              <h2 className="font-serif text-4xl md:text-5xl">
+                {section.title || "Our Story"}
+              </h2>
+              {displayName && (
+                <p className="text-base md:text-lg opacity-60 tracking-wide">{displayName}</p>
+              )}
+            </div>
+
+            {hasPortraits && (
+              <div className="flex flex-wrap items-end justify-center gap-10 md:gap-16">
+                {photos.bride && (
+                  <div className="space-y-3">
+                    <div
+                      className="mx-auto h-36 w-36 overflow-hidden rounded-full border-4 shadow-md md:h-44 md:w-44"
+                      style={{ borderColor: styles.accent + "55" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photos.bride}
+                        alt={brideName || "Bride"}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    {brideName && <p className="font-serif text-xl md:text-2xl">{brideName}</p>}
+                  </div>
+                )}
+                {photos.bride && photos.groom && (
+                  <Heart
+                    className="mb-16 hidden h-6 w-6 shrink-0 sm:block"
+                    style={{ color: styles.accent }}
+                  />
+                )}
+                {photos.groom && (
+                  <div className="space-y-3">
+                    <div
+                      className="mx-auto h-36 w-36 overflow-hidden rounded-full border-4 shadow-md md:h-44 md:w-44"
+                      style={{ borderColor: styles.accent + "55" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photos.groom}
+                        alt={groomName || "Groom"}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    {groomName && <p className="font-serif text-xl md:text-2xl">{groomName}</p>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {loveStory ? (
+              <p className="text-base md:text-lg leading-relaxed opacity-75 max-w-2xl mx-auto whitespace-pre-line">
+                {loveStory}
+              </p>
+            ) : (
+              <p className="text-lg italic opacity-50">
+                Every love story is beautiful, but ours is our favorite.
+              </p>
+            )}
+
             <Link
               href={`/w/${site.slug}/story`}
-              className="inline-block px-8 py-3 rounded-full text-white font-medium"
+              className="inline-block px-8 py-3 rounded-full text-white font-medium transition-opacity hover:opacity-90"
               style={{ backgroundColor: styles.accent }}
             >
               Read Our Story
@@ -132,6 +332,7 @@ function SectionRenderer({
           </div>
         </section>
       );
+    }
 
     case "countdown":
       return (
@@ -314,7 +515,27 @@ export function PublicWeddingSiteView({ site }: PublicWeddingSiteViewProps) {
 
   const sections = (site.sections || [])
     .filter((s) => s.is_visible && !s.deleted_at)
-    .sort((a, b) => a.sort_order - b.sort_order);
+    .sort((a, b) => {
+      const rank = (type: string) => {
+        if (type === "hero") return 0;
+        if (type === "couple_profile" || type === "love_story") return 1;
+        return 2;
+      };
+      const ra = rank(a.section_type);
+      const rb = rank(b.section_type);
+      if (ra !== rb) return ra - rb;
+      return a.sort_order - b.sort_order;
+    });
+
+  // Prefer a single story block under the hero when both section types exist
+  const seenStory = new Set<string>();
+  const orderedSections = sections.filter((s) => {
+    if (s.section_type === "couple_profile" || s.section_type === "love_story") {
+      if (seenStory.has("story")) return false;
+      seenStory.add("story");
+    }
+    return true;
+  });
 
   return (
     <div style={{ backgroundColor: styles.bg, color: styles.text, fontFamily: "Outfit, sans-serif" }}>
@@ -324,7 +545,7 @@ export function PublicWeddingSiteView({ site }: PublicWeddingSiteViewProps) {
       >
         <span className="font-serif text-lg italic">{site.wedding.couple_name}</span>
         <div className="hidden md:flex gap-6 text-sm">
-          <Link href={`/w/${site.slug}/story`} className="opacity-70 hover:opacity-100">Our Story</Link>
+          <a href="#our-story" className="opacity-70 hover:opacity-100">Our Story</a>
           <Link href={`/w/${site.slug}/events`} className="opacity-70 hover:opacity-100">Events</Link>
           <Link href={`/w/${site.slug}/venue`} className="opacity-70 hover:opacity-100">Venue</Link>
           <Link href={`/w/${site.slug}/rsvp`} className="opacity-70 hover:opacity-100">RSVP</Link>
@@ -334,7 +555,7 @@ export function PublicWeddingSiteView({ site }: PublicWeddingSiteViewProps) {
         </div>
       </nav>
 
-      {sections.map((section) => (
+      {orderedSections.map((section) => (
         <SectionRenderer key={section.id} section={section} site={site} styles={styles} />
       ))}
     </div>

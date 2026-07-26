@@ -11,7 +11,8 @@ import { LoginRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
 import { trackEvent, AnalyticsEvent } from "@/lib/analytics"
 import { apiClient } from "@/lib/api"
-import { tokenManager, userManager } from "@/lib/auth"
+import { tokenManager, userManager, googleSignupPending } from "@/lib/auth"
+import { finishGoogleOAuthReturn } from "@/lib/googleOAuth"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -39,26 +40,41 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
-// ── Role selection panel (new Google users) ───────────────────────────────────
+// ── Role selection panel (new Google users creating an account from sign-in) ─
 function RoleSelectPanel({
   onSelect,
   isLoading,
+  profile,
 }: {
   onSelect: (role: "event_owner" | "service_provider") => void
   isLoading: boolean
+  profile?: { email?: string; full_name?: string; avatar?: string } | null
 }) {
   const [selected, setSelected] = useState<"event_owner" | "service_provider" | null>(null)
+  const displayName = profile?.full_name?.trim() || profile?.email || "there"
 
   return (
     <div className="space-y-8">
       <div className="text-center space-y-3">
-        <div className="h-16 w-16 rounded-full bg-[#608d64]/15 border border-[#608d64]/30 flex items-center justify-center mx-auto">
-          <Users className="h-7 w-7 text-[#608d64]" />
+        <div className="h-16 w-16 rounded-full bg-[#608d64]/15 border border-[#608d64]/30 flex items-center justify-center mx-auto overflow-hidden">
+          {profile?.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.avatar} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <Users className="h-7 w-7 text-[#608d64]" />
+          )}
         </div>
-        <h2 className="text-2xl font-serif italic text-white">Welcome to VowNest</h2>
-        <p className="text-slate-400 text-sm font-medium">
-          How will you be using the platform?
+        <p className="text-[9px] font-black text-[#608d64] uppercase tracking-[0.4em]">
+          Create your account
         </p>
+        <h2 className="text-2xl font-serif italic text-white">Welcome, {displayName}</h2>
+        <p className="text-slate-400 text-sm font-medium">
+          We didn&apos;t find an existing account for this Google profile.
+          Choose how you&apos;ll use VowNest to finish creating yours.
+        </p>
+        {profile?.email && (
+          <p className="text-[11px] text-slate-500 font-medium tracking-wide">{profile.email}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -109,10 +125,10 @@ function RoleSelectPanel({
         {isLoading ? (
           <span className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-[#608d64]" />
-            Setting up...
+            Creating account...
           </span>
         ) : (
-          "Continue"
+          "Create account & continue"
         )}
       </Button>
     </div>
@@ -224,9 +240,11 @@ export default function SignInPage() {
   const [twoFARequired, setTwoFARequired] = useState(false)
   const [preAuthToken, setPreAuthToken] = useState("")
 
-  // Google new-user role selection state
+  // Google new-user role selection — always start equal on server/client,
+  // then open the panel from sessionStorage in useEffect (avoids hydration mismatch).
   const [roleSelectNeeded, setRoleSelectNeeded] = useState(false)
   const [roleSelectLoading, setRoleSelectLoading] = useState(false)
+  const [googleSignupToken, setGoogleSignupToken] = useState<string | null>(null)
   const [pendingGoogleUser, setPendingGoogleUser] = useState<any>(null)
 
   const {
@@ -243,42 +261,97 @@ export default function SignInPage() {
   // Show loading only when actually processing, not when waiting for role selection
   const isAnyLoading = (isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor) && !roleSelectNeeded
 
-  // ── Detect Google user needing role selection ─────────────────────────────
-  // This handles cases where the user is already authenticated but hasn't completed onboarding
+  // Open role panel immediately when callback stored a pending Google signup
   React.useEffect(() => {
-    if (user && !user.onboarding_completed && !roleSelectNeeded && !twoFARequired) {
+    const syncPendingGoogleSignup = () => {
+      const pending = googleSignupPending.read()
+      if (!pending?.googleSignupToken) return
+      setGoogleSignupToken(pending.googleSignupToken)
+      setPendingGoogleUser(pending.user ?? null)
+      setRoleSelectNeeded(true)
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    const googleError = params.get("google_error")
+    if (googleError) {
+      toast.error(googleError)
+      window.history.replaceState({}, "", "/auth/signin")
+    }
+
+    if (params.get("google_role") === "1" || params.get("google") === "1") {
+      window.history.replaceState({}, "", "/auth/signin")
+      syncPendingGoogleSignup()
+    } else {
+      syncPendingGoogleSignup()
+    }
+
+    if (params.get("google_2fa") === "1") {
+      try {
+        const raw = sessionStorage.getItem("google_2fa_pending")
+        sessionStorage.removeItem("google_2fa_pending")
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (parsed?.preAuthToken) {
+            setPreAuthToken(parsed.preAuthToken)
+            setTwoFARequired(true)
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      window.history.replaceState({}, "", "/auth/signin")
+    }
+
+    window.addEventListener("google-signup-pending", syncPendingGoogleSignup)
+    return () => window.removeEventListener("google-signup-pending", syncPendingGoogleSignup)
+  }, [])
+
+  // Legacy incomplete onboarding (older accounts created before role-required Google signup)
+  React.useEffect(() => {
+    if (user && !user.onboarding_completed && !roleSelectNeeded && !twoFARequired && !googleSignupToken) {
       setPendingGoogleUser(user)
       setRoleSelectNeeded(true)
     }
-  }, [user, roleSelectNeeded, twoFARequired])
+  }, [user, roleSelectNeeded, twoFARequired, googleSignupToken])
 
-  // ── Handle full-page redirect fallback (mobile — popup blocked) ──────────────
-  // When Google redirects back via /auth/google/callback on mobile,
-  // the callback page stores the code in sessionStorage and redirects here
-  // with ?google=1. We pick it up and complete the login flow.
+  const openGoogleRolePanel = (result: {
+    googleSignupToken?: string
+    user?: any
+  }) => {
+    const token =
+      result.googleSignupToken ||
+      googleSignupPending.read()?.googleSignupToken ||
+      null
+    if (!token) {
+      toast.error("Google verified your account, but role setup could not start. Please try again.")
+      return
+    }
+    setGoogleSignupToken(token)
+    setPendingGoogleUser(result.user ?? googleSignupPending.read()?.user ?? null)
+    setRoleSelectNeeded(true)
+  }
+
+  // Fallback: older ?google=1 handoff that still has a raw code in sessionStorage
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("google") !== "1") return
-
-    const code = sessionStorage.getItem("google_oauth_code")
-    if (!code) return
-
-    sessionStorage.removeItem("google_oauth_code")
-    // Remove the query param without a page reload
-    window.history.replaceState({}, "", "/auth/signin")
-
-    // Trigger the Google login with the stored code
-    ;(async () => {
+    finishGoogleOAuthReturn(async (code, role) => {
       try {
-        const result = await loginWithGoogle({ _codeOverride: code } as any)
+        const result = await loginWithGoogle({
+          _codeOverride: code,
+          ...(role ? { role } : {}),
+        } as any)
         if (result?.requiresTwoFactor) {
           setPreAuthToken(result.preAuthToken ?? "")
           setTwoFARequired(true)
+          return
+        }
+        if (result?.needsRoleSelection) {
+          openGoogleRolePanel(result)
+          return
         }
       } catch {
         // handled by mutation onError toast
       }
-    })()
+    })
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const validateForm = (): boolean => {
@@ -317,41 +390,46 @@ export default function SignInPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const result = await loginWithGoogle()
+      const result = await loginWithGoogle({})
       if (result?.requiresTwoFactor) {
         setPreAuthToken(result.preAuthToken ?? "")
         setTwoFARequired(true)
         return
       }
-      // The useAuth hook will NOT redirect if onboarding is incomplete
-      // Check if user needs role selection after successful Google login
-      const u = result?.user ?? userManager.getUser()
-      if (u && !u.onboarding_completed) {
-        // Show role selection for new Google users (onboarding_completed = false)
-        setPendingGoogleUser(u)
-        setRoleSelectNeeded(true)
+      if (result?.needsRoleSelection) {
+        openGoogleRolePanel(result)
         return
       }
-      // If we get here, user has completed onboarding - useAuth will handle redirect
+      // Existing users: useAuth handles redirect
     } catch {
       // handled by mutation onError
     }
   }
 
   const handleRoleSelect = async (role: "event_owner" | "service_provider") => {
-    if (!pendingGoogleUser) return
     setRoleSelectLoading(true)
     try {
-      // Update the user's role and mark onboarding as complete
-      await apiClient.put(`/api/v1/auth/update-profile`, { 
+      const token = googleSignupToken || googleSignupPending.read()?.googleSignupToken
+      if (token) {
+        // New Google account — create with the selected role (no default)
+        await loginWithGoogle({ google_signup_token: token, role })
+        googleSignupPending.clear()
+        setRoleSelectNeeded(false)
+        setGoogleSignupToken(null)
+        setPendingGoogleUser(null)
+        return
+      }
+
+      // Legacy incomplete onboarding: update profile role
+      if (!pendingGoogleUser) return
+      await apiClient.put(`/api/v1/auth/update-profile`, {
         role,
-        onboarding_completed: true  // Mark onboarding complete after role selection
+        onboarding_completed: true,
       })
       const updatedUser = { ...pendingGoogleUser, role, onboarding_completed: true }
       userManager.setUser(updatedUser)
       setRoleSelectNeeded(false)
       setPendingGoogleUser(null)
-      // Redirect based on role
       if (role === "service_provider") {
         router.push("/provider/dashboard?tab=onboarding")
       } else {
@@ -373,8 +451,8 @@ export default function SignInPage() {
     setPreAuthToken("")
   }
 
-  // ── Loading skeleton ───────────────────────────────────────────────────────
-  if (isLoadingSettings) {
+  // ── Loading skeleton (skip when we already know we need role / 2FA UI) ──
+  if (isLoadingSettings && !roleSelectNeeded && !twoFARequired) {
     return (
       <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden">
         <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-100 animate-pulse" />
@@ -407,7 +485,11 @@ export default function SignInPage() {
             <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
           </div>
           <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
-            {isAuthenticated ? "Preparing Dashboard..." : "Authenticating..."}
+            {isAuthenticated
+              ? "Preparing Dashboard..."
+              : isGoogleLoggingIn
+                ? "Connecting to Google..."
+                : "Authenticating..."}
           </p>
         </div>
       )}
@@ -466,6 +548,7 @@ export default function SignInPage() {
             <RoleSelectPanel
               onSelect={handleRoleSelect}
               isLoading={roleSelectLoading}
+              profile={pendingGoogleUser}
             />
           ) : (
             <>

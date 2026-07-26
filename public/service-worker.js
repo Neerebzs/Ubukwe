@@ -17,7 +17,7 @@
  *   controls when the cache is wiped on SW activation.
  */
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE  = `vownest-static-${CACHE_VERSION}`;
 const IMAGE_CACHE   = `vownest-images-${CACHE_VERSION}`;
 const ALL_CACHES    = [STATIC_CACHE, IMAGE_CACHE];

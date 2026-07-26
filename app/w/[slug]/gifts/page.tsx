@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicAccessGate } from "@/components/public-wedding/public-access-gate";
-import { PublicGiftForm } from "@/components/public-wedding/public-gift-form";
+import { GatedPublicGifts } from "@/components/public-wedding/gated-views";
 import { fetchPublicWeddingSite } from "@/lib/public-wedding";
 
 interface PageProps {
@@ -22,7 +22,7 @@ export default async function PublicGiftsPage({ params, searchParams }: PageProp
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <PublicAccessGate slug={params.slug} initialSite={site}>
-        {(unlocked) => <PublicGiftForm site={unlocked} />}
+        <GatedPublicGifts />
       </PublicAccessGate>
     </Suspense>
   );

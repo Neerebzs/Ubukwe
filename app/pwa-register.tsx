@@ -6,18 +6,28 @@ import { useEffect } from 'react';
  * PWARegister
  *
  * Registers the service worker and listens for the RELOAD_PAGE message
- * that the new SW broadcasts after activation.  This ensures every open
- * tab automatically reloads to the latest version after a deploy —
- * without the user having to manually clear their cache.
+ * that the new SW broadcasts after activation.
+ *
+ * Skipped in development — a stale SW often causes hydration mismatches
+ * while iterating on layout/auth pages.
  */
 export function PWARegister() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
+    // Dev: unregister any leftover SW so cached HTML can't fight React hydration
+    if (process.env.NODE_ENV !== 'production') {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+      if (typeof caches !== 'undefined') {
+        caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+      }
+      return;
+    }
+
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'RELOAD_PAGE') {
-        // Only reload if the page is not currently being interacted with
-        // (avoids disrupting a user in the middle of filling a form)
         if (!document.hidden) {
           console.log('[SW] New version available — reloading...');
           window.location.reload();
@@ -32,18 +42,15 @@ export function PWARegister() {
       .then((registration) => {
         console.log('[SW] Registered, scope:', registration.scope);
 
-        // If a new SW is waiting (installed but not yet active), activate it
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
-        // Watch for future updates
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New SW is ready — tell it to activate now
               newWorker.postMessage({ type: 'SKIP_WAITING' });
             }
           });

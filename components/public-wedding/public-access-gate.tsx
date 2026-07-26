@@ -1,6 +1,13 @@
 "use client";
 
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { Heart, Lock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,10 +32,21 @@ function unwrapData<T>(response: { data?: T } | T): T {
   return response as T;
 }
 
+const PublicWeddingSiteContext = createContext<PublicWeddingSite | null>(null);
+
+/** Unlocked public wedding site — must be used under PublicAccessGate. */
+export function usePublicWeddingSite(): PublicWeddingSite {
+  const site = useContext(PublicWeddingSiteContext);
+  if (!site) {
+    throw new Error("usePublicWeddingSite must be used within PublicAccessGate");
+  }
+  return site;
+}
+
 interface PublicAccessGateProps {
   slug: string;
   initialSite: PublicWeddingSite;
-  children: (site: PublicWeddingSite) => ReactNode;
+  children: ReactNode;
 }
 
 export function PublicAccessGate({ slug, initialSite, children }: PublicAccessGateProps) {
@@ -44,8 +62,7 @@ export function PublicAccessGate({ slug, initialSite, children }: PublicAccessGa
   const loadSite = useCallback(async (accessToken?: string) => {
     setLoading(true);
     try {
-      const token =
-        accessToken || getWeddingAccessToken(slug) || undefined;
+      const token = accessToken || getWeddingAccessToken(slug) || undefined;
       const res = await apiClient.website.getPublic<PublicWeddingSite>(
         slug,
         preview,
@@ -154,5 +171,9 @@ export function PublicAccessGate({ slug, initialSite, children }: PublicAccessGa
     );
   }
 
-  return <>{children(site)}</>;
+  return (
+    <PublicWeddingSiteContext.Provider value={site}>
+      {children}
+    </PublicWeddingSiteContext.Provider>
+  );
 }

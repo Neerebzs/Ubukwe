@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authApi, tokenManager, userManager } from '../lib/auth';
+import { authApi, tokenManager, userManager, googleSignupPending } from '../lib/auth';
 import { LoginRequest, RegisterRequest, User } from '../lib/api';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -29,7 +29,7 @@ type ValidRole = typeof VALID_ROLES[keyof typeof VALID_ROLES];
  * - 'service_provider' → Provider dashboard
  * - 'event_owner' → Customer dashboard
  * 
- * Any other role (including 'USER' placeholder) is INVALID.
+ * Any other role is INVALID. Public signup only allows event_owner or service_provider.
  */
 function isValidRole(role: string | undefined | null): role is ValidRole {
   if (!role) return false;
@@ -283,19 +283,88 @@ export const useAuth = () => {
   // ── Google OAuth Login ─────────────────────────────────────────────────────
 
   const googleLoginMutation = useMutation({
-    mutationFn: async (opts?: { _codeOverride?: string }): Promise<{ requiresTwoFactor: boolean; preAuthToken?: string; user?: any }> => {
-      // Step 1: Get authorization code — either from override (mobile redirect) or popup
+    mutationFn: async (opts?: {
+      _codeOverride?: string;
+      role?: 'event_owner' | 'service_provider';
+      google_signup_token?: string;
+    }): Promise<{
+      requiresTwoFactor: boolean;
+      needsRoleSelection?: boolean;
+      googleSignupToken?: string;
+      preAuthToken?: string;
+      accountCreated?: boolean;
+      user?: any;
+    }> => {
+      // Complete deferred Google signup after role selection
+      if (opts?.google_signup_token) {
+        if (!opts.role) {
+          throw new Error('Please select whether you are a Customer or an Artisan.');
+        }
+        const response = await authApi.googleLogin({
+          google_signup_token: opts.google_signup_token,
+          role: opts.role,
+        });
+        const data = response.data ?? response;
+        const accessToken = data?.access_token ?? data?.accessToken;
+        const refreshToken = data?.refresh_token ?? data?.refreshToken ?? accessToken;
+        const user = data?.user;
+        if (!accessToken) throw new Error('No access token received from Google signup.');
+        googleSignupPending.clear();
+        tokenManager.setTokens(accessToken, refreshToken);
+        if (user) {
+          userManager.setUser(user);
+          queryClient.setQueryData(authQueryKeys.user(), user);
+        }
+        return { requiresTwoFactor: false, user, accountCreated: true };
+      }
+
+      // Step 1: Get authorization code — override (after full-page return) or redirect to Google
       let code: string;
       if (opts?._codeOverride) {
         code = opts._codeOverride;
       } else {
-        const result = await initiateGoogleLogin();
-        code = result.code;
+        // Full-page redirect — this promise does not settle; page unloads.
+        await initiateGoogleLogin({ role: opts?.role });
+        throw new Error('Redirecting to Google…');
       }
 
-      // Step 2: Exchange code with backend
-      const response = await authApi.googleLogin(code);
-      const data = response.data ?? response;
+      // Step 2: Exchange code with backend (role optional for existing users; required for new)
+      const response = await authApi.googleLogin({
+        code,
+        role: opts?.role,
+      });
+      // apiClient wraps as { status, data: backendPayload } — also accept flat backendPayload
+      const raw = response?.data ?? response;
+      const data = raw?.needs_role_selection || raw?.google_signup_token || raw?.access_token
+        ? raw
+        : (raw?.data ?? raw);
+
+      const needsRole =
+        data?.needs_role_selection === true ||
+        data?.needsRoleSelection === true ||
+        Boolean(data?.google_signup_token || data?.googleSignupToken);
+
+      // New Google profile with no local account — continue into account creation
+      if (needsRole && (data?.google_signup_token || data?.googleSignupToken || data?.needs_role_selection)) {
+        const googleSignupToken =
+          data.google_signup_token || data.googleSignupToken || '';
+        const profile = data.user ?? null;
+
+        if (!googleSignupToken) {
+          throw new Error(
+            'Google verified your account, but role setup could not start. Please try again.'
+          );
+        }
+
+        googleSignupPending.save({ googleSignupToken, user: profile });
+
+        return {
+          requiresTwoFactor: false,
+          needsRoleSelection: true,
+          googleSignupToken,
+          user: profile,
+        };
+      }
 
       // Step 3a: 2FA required → return pre_auth_token for caller to handle
       if (data?.two_factor_required) {
@@ -313,6 +382,7 @@ export const useAuth = () => {
 
       if (!accessToken) throw new Error('No access token received from Google login.');
 
+      googleSignupPending.clear();
       tokenManager.setTokens(accessToken, refreshToken);
 
       let finalUser = user;
@@ -332,7 +402,6 @@ export const useAuth = () => {
     },
     onSuccess: (result) => {
       if (result.requiresTwoFactor) {
-        // Caller handles the 2FA flow — just track the attempt
         trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
           userId: result.user?.id,
           twoFactorRequired: true,
@@ -340,45 +409,43 @@ export const useAuth = () => {
         return;
       }
 
-      const finalUser = result.user;
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // CRITICAL: Check if user needs to complete onboarding (role selection)
-      // ═══════════════════════════════════════════════════════════════════════
-      // New Google users have role='USER' (placeholder) and onboarding_completed=false
-      // They MUST select a role before accessing any dashboard
-      if (finalUser && !finalUser.onboarding_completed) {
-        // Don't redirect yet - let signin page show role selection modal
+      if (result.needsRoleSelection) {
         trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
-          userId: finalUser?.id,
-          userRole: finalUser?.role,
           onboardingRequired: true,
+          isNewUser: true,
         });
-        toast.success('Welcome! Please select your role to continue.');
-        return; // Stay on signin page, role selection modal will appear
+        // Persist already done in mutationFn; notify sign-in UI to open the role panel
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('google-signup-pending'));
+        }
+        toast.success("Welcome! Choose your role to create your account.");
+        return;
       }
+
+      const finalUser = result.user;
 
       trackEvent(AnalyticsEvent.GOOGLE_LOGIN, {
         userId: finalUser?.id,
         userRole: finalUser?.role,
+        accountCreated: !!result.accountCreated,
       });
 
-      toast.success('Signed in with Google!');
+      toast.success(
+        result.accountCreated
+          ? 'Account created successfully!'
+          : 'Signed in with Google!'
+      );
 
-      // ═══════════════════════════════════════════════════════════════════════
-      // STRICT ROLE VALIDATION: Only these 3 roles can access dashboards
-      // ═══════════════════════════════════════════════════════════════════════
       const dashboardPath = getDashboardPath(finalUser);
       
       if (dashboardPath) {
         router.push(dashboardPath);
       } else {
-        // BLOCK: Invalid role (including 'USER' placeholder)
         console.error(`Invalid role detected: ${finalUser?.role}. Only 'admin', 'service_provider', or 'event_owner' allowed.`);
         toast.error('Invalid user role. Please complete your profile setup.');
         tokenManager.clearTokens();
         userManager.clearUser();
-        return; // Stay on signin page
+        return;
       }
     },
     onError: (error: Error) => {
