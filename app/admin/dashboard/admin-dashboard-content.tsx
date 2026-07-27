@@ -23,6 +23,7 @@ import { AdminPreferencesSettings } from "@/components/admin/preferences-setting
 import { AdminSupportTickets } from "@/components/admin/support-tickets"
 import { AdminPayments } from "@/components/admin/payments"
 import { AdminSystemSettings } from "@/components/admin/system-settings"
+import { InvitationTemplatesManagement } from "@/components/admin/invitation-templates"
 
 export function AdminDashboardContent() {
   const router = useRouter()
@@ -63,6 +64,7 @@ export function AdminDashboardContent() {
             <TabsContent value="categories"><CategoriesManagement /></TabsContent>
           </Tabs>
         )
+      case "invitation-templates": return <InvitationTemplatesManagement />
       case "bookings":    return <AdminBookingsMetrics />
       case "disputes":    return <AdminDisputes disputes={[]} />
       case "support":     return <AdminSupportTickets />

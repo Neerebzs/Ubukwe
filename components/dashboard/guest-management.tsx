@@ -44,7 +44,17 @@ interface Invitation {
   program_events?: ProgramEvent[];
   invitation_note?: string; couple_contact?: string;
   color_theme?: string;
+  template_layout?: string;
+  design_template_id?: string;
   is_ai_generated: boolean;
+}
+
+interface DesignTemplate {
+  id: string; name: string; description?: string;
+  template_style: string; color_theme: string; layout: string;
+  preview_couple_names?: string; preview_wedding_date?: string; preview_venue?: string;
+  preview_bible_verse?: string; preview_note?: string;
+  usage_count: number;
 }
 
 const EMPTY_FORM = {
@@ -64,6 +74,8 @@ const EMPTY_INV = {
   bible_verse: "", description: "",
   program_events: [{ ...EMPTY_PROGRAM_EVENT }] as ProgramEvent[],
   invitation_note: "", couple_contact: "",
+  color_theme: "cream" as string, template_layout: "single_column" as string,
+  design_template_id: undefined as string | undefined,
 };
 
 const EMPTY_AI = {
@@ -788,6 +800,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const [uploadedFile, setUploadedFile] = useState<{name:string; url:string; type:string; file?:File}|null>(null);
   const [templateUpload, setTemplateUpload] = useState<{status:"idle"|"uploading"|"done"|"error"; message?:string}>({status:"idle"});
   const [selectedTemplate, setSelectedTemplate] = useState<{id:string; name:string; layout:string; section_order:string[]; language:string}|null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<DesignTemplate|null>(null);
+  const [previewIsManual, setPreviewIsManual] = useState(false);
   const uploadRef = useRef<HTMLInputElement|null>(null);
 
   const { data: learnedTemplatesRaw } = useQuery<any[]>({
@@ -797,6 +811,26 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   // Ensure learnedTemplates is always an array (handle API returning object instead of array)
   const learnedTemplates = Array.isArray(learnedTemplatesRaw) ? learnedTemplatesRaw : [];
 
+  const { data: designTemplatesRaw } = useQuery<DesignTemplate[]>({
+    queryKey: ["invitation-design-templates"],
+    queryFn: async () => { const res = await apiClient.invitations.listDesignTemplates(); return (res as any).data || []; },
+  });
+  const designTemplates = Array.isArray(designTemplatesRaw) ? designTemplatesRaw : [];
+
+  const pickDesignTemplate = (tpl: DesignTemplate) => {
+    setSelectedDesign(tpl);
+    setEditingId(null);
+    setManualForm(f => ({
+      ...EMPTY_INV,
+      template_style: tpl.template_style,
+      color_theme: tpl.color_theme,
+      template_layout: tpl.layout,
+      design_template_id: tpl.id,
+    }));
+    setCardTheme((tpl.color_theme as CardThemeKey) || "cream");
+    setMode("edit");
+  };
+
   const { data: invitations = [], isLoading } = useQuery<Invitation[]>({
     queryKey: ["wedding-invitations", weddingId],
     queryFn: async () => { const res = await apiClient.invitations.list<Invitation[]>(weddingId!); return (res as any).data || []; },
@@ -805,7 +839,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => editingId ? apiClient.invitations.update(weddingId!, editingId, data) : apiClient.invitations.create(weddingId!, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["wedding-invitations", weddingId] }); toast.success(editingId?"Invitation updated":"Invitation saved"); setMode("list"); setEditingId(null); setManualForm({...EMPTY_INV}); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["wedding-invitations", weddingId] }); toast.success(editingId?"Invitation updated":"Invitation saved"); setMode("list"); setEditingId(null); setSelectedDesign(null); setManualForm({...EMPTY_INV}); },
     onError: (e: any) => toast.error(e.message || "Failed to save"),
   });
 
@@ -884,7 +918,9 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
 
   const handleOpenEdit = (inv: Invitation) => {
     setEditingId(inv.id);
-    setManualForm({ title:inv.title, couple_names:inv.couple_names, wedding_date:inv.wedding_date, wedding_time:inv.wedding_time||"", venue:inv.venue||"", message:inv.message||"", rsvp_details:inv.rsvp_details||"", dress_code:inv.dress_code||"", theme:inv.theme||"", tone:inv.tone||"formal", template_style:inv.template_style||"classic", bible_verse:inv.bible_verse||"", description:inv.description||"", program_events:(inv.program_events&&inv.program_events.length>0)?inv.program_events:[{...EMPTY_PROGRAM_EVENT}], invitation_note:inv.invitation_note||"", couple_contact:inv.couple_contact||"" });
+    setSelectedDesign(null);
+    setManualForm({ title:inv.title, couple_names:inv.couple_names, wedding_date:inv.wedding_date, wedding_time:inv.wedding_time||"", venue:inv.venue||"", message:inv.message||"", rsvp_details:inv.rsvp_details||"", dress_code:inv.dress_code||"", theme:inv.theme||"", tone:inv.tone||"formal", template_style:inv.template_style||"classic", bible_verse:inv.bible_verse||"", description:inv.description||"", program_events:(inv.program_events&&inv.program_events.length>0)?inv.program_events:[{...EMPTY_PROGRAM_EVENT}], invitation_note:inv.invitation_note||"", couple_contact:inv.couple_contact||"", color_theme:inv.color_theme||"cream", template_layout:inv.template_layout||"single_column", design_template_id:inv.design_template_id });
+    setCardTheme((inv.color_theme as CardThemeKey) || "cream");
     setMode("edit");
   };
 
@@ -978,6 +1014,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                   setCardTheme(ct);
                   setPreviewInv(inv);
                   setPreviewGroup(isAiGroup ? variants : []);
+                  setPreviewIsManual(false);
                   setMode("preview");
                 };
                 return (
@@ -1077,6 +1114,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                   if (previewGroup.length > 0) {
                     const match = previewGroup.find(v => v.color_theme === k);
                     if (match) setPreviewInv(match);
+                  } else if (previewIsManual) {
+                    setManualForm(f => ({ ...f, color_theme: k }));
                   }
                 }}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
@@ -1258,7 +1297,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style:</span>
             {(Object.keys(CARD_THEMES) as CardThemeKey[]).map(k => (
-              <button key={k} onClick={()=>setCardTheme(k)}
+              <button key={k} onClick={()=>{setCardTheme(k); if (previewIsManual) setManualForm(f => ({ ...f, color_theme: k }));}}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                   cardTheme===k ? "border-[#D4AF6A] bg-amber-50 text-[#7B6A45] shadow" : "border-slate-200 text-slate-400 hover:border-[#D4AF6A]/50"
                 }`}>{CARD_THEMES[k].label}</button>
@@ -1404,10 +1443,57 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
           <div>
             <h3 className="text-xl font-serif italic text-[#668c65]">Invitation Templates</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Pick a style from your uploaded templates — the AI will generate your invitation in that layout</p>
+            <p className="text-xs text-slate-400 mt-0.5">Pick an official design to fill in yourself, or reuse a layout learned from an upload for AI generation</p>
           </div>
         </div>
         <Button variant="outline" onClick={()=>setMode("upload")} className="rounded-full border-[#668c65]/50 text-[#668c65] hover:bg-[#668c65]/5 gap-2 text-sm"><Upload className="h-4 w-4"/>Upload New Template</Button>
+      </div>
+
+      {/* OFFICIAL DESIGN TEMPLATES — curated by admin, pick & fill in directly */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 text-[#D4AF6A]"/>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Official Designs</span>
+          <div className="h-px flex-1 bg-slate-100"/>
+          {designTemplates.length > 0 && <span className="text-[10px] text-slate-300">{designTemplates.length} design{designTemplates.length !== 1 ? "s" : ""}</span>}
+        </div>
+        {designTemplates.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-10 text-center">
+            <p className="text-sm text-slate-400">No official designs published yet. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {designTemplates.map((tpl) => {
+              const thm = CARD_THEMES[(tpl.color_theme as CardThemeKey)] || CARD_THEMES.cream;
+              const isSelected = selectedDesign?.id === tpl.id;
+              return (
+                <div key={tpl.id}
+                  className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
+                  style={{borderColor: isSelected ? thm.divider : `${thm.divider}40`, background: thm.bg}}
+                  onClick={()=>pickDesignTemplate(tpl)}>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:thm.divider}}>✓ Selected</div>
+                  )}
+                  <div className="h-1.5 w-full" style={{background:`linear-gradient(to right, ${thm.divider}60, ${thm.divider}, ${thm.divider}60)`}}/>
+                  <div className="p-5 text-center space-y-1.5">
+                    <p className="text-[9px] uppercase tracking-[3px]" style={{color:thm.date}}>Wedding Invitation</p>
+                    {tpl.preview_bible_verse && <p className="text-[10px] italic font-serif" style={{color:thm.note}}>&ldquo;{tpl.preview_bible_verse}&rdquo;</p>}
+                    <p className="text-lg font-serif italic" style={{color:thm.text}}>{tpl.preview_couple_names || "Alex & Jordan"}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{color:thm.date}}>{tpl.preview_wedding_date || "Wedding Date"}</p>
+                  </div>
+                  <div className="px-5 pb-4 space-y-1 border-t" style={{borderColor:`${thm.divider}30`}}>
+                    <p className="text-[13px] font-semibold pt-2" style={{color:"#2C2010"}}>{tpl.name}</p>
+                    {tpl.description && <p className="text-[10px] text-slate-500 line-clamp-2">{tpl.description}</p>}
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:thm.date, borderColor:`${thm.date}50`, background:`${thm.date}10`}}>{tpl.template_style}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-slate-200 text-slate-500 bg-white/60">{thm.label}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ALL TEMPLATES FROM UPLOADS */}
@@ -1416,15 +1502,15 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <div className="w-16 h-16 rounded-full bg-[#668c65]/10 border-2 border-[#668c65]/40 flex items-center justify-center mx-auto mb-4">
             <Upload className="h-7 w-7 text-[#668c65]"/>
           </div>
-          <p className="text-lg font-serif italic text-slate-600 mb-1">No templates yet</p>
-          <p className="text-[12px] text-slate-400 mb-6">Upload your own invitation file and it will appear here as a selectable template</p>
+          <p className="text-lg font-serif italic text-slate-600 mb-1">No uploaded templates yet</p>
+          <p className="text-[12px] text-slate-400 mb-6">Upload your own invitation file and its layout will guide AI generation</p>
           <Button onClick={()=>setMode("upload")} className="rounded-full px-8 gap-2 text-white bg-[#668c65] hover:bg-[#527451]"><Upload className="h-4 w-4"/>Upload Invitation File</Button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-[#668c65]"/>
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Templates</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Uploaded Layouts (for AI Generation)</span>
             <div className="h-px flex-1 bg-slate-100"/>
             <span className="text-[10px] text-slate-300">{learnedTemplates.length} template{learnedTemplates.length !== 1 ? "s" : ""}</span>
           </div>
@@ -1551,9 +1637,15 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   // EDIT
   if (mode === "edit") return (
     <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={()=>{setMode("list");setEditingId(null);}} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button variant="ghost" onClick={()=>{setMode("list");setEditingId(null);setSelectedDesign(null);}} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
         <h3 className="text-xl font-serif italic text-slate-800">{editingId?"Edit Invitation":"Create Invitation"}</h3>
+        {selectedDesign && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ml-auto" style={{background:"#fff7e6", borderColor:"#D4AF6A", color:"#7B6A45"}}>
+            <Sparkles className="h-3 w-3"/>Design: {selectedDesign.name}
+            <button onClick={()=>setMode("templates")} className="ml-1 underline">Change</button>
+          </div>
+        )}
       </div>
       <div className="space-y-5">
 
@@ -1614,7 +1706,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
 
       </div>
       <div className="flex gap-3 pt-2">
-        <Button variant="outline" onClick={()=>{setPreviewInv(manualForm as any);setMode("preview");}} className="rounded-full px-6 gap-2"><Eye className="h-4 w-4"/>Preview</Button>
+        <Button variant="outline" onClick={()=>{setPreviewInv(manualForm as any);setPreviewGroup([]);setPreviewIsManual(true);setCardTheme((manualForm.color_theme as CardThemeKey)||"cream");setMode("preview");}} className="rounded-full px-6 gap-2"><Eye className="h-4 w-4"/>Preview</Button>
         <Button onClick={()=>saveMutation.mutate(manualForm)} disabled={saveMutation.isPending||!manualForm.couple_names||!manualForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2">
           {saveMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<Save className="h-4 w-4"/>}Save Invitation
         </Button>
@@ -1722,7 +1814,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           return (
             <div key={i} className="relative overflow-hidden rounded-2xl shadow-md cursor-pointer transition-transform hover:scale-[1.02]"
               style={{background:thm.bg, border:`1.5px solid ${thm.border}`}}
-              onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setMode("preview");}}>
+              onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setPreviewIsManual(false);setMode("preview");}}>
               {/* Top accent bar */}
               <div className="h-1 w-full" style={{background:`linear-gradient(to right,${thm.divider}60,${thm.divider},${thm.divider}60)`}}/>
               <div className="p-4 space-y-3">
@@ -1746,8 +1838,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                 </div>
                 {/* Actions */}
                 <div className="flex items-center gap-1 pt-1" onClick={e=>e.stopPropagation()}>
-                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setMode("preview");}}><Eye className="h-3 w-3"/>Preview</Button>
-                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto ml-auto" style={{color:thm.divider}} onClick={e=>{e.stopPropagation();setManualForm({title:inv.title||"Wedding Invitation",couple_names:inv.couple_names||"",wedding_date:inv.wedding_date||"",wedding_time:inv.wedding_time||"",venue:inv.venue||"",message:inv.message||"",rsvp_details:inv.rsvp_details||"",dress_code:inv.dress_code||"",theme:inv.theme||"",tone:inv.tone||"formal",template_style:"traditional",bible_verse:(inv as any).bible_verse||"",description:(inv as any).description||"",program_events:((inv as any).program_events?.length>0)?(inv as any).program_events:[{...EMPTY_PROGRAM_EVENT}],invitation_note:(inv as any).invitation_note||"",couple_contact:(inv as any).couple_contact||""});setEditingId(null);setMode("edit");}}><Edit className="h-3 w-3"/>Edit</Button>
+                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setPreviewIsManual(false);setMode("preview");}}><Eye className="h-3 w-3"/>Preview</Button>
+                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto ml-auto" style={{color:thm.divider}} onClick={e=>{e.stopPropagation();setManualForm({title:inv.title||"Wedding Invitation",couple_names:inv.couple_names||"",wedding_date:inv.wedding_date||"",wedding_time:inv.wedding_time||"",venue:inv.venue||"",message:inv.message||"",rsvp_details:inv.rsvp_details||"",dress_code:inv.dress_code||"",theme:inv.theme||"",tone:inv.tone||"formal",template_style:"traditional",bible_verse:(inv as any).bible_verse||"",description:(inv as any).description||"",program_events:((inv as any).program_events?.length>0)?(inv as any).program_events:[{...EMPTY_PROGRAM_EVENT}],invitation_note:(inv as any).invitation_note||"",couple_contact:(inv as any).couple_contact||"",color_theme:inv.color_theme||"cream",template_layout:(inv as any).template_layout||"two_column",design_template_id:undefined});setEditingId(null);setSelectedDesign(null);setMode("edit");}}><Edit className="h-3 w-3"/>Edit</Button>
                 </div>
               </div>
             </div>

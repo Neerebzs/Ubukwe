@@ -826,5 +826,8 @@ export const apiClient = {
     listTemplates(): Promise<any> {
       return apiClient.get(`/api/v1/invitations/templates`);
     },
+    listDesignTemplates(): Promise<any> {
+      return apiClient.get(`/api/v1/invitations/design-templates`);
+    },
   },
 };
