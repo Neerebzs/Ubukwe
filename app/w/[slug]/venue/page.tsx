@@ -1,8 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { PublicAccessGate } from "@/components/public-wedding/public-access-gate";
-import { GatedPublicVenue } from "@/components/public-wedding/gated-views";
+import { PublicVenueWrapper } from "@/components/public-wedding/public-wedding-wrapper";
 import { fetchPublicWeddingSite } from "@/lib/public-wedding";
 
 interface PageProps {
@@ -21,9 +20,7 @@ export default async function VenuePage({ params, searchParams }: PageProps) {
   if (!site) notFound();
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <PublicAccessGate slug={params.slug} initialSite={site}>
-        <GatedPublicVenue />
-      </PublicAccessGate>
+      <PublicVenueWrapper slug={params.slug} initialSite={site} />
     </Suspense>
   );
 }

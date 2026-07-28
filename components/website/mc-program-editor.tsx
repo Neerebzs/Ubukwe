@@ -58,7 +58,7 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
   const queryClient = useQueryClient();
   const [mcUrl, setMcUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [accessMode, setAccessMode] = useState("protected");
+  const [accessMode, setAccessMode] = useState("public");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
   const [newItem, setNewItem] = useState({
@@ -130,17 +130,33 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
   });
 
   const linkMutation = useMutation({
-    mutationFn: () => apiClient.mcPortal.generateAccessLink<{ mc_url: string }>(weddingId),
+    mutationFn: () =>
+      apiClient.mcPortal.generateAccessLink<{ mc_url: string; access_mode?: string }>(weddingId),
     onSuccess: (res) => {
       const data = unwrap(res);
       setMcUrl(data.mc_url);
-      toast.success("MC link generated");
+      if (data.access_mode) setAccessMode(data.access_mode);
+      toast.success(
+        data.access_mode === "public"
+          ? "Public MC link ready (no token needed)"
+          : "Protected MC link generated",
+      );
     },
   });
 
   const accessMutation = useMutation({
     mutationFn: (mode: string) => apiClient.mcPortal.updateAccess(weddingId, mode),
-    onSuccess: () => toast.success("Access settings updated"),
+    onSuccess: (_res, mode) => {
+      setAccessMode(mode);
+      if (mode === "public") {
+        setMcUrl(`${window.location.origin}/w/${slug}/mc`);
+      }
+      toast.success(
+        mode === "public"
+          ? "MC portal is now public — no token required"
+          : "MC portal is now token-protected",
+      );
+    },
   });
 
   const startEdit = (item: MCProgramItem) => {
@@ -205,36 +221,22 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
           <CardDescription>Share the official wedding program with your MC</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="space-y-2">
-              <Label>Access Mode</Label>
-              <Select
-                value={accessMode}
-                onValueChange={(v) => {
-                  setAccessMode(v);
-                  accessMutation.mutate(v);
-                }}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="protected">Protected (token)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <p className="text-sm text-slate-600">
+            The MC portal is public — anyone with the link can open it (no access token).
+          </p>
+          <div className="flex flex-wrap gap-3 items-center">
             <Button onClick={() => linkMutation.mutate()} disabled={linkMutation.isPending}>
-              <Link2 className="h-4 w-4 mr-2" /> Generate MC Link
+              <Link2 className="h-4 w-4 mr-2" /> Copy MC Link
             </Button>
             <Button variant="outline" onClick={copyLink}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-          {mcUrl && (
-            <p className="text-sm text-slate-500 break-all font-mono bg-slate-50 p-2 rounded">{mcUrl}</p>
+          {(mcUrl || slug) && (
+            <p className="text-sm text-slate-500 break-all font-mono bg-slate-50 p-2 rounded">
+              {mcUrl || `${typeof window !== "undefined" ? window.location.origin : ""}/w/${slug}/mc`}
+            </p>
           )}
-          <p className="text-xs text-slate-400">Public URL: /w/{slug}/mc</p>
         </CardContent>
       </Card>
 
