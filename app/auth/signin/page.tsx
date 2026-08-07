@@ -15,6 +15,7 @@ import { tokenManager, userManager, googleSignupPending } from "@/lib/auth"
 import { finishGoogleOAuthReturn } from "@/lib/googleOAuth"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { HCaptchaField } from "@/components/public-wedding/hcaptcha-field"
 
 // ── Google SVG icon (official brand colors) ───────────────────────────────────
 function GoogleIcon({ className }: { className?: string }) {
@@ -235,6 +236,10 @@ export default function SignInPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [captchaRequired, setCaptchaRequired] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [loginBlocked, setLoginBlocked] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   // 2FA state
   const [twoFARequired, setTwoFARequired] = useState(false)
@@ -250,7 +255,6 @@ export default function SignInPage() {
   const {
     login,
     isLoggingIn,
-    isAuthenticated,
     loginWithGoogle,
     isGoogleLoggingIn,
     verifyTwoFactor,
@@ -258,14 +262,23 @@ export default function SignInPage() {
     user,
   } = useAuth()
 
-  // Show loading only when actually processing, not when waiting for role selection
-  const isAnyLoading = (isLoggingIn || isGoogleLoggingIn || isVerifyingTwoFactor) && !roleSelectNeeded
-
-  // Open role panel immediately when callback stored a pending Google signup
+  // Open role panel only for a pending NEW Google signup (no account yet).
   React.useEffect(() => {
     const syncPendingGoogleSignup = () => {
       const pending = googleSignupPending.read()
       if (!pending?.googleSignupToken) return
+
+      // Never show role picker to someone already signed in with a role
+      const existing = userManager.getUser()
+      const hasRole =
+        existing?.role === "event_owner" ||
+        existing?.role === "service_provider" ||
+        existing?.role === "admin"
+      if (hasRole) {
+        googleSignupPending.clear()
+        return
+      }
+
       setGoogleSignupToken(pending.googleSignupToken)
       setPendingGoogleUser(pending.user ?? null)
       setRoleSelectNeeded(true)
@@ -306,9 +319,27 @@ export default function SignInPage() {
     return () => window.removeEventListener("google-signup-pending", syncPendingGoogleSignup)
   }, [])
 
-  // Legacy incomplete onboarding (older accounts created before role-required Google signup)
+  // Role picker only for users with no role yet — never for existing Customer/Artisan/Admin logins.
+  // (onboarding_completed=false is normal for providers mid-setup; that must not open this panel.)
   React.useEffect(() => {
-    if (user && !user.onboarding_completed && !roleSelectNeeded && !twoFARequired && !googleSignupToken) {
+    if (!user || twoFARequired || googleSignupToken) return
+
+    const hasRole =
+      user.role === "event_owner" ||
+      user.role === "service_provider" ||
+      user.role === "admin"
+
+    if (hasRole) {
+      // Stale Google signup draft must not hijack a returning user
+      googleSignupPending.clear()
+      if (roleSelectNeeded) {
+        setRoleSelectNeeded(false)
+        setPendingGoogleUser(null)
+      }
+      return
+    }
+
+    if (!roleSelectNeeded) {
       setPendingGoogleUser(user)
       setRoleSelectNeeded(true)
     }
@@ -364,27 +395,73 @@ export default function SignInPage() {
     return Object.keys(newErrors).length === 0
   }
 
+  const refreshLoginSecurityStatus = React.useCallback(async (forEmail?: string) => {
+    try {
+      const target = (forEmail ?? email).trim().toLowerCase()
+      const qs = target ? `?email=${encodeURIComponent(target)}` : ""
+      const res = await apiClient.get<any>(`/api/v1/auth/login/security-status${qs}`)
+      const data = (res as any)?.data ?? res
+      setCaptchaRequired(Boolean(data?.captcha_required))
+      if (data?.blocked) {
+        setLoginBlocked(data?.message || "Too many login attempts. Please try again later.")
+      } else {
+        setLoginBlocked(null)
+      }
+    } catch {
+      // Non-blocking — login still works without preflight
+    }
+  }, [email])
+
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      if (email.includes("@")) refreshLoginSecurityStatus(email)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [email, refreshLoginSecurityStatus])
+
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
+    setAuthError(null)
+    if (loginBlocked) {
+      setAuthError(loginBlocked)
+      toast.error(loginBlocked)
+      return
+    }
+    if (captchaRequired && !captchaToken) {
+      const msg = "Please complete the CAPTCHA and try again."
+      setAuthError(msg)
+      toast.error(msg)
+      return
+    }
 
     const loginData: LoginRequest = {
       email: email.trim().toLowerCase(),
       password,
+      ...(captchaToken ? { captcha_token: captchaToken } : {}),
     }
 
     try {
-      // Use the login mutation directly — it handles token storage, redirect, and errors.
-      // We intercept the raw response only to detect a 2FA requirement.
       const result = await login(loginData) as any
-      // If backend returned two_factor_required, show 2FA panel
       const data = result?.data ?? result
       if (data?.two_factor_required) {
         setPreAuthToken(data.pre_auth_token ?? "")
         setTwoFARequired(true)
       }
-    } catch {
-      // Errors are handled by the mutation's onError (toast)
+      setCaptchaRequired(false)
+      setCaptchaToken(null)
+      setLoginBlocked(null)
+      setAuthError(null)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Invalid email or password."
+      setAuthError(message)
+      if (/captcha/i.test(message) || /too many/i.test(message) || /try again later/i.test(message)) {
+        setCaptchaRequired(true)
+      }
+      void refreshLoginSecurityStatus()
     }
   }
 
@@ -476,24 +553,6 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
-      {/* Full page loading overlay */}
-      {isAnyLoading && (
-        <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
-            <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
-            <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
-          </div>
-          <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
-            {isAuthenticated
-              ? "Preparing Dashboard..."
-              : isGoogleLoggingIn
-                ? "Connecting to Google..."
-                : "Authenticating..."}
-          </p>
-        </div>
-      )}
-
       {/* Visual narrative side — desktop only */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-50">
         <img
@@ -607,6 +666,7 @@ export default function SignInPage() {
                       onChange={(e) => {
                         setEmail(e.target.value)
                         if (errors.email) setErrors((p) => ({ ...p, email: undefined }))
+                        if (authError) setAuthError(null)
                       }}
                       className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.email ? "border-red-500/50 bg-red-500/5" : ""}`}
                       disabled={isLoggingIn}
@@ -634,6 +694,7 @@ export default function SignInPage() {
                         onChange={(e) => {
                           setPassword(e.target.value)
                           if (errors.password) setErrors((p) => ({ ...p, password: undefined }))
+                          if (authError) setAuthError(null)
                         }}
                         className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all placeholder:text-slate-600 font-medium ${errors.password ? "border-red-500/50 bg-red-500/5" : ""}`}
                         disabled={isLoggingIn}
@@ -652,6 +713,30 @@ export default function SignInPage() {
                     )}
                   </div>
                 </div>
+
+                {loginBlocked && (
+                  <p className="text-sm text-amber-300/90 bg-amber-500/10 border border-amber-400/20 rounded-xl px-4 py-3">
+                    {loginBlocked}
+                  </p>
+                )}
+
+                {authError && !loginBlocked && (
+                  <p
+                    role="alert"
+                    className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3"
+                  >
+                    {authError}
+                  </p>
+                )}
+
+                {captchaRequired && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-1">
+                      Security check required
+                    </p>
+                    <HCaptchaField onToken={setCaptchaToken} />
+                  </div>
+                )}
 
                 <Button
                   type="submit"

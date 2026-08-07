@@ -11,6 +11,7 @@ import { GoogleTagManagerScript, GoogleTagManagerNoScript } from "@/components/a
 import { PageViewTracker } from "@/components/analytics/PageViewTracker"
 import { SystemSettingsProvider } from "@/contexts/system-settings-context"
 import { Toaster } from "@/components/ui/toaster"
+import { SonnerToasterProvider } from "@/components/ui/sonner-toaster"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default function RootLayout({
                 <PageViewTracker />
                 <Suspense fallback={null}>{children}</Suspense>
                 <Toaster />
+                <SonnerToasterProvider />
               </MobileMenuProvider>
             </I18nProvider>
           </SystemSettingsProvider>

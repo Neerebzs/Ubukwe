@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
   AUTH: {
     REGISTER: `/api/${API_VERSION}/auth/register`,
     LOGIN: `/api/${API_VERSION}/auth/login`,
+    LOGIN_SECURITY_STATUS: `/api/${API_VERSION}/auth/login/security-status`,
     LOGOUT: `/api/${API_VERSION}/auth/logout`,
     REFRESH_TOKEN: `/api/${API_VERSION}/auth/refresh-token`,
     FORGOT_PASSWORD: `/api/${API_VERSION}/auth/forgot-password`,
@@ -216,6 +217,8 @@ export interface ApiResponse<T = any> {
 export interface LoginRequest {
   email: string;
   password: string;
+  captcha_token?: string;
+  device_fingerprint?: string;
 }
 
 export interface RegisterRequest {

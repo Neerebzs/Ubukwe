@@ -11,6 +11,7 @@ import { AdminProviderServices } from "@/components/admin/provider-services"
 import { AdminBookingsMetrics } from "@/components/admin/bookings"
 import { AdminDisputes } from "@/components/admin/disputes"
 import { AdminAnalytics } from "@/components/admin/analytics"
+import { AdminSecurity } from "@/components/admin/security"
 import { useAuth } from "@/hooks/useAuth"
 import { DashboardHeader } from "@/components/ui/dashboard-header"
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav"
@@ -67,6 +68,7 @@ export function AdminDashboardContent() {
       case "disputes":    return <AdminDisputes disputes={[]} />
       case "support":     return <AdminSupportTickets />
       case "analytics":   return <AdminAnalytics />
+      case "security":    return <AdminSecurity />
       case "events":      return <AdminEvents />
       case "payments":    return <AdminPayments />
       case "system":      return <AdminSystemSettings />

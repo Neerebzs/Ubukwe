@@ -14,6 +14,7 @@ import { RegisterRequest } from "@/lib/api"
 import { useSystemSettings } from "@/contexts/system-settings-context"
 import { finishGoogleOAuthReturn } from "@/lib/googleOAuth"
 import { googleSignupPending } from "@/lib/auth"
+import { toast } from "sonner"
 
 // ── Google SVG icon (official brand colors) ───────────────────────────────────
 function GoogleIcon({ className }: { className?: string }) {
@@ -50,18 +51,12 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [authError, setAuthError] = useState<string | null>(null)
   const [googleSignupToken, setGoogleSignupToken] = useState<string | null>(null)
   const [roleSelectNeeded, setRoleSelectNeeded] = useState(false)
   const [roleSelectLoading, setRoleSelectLoading] = useState(false)
 
-  const { register, isRegistering, isAuthenticated, loginWithGoogle, isGoogleLoggingIn } = useAuth()
-
-  // Redirect if already authenticated - let useAuth handle role-based routing
-  React.useEffect(() => {
-    if (isAuthenticated && !roleSelectNeeded) {
-      // The useAuth hook will handle the redirect based on user role
-    }
-  }, [isAuthenticated, roleSelectNeeded])
+  const { register, isRegistering, loginWithGoogle, isGoogleLoggingIn } = useAuth()
 
   // Finish Google OAuth after full-page return
   React.useEffect(() => {
@@ -128,8 +123,9 @@ export default function SignUpPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setAuthError(null)
 
     if (!validateForm()) {
       return
@@ -144,12 +140,22 @@ export default function SignUpPage() {
       role: formData.role as "event_owner" | "service_provider",
     }
 
-    register(registerData)
+    try {
+      await register(registerData)
+      setAuthError(null)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Registration failed. Please try again."
+      setAuthError(message)
+    }
   }
 
   const handleGoogleSignUp = async () => {
     // Require role before Google for new accounts when possible; if backend still
     // asks for role (e.g. user skipped), show the role panel with signup token.
+    setAuthError(null)
     if (!formData.role) {
       setErrors((prev) => ({ ...prev, role: 'Please select Customer or Artisan before continuing with Google' }))
       return
@@ -160,20 +166,30 @@ export default function SignUpPage() {
         setGoogleSignupToken(result.googleSignupToken)
         setRoleSelectNeeded(true)
       }
-    } catch {
-      // handled by mutation toast
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Google sign-up failed. Please try again."
+      setAuthError(message)
     }
   }
 
   const handleDeferredGoogleRole = async (role: "event_owner" | "service_provider") => {
     if (!googleSignupToken) return
     setRoleSelectLoading(true)
+    setAuthError(null)
     try {
       await loginWithGoogle({ google_signup_token: googleSignupToken, role })
       setRoleSelectNeeded(false)
       setGoogleSignupToken(null)
-    } catch {
-      // toast from mutation
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to set role. Please try again."
+      setAuthError(message)
+      toast.error(message)
     } finally {
       setRoleSelectLoading(false)
     }
@@ -240,20 +256,6 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white lg:overflow-hidden relative">
-      {/* Full Page Loading Overlay */}
-      {(isRegistering || (isAuthenticated && !roleSelectNeeded)) && (
-        <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-300">
-           <div className="relative flex items-center justify-center">
-             <div className="absolute w-24 h-24 rounded-full border-[3px] border-white/10" />
-             <div className="absolute w-24 h-24 rounded-full border-[3px] border-[#668c65] border-t-transparent animate-spin" />
-             <Loader2 className="w-8 h-8 text-[#668c65] animate-spin" />
-           </div>
-           <p className="text-white text-xs font-bold uppercase tracking-[0.3em] animate-pulse">
-             {isAuthenticated ? "Preparing Dashboard..." : "Registering..."}
-           </p>
-        </div>
-      )}
-
       {roleSelectNeeded && (
         <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center px-6">
           <div className="w-full max-w-md space-y-8">
@@ -285,6 +287,14 @@ export default function SignUpPage() {
               <div className="flex justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[#608d64]" />
               </div>
+            )}
+            {authError && (
+              <p
+                role="alert"
+                className="text-sm text-center text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3"
+              >
+                {authError}
+              </p>
             )}
           </div>
         </div>
@@ -443,10 +453,11 @@ export default function SignUpPage() {
                     type="email"
                     placeholder="name@artistry.com"
                     value={formData.email}
-                    onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value })
-                      if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
-                    }}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value })
+                        if (errors.email) setErrors(prev => ({ ...prev, email: undefined }))
+                        if (authError) setAuthError(null)
+                      }}
                     className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium ${errors.email ? 'border-red-500/50 bg-red-500/5' : ''}`}
                     disabled={isRegistering}
                   />
@@ -494,6 +505,7 @@ export default function SignUpPage() {
                       onChange={(e) => {
                         setFormData({ ...formData, password: e.target.value })
                         if (errors.password) setErrors(prev => ({ ...prev, password: undefined }))
+                        if (authError) setAuthError(null)
                       }}
                       className={`h-14 bg-white/5 border-white/10 text-white rounded-2xl px-6 pr-14 focus:ring-[#608d64]/20 focus:border-[#608d64]/40 transition-all font-medium ${errors.password ? 'border-red-500/50 bg-red-500/5' : ''}`}
                       disabled={isRegistering}
@@ -539,6 +551,15 @@ export default function SignUpPage() {
                 </div>
               </div>
             </div>
+
+            {authError && (
+              <p
+                role="alert"
+                className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3"
+              >
+                {authError}
+              </p>
+            )}
 
             <Button
               type="submit"

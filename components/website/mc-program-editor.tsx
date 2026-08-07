@@ -13,6 +13,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiClient, MCProgramItem } from "@/lib/api";
 import { queryKeys } from "@/lib/cache";
 import { toast } from "sonner";
@@ -61,6 +71,7 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
   const [accessMode, setAccessMode] = useState("public");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditDraft | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<MCProgramItem | null>(null);
   const [newItem, setNewItem] = useState({
     start_time: "09:00",
     end_time: "",
@@ -119,6 +130,7 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
     mutationFn: (id: string) => apiClient.mcPortal.deleteItem(weddingId, id),
     onSuccess: () => {
       toast.success("Activity removed");
+      setItemToDelete(null);
       if (editingId) {
         setEditingId(null);
         setDraft(null);
@@ -191,9 +203,9 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
     });
   };
 
-  const handleDelete = (item: MCProgramItem) => {
-    if (!window.confirm(`Remove “${item.title}” from the program?`)) return;
-    deleteMutation.mutate(item.id);
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+    deleteMutation.mutate(itemToDelete.id);
   };
 
   const copyLink = async () => {
@@ -377,7 +389,7 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
                     variant="ghost"
                     size="icon"
                     className="text-red-400 hover:text-red-600"
-                    onClick={() => handleDelete(item)}
+                    onClick={() => setItemToDelete(item)}
                     disabled={deleteMutation.isPending || updateMutation.isPending}
                     aria-label={`Delete ${item.title}`}
                   >
@@ -391,6 +403,54 @@ export function McProgramEditor({ weddingId, slug }: { weddingId: string; slug: 
               </div>
             );
           })}
+
+          <AlertDialog
+            open={!!itemToDelete}
+            onOpenChange={(open) => {
+              if (!open && !deleteMutation.isPending) setItemToDelete(null);
+            }}
+          >
+            <AlertDialogContent className="rounded-2xl border-slate-100 shadow-xl sm:max-w-md">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-serif text-xl text-slate-900">
+                  Delete this program activity?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-600 text-[15px] leading-relaxed">
+                  Are you sure you want to delete{" "}
+                  <span className="font-medium text-slate-800">
+                    “{itemToDelete?.title}”
+                  </span>{" "}
+                  from your wedding program? It will also be removed from the MC portal.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2 sm:gap-2">
+                <AlertDialogCancel
+                  disabled={deleteMutation.isPending}
+                  className="rounded-xl"
+                >
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    confirmDelete();
+                  }}
+                  disabled={deleteMutation.isPending}
+                  className="rounded-xl bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-600"
+                >
+                  {deleteMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting…
+                    </>
+                  ) : (
+                    "Delete activity"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <div className="space-y-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4 pt-4 mt-2">
             <p className="text-sm font-medium text-slate-700">Add activity</p>

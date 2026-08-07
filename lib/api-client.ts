@@ -682,6 +682,18 @@ class ApiClient {
       getUserAnalytics: async () => {
         return axiosInstance.get<any[]>('/api/v1/admin/analytics/users');
       },
+      getAuth: (days = 30) => {
+        return axiosInstance.get<any>('/api/v1/admin/analytics/auth', { params: { days } });
+      },
+      getSecurity: (days = 7) => {
+        return axiosInstance.get<any>('/api/v1/admin/analytics/security', { params: { days } });
+      },
+      getAuditLog: (params?: { page?: number; limit?: number; action?: string }) => {
+        return axiosInstance.get<any>('/api/v1/admin/analytics/audit-log', { params });
+      },
+      getSummary: () => {
+        return axiosInstance.get<any>('/api/v1/admin/analytics/summary');
+      },
     },
     users: {
       getAll: async (params?: { page?: number; limit?: number; role?: string; verified?: boolean; search?: string }) => {
