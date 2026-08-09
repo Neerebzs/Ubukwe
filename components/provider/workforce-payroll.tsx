@@ -1,20 +1,28 @@
 "use client"
 
-import { useMemo, useState, type ElementType } from "react"
+import { useMemo, useRef, useState, type ElementType } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   Users, UserPlus, Briefcase, Calendar, ClipboardCheck, Wallet,
   Percent, Plane, Star, FileText, BarChart3, Settings, Loader2,
   CheckCircle2, AlertCircle, TrendingUp, Clock, Search, Plus,
+  Download, Upload, Trash2, FileSpreadsheet, Pencil,
 } from "lucide-react"
 import { workforceApi } from "@/lib/api/workforce"
+import {
+  createEmptyWorkerDraft,
+  downloadWorkerTemplate,
+  draftToWorkerPayload,
+  parseWorkerExcel,
+  type WorkerDraftRow,
+} from "@/lib/workforce-excel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
@@ -86,21 +94,38 @@ function StatusBadge({ status }: { status: string }) {
 export function WorkforcePayroll() {
   const [section, setSection] = useState<Section>("dashboard")
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const activeMeta = SECTIONS.find((s) => s.id === section)
+  const ActiveIcon = activeMeta?.icon
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-serif text-3xl tracking-tight text-slate-900 dark:text-slate-50">
-            <TranslatedText text="Workforce & Payroll" />
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            <TranslatedText text="Event-driven staffing and payroll — only assigned, attended workers get paid." />
-          </p>
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#0d182b] text-white p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-white/60 font-semibold mb-1.5">
+              <TranslatedText text="Business Setup" />
+            </p>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              <TranslatedText text="Workforce & Payroll" />
+            </h1>
+            <p className="text-sm text-white/70 mt-1.5 max-w-2xl leading-relaxed">
+              <TranslatedText text="Event-driven staffing and payroll — only assigned, attended workers get paid." />
+            </p>
+          </div>
+          {activeMeta && ActiveIcon && (
+            <div className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-3 py-2 text-sm border border-white/10">
+              <ActiveIcon className="h-4 w-4 text-[#a8c9a7]" />
+              <span className="text-white/90"><TranslatedText text={activeMeta.label} /></span>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Workforce sections">
+      <div
+        className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-1.5"
+        role="tablist"
+        aria-label="Workforce sections"
+      >
         {SECTIONS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -109,13 +134,13 @@ export function WorkforcePayroll() {
             aria-selected={section === id}
             onClick={() => setSection(id)}
             className={cn(
-              "flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-sm transition-colors border",
+              "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-all",
               section === id
-                ? "bg-[#0d182b] text-white border-[#0d182b]"
-                : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-[#668c65]"
+                ? "bg-white dark:bg-slate-800 text-[#0d182b] dark:text-white font-medium"
+                : "text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70"
             )}
           >
-            <Icon className="h-3.5 w-3.5" aria-hidden />
+            <Icon className={cn("h-3.5 w-3.5", section === id ? "text-[#668c65]" : "opacity-70")} aria-hidden />
             <TranslatedText text={label} />
           </button>
         ))}
@@ -169,11 +194,11 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <Card key={label} className="rounded-2xl border-slate-200/80 dark:border-slate-800">
             <CardContent className="p-5 flex items-start justify-between">
               <div>
                 <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{label}</p>
-                <p className="text-3xl font-semibold mt-2 tabular-nums">{value ?? 0}</p>
+                <p className="text-3xl font-semibold mt-2 tabular-nums tracking-tight">{value ?? 0}</p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-[#668c65]/15 text-[#668c65] flex items-center justify-center">
                 <Icon className="h-5 w-5" />
@@ -241,14 +266,35 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
 
 function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
   const qc = useQueryClient()
+  const fileRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState("")
   const [open, setOpen] = useState(false)
+  const [addMode, setAddMode] = useState<"single" | "import">("single")
+  const [parsing, setParsing] = useState(false)
+  const [importFileName, setImportFileName] = useState<string | null>(null)
+  const [draftRows, setDraftRows] = useState<WorkerDraftRow[]>([])
+  const [bulkSaving, setBulkSaving] = useState(false)
   const [form, setForm] = useState({
     full_name: "", phone: "", email: "", position: "", employment_type: mode === "employees" ? "permanent" : "freelancer",
-    event_rate: "", hourly_rate: "", department: "",
+    event_rate: "", hourly_rate: "", department: "", gender: "", mobile_money: "",
   })
 
   const types = mode === "employees" ? EMPLOYMENT_EMPLOYEE : EMPLOYMENT_FREELANCE
+  const label = mode === "employees" ? "Employee" : "Freelancer"
+  const labelPlural = mode === "employees" ? "Employees" : "Freelancers"
+
+  const resetForm = () => setForm({
+    full_name: "", phone: "", email: "", position: "", employment_type: types[0],
+    event_rate: "", hourly_rate: "", department: "", gender: "", mobile_money: "",
+  })
+
+  const closeDialog = () => {
+    setOpen(false)
+    setAddMode("single")
+    setDraftRows([])
+    setImportFileName(null)
+    resetForm()
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["workforce-workers", mode, search],
@@ -264,115 +310,461 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
       ...form,
       event_rate: form.event_rate ? Number(form.event_rate) : undefined,
       hourly_rate: form.hourly_rate ? Number(form.hourly_rate) : undefined,
+      gender: form.gender || undefined,
+      mobile_money: form.mobile_money || undefined,
+      department: form.department || undefined,
     }),
     onSuccess: () => {
-      toast.success("Worker added")
-      setOpen(false)
-      setForm({ full_name: "", phone: "", email: "", position: "", employment_type: types[0], event_rate: "", hourly_rate: "", department: "" })
+      toast.success(`${label} added`)
+      closeDialog()
       qc.invalidateQueries({ queryKey: ["workforce-workers"] })
       qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
     },
-    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed to add worker"),
+    onError: (e: any) => toast.error(e?.response?.data?.detail || `Failed to add ${label.toLowerCase()}`),
   })
+
+  const handleDownloadTemplate = () => {
+    try {
+      downloadWorkerTemplate(mode)
+      toast.success("Template downloaded")
+    } catch {
+      toast.error("Could not download template")
+    }
+  }
+
+  const handleFileSelected = async (file?: File | null) => {
+    if (!file) return
+    setParsing(true)
+    try {
+      const rows = await parseWorkerExcel(file, types[0])
+      setDraftRows(rows.map((r) => ({
+        ...r,
+        employment_type: types.includes(r.employment_type) ? r.employment_type : types[0],
+      })))
+      setImportFileName(file.name)
+      setAddMode("import")
+      toast.success(`Loaded ${rows.length} row${rows.length === 1 ? "" : "s"} — review before saving`)
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to read Excel file")
+    } finally {
+      setParsing(false)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }
+
+  const updateDraft = (key: string, field: keyof WorkerDraftRow, value: string) => {
+    setDraftRows((prev) => prev.map((r) => (r._key === key ? { ...r, [field]: value } : r)))
+  }
+
+  const removeDraft = (key: string) => {
+    setDraftRows((prev) => prev.filter((r) => r._key !== key))
+  }
+
+  const addBlankDraft = () => {
+    setDraftRows((prev) => [...prev, createEmptyWorkerDraft({ employment_type: types[0] })])
+  }
+
+  const saveBulk = async () => {
+    const valid = draftRows.filter((r) => r.full_name.trim())
+    if (!valid.length) {
+      toast.error("Add at least one worker with a full name")
+      return
+    }
+    setBulkSaving(true)
+    let ok = 0
+    const failures: string[] = []
+    for (const row of valid) {
+      try {
+        await workforceApi.createWorker(draftToWorkerPayload(row))
+        ok += 1
+      } catch (e: any) {
+        const detail = e?.response?.data?.detail
+        failures.push(`${row.full_name}: ${typeof detail === "string" ? detail : "failed"}`)
+      }
+    }
+    setBulkSaving(false)
+    qc.invalidateQueries({ queryKey: ["workforce-workers"] })
+    qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
+    if (ok) toast.success(`Saved ${ok} ${ok === 1 ? label.toLowerCase() : labelPlural.toLowerCase()}`)
+    if (failures.length) {
+      toast.error(`${failures.length} failed. ${failures.slice(0, 2).join(" · ")}`)
+    } else {
+      closeDialog()
+    }
+    if (failures.length && ok) {
+      // Keep failed rows so user can fix and retry
+      const failedNames = new Set(failures.map((f) => f.split(":")[0]))
+      setDraftRows((prev) => prev.filter((r) => failedNames.has(r.full_name) || !r.full_name.trim()))
+    }
+  }
+
+  const workers = data || []
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search by name, phone, code…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+            <TranslatedText text={labelPlural} />
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {workers.length} {workers.length === 1 ? label.toLowerCase() : labelPlural.toLowerCase()} in your roster
+          </p>
         </div>
-        <Button onClick={() => setOpen(true)} className="bg-[#668c65] hover:bg-[#557554]">
-          <Plus className="h-4 w-4 mr-2" /> Add {mode === "employees" ? "Employee" : "Freelancer"}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9 rounded-xl bg-white dark:bg-slate-950"
+              placeholder="Search by name, phone, code…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" /> Template
+            </Button>
+            <Button
+              onClick={() => { setOpen(true); setAddMode("single") }}
+              className="rounded-xl bg-[#668c65] hover:bg-[#557554]"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add {label}
+            </Button>
+          </div>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+        <div className="grid gap-3 sm:grid-cols-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}</div>
+      ) : workers.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-950/40 px-6 py-14 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#668c65]/15 text-[#668c65]">
+            <Users className="h-7 w-7" />
+          </div>
+          <h3 className="text-base font-semibold">No {labelPlural.toLowerCase()} yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+            Add people one by one, or download the Excel template and import your full list.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={handleDownloadTemplate}>
+              <Download className="h-4 w-4 mr-2" /> Download template
+            </Button>
+            <Button
+              className="rounded-xl bg-[#668c65] hover:bg-[#557554]"
+              onClick={() => { setOpen(true); setAddMode("import") }}
+            >
+              <Upload className="h-4 w-4 mr-2" /> Import Excel
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-900 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="bg-slate-50/90 dark:bg-slate-900/80 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Worker</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Position</th>
-                  <th className="px-4 py-3">Rates</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 font-semibold">Worker</th>
+                  <th className="px-4 py-3 font-semibold">Type</th>
+                  <th className="px-4 py-3 font-semibold">Position</th>
+                  <th className="px-4 py-3 font-semibold">Rates</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {(data || []).length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No {mode} yet. Add your first worker.</td></tr>
-                )}
-                {(data || []).map((w: any) => (
-                  <tr key={w.id} className="border-t border-slate-100 dark:border-slate-800">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{w.full_name}</div>
-                      <div className="text-xs text-muted-foreground">{w.employee_code} · {w.phone || w.email || "—"}</div>
-                    </td>
-                    <td className="px-4 py-3 capitalize">{w.employment_type}</td>
-                    <td className="px-4 py-3">{w.position || "—"}</td>
-                    <td className="px-4 py-3 text-xs">
-                      <div>Event: {money(w.event_rate, w.currency)}</div>
-                      <div>Hourly: {money(w.hourly_rate, w.currency)}</div>
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge status={w.availability_status} /></td>
-                  </tr>
-                ))}
+                {workers.map((w: any) => {
+                  const initials = String(w.full_name || "?")
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((p: string) => p[0]?.toUpperCase() || "")
+                    .join("")
+                  return (
+                    <tr key={w.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50/70 dark:hover:bg-slate-900/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 shrink-0 rounded-full bg-[#668c65] text-white text-xs font-semibold flex items-center justify-center">
+                            {initials || "?"}
+                          </div>
+                          <div>
+                            <div className="font-medium text-slate-900 dark:text-slate-50">{w.full_name}</div>
+                            <div className="text-xs text-muted-foreground">{w.employee_code} · {w.phone || w.email || "—"}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 capitalize text-slate-600 dark:text-slate-300">{w.employment_type}</td>
+                      <td className="px-4 py-3">{w.position || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
+                        <div>Event: {money(w.event_rate, w.currency)}</div>
+                        <div>Hourly: {money(w.hourly_rate, w.currency)}</div>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={w.availability_status} /></td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add {mode === "employees" ? "Employee" : "Freelancer"}</DialogTitle>
+      <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : closeDialog())}>
+        <DialogContent className={cn(
+          "gap-0 p-0 overflow-hidden",
+          addMode === "import" && draftRows.length > 0 ? "sm:max-w-5xl" : "sm:max-w-xl"
+        )}>
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <DialogTitle>Add {labelPlural}</DialogTitle>
+            <DialogDescription>
+              Create one person, or import an Excel list and edit it before saving.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label>Full name</Label>
-              <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Employment type</Label>
-              <Select value={form.employment_type} onValueChange={(v) => setForm({ ...form, employment_type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {types.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Position / role</Label>
-              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="e.g. Lead Dancer" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Event rate (RWF)</Label>
-              <Input type="number" value={form.event_rate} onChange={(e) => setForm({ ...form, event_rate: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Hourly rate (RWF)</Label>
-              <Input type="number" value={form.hourly_rate} onChange={(e) => setForm({ ...form, hourly_rate: e.target.value })} />
+
+          <div className="px-5 pt-4">
+            <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-900 p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setAddMode("single")}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm transition-colors",
+                  addMode === "single" ? "bg-white dark:bg-slate-800 font-medium" : "text-muted-foreground"
+                )}
+              >
+                Single entry
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddMode("import")}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-sm transition-colors inline-flex items-center gap-1.5",
+                  addMode === "import" ? "bg-white dark:bg-slate-800 font-medium" : "text-muted-foreground"
+                )}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Excel import
+              </button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={!form.full_name || createMut.isPending} onClick={() => createMut.mutate()} className="bg-[#668c65] hover:bg-[#557554]">
-              {createMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save
-            </Button>
-          </DialogFooter>
+
+          {addMode === "single" ? (
+            <>
+              <div className="px-5 py-4 grid gap-3 sm:grid-cols-2 max-h-[60vh] overflow-y-auto">
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Full name *</Label>
+                  <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} placeholder="e.g. Jane Uwase" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Employment type</Label>
+                  <Select value={form.employment_type} onValueChange={(v) => setForm({ ...form, employment_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {types.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Gender</Label>
+                  <Select value={form.gender || "__none"} onValueChange={(v) => setForm({ ...form, gender: v === "__none" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">Not set</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Position / role</Label>
+                  <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="e.g. Lead Dancer" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Department</Label>
+                  <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Event rate (RWF)</Label>
+                  <Input type="number" value={form.event_rate} onChange={(e) => setForm({ ...form, event_rate: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Hourly rate (RWF)</Label>
+                  <Input type="number" value={form.hourly_rate} onChange={(e) => setForm({ ...form, hourly_rate: e.target.value })} />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Mobile money</Label>
+                  <Input value={form.mobile_money} onChange={(e) => setForm({ ...form, mobile_money: e.target.value })} placeholder="Payment number" />
+                </div>
+              </div>
+              <DialogFooter className="px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                <Button disabled={!form.full_name || createMut.isPending} onClick={() => createMut.mutate()} className="bg-[#668c65] hover:bg-[#557554]">
+                  {createMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Save
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
+                <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/40 p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-[#668c65]/15 text-[#668c65] flex items-center justify-center shrink-0">
+                        <FileSpreadsheet className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Upload Excel list (.xlsx / .xls)</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Download the template, fill every column you need, then upload and edit before saving.
+                        </p>
+                        {importFileName && (
+                          <p className="text-xs text-[#668c65] mt-1 font-medium">{importFileName}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" size="sm" className="rounded-lg" onClick={handleDownloadTemplate}>
+                        <Download className="h-3.5 w-3.5 mr-1.5" /> Template
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-lg bg-[#0d182b] hover:bg-[#16233a]"
+                        disabled={parsing}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        {parsing ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                        {draftRows.length ? "Replace file" : "Upload file"}
+                      </Button>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                        className="hidden"
+                        onChange={(e) => handleFileSelected(e.target.files?.[0])}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {draftRows.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Pencil className="h-4 w-4 text-[#668c65]" />
+                        <span className="font-medium">Review & edit list</span>
+                        <Badge variant="secondary" className="rounded-md">{draftRows.length} rows</Badge>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={addBlankDraft}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add row
+                      </Button>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs min-w-[1500px]">
+                          <thead className="bg-slate-50 dark:bg-slate-900 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <tr>
+                              <th className="px-2 py-2">Full name *</th>
+                              <th className="px-2 py-2">Code</th>
+                              <th className="px-2 py-2">Gender</th>
+                              <th className="px-2 py-2">Phone</th>
+                              <th className="px-2 py-2">Email</th>
+                              <th className="px-2 py-2">Type</th>
+                              <th className="px-2 py-2">Department</th>
+                              <th className="px-2 py-2">Position</th>
+                              <th className="px-2 py-2">Skills</th>
+                              <th className="px-2 py-2">Event rate</th>
+                              <th className="px-2 py-2">Hourly</th>
+                              <th className="px-2 py-2">MoMo</th>
+                              <th className="px-2 py-2">National ID</th>
+                              <th className="px-2 py-2 w-10" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {draftRows.map((row) => (
+                              <tr key={row._key} className="border-t border-slate-100 dark:border-slate-800 align-top">
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.full_name} onChange={(e) => updateDraft(row._key, "full_name", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.employee_code} onChange={(e) => updateDraft(row._key, "employee_code", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.gender} onChange={(e) => updateDraft(row._key, "gender", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.phone} onChange={(e) => updateDraft(row._key, "phone", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.email} onChange={(e) => updateDraft(row._key, "email", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Select
+                                    value={types.includes(row.employment_type) ? row.employment_type : types[0]}
+                                    onValueChange={(v) => updateDraft(row._key, "employment_type", v)}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {types.map((t) => <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.department} onChange={(e) => updateDraft(row._key, "department", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.position} onChange={(e) => updateDraft(row._key, "position", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.skills} onChange={(e) => updateDraft(row._key, "skills", e.target.value)} placeholder="comma separated" />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" type="number" value={row.event_rate} onChange={(e) => updateDraft(row._key, "event_rate", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" type="number" value={row.hourly_rate} onChange={(e) => updateDraft(row._key, "hourly_rate", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.mobile_money} onChange={(e) => updateDraft(row._key, "mobile_money", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Input className="h-8 text-xs" value={row.national_id} onChange={(e) => updateDraft(row._key, "national_id", e.target.value)} />
+                                </td>
+                                <td className="p-1.5">
+                                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-600" onClick={() => removeDraft(row._key)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Address, emergency contacts, hire date, bank details, and notes from the Excel file are preserved and saved with each row.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter className="px-5 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 gap-2">
+                <Button variant="outline" onClick={closeDialog} disabled={bulkSaving}>Cancel</Button>
+                <Button
+                  disabled={!draftRows.some((r) => r.full_name.trim()) || bulkSaving}
+                  onClick={saveBulk}
+                  className="bg-[#668c65] hover:bg-[#557554]"
+                >
+                  {bulkSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save {draftRows.filter((r) => r.full_name.trim()).length || ""} to system
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
