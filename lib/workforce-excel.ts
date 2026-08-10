@@ -148,8 +148,7 @@ export function createEmptyWorkerDraft(defaults?: Partial<WorkerDraftRow>): Work
   return emptyRow(defaults)
 }
 
-export function downloadWorkerTemplate(mode: "employees" | "freelancers") {
-  const defaultType = mode === "employees" ? "permanent" : "freelancer"
+export function downloadWorkerTemplate() {
   const sampleRows = [
     {
       full_name: "Jane Uwase",
@@ -161,7 +160,7 @@ export function downloadWorkerTemplate(mode: "employees" | "freelancers") {
       national_id: "",
       emergency_contact_name: "John Doe",
       emergency_contact_phone: "0780000002",
-      employment_type: defaultType,
+      employment_type: "permanent",
       department: "Operations",
       position: "Lead Dancer",
       skills: "dance, choreography",
@@ -183,7 +182,7 @@ export function downloadWorkerTemplate(mode: "employees" | "freelancers") {
       national_id: "",
       emergency_contact_name: "",
       emergency_contact_phone: "",
-      employment_type: defaultType === "permanent" ? "seasonal" : "contractor",
+      employment_type: "freelancer",
       department: "Operations",
       position: "Drummer",
       skills: "drums",
@@ -204,9 +203,7 @@ export function downloadWorkerTemplate(mode: "employees" | "freelancers") {
     ["Column", "Required", "Notes"],
     ["full_name", "Yes", "Worker full name"],
     ["employee_code", "No", "Unique code per provider; auto-generated if empty"],
-    ["employment_type", "No", mode === "employees"
-      ? "permanent | intern | seasonal"
-      : "freelancer | contractor | volunteer"],
+    ["employment_type", "No", "permanent | intern | seasonal | freelancer | contractor | volunteer"],
     ["skills", "No", "Comma-separated list"],
     ["hire_date", "No", "YYYY-MM-DD"],
     ["hourly_rate / event_rate", "No", "Numbers in RWF"],
@@ -216,7 +213,7 @@ export function downloadWorkerTemplate(mode: "employees" | "freelancers") {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, "Workers")
   XLSX.utils.book_append_sheet(wb, guide, "Instructions")
-  XLSX.writeFile(wb, `workforce-${mode}-template.xlsx`)
+  XLSX.writeFile(wb, "workforce-template.xlsx")
 }
 
 export async function parseWorkerExcel(

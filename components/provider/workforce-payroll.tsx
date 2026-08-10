@@ -7,7 +7,7 @@ import {
   Users, UserPlus, Briefcase, Calendar, ClipboardCheck, Wallet,
   Percent, Plane, Star, FileText, BarChart3, Settings, Loader2,
   CheckCircle2, AlertCircle, TrendingUp, Clock, Search, Plus,
-  Download, Upload, Trash2, FileSpreadsheet, Pencil,
+  Download, Upload, Trash2, FileSpreadsheet, Pencil, CreditCard, Link2,
 } from "lucide-react"
 import { workforceApi } from "@/lib/api/workforce"
 import {
@@ -31,15 +31,14 @@ import { cn } from "@/lib/utils"
 import { TranslatedText } from "@/components/translated-text"
 
 type Section =
-  | "dashboard" | "employees" | "freelancers" | "teams"
+  | "dashboard" | "employees" | "teams"
   | "assignments" | "schedules" | "attendance" | "payroll"
   | "commissions" | "leave" | "performance" | "documents"
   | "reports" | "settings"
 
 const SECTIONS: { id: Section; label: string; icon: ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-  { id: "employees", label: "Employees", icon: Users },
-  { id: "freelancers", label: "Freelancers", icon: UserPlus },
+  { id: "employees", label: "Workforce", icon: Users },
   { id: "teams", label: "Teams", icon: Briefcase },
   { id: "assignments", label: "Event Assignments", icon: Calendar },
   { id: "schedules", label: "Schedules", icon: Clock },
@@ -55,6 +54,7 @@ const SECTIONS: { id: Section; label: string; icon: ElementType }[] = [
 
 const EMPLOYMENT_EMPLOYEE = ["permanent", "intern", "seasonal"]
 const EMPLOYMENT_FREELANCE = ["freelancer", "contractor", "volunteer"]
+const ALL_EMPLOYMENT_TYPES = [...EMPLOYMENT_EMPLOYEE, ...EMPLOYMENT_FREELANCE]
 
 function money(n?: number | null, currency = "RWF") {
   if (n == null) return "—"
@@ -147,9 +147,7 @@ export function WorkforcePayroll() {
       </div>
 
       {section === "dashboard" && <DashboardSection onOpenEvent={(id) => { setSelectedEventId(id); setSection("assignments") }} />}
-      {(section === "employees" || section === "freelancers") && (
-        <WorkersSection mode={section === "employees" ? "employees" : "freelancers"} />
-      )}
+      {section === "employees" && <WorkersSection />}
       {section === "teams" && <TeamsSection />}
       {(section === "assignments" || section === "schedules" || section === "attendance") && (
         <EventsSection
@@ -185,6 +183,7 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
     { label: "Available", value: data?.available_workers, icon: UserPlus },
     { label: "Upcoming Events", value: data?.upcoming_weddings, icon: Calendar },
     { label: "Confirmed Events", value: data?.confirmed_events, icon: Briefcase },
+    { label: "Pending Payment", value: data?.pending_payment_events, icon: CreditCard },
     { label: "Today's Schedule", value: data?.todays_schedule, icon: Clock },
     { label: "Today's Attendance", value: data?.todays_attendance, icon: ClipboardCheck },
     { label: "Payroll Pending", value: data?.payroll_pending_approval, icon: AlertCircle },
@@ -206,6 +205,91 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">Confirmed Events</CardTitle>
+            <CardDescription>Paid bookings ready for workforce staffing</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-[360px] overflow-y-auto">
+            {(data?.confirmed_event_bookings || []).length === 0 && (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No confirmed bookings yet. Events appear here after customer payment.
+              </p>
+            )}
+            {(data?.confirmed_event_bookings || []).map((b: any) => (
+              <button
+                key={b.booking_id}
+                type="button"
+                disabled={!b.workforce_event_id}
+                onClick={() => b.workforce_event_id && onOpenEvent(b.workforce_event_id)}
+                className={cn(
+                  "w-full text-left rounded-xl border p-3 transition",
+                  b.workforce_event_id
+                    ? "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer"
+                    : "border-slate-100 dark:border-slate-800 opacity-80 cursor-default"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{b.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {b.customer_name} · {b.event_date}
+                    </p>
+                    {b.location && (
+                      <p className="text-xs text-muted-foreground truncate">{b.location}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200 border-0">
+                      Paid
+                    </Badge>
+                    {b.workforce_status && <StatusBadge status={b.workforce_status} />}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{money(b.total_amount)}</p>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">Pending Events</CardTitle>
+            <CardDescription>Accepted bookings awaiting customer payment</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-[360px] overflow-y-auto">
+            {(data?.pending_event_bookings || []).length === 0 && (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No bookings waiting for payment.
+              </p>
+            )}
+            {(data?.pending_event_bookings || []).map((b: any) => (
+              <div
+                key={b.booking_id}
+                className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{b.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {b.customer_name} · {b.event_date}
+                    </p>
+                    {b.location && (
+                      <p className="text-xs text-muted-foreground truncate">{b.location}</p>
+                    )}
+                  </div>
+                  <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border-0 shrink-0">
+                    Payment pending
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{money(b.total_amount)} due</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -264,10 +348,11 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
   )
 }
 
-function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
+function WorkersSection() {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState("")
+  const [typeFilter, setTypeFilter] = useState("all")
   const [open, setOpen] = useState(false)
   const [addMode, setAddMode] = useState<"single" | "import">("single")
   const [parsing, setParsing] = useState(false)
@@ -275,16 +360,12 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
   const [draftRows, setDraftRows] = useState<WorkerDraftRow[]>([])
   const [bulkSaving, setBulkSaving] = useState(false)
   const [form, setForm] = useState({
-    full_name: "", phone: "", email: "", position: "", employment_type: mode === "employees" ? "permanent" : "freelancer",
+    full_name: "", phone: "", email: "", position: "", employment_type: "permanent",
     event_rate: "", hourly_rate: "", department: "", gender: "", mobile_money: "",
   })
 
-  const types = mode === "employees" ? EMPLOYMENT_EMPLOYEE : EMPLOYMENT_FREELANCE
-  const label = mode === "employees" ? "Employee" : "Freelancer"
-  const labelPlural = mode === "employees" ? "Employees" : "Freelancers"
-
   const resetForm = () => setForm({
-    full_name: "", phone: "", email: "", position: "", employment_type: types[0],
+    full_name: "", phone: "", email: "", position: "", employment_type: "permanent",
     event_rate: "", hourly_rate: "", department: "", gender: "", mobile_money: "",
   })
 
@@ -297,11 +378,14 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
   }
 
   const { data, isLoading } = useQuery({
-    queryKey: ["workforce-workers", mode, search],
+    queryKey: ["workforce-workers", typeFilter, search],
     queryFn: async () => {
-      const res = await workforceApi.listWorkers({ search: search || undefined, page_size: 50 })
-      const items = res.data?.items || []
-      return items.filter((w: any) => types.includes(w.employment_type))
+      const res = await workforceApi.listWorkers({
+        search: search || undefined,
+        page_size: 100,
+        ...(typeFilter !== "all" ? { employment_type: typeFilter } : {}),
+      })
+      return res.data?.items || []
     },
   })
 
@@ -315,17 +399,17 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
       department: form.department || undefined,
     }),
     onSuccess: () => {
-      toast.success(`${label} added`)
+      toast.success("Worker added")
       closeDialog()
       qc.invalidateQueries({ queryKey: ["workforce-workers"] })
       qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
     },
-    onError: (e: any) => toast.error(e?.response?.data?.detail || `Failed to add ${label.toLowerCase()}`),
+    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed to add worker"),
   })
 
   const handleDownloadTemplate = () => {
     try {
-      downloadWorkerTemplate(mode)
+      downloadWorkerTemplate()
       toast.success("Template downloaded")
     } catch {
       toast.error("Could not download template")
@@ -336,10 +420,10 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
     if (!file) return
     setParsing(true)
     try {
-      const rows = await parseWorkerExcel(file, types[0])
+      const rows = await parseWorkerExcel(file, "permanent")
       setDraftRows(rows.map((r) => ({
         ...r,
-        employment_type: types.includes(r.employment_type) ? r.employment_type : types[0],
+        employment_type: ALL_EMPLOYMENT_TYPES.includes(r.employment_type) ? r.employment_type : "permanent",
       })))
       setImportFileName(file.name)
       setAddMode("import")
@@ -361,7 +445,7 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
   }
 
   const addBlankDraft = () => {
-    setDraftRows((prev) => [...prev, createEmptyWorkerDraft({ employment_type: types[0] })])
+    setDraftRows((prev) => [...prev, createEmptyWorkerDraft({ employment_type: "permanent" })])
   }
 
   const saveBulk = async () => {
@@ -385,7 +469,7 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
     setBulkSaving(false)
     qc.invalidateQueries({ queryKey: ["workforce-workers"] })
     qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
-    if (ok) toast.success(`Saved ${ok} ${ok === 1 ? label.toLowerCase() : labelPlural.toLowerCase()}`)
+    if (ok) toast.success(`Saved ${ok} worker${ok === 1 ? "" : "s"}`)
     if (failures.length) {
       toast.error(`${failures.length} failed. ${failures.slice(0, 2).join(" · ")}`)
     } else {
@@ -405,13 +489,24 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-            <TranslatedText text={labelPlural} />
+            <TranslatedText text="Workforce" />
           </h2>
           <p className="text-sm text-muted-foreground">
-            {workers.length} {workers.length === 1 ? label.toLowerCase() : labelPlural.toLowerCase()} in your roster
+            {workers.length} worker{workers.length === 1 ? "" : "s"} in your roster
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-44 rounded-xl bg-white dark:bg-slate-950">
+              <SelectValue placeholder="Employment type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {ALL_EMPLOYMENT_TYPES.map((t) => (
+                <SelectItem key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -429,7 +524,7 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
               onClick={() => { setOpen(true); setAddMode("single") }}
               className="rounded-xl bg-[#668c65] hover:bg-[#557554]"
             >
-              <Plus className="h-4 w-4 mr-2" /> Add {label}
+              <Plus className="h-4 w-4 mr-2" /> Add Worker
             </Button>
           </div>
         </div>
@@ -442,7 +537,7 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#668c65]/15 text-[#668c65]">
             <Users className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-semibold">No {labelPlural.toLowerCase()} yet</h3>
+          <h3 className="text-base font-semibold">No workers yet</h3>
           <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
             Add people one by one, or download the Excel template and import your full list.
           </p>
@@ -513,9 +608,9 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
           addMode === "import" && draftRows.length > 0 ? "sm:max-w-5xl" : "sm:max-w-xl"
         )}>
           <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800">
-            <DialogTitle>Add {labelPlural}</DialogTitle>
+            <DialogTitle>Add Worker</DialogTitle>
             <DialogDescription>
-              Create one person, or import an Excel list and edit it before saving.
+              Add permanent staff, freelancers, contractors, or volunteers — set employment type per person.
             </DialogDescription>
           </DialogHeader>
 
@@ -564,7 +659,7 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
                   <Select value={form.employment_type} onValueChange={(v) => setForm({ ...form, employment_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {types.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                      {ALL_EMPLOYMENT_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -705,12 +800,12 @@ function WorkersSection({ mode }: { mode: "employees" | "freelancers" }) {
                                 </td>
                                 <td className="p-1.5">
                                   <Select
-                                    value={types.includes(row.employment_type) ? row.employment_type : types[0]}
+                                    value={ALL_EMPLOYMENT_TYPES.includes(row.employment_type) ? row.employment_type : "permanent"}
                                     onValueChange={(v) => updateDraft(row._key, "employment_type", v)}
                                   >
                                     <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                      {types.map((t) => <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>)}
+                                      {ALL_EMPLOYMENT_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize text-xs">{t.replace(/_/g, " ")}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                                 </td>
@@ -886,15 +981,23 @@ function EventsSection({
   onSelectEvent: (id: string | null) => void
 }) {
   const qc = useQueryClient()
-  const [leaderId, setLeaderId] = useState("")
+  const [leaderToAdd, setLeaderToAdd] = useState("")
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([])
   const [roleLabel, setRoleLabel] = useState("")
+  const [workerSearch, setWorkerSearch] = useState("")
 
   const { data: eventsData, isLoading } = useQuery({
     queryKey: ["workforce-events"],
     queryFn: async () => (await workforceApi.listEvents({ page_size: 50 })).data,
   })
   const events = eventsData?.items || []
+
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
+    queryKey: ["workforce-dashboard"],
+    queryFn: async () => (await workforceApi.dashboard()).data,
+    enabled: mode === "assignments",
+  })
+  const pendingBookings = dashboardData?.pending_event_bookings || []
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ["workforce-event", selectedEventId],
@@ -907,14 +1010,60 @@ function EventsSection({
     queryFn: async () => (await workforceApi.listWorkers({ page_size: 100, is_active: true })).data?.items || [],
   })
 
+  const { data: searchableWorkers = [] } = useQuery({
+    queryKey: ["workforce-workers-assign", workerSearch],
+    queryFn: async () => (await workforceApi.listWorkers({
+      page_size: 100,
+      is_active: true,
+      search: workerSearch.trim() || undefined,
+    })).data?.items || [],
+  })
+
   const assignLeaderMut = useMutation({
-    mutationFn: () => workforceApi.assignLeader(selectedEventId!, { team_leader_id: leaderId }),
+    mutationFn: () => workforceApi.assignLeader(selectedEventId!, { team_leader_id: leaderToAdd }),
+    onSuccess: (res) => {
+      toast.success("Team leader added")
+      setLeaderToAdd("")
+      qc.invalidateQueries({ queryKey: ["workforce-event", selectedEventId] })
+      qc.invalidateQueries({ queryKey: ["workforce-events"] })
+      const leaders = res.data?.team_leaders || []
+      const added = leaders.find((l: any) => l.share_url)
+      if (added?.share_url) {
+        navigator.clipboard.writeText(added.share_url).catch(() => {})
+        toast.message("Share link copied", {
+          description: `Send this link to ${added.worker_name} so they can assign the crew.`,
+        })
+      }
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed"),
+  })
+
+  const removeLeaderMut = useMutation({
+    mutationFn: (workerId: string) => workforceApi.removeLeader(selectedEventId!, workerId),
     onSuccess: () => {
-      toast.success("Team leader assigned")
+      toast.success("Team leader removed")
       qc.invalidateQueries({ queryKey: ["workforce-event", selectedEventId] })
       qc.invalidateQueries({ queryKey: ["workforce-events"] })
     },
-    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed"),
+    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed to remove leader"),
+  })
+
+  const shareLinkMut = useMutation({
+    mutationFn: (workerId: string) => workforceApi.getLeaderShareLink(selectedEventId!, workerId),
+    onSuccess: async (res) => {
+      const url = res.data?.share_url
+      if (!url) {
+        toast.error("Could not generate link")
+        return
+      }
+      try {
+        await navigator.clipboard.writeText(url)
+        toast.success("Leader link copied — share it so they can assign workers")
+      } catch {
+        toast.success("Link ready", { description: url })
+      }
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.detail || "Failed to generate link"),
   })
 
   const assignWorkersMut = useMutation({
@@ -970,43 +1119,114 @@ function EventsSection({
     return events.filter((e: any) => e.event_date >= today)
   }, [events, mode])
 
+  const confirmedEvents = useMemo(() => {
+    if (mode !== "assignments") return scheduleEvents
+    return events.filter((e: any) => e.payment_status !== "pending")
+  }, [events, mode, scheduleEvents])
+
+  const renderEventItem = (e: any) => (
+    <button
+      key={e.id}
+      type="button"
+      onClick={() => onSelectEvent(e.id)}
+      className={cn(
+        "w-full text-left rounded-xl border p-3 transition",
+        selectedEventId === e.id
+          ? "border-[#668c65] bg-[#668c65]/10"
+          : "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium text-sm truncate">{e.title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {e.customer_name ? `${e.customer_name} · ` : ""}{e.event_date} · {e.location || "No location"}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {e.payment_status === "paid" && (
+            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200 border-0">
+              Paid
+            </Badge>
+          )}
+          <StatusBadge status={e.status} />
+        </div>
+      </div>
+    </button>
+  )
+
+  const renderPendingBookingItem = (b: any) => (
+    <div
+      key={b.booking_id}
+      className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 p-3"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium text-sm truncate">{b.title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {b.customer_name} · {b.event_date} · {b.location || "No location"}
+          </p>
+        </div>
+        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border-0 shrink-0">
+          Payment pending
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mt-2">{money(b.total_amount)} due</p>
+    </div>
+  )
+
   return (
     <div className="grid gap-4 lg:grid-cols-5">
       <Card className="rounded-2xl lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-lg">
-            {mode === "schedules" ? "Upcoming Schedule" : "Confirmed Events"}
+            {mode === "schedules" ? "Upcoming Schedule" : mode === "assignments" ? "Event Assignments" : "Confirmed Events"}
           </CardTitle>
-          <CardDescription>Created automatically when bookings are paid & confirmed</CardDescription>
+          <CardDescription>
+            {mode === "assignments"
+              ? "Assign teams to paid bookings. Pending payment bookings cannot be staffed yet."
+              : "Created automatically when bookings are paid & confirmed"}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 max-h-[560px] overflow-y-auto">
-          {isLoading && <Skeleton className="h-20 rounded-xl" />}
-          {!isLoading && scheduleEvents.length === 0 && (
-            <p className="text-sm text-muted-foreground py-6 text-center">
-              No workforce events yet. Confirm a booking payment to create one.
-            </p>
-          )}
-          {scheduleEvents.map((e: any) => (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => onSelectEvent(e.id)}
-              className={cn(
-                "w-full text-left rounded-xl border p-3 transition",
-                selectedEventId === e.id
-                  ? "border-[#668c65] bg-[#668c65]/10"
-                  : "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
-              )}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-medium text-sm">{e.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{e.event_date} · {e.location || "No location"}</p>
-                </div>
-                <StatusBadge status={e.status} />
+        <CardContent className="space-y-4 max-h-[560px] overflow-y-auto">
+          {mode === "assignments" ? (
+            <>
+              <div className="space-y-2">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Confirmed Events
+                </p>
+                {(isLoading || dashboardLoading) && <Skeleton className="h-20 rounded-xl" />}
+                {!isLoading && !dashboardLoading && confirmedEvents.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No confirmed bookings yet. Events appear here after customer payment.
+                  </p>
+                )}
+                {confirmedEvents.map(renderEventItem)}
               </div>
-            </button>
-          ))}
+
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Pending Events
+                </p>
+                {!dashboardLoading && pendingBookings.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No bookings waiting for payment.
+                  </p>
+                )}
+                {pendingBookings.map(renderPendingBookingItem)}
+              </div>
+            </>
+          ) : (
+            <>
+              {isLoading && <Skeleton className="h-20 rounded-xl" />}
+              {!isLoading && scheduleEvents.length === 0 && (
+                <p className="text-sm text-muted-foreground py-6 text-center">
+                  No workforce events yet. Confirm a booking payment to create one.
+                </p>
+              )}
+              {scheduleEvents.map(renderEventItem)}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -1034,23 +1254,76 @@ function EventsSection({
               {(mode === "assignments" || mode === "schedules") && (
                 <>
                   <div className="rounded-xl border p-4 space-y-3">
-                    <p className="text-sm font-medium">1. Assign Team Leader</p>
+                    <p className="text-sm font-medium">1. Assign Team Leaders</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add one or more leaders to this event. The same leader can lead multiple events.
+                    </p>
+
+                    {(detail.team_leaders || []).length > 0 && (
+                      <div className="space-y-2">
+                        {(detail.team_leaders || []).map((leader: any) => (
+                          <div
+                            key={leader.worker_id}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 dark:border-slate-800 px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {leader.worker_name}
+                                {leader.is_primary && (
+                                  <Badge variant="secondary" className="ml-2 text-[10px] rounded-md">Primary</Badge>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {leader.position || leader.employment_type}
+                                {leader.worker_phone ? ` · ${leader.worker_phone}` : ""}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg h-8 text-xs"
+                                disabled={shareLinkMut.isPending}
+                                onClick={() => shareLinkMut.mutate(leader.worker_id)}
+                              >
+                                <Link2 className="h-3.5 w-3.5 mr-1" />
+                                Copy link
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 text-muted-foreground hover:text-red-600"
+                                disabled={removeLeaderMut.isPending}
+                                onClick={() => removeLeaderMut.mutate(leader.worker_id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Select value={leaderId || detail.team_leader_id || "none"} onValueChange={(v) => setLeaderId(v === "none" ? "" : v)}>
-                        <SelectTrigger className="sm:flex-1"><SelectValue placeholder="Select leader" /></SelectTrigger>
+                      <Select value={leaderToAdd || "none"} onValueChange={(v) => setLeaderToAdd(v === "none" ? "" : v)}>
+                        <SelectTrigger className="sm:flex-1"><SelectValue placeholder="Select leader to add" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Select…</SelectItem>
-                          {workers.map((w: any) => (
-                            <SelectItem key={w.id} value={w.id}>{w.full_name} ({w.position || w.employment_type})</SelectItem>
-                          ))}
+                          <SelectItem value="none">Select leader…</SelectItem>
+                          {workers
+                            .filter((w: any) => !(detail.team_leaders || []).some((l: any) => l.worker_id === w.id))
+                            .map((w: any) => (
+                              <SelectItem key={w.id} value={w.id}>{w.full_name} ({w.position || w.employment_type})</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                       <Button
-                        disabled={!leaderId || assignLeaderMut.isPending}
+                        disabled={!leaderToAdd || assignLeaderMut.isPending}
                         onClick={() => assignLeaderMut.mutate()}
                         className="bg-[#668c65] hover:bg-[#557554]"
                       >
-                        Assign Leader
+                        Add Leader
                       </Button>
                     </div>
                   </div>
@@ -1058,8 +1331,33 @@ function EventsSection({
                   <div className="rounded-xl border p-4 space-y-3">
                     <p className="text-sm font-medium">2. Team Leader selects workers</p>
                     <Input placeholder="Role for selected (e.g. Lead Dancer)" value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)} />
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9 rounded-lg"
+                        placeholder="Search by name, role, phone, or employee code…"
+                        value={workerSearch}
+                        onChange={(e) => setWorkerSearch(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
+                      <span>
+                        {searchableWorkers.length} worker{searchableWorkers.length === 1 ? "" : "s"}
+                        {workerSearch.trim() ? ` matching “${workerSearch.trim()}”` : " available"}
+                      </span>
+                      {selectedWorkers.length > 0 && (
+                        <span className="font-medium text-[#668c65]">{selectedWorkers.length} selected</span>
+                      )}
+                    </div>
                     <div className="max-h-48 overflow-y-auto space-y-1 border rounded-lg p-2">
-                      {workers.map((w: any) => {
+                      {searchableWorkers.length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-6">
+                          {workerSearch.trim()
+                            ? `No workers found for “${workerSearch.trim()}”.`
+                            : "No active workers in your roster yet."}
+                        </p>
+                      )}
+                      {searchableWorkers.map((w: any) => {
                         const checked = selectedWorkers.includes(w.id)
                         return (
                           <label key={w.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer">
@@ -1070,7 +1368,12 @@ function EventsSection({
                                 checked ? prev.filter((x) => x !== w.id) : [...prev, w.id]
                               )}
                             />
-                            <span className="text-sm flex-1">{w.full_name}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium block truncate">{w.full_name}</span>
+                              <span className="text-xs text-muted-foreground truncate block">
+                                {[w.position, w.employee_code, w.phone].filter(Boolean).join(" · ") || w.employment_type}
+                              </span>
+                            </div>
                             <StatusBadge status={w.availability_status} />
                           </label>
                         )

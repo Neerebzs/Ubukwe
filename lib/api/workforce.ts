@@ -25,6 +25,10 @@ export const workforceApi = {
   getEvent: (id: string) => axiosInstance.get(`${BASE}/events/${id}`),
   assignLeader: (eventId: string, data: Record<string, unknown>) =>
     axiosInstance.post(`${BASE}/events/${eventId}/assign-leader`, data),
+  removeLeader: (eventId: string, workerId: string) =>
+    axiosInstance.post(`${BASE}/events/${eventId}/leaders/${workerId}/remove`, {}),
+  getLeaderShareLink: (eventId: string, workerId: string) =>
+    axiosInstance.post(`${BASE}/events/${eventId}/leaders/${workerId}/share-link`, {}),
   assignWorkers: (eventId: string, data: Record<string, unknown>) =>
     axiosInstance.post(`${BASE}/events/${eventId}/assign-workers`, data),
   removeAssignment: (eventId: string, workerId: string, reason?: string) =>
