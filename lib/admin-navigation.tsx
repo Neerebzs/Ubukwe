@@ -1,4 +1,4 @@
-import { Home, Users, Briefcase, BookOpen, ShieldAlert, BarChart3, Settings, Calendar, HeadphonesIcon, Wallet, Shield } from "lucide-react";
+import { Home, Users, Briefcase, BookOpen, ShieldAlert, BarChart3, Settings, Calendar, HeadphonesIcon, Wallet, Shield, Heart } from "lucide-react";
 import React from "react";
 
 export interface NavItem {
@@ -39,6 +39,7 @@ export const ADMIN_NAVIGATION: NavGroup[] = [
     items: [
       { id: "bookings", label: "Bookings", icon: BookOpen },
       { id: "events", label: "Events", icon: Calendar },
+      { id: "invitation-templates", label: "Invitation Templates", icon: Heart },
       { id: "services", label: "Services", icon: ShieldAlert },
       { id: "disputes", label: "Disputes", icon: ShieldAlert },
       { id: "support", label: "Support", icon: HeadphonesIcon },

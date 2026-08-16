@@ -19,6 +19,7 @@ import { MobileAppBar } from "@/components/ui/mobile-app-bar"
 import { AdminMobileMenuDrawer } from "@/components/ui/admin-mobile-menu-drawer"
 import { CategoriesManagement } from "@/components/admin/categories"
 import { AdminEvents } from "@/components/admin/events"
+import { AdminInvitationTemplates } from "@/components/admin/invitation-templates"
 import { AdminProfileSettings } from "@/components/admin/profile-settings"
 import { AdminPreferencesSettings } from "@/components/admin/preferences-settings"
 import { AdminSupportTickets } from "@/components/admin/support-tickets"
@@ -70,6 +71,7 @@ export function AdminDashboardContent() {
       case "analytics":   return <AdminAnalytics />
       case "security":    return <AdminSecurity />
       case "events":      return <AdminEvents />
+      case "invitation-templates": return <AdminInvitationTemplates />
       case "payments":    return <AdminPayments />
       case "system":      return <AdminSystemSettings />
       case "profile":     return <AdminProfileSettings />

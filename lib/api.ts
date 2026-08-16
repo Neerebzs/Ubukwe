@@ -1154,6 +1154,9 @@ export const apiClient = {
     listTemplates(): Promise<any> {
       return apiClient.get(`/api/v1/invitations/templates`);
     },
+    deleteTemplate(id: string): Promise<any> {
+      return apiClient.delete(`/api/v1/invitations/templates/${id}`);
+    },
   },
   website: {
     get<T>(weddingId: string): Promise<ApiResponse<T>> {

@@ -14,10 +14,11 @@ import {
   CheckCircle, XCircle, Clock, Edit, Trash2, Download, Upload,
   Loader2, Sparkles, FileText, Eye, Save, X, Heart, BookOpen, CalendarClock, StickyNote, PhoneCall
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, API_ENDPOINTS } from "@/lib/api";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Guest {
@@ -101,6 +102,18 @@ const CARD_THEMES = {
     corner: "#C4A45A", text: "#2C2010", sub: "#5C4A2A",
     date: "#7B6A45", divider: "#C4A45A", note: "#7B6A45",
     label: "Cream",
+  },
+  black_gold: {
+    bg: "#0B0A08", border: "#D4AF6A", innerBorder: "#8A6B2E",
+    corner: "#D4AF6A", text: "#F5E7C4", sub: "#E8D9AE",
+    date: "#E8C97A", divider: "#D4AF6A", note: "#C9B078",
+    label: "Black & Gold",
+  },
+  emerald: {
+    bg: "#FFFFFF", border: "#16321F", innerBorder: "#CFE3D4",
+    corner: "#1F5C3D", text: "#1F5C3D", sub: "#1A1A1A",
+    date: "#111111", divider: "#C9A227", note: "#1F5C3D",
+    label: "Emerald & QR",
   },
 } as const;
 type CardThemeKey = keyof typeof CARD_THEMES;
@@ -777,7 +790,7 @@ export function GuestManagement() {
 // ── InvitationsTab ────────────────────────────────────────────────────────────
 function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: any }) {
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"list"|"upload"|"ai-form"|"ai-results"|"preview"|"edit"|"templates">("list");
+  const [mode, setMode] = useState<"list"|"ai-form"|"ai-results"|"preview"|"edit"|"templates">("list");
   const [manualForm, setManualForm] = useState({ ...EMPTY_INV });
   const [aiForm, setAiForm] = useState({ ...EMPTY_AI });
   const [aiResults, setAiResults] = useState<Partial<Invitation>[]>([]);
@@ -785,10 +798,24 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const [previewGroup, setPreviewGroup] = useState<Partial<Invitation>[]>([]);
   const [editingId, setEditingId] = useState<string|null>(null);
   const [cardTheme, setCardTheme] = useState<CardThemeKey>("cream");
-  const [uploadedFile, setUploadedFile] = useState<{name:string; url:string; type:string; file?:File}|null>(null);
-  const [templateUpload, setTemplateUpload] = useState<{status:"idle"|"uploading"|"done"|"error"; message?:string}>({status:"idle"});
   const [selectedTemplate, setSelectedTemplate] = useState<{id:string; name:string; layout:string; section_order:string[]; language:string}|null>(null);
-  const uploadRef = useRef<HTMLInputElement|null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement|null>(null);
+
+  // Public wedding site link — encoded into the QR code on the "Emerald & QR" invitation
+  const { data: website } = useQuery<{ slug?: string } | null>({
+    queryKey: ["wedding-website", weddingId],
+    queryFn: async () => { const res = await apiClient.website.get<{ slug?: string }>(weddingId!); return (res as any).data ?? null; },
+    enabled: !!weddingId,
+  });
+  const publicBase = typeof window !== "undefined" ? window.location.origin : "https://vownests.com";
+  const weddingPublicUrl = website?.slug ? `${publicBase}/w/${website.slug}` : null;
+
+  useEffect(() => {
+    if (!qrCanvasRef.current || !weddingPublicUrl) return;
+    QRCode.toCanvas(qrCanvasRef.current, weddingPublicUrl, {
+      width: 96, margin: 1, color: { dark: "#111111", light: "#FFFFFF" },
+    }).catch(() => {});
+  }, [mode, cardTheme, weddingPublicUrl, previewInv]);
 
   const { data: learnedTemplatesRaw } = useQuery<any[]>({
     queryKey: ["invitation-templates"],
@@ -825,32 +852,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         try { await apiClient.invitations.create(weddingId!, v); } catch {}
       }
       queryClient.invalidateQueries({ queryKey: ["wedding-invitations", weddingId] });
-      toast.success("3 invitations (White, Gold, Cream) generated & saved!");
+      toast.success("5 invitations (White, Gold, Cream, Black & Gold, Emerald & QR) generated & saved!");
     },
     onError: (e: any) => toast.error(e.message || "Failed to generate"),
   });
-
-  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setUploadedFile({ name: file.name, url, type: file.type, file });
-    // Send to backend for AI learning
-    setTemplateUpload({ status: "uploading" });
-    try {
-      const res = await apiClient.invitations.uploadTemplate(file);
-      if (res?.status === "success") {
-        setTemplateUpload({ status: "done", message: res.message || "Template learned!" });
-        // Refresh templates so new one appears in gallery
-        queryClient.invalidateQueries({ queryKey: ["invitation-templates"] });
-        toast.success("Template saved! Go to 'Templates Gallery' to select it.");
-      } else {
-        setTemplateUpload({ status: "error", message: "Could not process file for AI learning" });
-      }
-    } catch {
-      setTemplateUpload({ status: "error", message: "Upload failed" });
-    }
-  };
 
   const handleDownload = (inv: Partial<Invitation>) => {
     const lines: string[] = [];
@@ -877,6 +882,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     if ((inv as any).invitation_note) lines.push(`Note: ${(inv as any).invitation_note}`, "");
     if ((inv as any).couple_contact) lines.push("Couple Contact:", (inv as any).couple_contact, "");
     if (inv.rsvp_details) lines.push(`RSVP: ${inv.rsvp_details}`);
+    if ((inv as any).color_theme === "emerald" && weddingPublicUrl) lines.push("", `Wedding page: ${weddingPublicUrl}`);
     const text = lines.join("\n");
     const blob = new Blob([text],{type:"text/plain;charset=utf-8"}); const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href=url; a.download=`${(inv.title||"invitation").replace(/\s+/g,"_")}.txt`; a.click(); URL.revokeObjectURL(url);
@@ -961,7 +967,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         <div className="text-center py-20 bg-gradient-to-br from-rose-50/30 to-slate-50 rounded-[2.5rem] border-2 border-dashed border-rose-100">
           <Heart className="h-14 w-14 text-rose-200 mx-auto mb-4"/>
           <p className="text-slate-600 font-serif italic text-xl mb-2">No invitations yet</p>
-          <p className="text-slate-400 text-sm mb-6">Upload your own file or let AI generate one for you</p>
+          <p className="text-slate-400 text-sm mb-6">Pick a curated template or let AI generate one for you</p>
           <div className="flex justify-center gap-3">
             <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-[#668c65]/50 text-[#668c65] px-6 gap-2"><FileText className="h-4 w-4"/>Browse Templates</Button>
             <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 bg-[#668c65] hover:bg-[#527451]"><Sparkles className="h-4 w-4"/>Generate with AI</Button>
@@ -1000,7 +1006,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                             {isAiGroup ? (
                               <>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI</span>
-                                {/* Color swatches for all 3 variants */}
+                                {/* Color swatches for all variants */}
                                 <div className="flex items-center gap-1">
                                   {variants.map(v => {
                                     const vt = CARD_THEMES[(v.color_theme as CardThemeKey)] || CARD_THEMES.cream;
@@ -1063,7 +1069,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                 <h3 className="text-xl font-serif italic text-slate-800">Preview Invitation</h3>
                 {(previewInv as any).learned_from_template && (
                   <p className="text-[10px] text-violet-500 flex items-center gap-1 mt-0.5">
-                    <Sparkles className="h-3 w-3"/>{isTwoColumn ? "Two-column" : "Single-column"} layout learned from upload
+                    <Sparkles className="h-3 w-3"/>{isTwoColumn ? "Two-column" : "Single-column"} layout from curated template
                   </p>
                 )}
               </div>
@@ -1131,12 +1137,17 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               {/* Body — two-column or single-column based on learned template */}
               {isTwoColumn ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 relative px-0">
-                  {/* Vertical divider */}
+                  {/* Vertical divider with ornament */}
                   <div className="hidden md:flex absolute top-0 bottom-0 left-1/2 -translate-x-1/2 flex-col items-center justify-center pointer-events-none z-10">
+                    <div className="w-px flex-1" style={{background:`linear-gradient(to bottom, transparent, ${thm.divider}80, transparent)`}}/>
+                    <div className="w-2.5 h-2.5 rotate-45 shrink-0 my-1" style={{background:thm.divider}}/>
+                    <Heart className="h-3 w-3 shrink-0" style={{color:thm.divider}} fill={thm.divider}/>
+                    <div className="w-2.5 h-2.5 rotate-45 shrink-0 my-1" style={{background:thm.divider}}/>
                     <div className="w-px flex-1" style={{background:`linear-gradient(to bottom, transparent, ${thm.divider}80, transparent)`}}/>
                   </div>
                   {/* LEFT — Kinyarwanda */}
                   <div className="px-8 py-8 text-center font-serif space-y-3 border-b md:border-b-0" style={{borderColor:`${thm.divider}30`}}>
+                    <p className="text-[20px] italic mb-1" style={{color:thm.text}}>Ubutumire</p>
                     <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Imiryango yacu yishimiye kubatumira mu birori by&apos;ubukwe bw&apos;abana babo:</p>
                     {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
                     {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Buzaba tariki ya {previewInv.wedding_date}</p>}
@@ -1168,6 +1179,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                   </div>
                   {/* RIGHT — English */}
                   <div className="px-8 py-8 text-center font-serif space-y-3">
+                    <p className="text-[20px] italic mb-1" style={{color:thm.text}}>Invitation</p>
                     <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Together with our families, we joyfully invite you to celebrate the wedding of:</p>
                     {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
                     {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Which will take place on {previewInv.wedding_date}</p>}
@@ -1224,6 +1236,22 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                       <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
                       <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* QR code — scan to open the couple's wedding page (Emerald & QR theme) */}
+              {activeTheme === "emerald" && (
+                <div className="flex flex-col items-center gap-1.5 pb-4">
+                  {weddingPublicUrl ? (
+                    <>
+                      <canvas ref={qrCanvasRef} className="rounded"/>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{color:thm.note}}>Scan me</p>
+                    </>
+                  ) : (
+                    <p className="text-[10px] italic max-w-[220px] text-center" style={{color:thm.note}}>
+                      Publish your wedding website to embed a scannable QR code here.
+                    </p>
                   )}
                 </div>
               )}
@@ -1404,21 +1432,19 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
           <div>
             <h3 className="text-xl font-serif italic text-[#668c65]">Invitation Templates</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Pick a style from your uploaded templates — the AI will generate your invitation in that layout</p>
+            <p className="text-xs text-slate-400 mt-0.5">Pick a style from our curated templates — the AI will generate your invitation in that layout</p>
           </div>
         </div>
-        <Button variant="outline" onClick={()=>setMode("upload")} className="rounded-full border-[#668c65]/50 text-[#668c65] hover:bg-[#668c65]/5 gap-2 text-sm"><Upload className="h-4 w-4"/>Upload New Template</Button>
       </div>
 
-      {/* ALL TEMPLATES FROM UPLOADS */}
+      {/* CURATED TEMPLATES (provided by the platform) */}
       {learnedTemplates.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-[#668c65]/40 bg-[#FCFBF9] py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-[#668c65]/10 border-2 border-[#668c65]/40 flex items-center justify-center mx-auto mb-4">
-            <Upload className="h-7 w-7 text-[#668c65]"/>
+            <FileText className="h-7 w-7 text-[#668c65]"/>
           </div>
           <p className="text-lg font-serif italic text-slate-600 mb-1">No templates yet</p>
-          <p className="text-[12px] text-slate-400 mb-6">Upload your own invitation file and it will appear here as a selectable template</p>
-          <Button onClick={()=>setMode("upload")} className="rounded-full px-8 gap-2 text-white bg-[#668c65] hover:bg-[#527451]"><Upload className="h-4 w-4"/>Upload Invitation File</Button>
+          <p className="text-[12px] text-slate-400 mb-6">Our team hasn&apos;t added any curated templates yet — check back soon, or use AI Generate for a ready-made style.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -1436,7 +1462,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                 <div key={tpl.id}
                   className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 bg-white hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
                   style={{borderColor: isSelected ? accent : `${accent}40`}}
-                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Uploaded Template", layout:tpl.layout||"single_column", section_order:tpl.section_order||[], language:tpl.language||"english"})}>
+                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Curated Template", layout:tpl.layout||"single_column", section_order:tpl.section_order||[], language:tpl.language||"english"})}>
                   {isSelected && (
                     <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:accent}}>✓ Selected</div>
                   )}
@@ -1444,7 +1470,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                     <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{background:`${accent}18`}}>
-                        <Upload className="h-3.5 w-3.5" style={{color:accent}}/>
+                        <FileText className="h-3.5 w-3.5" style={{color:accent}}/>
                       </div>
                       <div className="space-y-1 flex-1">
                         {(tpl.section_order||["verse","names","date","schedule"]).slice(0,4).map((s:string,i:number)=>(
@@ -1455,7 +1481,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                     <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
                   </div>
                   <div className="px-5 pb-4 space-y-0.5">
-                    <p className="text-[13px] font-serif italic font-semibold" style={{color:"#2C2010"}}>{tpl.name||"Uploaded Template"}</p>
+                    <p className="text-[13px] font-serif italic font-semibold" style={{color:"#2C2010"}}>{tpl.name||"Curated Template"}</p>
                     <p className="text-[10px] text-slate-400">Used {tpl.usage_count||0} times · {(tpl.section_order||[]).length} sections detected</p>
                     <div className="flex items-center gap-1.5 pt-1">
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:accent, borderColor:`${accent}50`, background:`${accent}10`}}>{(tpl.layout||"single_column")==="two_column"?"2-Column":"1-Column"}</span>
@@ -1479,75 +1505,6 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     </div>
   );
 
-  // UPLOAD FILE
-  if (mode === "upload") return (
-    <div className="space-y-6 max-w-xl">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={()=>{setMode("list");setTemplateUpload({status:"idle"});}} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
-        <div>
-          <h3 className="text-xl font-serif italic text-slate-800">Upload Invitation File</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Your file will train our AI to generate similar styles</p>
-        </div>
-      </div>
-
-      {/* AI learning notice */}
-      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 px-4 py-3 flex items-start gap-3">
-        <Sparkles className="h-4 w-4 text-[#668c65] shrink-0 mt-0.5"/>
-        <div>
-          <p className="text-xs font-semibold text-[#668c65]">AI Learning Enabled</p>
-          <p className="text-[11px] text-[#668c65] mt-0.5">Every file you upload is analysed by our system. The more you upload, the better the AI gets at generating invitations that match your style.</p>
-        </div>
-      </div>
-
-      <input ref={uploadRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleUploadFile}/>
-
-      {!uploadedFile ? (
-        <div
-          onClick={()=>uploadRef.current?.click()}
-          className="cursor-pointer border-2 border-dashed border-[#D4AF6A]/50 rounded-[2.5rem] bg-[#FDFBF5] hover:bg-amber-50/40 transition-colors py-20 text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-[#D4AF6A]/40 flex items-center justify-center">
-              <Upload className="h-7 w-7 text-[#D4AF6A]"/>
-            </div>
-          </div>
-          <div>
-            <p className="text-[#5C4A2A] font-serif text-lg">Click to upload your invitation</p>
-            <p className="text-slate-400 text-sm mt-1">JPG, PNG, WebP or PDF · max 10 MB</p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* AI learning status */}
-          {templateUpload.status !== "idle" && (
-            <div className={`rounded-2xl px-4 py-3 flex items-center gap-2 text-sm ${
-              templateUpload.status==="uploading" ? "bg-violet-50 text-violet-600 border border-violet-100" :
-              templateUpload.status==="done"      ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                                                    "bg-rose-50 text-rose-600 border border-rose-100"
-            }`}>
-              {templateUpload.status==="uploading" ? <Loader2 className="h-4 w-4 animate-spin shrink-0"/> : <Sparkles className="h-4 w-4 shrink-0"/>}
-              <span className="text-xs">{templateUpload.status==="uploading" ? "Analysing file and training AI…" : templateUpload.message}</span>
-            </div>
-          )}
-          <div className="relative bg-[#FDFBF5] border border-[#D4AF6A]/40 rounded-2xl overflow-hidden shadow-lg">
-            {uploadedFile.type === "application/pdf" ? (
-              <iframe src={uploadedFile.url} className="w-full h-[500px]" title="Invitation PDF"/>
-            ) : (
-              <img src={uploadedFile.url} alt="Invitation" className="w-full object-contain max-h-[500px]"/>
-            )}
-            <div className="absolute top-3 right-3">
-              <Button size="sm" variant="ghost" className="rounded-full bg-white/80 shadow text-slate-600" onClick={()=>{setUploadedFile(null);setTemplateUpload({status:"idle"});uploadRef.current && (uploadRef.current.value="");}}><X className="h-4 w-4"/>Remove</Button>
-            </div>
-          </div>
-          <p className="text-sm text-slate-500 text-center"><FileText className="h-3.5 w-3.5 inline mr-1"/>{uploadedFile.name}</p>
-          <div className="flex justify-center gap-3 pt-2">
-            <Button variant="outline" onClick={()=>uploadRef.current?.click()} className="rounded-full px-6 gap-2 border-[#D4AF6A]/40 text-[#7B6A45]"><Upload className="h-4 w-4"/>Change File</Button>
-            <Button onClick={()=>{setMode("templates");setTemplateUpload({status:"idle"});}} className="rounded-full px-8 gap-2 text-white shadow-lg bg-[#C4A45A] hover:bg-[#B8944A]"><Save className="h-4 w-4"/>Go to Templates Gallery</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   // EDIT
   if (mode === "edit") return (
     <div className="space-y-6 max-w-2xl">
@@ -1557,10 +1514,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       </div>
       <div className="space-y-5">
 
-        {/* 1. Bible Verse */}
+        {/* 1. Opening Verse */}
         <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
-          <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Bible Verse</span></div>
-          <Textarea value={manualForm.bible_verse} onChange={e=>setManualForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+          <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Opening Verse (Bible, Qur&apos;an or your own words)</span></div>
+          <Textarea value={manualForm.bible_verse} onChange={e=>setManualForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Bismillahir Rahmanir Rahim... — Qur\'an 30:21" or "Therefore what God has joined together, let no one separate. — Mark 10:9"'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
         </div>
 
         {/* 2. Description */}
@@ -1641,10 +1598,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         </div>
       </div>
 
-      {/* 1. Bible Verse */}
+      {/* 1. Opening Verse */}
       <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
-        <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Bible Verse</span></div>
-        <Textarea value={aiForm.bible_verse} onChange={e=>setAiForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Therefore what God has joined together, let no one separate." — Mark 10:9'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+        <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Opening Verse (Bible, Qur&apos;an or your own words)</span></div>
+        <Textarea value={aiForm.bible_verse} onChange={e=>setAiForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Bismillahir Rahmanir Rahim... — Qur\'an 30:21" or "Therefore what God has joined together, let no one separate. — Mark 10:9"'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
       </div>
 
       {/* 2. Description */}
