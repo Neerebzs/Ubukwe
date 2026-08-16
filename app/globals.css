@@ -120,10 +120,13 @@
     font-size: 14px;
     /* 125% of default 16px to mimic OS display scaling */
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 }
 
@@ -184,6 +187,23 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     user-select: none;
+  }
+
+  /* Prevent horizontal overflow on mobile */
+  .no-horizontal-scroll {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Ensure tables don't cause horizontal scroll */
+  .mobile-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .mobile-table-container table {
+    min-width: 100%;
   }
 }
 

@@ -98,10 +98,10 @@ export function WorkforcePayroll() {
   const ActiveIcon = activeMeta?.icon
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 w-full overflow-hidden">
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-[#0d182b] text-white p-5 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[11px] uppercase tracking-[0.2em] text-white/60 font-semibold mb-1.5">
               <TranslatedText text="Business Setup" />
             </p>
@@ -113,16 +113,16 @@ export function WorkforcePayroll() {
             </p>
           </div>
           {activeMeta && ActiveIcon && (
-            <div className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-3 py-2 text-sm border border-white/10">
+            <div className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-3 py-2 text-sm border border-white/10 shrink-0">
               <ActiveIcon className="h-4 w-4 text-[#a8c9a7]" />
-              <span className="text-white/90"><TranslatedText text={activeMeta.label} /></span>
+              <span className="text-white/90 truncate"><TranslatedText text={activeMeta.label} /></span>
             </div>
           )}
         </div>
       </div>
 
       <div
-        className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-1.5"
+        className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60 p-1.5 scroll-smooth"
         role="tablist"
         aria-label="Workforce sections"
       >
@@ -134,14 +134,15 @@ export function WorkforcePayroll() {
             aria-selected={section === id}
             onClick={() => setSection(id)}
             className={cn(
-              "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-all",
+              "flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-xl px-2.5 sm:px-3 py-2 text-xs sm:text-sm transition-all flex-shrink-0",
               section === id
                 ? "bg-white dark:bg-slate-800 text-[#0d182b] dark:text-white font-medium"
                 : "text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-slate-800/70"
             )}
           >
-            <Icon className={cn("h-3.5 w-3.5", section === id ? "text-[#668c65]" : "opacity-70")} aria-hidden />
-            <TranslatedText text={label} />
+            <Icon className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", section === id ? "text-[#668c65]" : "opacity-70")} aria-hidden />
+            <span className="hidden sm:inline"><TranslatedText text={label} /></span>
+            <span className="sm:hidden"><TranslatedText text={label.length > 8 ? label.substring(0, 8) + "..." : label} /></span>
           </button>
         ))}
       </div>
@@ -190,24 +191,24 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-6 w-full overflow-hidden">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, icon: Icon }) => (
           <Card key={label} className="rounded-2xl border-slate-200/80 dark:border-slate-800">
-            <CardContent className="p-5 flex items-start justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{label}</p>
-                <p className="text-3xl font-semibold mt-2 tabular-nums tracking-tight">{value ?? 0}</p>
+            <CardContent className="p-4 sm:p-5 flex items-start justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold truncate">{label}</p>
+                <p className="text-2xl sm:text-3xl font-semibold mt-2 tabular-nums tracking-tight">{value ?? 0}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-[#668c65]/15 text-[#668c65] flex items-center justify-center">
-                <Icon className="h-5 w-5" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-[#668c65]/15 text-[#668c65] flex items-center justify-center shrink-0 ml-2">
+                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="text-lg">Confirmed Events</CardTitle>
@@ -233,7 +234,7 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{b.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {b.customer_name} · {b.event_date}
@@ -272,7 +273,7 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
                 className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/20 p-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{b.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {b.customer_name} · {b.event_date}
@@ -292,13 +293,13 @@ function DashboardSection({ onOpenEvent }: { onOpenEvent: (id: string) => void }
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <Card className="rounded-2xl lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg">Revenue vs Payroll</CardTitle>
             <CardDescription>Contract revenue compared to workforce payroll cost</CardDescription>
           </CardHeader>
-          <CardContent className="grid sm:grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Revenue</p>
               <p className="text-2xl font-semibold mt-1">{money(data?.total_revenue)}</p>
@@ -555,7 +556,50 @@ function WorkersSection() {
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="md:hidden">
+            {workers.map((w: any) => {
+              const initials = String(w.full_name || "?")
+                .split(/\s+/)
+                .slice(0, 2)
+                .map((p: string) => p[0]?.toUpperCase() || "")
+                .join("")
+              return (
+                <div key={w.id} className="border-b border-slate-100 dark:border-slate-800 p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 shrink-0 rounded-full bg-[#668c65] text-white text-xs font-semibold flex items-center justify-center">
+                      {initials || "?"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-slate-900 dark:text-slate-50">{w.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{w.employee_code} · {w.phone || w.email || "—"}</div>
+                    </div>
+                    <StatusBadge status={w.availability_status} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Type:</span>
+                      <div className="capitalize text-slate-600 dark:text-slate-300">{w.employment_type}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Position:</span>
+                      <div>{w.position || "—"}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Rates:</span>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">
+                        <div>Event: {money(w.event_rate, w.currency)}</div>
+                        <div>Hourly: {money(w.hourly_rate, w.currency)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50/90 dark:bg-slate-900/80 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                 <tr>
@@ -604,8 +648,8 @@ function WorkersSection() {
 
       <Dialog open={open} onOpenChange={(v) => (v ? setOpen(true) : closeDialog())}>
         <DialogContent className={cn(
-          "gap-0 p-0 overflow-hidden",
-          addMode === "import" && draftRows.length > 0 ? "sm:max-w-5xl" : "sm:max-w-xl"
+          "gap-0 p-0 overflow-hidden max-h-[90vh] w-[95vw] max-w-none sm:max-w-xl",
+          addMode === "import" && draftRows.length > 0 ? "sm:max-w-6xl sm:w-[90vw]" : "sm:max-w-xl sm:w-full"
         )}>
           <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800">
             <DialogTitle>Add Worker</DialogTitle>
@@ -761,22 +805,22 @@ function WorkersSection() {
                     </div>
                     <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-xs min-w-[1500px]">
+                        <table className="w-full text-xs">
                           <thead className="bg-slate-50 dark:bg-slate-900 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
                             <tr>
-                              <th className="px-2 py-2">Full name *</th>
-                              <th className="px-2 py-2">Code</th>
-                              <th className="px-2 py-2">Gender</th>
-                              <th className="px-2 py-2">Phone</th>
-                              <th className="px-2 py-2">Email</th>
-                              <th className="px-2 py-2">Type</th>
-                              <th className="px-2 py-2">Department</th>
-                              <th className="px-2 py-2">Position</th>
-                              <th className="px-2 py-2">Skills</th>
-                              <th className="px-2 py-2">Event rate</th>
-                              <th className="px-2 py-2">Hourly</th>
-                              <th className="px-2 py-2">MoMo</th>
-                              <th className="px-2 py-2">National ID</th>
+                              <th className="px-2 py-2 min-w-[120px]">Full name *</th>
+                              <th className="px-2 py-2 min-w-[80px]">Code</th>
+                              <th className="px-2 py-2 min-w-[70px]">Gender</th>
+                              <th className="px-2 py-2 min-w-[100px]">Phone</th>
+                              <th className="px-2 py-2 min-w-[120px]">Email</th>
+                              <th className="px-2 py-2 min-w-[100px]">Type</th>
+                              <th className="px-2 py-2 min-w-[100px]">Department</th>
+                              <th className="px-2 py-2 min-w-[100px]">Position</th>
+                              <th className="px-2 py-2 min-w-[100px]">Skills</th>
+                              <th className="px-2 py-2 min-w-[80px]">Event rate</th>
+                              <th className="px-2 py-2 min-w-[80px]">Hourly</th>
+                              <th className="px-2 py-2 min-w-[80px]">MoMo</th>
+                              <th className="px-2 py-2 min-w-[100px]">National ID</th>
                               <th className="px-2 py-2 w-10" />
                             </tr>
                           </thead>
@@ -907,9 +951,9 @@ function TeamsSection() {
         </Button>
       </div>
       {isLoading ? <Skeleton className="h-40 rounded-2xl" /> : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {teams.length === 0 && (
-            <Card className="rounded-2xl sm:col-span-2 lg:col-span-3">
+            <Card className="rounded-2xl col-span-1 sm:col-span-2 lg:col-span-3">
               <CardContent className="p-8 text-center text-muted-foreground">
                 Create teams (dance, photo, catering…) then assign leaders per event.
               </CardContent>
@@ -1176,7 +1220,7 @@ function EventsSection({
   )
 
   return (
-    <div className="grid gap-4 lg:grid-cols-5">
+    <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
       <Card className="rounded-2xl lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-lg">
@@ -1243,9 +1287,9 @@ function EventsSection({
           {selectedEventId && detailLoading && <Skeleton className="h-40 rounded-xl" />}
           {selectedEventId && detail && (
             <div className="space-y-6">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{detail.title}</h3>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-lg truncate">{detail.title}</h3>
                   <p className="text-sm text-muted-foreground">{detail.event_date} · Revenue {money(detail.contract_revenue, detail.currency)}</p>
                 </div>
                 <StatusBadge status={detail.status} />
@@ -1489,7 +1533,7 @@ function PayrollSection() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-5">
+    <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
       <Card className="rounded-2xl lg:col-span-2">
         <CardHeader><CardTitle className="text-lg">Payroll Runs</CardTitle></CardHeader>
         <CardContent className="space-y-2 max-h-[560px] overflow-y-auto">
@@ -1536,14 +1580,14 @@ function PayrollSection() {
               </div>
               <p className="text-sm">Event: <strong>{detail.event?.title}</strong> · <StatusBadge status={detail.status} /></p>
               <div className="overflow-x-auto rounded-xl border">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm min-w-[600px]">
                   <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-3 py-2 text-left">Worker</th>
-                      <th className="px-3 py-2 text-left">Role</th>
-                      <th className="px-3 py-2 text-right">Gross</th>
-                      <th className="px-3 py-2 text-right">Tax</th>
-                      <th className="px-3 py-2 text-right">Net</th>
+                      <th className="px-3 py-2 text-left min-w-[120px]">Worker</th>
+                      <th className="px-3 py-2 text-left min-w-[80px]">Role</th>
+                      <th className="px-3 py-2 text-right min-w-[80px]">Gross</th>
+                      <th className="px-3 py-2 text-right min-w-[60px]">Tax</th>
+                      <th className="px-3 py-2 text-right min-w-[80px]">Net</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1601,11 +1645,11 @@ function CommissionsSection() {
           <CardDescription>e.g. Lead Dancer 35,000 · Drummer 30,000 RWF</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder="Role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
-            <Input type="number" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-32" />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input placeholder="Role name" value={roleName} onChange={(e) => setRoleName(e.target.value)} className="flex-1" />
+            <Input type="number" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full sm:w-32" />
             <Button
-              className="bg-[#668c65] hover:bg-[#557554]"
+              className="bg-[#668c65] hover:bg-[#557554] w-full sm:w-auto"
               onClick={async () => {
                 try {
                   await workforceApi.upsertRoleRate({ role_name: roleName, amount: Number(amount) })
@@ -1635,11 +1679,11 @@ function CommissionsSection() {
           <CardDescription>Team share of contract revenue, split among assigned workers</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder="Plan name" value={planName} onChange={(e) => setPlanName(e.target.value)} />
-            <Input type="number" placeholder="% share" value={share} onChange={(e) => setShare(e.target.value)} className="w-28" />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input placeholder="Plan name" value={planName} onChange={(e) => setPlanName(e.target.value)} className="flex-1" />
+            <Input type="number" placeholder="% share" value={share} onChange={(e) => setShare(e.target.value)} className="w-full sm:w-28" />
             <Button
-              className="bg-[#0d182b]"
+              className="bg-[#0d182b] w-full sm:w-auto"
               onClick={async () => {
                 try {
                   await workforceApi.createCommissionPlan({
@@ -1689,7 +1733,7 @@ function LeaveSection() {
     <div className="space-y-4">
       <Card className="rounded-2xl">
         <CardHeader><CardTitle className="text-lg">Request Leave</CardTitle></CardHeader>
-        <CardContent className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Select value={workerId || "none"} onValueChange={(v) => setWorkerId(v === "none" ? "" : v)}>
             <SelectTrigger><SelectValue placeholder="Worker" /></SelectTrigger>
             <SelectContent>
@@ -1697,8 +1741,8 @@ function LeaveSection() {
               {workers.map((w: any) => <SelectItem key={w.id} value={w.id}>{w.full_name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} placeholder="Start date" />
+          <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} placeholder="End date" />
           <Input placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
           <Button
             className="bg-[#668c65] hover:bg-[#557554]"
@@ -1715,39 +1759,70 @@ function LeaveSection() {
         </CardContent>
       </Card>
       <div className="rounded-2xl border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 text-left">Worker</th>
-              <th className="px-4 py-3 text-left">Dates</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leave.map((l: any) => (
-              <tr key={l.id} className="border-t">
-                <td className="px-4 py-3">{l.worker_name}</td>
-                <td className="px-4 py-3">{l.start_date} → {l.end_date}</td>
-                <td className="px-4 py-3"><StatusBadge status={l.status} /></td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  {l.status === "pending" && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={async () => {
-                        await workforceApi.reviewLeave(l.id, true)
-                        toast.success("Approved"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
-                      }}>Approve</Button>
-                      <Button size="sm" variant="ghost" onClick={async () => {
-                        await workforceApi.reviewLeave(l.id, false)
-                        toast.success("Rejected"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
-                      }}>Reject</Button>
-                    </>
-                  )}
-                </td>
+        {/* Mobile Card View */}
+        <div className="md:hidden">
+          {leave.map((l: any) => (
+            <div key={l.id} className="border-b border-slate-100 dark:border-slate-800 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-sm">{l.worker_name}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{l.start_date} → {l.end_date}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{l.reason || "No reason provided"}</div>
+                </div>
+                <StatusBadge status={l.status} />
+              </div>
+              {l.status === "pending" && (
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={async () => {
+                    await workforceApi.reviewLeave(l.id, true)
+                    toast.success("Approved"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
+                  }}>Approve</Button>
+                  <Button size="sm" variant="ghost" className="flex-1" onClick={async () => {
+                    await workforceApi.reviewLeave(l.id, false)
+                    toast.success("Rejected"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
+                  }}>Reject</Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 text-left">Worker</th>
+                <th className="px-4 py-3 text-left">Dates</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {leave.map((l: any) => (
+                <tr key={l.id} className="border-t">
+                  <td className="px-4 py-3">{l.worker_name}</td>
+                  <td className="px-4 py-3">{l.start_date} → {l.end_date}</td>
+                  <td className="px-4 py-3"><StatusBadge status={l.status} /></td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    {l.status === "pending" && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          await workforceApi.reviewLeave(l.id, true)
+                          toast.success("Approved"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
+                        }}>Approve</Button>
+                        <Button size="sm" variant="ghost" onClick={async () => {
+                          await workforceApi.reviewLeave(l.id, false)
+                          toast.success("Rejected"); qc.invalidateQueries({ queryKey: ["workforce-leave"] })
+                        }}>Reject</Button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
@@ -1794,10 +1869,10 @@ function DocumentsSection() {
       <Card className="rounded-2xl">
         <CardHeader><CardTitle className="text-lg">Upload Document Link</CardTitle></CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-2">
-          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <Input placeholder="File URL (from storage upload)" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1" />
+          <Input placeholder="File URL (from storage upload)" value={url} onChange={(e) => setUrl(e.target.value)} className="flex-1" />
           <Button
-            className="bg-[#668c65] hover:bg-[#557554]"
+            className="bg-[#668c65] hover:bg-[#557554] w-full sm:w-auto"
             onClick={async () => {
               try {
                 await workforceApi.createDocument({ title, file_url: url })
@@ -1853,14 +1928,16 @@ function ReportsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {types.map((t) => (
           <Card key={t} className="rounded-2xl">
             <CardContent className="p-4 space-y-3">
               <p className="font-medium capitalize">{t.replace(/_/g, " ")}</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={loading} onClick={() => run(t)}>View</Button>
-                <Button size="sm" className="bg-[#0d182b]" disabled={loading} onClick={() => run(t, "csv")}>CSV</Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button size="sm" variant="outline" disabled={loading} onClick={() => run(t)} className="flex-1">
+                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} View
+                </Button>
+                <Button size="sm" className="bg-[#0d182b] flex-1" disabled={loading} onClick={() => run(t, "csv")}>CSV</Button>
               </div>
             </CardContent>
           </Card>
