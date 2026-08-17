@@ -1140,6 +1140,9 @@ export const apiClient = {
     delete<T>(weddingId: string, invId: string): Promise<ApiResponse<T>> {
       return apiClient.delete<T>(`/api/v1/wedding/${weddingId}/invitations/${invId}`);
     },
+    select<T>(weddingId: string, invId: string): Promise<ApiResponse<T>> {
+      return apiClient.post<T>(`/api/v1/wedding/${weddingId}/invitations/${invId}/select`, {});
+    },
     aiGenerate<T>(weddingId: string, data: any): Promise<ApiResponse<T>> {
       return apiClient.post<T>(`/api/v1/wedding/${weddingId}/invitations/ai-generate`, data);
     },
