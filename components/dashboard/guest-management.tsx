@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users, Plus, Search, Filter, Mail, Phone, MapPin,
   CheckCircle, XCircle, Clock, Edit, Trash2, Download, Upload,
-  Loader2, Sparkles, FileText, Eye, Save, X, Heart, BookOpen, CalendarClock, StickyNote, PhoneCall
+  Loader2, Sparkles, FileText, Eye, Save, X, Heart, BookOpen, CalendarClock, StickyNote, PhoneCall, Users2
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,15 +37,23 @@ interface ProgramEvent {
   time: string; event: string; location: string;
 }
 
+interface ContactPerson {
+  name: string; phones: string[];
+}
+
 interface Invitation {
   id: string; title: string; couple_names: string; wedding_date: string;
   wedding_time?: string; venue?: string; message?: string; rsvp_details?: string;
   dress_code?: string; theme?: string; tone?: string; template_style?: string;
-  bible_verse?: string; description?: string;
+  bible_verse?: string; bible_verse_rw?: string; bible_verse_en?: string; description?: string;
   program_events?: ProgramEvent[];
   invitation_note?: string; couple_contact?: string;
   color_theme?: string;
+  groom_family_name?: string; bride_family_name?: string; represented_by?: string;
+  groom_represented_by?: string; bride_represented_by?: string;
+  bride_contacts?: ContactPerson[]; groom_contacts?: ContactPerson[];
   is_ai_generated: boolean;
+  is_selected?: boolean;
 }
 
 const EMPTY_FORM = {
@@ -57,22 +65,42 @@ const EMPTY_FORM = {
 type WaLink = { guest: string; phone: string; link: string };
 
 const EMPTY_PROGRAM_EVENT: ProgramEvent = { time: "", event: "", location: "" };
+const EMPTY_CONTACT_PERSON: ContactPerson = { name: "", phones: [""] };
+
+// Half-hour time-of-day options for the wedding-schedule time picker (12-hour, e.g. "9:00 AM")
+const TIME_OPTIONS: string[] = (() => {
+  const opts: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      const ampm = h < 12 ? "AM" : "PM";
+      opts.push(`${hour12}:${m === 0 ? "00" : "30"} ${ampm}`);
+    }
+  }
+  return opts;
+})();
 
 const EMPTY_INV = {
   title: "Wedding Invitation", couple_names: "", wedding_date: "", wedding_time: "",
   venue: "", message: "", rsvp_details: "", dress_code: "",
   theme: "", tone: "formal", template_style: "classic",
-  bible_verse: "", description: "",
+  bible_verse: "", bible_verse_rw: "", bible_verse_en: "", description: "",
   program_events: [{ ...EMPTY_PROGRAM_EVENT }] as ProgramEvent[],
   invitation_note: "", couple_contact: "",
+  groom_family_name: "", bride_family_name: "", represented_by: "",
+  groom_represented_by: "", bride_represented_by: "",
+  bride_contacts: [] as ContactPerson[], groom_contacts: [] as ContactPerson[],
 };
 
 const EMPTY_AI = {
   couple_names: "", wedding_date: "", wedding_time: "",
   venue: "", theme: "classic", tone: "formal", dress_code: "", rsvp_details: "",
-  bible_verse: "", description: "",
+  bible_verse: "", bible_verse_rw: "", bible_verse_en: "", description: "",
   program_events: [{ ...EMPTY_PROGRAM_EVENT }] as ProgramEvent[],
   invitation_note: "", couple_contact: "",
+  groom_family_name: "", bride_family_name: "", represented_by: "",
+  groom_represented_by: "", bride_represented_by: "",
+  bride_contacts: [] as ContactPerson[], groom_contacts: [] as ContactPerson[],
 };
 
 
@@ -84,39 +112,128 @@ const STYLE_COLORS: Record<string, string> = {
   traditional: "from-amber-50/40 via-yellow-50/20 to-stone-100/40 border-amber-200/60 shadow-inner",
 };
 
+// Six invitation templates — each a distinct wallpaper/design, all rendered in the
+// bilingual two-column (Kinyarwanda | English) layout. Colour + ornament only; the
+// couple's own words always fill the content.
 const CARD_THEMES = {
-  white: {
-    bg: "#FFFFFF", border: "#E8E0D0", innerBorder: "#F0EBE0",
-    corner: "#C8B89A", text: "#1A1209", sub: "#4A3F2A",
-    date: "#6B5A3A", divider: "#C8B89A", note: "#7A6A50",
-    label: "White",
+  botanical: {
+    bg: "#FDFBF5", border: "#8FAE7A", innerBorder: "#E3E9D8",
+    corner: "#5E7C4A", text: "#2C2010", sub: "#4A3F2A",
+    date: "#5E7C4A", divider: "#7A9B6B", note: "#5E7C4A",
+    label: "Botanical",
   },
-  gold: {
-    bg: "#FDF6E3", border: "#D4AF6A", innerBorder: "#E8C97A",
-    corner: "#D4AF6A", text: "#2C1A00", sub: "#5C4A2A",
-    date: "#8B6914", divider: "#D4AF6A", note: "#7B6A45",
-    label: "Gold",
+  sage_leaf: {
+    bg: "#F1EAD6", border: "#2F4A2F", innerBorder: "#4F6F4F",
+    corner: "#2F4A2F", text: "#1F2E1F", sub: "#3F5A3F",
+    date: "#2F4A2F", divider: "#4F6F4F", note: "#4F6F4F",
+    label: "Sage & Leaf",
   },
-  cream: {
-    bg: "#FDFBF5", border: "#D4AF6A", innerBorder: "#E0D4B8",
-    corner: "#C4A45A", text: "#2C2010", sub: "#5C4A2A",
-    date: "#7B6A45", divider: "#C4A45A", note: "#7B6A45",
-    label: "Cream",
+  indigo_mandala: {
+    bg: "#101B33", border: "#D4AF6A", innerBorder: "#3A4A6B",
+    corner: "#E8C97A", text: "#F5E7C4", sub: "#C9D3E8",
+    date: "#E8C97A", divider: "#D4AF6A", note: "#B8C4DC",
+    label: "Indigo Mandala",
   },
-  black_gold: {
+  noir_gold: {
     bg: "#0B0A08", border: "#D4AF6A", innerBorder: "#8A6B2E",
     corner: "#D4AF6A", text: "#F5E7C4", sub: "#E8D9AE",
     date: "#E8C97A", divider: "#D4AF6A", note: "#C9B078",
-    label: "Black & Gold",
+    label: "Noir & Gold",
   },
-  emerald: {
-    bg: "#FFFFFF", border: "#16321F", innerBorder: "#CFE3D4",
-    corner: "#1F5C3D", text: "#1F5C3D", sub: "#1A1A1A",
-    date: "#111111", divider: "#C9A227", note: "#1F5C3D",
-    label: "Emerald & QR",
+  lavender_bloom: {
+    bg: "#FBF8FD", border: "#9B7FC7", innerBorder: "#E4D9F2",
+    corner: "#7C5CB0", text: "#2E1F3D", sub: "#5B4470",
+    date: "#7C5CB0", divider: "#B79FDA", note: "#7C5CB0",
+    label: "Lavender Bloom",
+  },
+  azure_watercolor: {
+    bg: "linear-gradient(135deg, #7A8FC7 0%, #9B87C9 50%, #B79FDA 100%)", border: "#FFFFFF", innerBorder: "rgba(255,255,255,0.35)",
+    corner: "#FFFFFF", text: "#FFFFFF", sub: "#F0EAFB",
+    date: "#FFFFFF", divider: "#FFFFFF", note: "#EDE6FA",
+    label: "Azure Watercolor",
   },
 } as const;
 type CardThemeKey = keyof typeof CARD_THEMES;
+
+// One hand-drawn corner motif per template (not just a recolored shape) — mirrored into all
+// four corners by the caller via CSS transform. viewBox is 0 0 80 80, corner anchored at (0,0).
+function cardCornerMotif(key: CardThemeKey, color: string) {
+  switch (key) {
+    case "sage_leaf": // thick leafy vine running along both edges — heavy botanical frame
+      return (
+        <>
+          <path d="M2 2 L2 78" stroke={color} strokeWidth="1.5" opacity="0.5"/>
+          <path d="M2 2 L78 2" stroke={color} strokeWidth="1.5" opacity="0.5"/>
+          {[12, 28, 44, 60].map((p, i) => (
+            <ellipse key={`v${i}`} cx="2" cy={p} rx="7" ry="3" fill={color} opacity="0.55" transform={`rotate(${35 + i * 4} 2 ${p})`}/>
+          ))}
+          {[12, 28, 44, 60].map((p, i) => (
+            <ellipse key={`h${i}`} cx={p} cy="2" rx="7" ry="3" fill={color} opacity="0.55" transform={`rotate(${-35 - i * 4} ${p} 2)`}/>
+          ))}
+          <circle cx="2" cy="2" r="3" fill={color} opacity="0.8"/>
+        </>
+      );
+    case "indigo_mandala": // paisley / mandala arcs radiating from the corner
+      return (
+        <>
+          <path d="M2 2 A20 20 0 0 1 22 2" stroke={color} strokeWidth="1" fill="none" opacity="0.7"/>
+          <path d="M2 2 A34 34 0 0 1 36 2" stroke={color} strokeWidth="0.8" fill="none" opacity="0.55"/>
+          <path d="M2 2 A48 48 0 0 1 50 2" stroke={color} strokeWidth="0.6" fill="none" opacity="0.4"/>
+          {[0, 1, 2, 3, 4].map(i => {
+            const a = (Math.PI / 2) * (i / 4);
+            const r = 34;
+            return <circle key={i} cx={2 + r * Math.sin(a)} cy={2 + r * (1 - Math.cos(a))} r="1.4" fill={color} opacity="0.7"/>;
+          })}
+          <circle cx="2" cy="2" r="3.5" fill={color} opacity="0.9"/>
+          <path d="M2 2 L14 2 L2 14 Z" fill={color} opacity="0.2"/>
+        </>
+      );
+    case "noir_gold": // circular medallion with radiating sunburst dashes
+      return (
+        <>
+          <circle cx="16" cy="16" r="9" fill="none" stroke={color} strokeWidth="1" opacity="0.6"/>
+          <circle cx="16" cy="16" r="4" fill="none" stroke={color} strokeWidth="0.8" opacity="0.7"/>
+          <circle cx="16" cy="16" r="1.3" fill={color} opacity="0.9"/>
+          {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+            <line key={deg} x1="16" y1="16" x2={16 + 13 * Math.cos(deg * Math.PI / 180)} y2={16 + 13 * Math.sin(deg * Math.PI / 180)} stroke={color} strokeWidth="0.5" opacity="0.35"/>
+          ))}
+          <path d="M2 2 L34 2 Q18 18 2 34 Z" fill={color} opacity="0.12"/>
+        </>
+      );
+    case "lavender_bloom": // clustered flower rosette (overlapping petals + stem)
+      return (
+        <>
+          <circle cx="16" cy="10" r="5.5" fill={color} opacity="0.5"/>
+          <circle cx="24" cy="9" r="4.5" fill={color} opacity="0.38"/>
+          <circle cx="10" cy="18" r="5" fill={color} opacity="0.42"/>
+          <circle cx="20" cy="20" r="4" fill={color} opacity="0.32"/>
+          <circle cx="17" cy="14" r="2.6" fill="#FFFFFF" opacity="0.65"/>
+          <path d="M6 6 Q12 20 4 30" stroke={color} strokeWidth="1" fill="none" opacity="0.4"/>
+          <ellipse cx="7" cy="24" rx="4" ry="2" fill={color} opacity="0.3" transform="rotate(50 7 24)"/>
+        </>
+      );
+    case "azure_watercolor": // soft overlapping translucent wash blobs
+      return (
+        <>
+          <circle cx="20" cy="16" r="18" fill={color} opacity="0.22"/>
+          <circle cx="8" cy="28" r="12" fill={color} opacity="0.16"/>
+          <circle cx="30" cy="6" r="9" fill="#FFFFFF" opacity="0.18"/>
+          <circle cx="12" cy="10" r="6" fill="#FFFFFF" opacity="0.14"/>
+        </>
+      );
+    case "botanical": // light two-leaf sprig, delicate
+    default:
+      return (
+        <>
+          <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={color} opacity="0.3"/>
+          <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={color} strokeWidth="0.8" fill="none" opacity="0.6"/>
+          <ellipse cx="18" cy="12" rx="6" ry="2.6" fill={color} opacity="0.45" transform="rotate(35 18 12)"/>
+          <ellipse cx="11" cy="22" rx="5" ry="2.2" fill={color} opacity="0.35" transform="rotate(65 11 22)"/>
+          <circle cx="2" cy="2" r="2" fill={color} opacity="0.7"/>
+        </>
+      );
+  }
+}
 
 const STYLE_ACCENT: Record<string, string> = {
   classic: "text-slate-700", modern: "text-violet-700",
@@ -143,6 +260,7 @@ export function GuestManagement() {
   const [waLinks, setWaLinks] = useState<WaLink[]>([]);
   const [showWaDialog, setShowWaDialog] = useState(false);
   const [selectedGuestIds, setSelectedGuestIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"invitations" | "guests">("invitations");
 
   const { data: wedding } = useQuery({
     queryKey: ["wedding-me"],
@@ -363,7 +481,7 @@ export function GuestManagement() {
   };
 
   const pickInvitation = (): Invitation | null => {
-    return invitations[0] || null;
+    return invitations.find(i => i.is_selected) || invitations[0] || null;
   };
 
   const handleSendOne = async (guest: Guest) => {
@@ -408,10 +526,10 @@ export function GuestManagement() {
     <div className="space-y-8">
       <div><h2 className="text-3xl font-serif italic text-slate-800">Guests & Invitations</h2><p className="text-sm text-slate-500 mt-1 italic">Manage your guest list and create beautiful invitations</p></div>
 
-      <Tabs defaultValue="guests" className="space-y-8">
+      <Tabs value={activeTab} onValueChange={v=>setActiveTab(v as "invitations"|"guests")} className="space-y-8">
         <TabsList className="flex items-center gap-2 bg-slate-50/50 p-1.5 rounded-2xl w-fit border border-slate-100">
-          <TabsTrigger value="guests" className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm"><Users className="h-3.5 w-3.5" /> Guest List</TabsTrigger>
           <TabsTrigger value="invitations" className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm"><Heart className="h-3.5 w-3.5" /> Invitations</TabsTrigger>
+          <TabsTrigger value="guests" className="flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm"><Users className="h-3.5 w-3.5" /> Guest List</TabsTrigger>
         </TabsList>
 
         <TabsContent value="guests" className="space-y-8">
@@ -545,7 +663,7 @@ export function GuestManagement() {
         </TabsContent>
 
         <TabsContent value="invitations">
-          <InvitationsTab weddingId={weddingId} wedding={wedding} />
+          <InvitationsTab weddingId={weddingId} wedding={wedding} onGoToGuests={()=>setActiveTab("guests")} />
         </TabsContent>
       </Tabs>
 
@@ -788,17 +906,16 @@ export function GuestManagement() {
 }
 
 // ── InvitationsTab ────────────────────────────────────────────────────────────
-function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: any }) {
+function InvitationsTab({ weddingId, wedding, onGoToGuests }: { weddingId?: string; wedding?: any; onGoToGuests?: () => void }) {
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"list"|"ai-form"|"ai-results"|"preview"|"edit"|"templates">("list");
+  const [mode, setMode] = useState<"list"|"ai-form"|"ai-results"|"preview"|"edit">("list");
   const [manualForm, setManualForm] = useState({ ...EMPTY_INV });
   const [aiForm, setAiForm] = useState({ ...EMPTY_AI });
   const [aiResults, setAiResults] = useState<Partial<Invitation>[]>([]);
   const [previewInv, setPreviewInv] = useState<Partial<Invitation>|null>(null);
   const [previewGroup, setPreviewGroup] = useState<Partial<Invitation>[]>([]);
   const [editingId, setEditingId] = useState<string|null>(null);
-  const [cardTheme, setCardTheme] = useState<CardThemeKey>("cream");
-  const [selectedTemplate, setSelectedTemplate] = useState<{id:string; name:string; layout:string; section_order:string[]; language:string}|null>(null);
+  const [cardTheme, setCardTheme] = useState<CardThemeKey>("botanical");
   const qrCanvasRef = useRef<HTMLCanvasElement|null>(null);
 
   // Public wedding site link — encoded into the QR code on the "Emerald & QR" invitation
@@ -810,19 +927,70 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const publicBase = typeof window !== "undefined" ? window.location.origin : "https://vownests.com";
   const weddingPublicUrl = website?.slug ? `${publicBase}/w/${website.slug}` : null;
 
+  // Family intro line ("Umuryango wa X uhagarariwe na ... n'uwa Y uhagarariwe na ... yishimiye kubatumira...")
+  // built from structured family fields — each side can have its own representative.
+  const familyIntro = (inv: Partial<Invitation>, lang: "rw" | "en"): string => {
+    const groomFam = (inv as any).groom_family_name?.trim();
+    const brideFam = (inv as any).bride_family_name?.trim();
+    const groomRep = (inv as any).groom_represented_by?.trim();
+    const brideRep = (inv as any).bride_represented_by?.trim();
+    const legacyRep = (inv as any).represented_by?.trim(); // backward compat for older invitations
+    if (!groomFam && !brideFam) {
+      return lang === "rw"
+        ? "Imiryango yacu yishimiye kubatumira mu birori by'ubukwe bw'abana babo:"
+        : "Together with our families, we joyfully invite you to celebrate the wedding of:";
+    }
+    if (lang === "rw") {
+      const parts: string[] = [];
+      if (groomFam) parts.push(`${parts.length === 0 ? "Umuryango wa" : "n'uwa"} ${groomFam}${groomRep ? ` uhagarariwe na ${groomRep}` : ""}`);
+      if (brideFam) parts.push(`${parts.length === 0 ? "Umuryango wa" : "n'uwa"} ${brideFam}${brideRep ? ` uhagarariwe na ${brideRep}` : ""}`);
+      let s = parts.join(" ");
+      if (!groomRep && !brideRep && legacyRep) s += ` uhagarariwe na ${legacyRep}`;
+      return s + " yishimiye kubatumira mu bukwe bw'abana babo aribo:";
+    }
+    const parts: string[] = [];
+    if (groomFam) parts.push(`${groomFam}${groomRep ? `, represented by ${groomRep},` : ""}`);
+    if (brideFam) parts.push(`${brideFam}${brideRep ? `, represented by ${brideRep},` : ""}`);
+    let s = "The family of " + parts.join(" and ");
+    if (!groomRep && !brideRep && legacyRep) s += `, represented by ${legacyRep},`;
+    return s + " have the pleasure of inviting you to the wedding ceremony of their children:";
+  };
+
+  // Structured bride/groom contact columns, falling back to the legacy free-text couple_contact blob
+  const renderContacts = (inv: Partial<Invitation>, colors: { text: string; sub: string }) => {
+    const bride: ContactPerson[] = (inv as any).bride_contacts || [];
+    const groom: ContactPerson[] = (inv as any).groom_contacts || [];
+    const legacy: string | undefined = (inv as any).couple_contact;
+    if (bride.length === 0 && groom.length === 0) {
+      if (!legacy) return null;
+      return <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{ color: colors.sub }}>{legacy}</p>;
+    }
+    const side = (people: ContactPerson[]) => (
+      <div className="space-y-1">
+        {people.map((p, i) => (
+          <div key={i}>
+            {p.name && <p className="text-[10px] font-semibold" style={{ color: colors.text }}>{p.name}</p>}
+            {(p.phones || []).filter(Boolean).map((ph, pi) => (
+              <p key={pi} className="text-[9px]" style={{ color: colors.sub }}>{pi + 1}. {ph}</p>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+    return (
+      <div className="grid grid-cols-2 gap-3 text-center">
+        {side(bride)}
+        {side(groom)}
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (!qrCanvasRef.current || !weddingPublicUrl) return;
     QRCode.toCanvas(qrCanvasRef.current, weddingPublicUrl, {
       width: 96, margin: 1, color: { dark: "#111111", light: "#FFFFFF" },
     }).catch(() => {});
   }, [mode, cardTheme, weddingPublicUrl, previewInv]);
-
-  const { data: learnedTemplatesRaw } = useQuery<any[]>({
-    queryKey: ["invitation-templates"],
-    queryFn: async () => { const res = await apiClient.invitations.listTemplates(); return (res as any).data || []; },
-  });
-  // Ensure learnedTemplates is always an array (handle API returning object instead of array)
-  const learnedTemplates = Array.isArray(learnedTemplatesRaw) ? learnedTemplatesRaw : [];
 
   const { data: invitations = [], isLoading } = useQuery<Invitation[]>({
     queryKey: ["wedding-invitations", weddingId],
@@ -842,17 +1010,32 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     onError: (e: any) => toast.error(e.message || "Failed to delete"),
   });
 
+  const selectMutation = useMutation({
+    mutationFn: (id: string) => apiClient.invitations.select(weddingId!, id),
+    onSuccess: (_res, id) => {
+      queryClient.invalidateQueries({ queryKey: ["wedding-invitations", weddingId] });
+      toast.success("Set as your wedding invitation");
+      setPreviewInv(prev => prev ? { ...prev, is_selected: (prev as any).id === id } as any : prev);
+      setAiResults(prev => prev.map(v => ({ ...v, is_selected: (v as any).id === id } as any)));
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to select"),
+  });
+
   const aiMutation = useMutation({
     mutationFn: (data: any) => apiClient.invitations.aiGenerate<Partial<Invitation>[]>(weddingId!, data),
     onSuccess: async (res) => {
       const variants: Partial<Invitation>[] = (res as any).data || [];
-      setAiResults(variants);
-      setMode("ai-results");
+      const saved: Partial<Invitation>[] = [];
       for (const v of variants) {
-        try { await apiClient.invitations.create(weddingId!, v); } catch {}
+        try {
+          const created: any = await apiClient.invitations.create(weddingId!, v);
+          saved.push(created.data || v);
+        } catch { saved.push(v); }
       }
+      setAiResults(saved); // use the saved records (with real ids) so Select works immediately
+      setMode("ai-results");
       queryClient.invalidateQueries({ queryKey: ["wedding-invitations", weddingId] });
-      toast.success("5 invitations (White, Gold, Cream, Black & Gold, Emerald & QR) generated & saved!");
+      toast.success("6 invitations (Botanical, Sage & Leaf, Indigo Mandala, Noir & Gold, Lavender Bloom, Azure Watercolor) generated & saved!");
     },
     onError: (e: any) => toast.error(e.message || "Failed to generate"),
   });
@@ -860,8 +1043,21 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   const handleDownload = (inv: Partial<Invitation>) => {
     const lines: string[] = [];
     if (inv.title) lines.push(inv.title.toUpperCase(), "");
-    if ((inv as any).bible_verse) lines.push(`"${(inv as any).bible_verse}"`, "");
+    const verseRw = (inv as any).bible_verse_rw; const verseEn = (inv as any).bible_verse_en || (inv as any).bible_verse;
+    if (verseRw) lines.push(`"${verseRw}"`, "");
+    if (verseEn) lines.push(`"${verseEn}"`, "");
     if ((inv as any).description) lines.push((inv as any).description, "");
+    const groomFam = (inv as any).groom_family_name; const brideFam = (inv as any).bride_family_name;
+    const groomRep = (inv as any).groom_represented_by; const brideRep = (inv as any).bride_represented_by; const legacyRep = (inv as any).represented_by;
+    if (groomFam || brideFam) {
+      const parts: string[] = [];
+      if (groomFam) parts.push(`${parts.length === 0 ? "Umuryango wa" : "n'uwa"} ${groomFam}${groomRep ? ` uhagarariwe na ${groomRep}` : ""}`);
+      if (brideFam) parts.push(`${parts.length === 0 ? "Umuryango wa" : "n'uwa"} ${brideFam}${brideRep ? ` uhagarariwe na ${brideRep}` : ""}`);
+      let famLine = parts.join(" ");
+      if (!groomRep && !brideRep && legacyRep) famLine += ` uhagarariwe na ${legacyRep}`;
+      famLine += " yishimiye kubatumira mu bukwe bw'abana babo aribo:";
+      lines.push(famLine, "");
+    }
     if (inv.couple_names) lines.push(inv.couple_names);
     if (inv.wedding_date) lines.push(`on ${inv.wedding_date}`);
     if (inv.wedding_time) lines.push(inv.wedding_time);
@@ -880,9 +1076,21 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
     }
     if (inv.dress_code) lines.push(`Dress Code: ${inv.dress_code}`, "");
     if ((inv as any).invitation_note) lines.push(`Note: ${(inv as any).invitation_note}`, "");
-    if ((inv as any).couple_contact) lines.push("Couple Contact:", (inv as any).couple_contact, "");
+    const brideContacts: ContactPerson[] = (inv as any).bride_contacts || [];
+    const groomContacts: ContactPerson[] = (inv as any).groom_contacts || [];
+    if (brideContacts.length > 0 || groomContacts.length > 0) {
+      lines.push("CONTACTS", "");
+      [...brideContacts, ...groomContacts].forEach(p => {
+        if (!p.name && !(p.phones||[]).some(ph=>ph)) return;
+        if (p.name) lines.push(p.name);
+        (p.phones||[]).filter(ph=>ph).forEach((ph, i) => lines.push(`  ${i+1}. ${ph}`));
+      });
+      lines.push("");
+    } else if ((inv as any).couple_contact) {
+      lines.push("Couple Contact:", (inv as any).couple_contact, "");
+    }
     if (inv.rsvp_details) lines.push(`RSVP: ${inv.rsvp_details}`);
-    if ((inv as any).color_theme === "emerald" && weddingPublicUrl) lines.push("", `Wedding page: ${weddingPublicUrl}`);
+    if (weddingPublicUrl) lines.push("", `Wedding page: ${weddingPublicUrl}`);
     const text = lines.join("\n");
     const blob = new Blob([text],{type:"text/plain;charset=utf-8"}); const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href=url; a.download=`${(inv.title||"invitation").replace(/\s+/g,"_")}.txt`; a.click(); URL.revokeObjectURL(url);
@@ -890,7 +1098,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
 
   const handleOpenEdit = (inv: Invitation) => {
     setEditingId(inv.id);
-    setManualForm({ title:inv.title, couple_names:inv.couple_names, wedding_date:inv.wedding_date, wedding_time:inv.wedding_time||"", venue:inv.venue||"", message:inv.message||"", rsvp_details:inv.rsvp_details||"", dress_code:inv.dress_code||"", theme:inv.theme||"", tone:inv.tone||"formal", template_style:inv.template_style||"classic", bible_verse:inv.bible_verse||"", description:inv.description||"", program_events:(inv.program_events&&inv.program_events.length>0)?inv.program_events:[{...EMPTY_PROGRAM_EVENT}], invitation_note:inv.invitation_note||"", couple_contact:inv.couple_contact||"" });
+    setManualForm({ title:inv.title, couple_names:inv.couple_names, wedding_date:inv.wedding_date, wedding_time:inv.wedding_time||"", venue:inv.venue||"", message:inv.message||"", rsvp_details:inv.rsvp_details||"", dress_code:inv.dress_code||"", theme:inv.theme||"", tone:inv.tone||"formal", template_style:inv.template_style||"classic", bible_verse:inv.bible_verse||"", bible_verse_rw:inv.bible_verse_rw||"", bible_verse_en:inv.bible_verse_en||"", description:inv.description||"", program_events:(inv.program_events&&inv.program_events.length>0)?inv.program_events:[{...EMPTY_PROGRAM_EVENT}], invitation_note:inv.invitation_note||"", couple_contact:inv.couple_contact||"", groom_family_name:inv.groom_family_name||"", bride_family_name:inv.bride_family_name||"", represented_by:inv.represented_by||"", groom_represented_by:inv.groom_represented_by||"", bride_represented_by:inv.bride_represented_by||"", bride_contacts:(inv.bride_contacts&&inv.bride_contacts.length>0)?inv.bride_contacts:[], groom_contacts:(inv.groom_contacts&&inv.groom_contacts.length>0)?inv.groom_contacts:[] });
     setMode("edit");
   };
 
@@ -932,14 +1140,6 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div><h3 className="text-2xl font-serif italic text-slate-800">Wedding Invitations</h3><p className="text-sm text-slate-500 mt-1">Create, customise, and share your invitations</p></div>
         <div className="flex flex-wrap gap-2">
-          {selectedTemplate && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{background:`${selectedTemplate.id.startsWith('default') ? '#f5f0ff' : '#fff7e6'}`, borderColor: selectedTemplate.id.startsWith('default') ? '#c4b5fd' : '#D4AF6A', color: selectedTemplate.id.startsWith('default') ? '#6d28d9' : '#7B6A45'}}>
-              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{background: selectedTemplate.id.startsWith('default') ? '#7c3aed' : '#D4AF6A'}}/>
-              {selectedTemplate.name}
-              <button onClick={()=>setSelectedTemplate(null)} className="ml-1 opacity-60 hover:opacity-100"><X className="h-3 w-3"/></button>
-            </div>
-          )}
-          <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-[#668c65]/50 text-[#668c65] px-4 gap-2 text-sm"><FileText className="h-4 w-4"/>Templates</Button>
           <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-5 gap-2 shadow-lg bg-[#668c65] hover:bg-[#527451] text-sm"><Sparkles className="h-4 w-4"/>AI Generate</Button>
         </div>
       </div>
@@ -967,9 +1167,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         <div className="text-center py-20 bg-gradient-to-br from-rose-50/30 to-slate-50 rounded-[2.5rem] border-2 border-dashed border-rose-100">
           <Heart className="h-14 w-14 text-rose-200 mx-auto mb-4"/>
           <p className="text-slate-600 font-serif italic text-xl mb-2">No invitations yet</p>
-          <p className="text-slate-400 text-sm mb-6">Pick a curated template or let AI generate one for you</p>
+          <p className="text-slate-400 text-sm mb-6">Let AI generate a beautiful invitation for you</p>
           <div className="flex justify-center gap-3">
-            <Button variant="outline" onClick={()=>setMode("templates")} className="rounded-full border-[#668c65]/50 text-[#668c65] px-6 gap-2"><FileText className="h-4 w-4"/>Browse Templates</Button>
             <Button onClick={()=>{prefill();setMode("ai-form");}} className="rounded-full text-white px-6 gap-2 bg-[#668c65] hover:bg-[#527451]"><Sparkles className="h-4 w-4"/>Generate with AI</Button>
           </div>
         </div>
@@ -978,8 +1177,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               {invitationGroups.map(({ key, variants, isAiGroup }) => {
                 const inv = variants[0];
                 // For AI groups, prefer cream as representative card theme
-                const ct = (isAiGroup ? "cream" : (inv.color_theme as CardThemeKey)) || "cream";
-                const thm = CARD_THEMES[ct] || CARD_THEMES.cream;
+                const ct = (isAiGroup ? "botanical" : (inv.color_theme as CardThemeKey)) || "botanical";
+                const thm = CARD_THEMES[ct] || CARD_THEMES.botanical;
                 const openDetails = () => {
                   setCardTheme(ct);
                   setPreviewInv(inv);
@@ -993,10 +1192,9 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                     {/* top color bar */}
                     <div className="h-1 w-full" style={{background:`linear-gradient(to right, ${thm.divider}60, ${thm.divider}, ${thm.divider}60)`}}/>
                     {/* corner ornament */}
-                    <div className="absolute top-2 right-2 w-10 h-10 pointer-events-none opacity-30">
+                    <div className="absolute top-2 right-2 w-10 h-10 pointer-events-none opacity-60">
                       <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
-                        <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={thm.corner}/>
-                        <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={thm.corner} strokeWidth="1.5" fill="none"/>
+                        {cardCornerMotif(ct, thm.corner)}
                       </svg>
                     </div>
                     <div className="p-5 space-y-3">
@@ -1009,8 +1207,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                                 {/* Color swatches for all variants */}
                                 <div className="flex items-center gap-1">
                                   {variants.map(v => {
-                                    const vt = CARD_THEMES[(v.color_theme as CardThemeKey)] || CARD_THEMES.cream;
-                                    return <span key={v.id} className="w-3 h-3 rounded-full border border-white shadow-sm" style={{background:vt.divider}} title={v.color_theme||""}/>
+                                    const vt = CARD_THEMES[(v.color_theme as CardThemeKey)] || CARD_THEMES.botanical;
+                                    return <span key={v.id} className="w-3 h-3 rounded-full border border-slate-200 shadow-sm" style={{background:vt.bg}} title={v.color_theme||""}/>
                                   })}
                                 </div>
                               </>
@@ -1021,10 +1219,13 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                           <h4 className="text-base font-serif italic truncate" style={{color:thm.text}}>{isAiGroup ? inv.couple_names : inv.title}</h4>
                           <p className="text-[12px] mt-0.5 truncate" style={{color:thm.sub}}>{inv.couple_names} · {inv.wedding_date}</p>
                         </div>
+                        {variants.some(v => v.is_selected) && (
+                          <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white flex items-center gap-1"><CheckCircle className="h-2.5 w-2.5"/>Selected</span>
+                        )}
                       </div>
                       {/* Mini card preview */}
                       <div className="rounded-xl p-3 text-center space-y-1" style={{background:`${thm.divider}08`, border:`1px solid ${thm.divider}20`}}>
-                        {inv.bible_verse && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{inv.bible_verse}&rdquo;</p>}
+                        {((inv as any).bible_verse_en || inv.bible_verse) && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{(inv as any).bible_verse_en || inv.bible_verse}&rdquo;</p>}
                         {inv.couple_names && <p className="text-[13px] font-serif italic" style={{color:thm.text}}>{inv.couple_names}</p>}
                         {inv.wedding_date && <p className="text-[9px] font-bold uppercase tracking-widest" style={{color:thm.date}}>{inv.wedding_date}</p>}
                         {inv.venue && <p className="text-[9px]" style={{color:thm.sub}}>{inv.venue}</p>}
@@ -1048,7 +1249,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   if (mode === "preview" && previewInv) {
     const s = previewInv.template_style||"classic";
     // cardTheme is set when Preview button is clicked (see onClick handlers below)
-    const activeTheme = CARD_THEMES[cardTheme] ? cardTheme : "cream";
+    const activeTheme = CARD_THEMES[cardTheme] ? cardTheme : "botanical";
     // Layout comes from the learned template (two_column or single_column)
     const learnedLayout: string = (previewInv as any).template_layout || "two_column";
     const isTwoColumn = learnedLayout !== "single_column";
@@ -1075,7 +1276,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style:</span>
+              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Template:</span>
               {(Object.keys(CARD_THEMES) as CardThemeKey[]).map(k => (
                 <button key={k} onClick={()=>{
                   setCardTheme(k);
@@ -1107,23 +1308,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               ].map(({pos,tr},ci)=>(
                 <div key={ci} className={`absolute ${pos} w-20 h-20 pointer-events-none z-20`} style={tr?{transform:tr}:{}}>
                   <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
-                    <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={thm.corner} opacity="0.35"/>
-                    <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={thm.corner} strokeWidth="0.8" fill="none" opacity="0.6"/>
-                    <path d="M14 14 Q22 14 14 22 Q14 22 14 30" stroke={thm.corner} strokeWidth="0.6" fill="none" opacity="0.5"/>
-                    <circle cx="16" cy="16" r="1.5" fill={thm.corner} opacity="0.7"/>
-                    <circle cx="6" cy="6" r="1" fill={thm.corner} opacity="0.5"/>
+                    {cardCornerMotif(activeTheme, thm.corner)}
                   </svg>
                 </div>
               ))}
-
-              {/* Bible verse — top full width */}
-              {(previewInv as any).bible_verse && (
-                <div className="px-12 pt-10 pb-4 text-center">
-                  <p className="text-[11px] italic leading-relaxed font-serif" style={{color:thm.note}}>
-                    &ldquo;{(previewInv as any).bible_verse}&rdquo;
-                  </p>
-                </div>
-              )}
 
               {/* Divider */}
               <div className="flex items-center justify-center gap-2 px-8 mb-0">
@@ -1148,7 +1336,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                   {/* LEFT — Kinyarwanda */}
                   <div className="px-8 py-8 text-center font-serif space-y-3 border-b md:border-b-0" style={{borderColor:`${thm.divider}30`}}>
                     <p className="text-[20px] italic mb-1" style={{color:thm.text}}>Ubutumire</p>
-                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Imiryango yacu yishimiye kubatumira mu birori by&apos;ubukwe bw&apos;abana babo:</p>
+                    {((previewInv as any).bible_verse_rw || (previewInv as any).bible_verse) && (
+                      <p className="text-[10px] italic leading-relaxed" style={{color:thm.note}}>&ldquo;{(previewInv as any).bible_verse_rw || (previewInv as any).bible_verse}&rdquo;</p>
+                    )}
+                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>{familyIntro(previewInv, "rw")}</p>
                     {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
                     {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Buzaba tariki ya {previewInv.wedding_date}</p>}
                     {previewInv.wedding_time && <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>}
@@ -1164,10 +1355,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                       </div>
                     )}
                     {(previewInv as any).invitation_note && <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
-                    {(previewInv as any).couple_contact && (
+                    {renderContacts(previewInv, thm) && (
                       <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
                         <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
-                        <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
+                        {renderContacts(previewInv, thm)}
                       </div>
                     )}
                   </div>
@@ -1180,7 +1371,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                   {/* RIGHT — English */}
                   <div className="px-8 py-8 text-center font-serif space-y-3">
                     <p className="text-[20px] italic mb-1" style={{color:thm.text}}>Invitation</p>
-                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Together with our families, we joyfully invite you to celebrate the wedding of:</p>
+                    {((previewInv as any).bible_verse_en || (previewInv as any).bible_verse) && (
+                      <p className="text-[10px] italic leading-relaxed" style={{color:thm.note}}>&ldquo;{(previewInv as any).bible_verse_en || (previewInv as any).bible_verse}&rdquo;</p>
+                    )}
+                    <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>{familyIntro(previewInv, "en")}</p>
                     {previewInv.couple_names && <p className="text-[22px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
                     {previewInv.wedding_date && <p className="text-[12px] font-bold tracking-widest uppercase" style={{color:thm.date}}>Which will take place on {previewInv.wedding_date}</p>}
                     {previewInv.wedding_time && <p className="text-[11px]" style={{color:thm.sub}}>{previewInv.wedding_time}</p>}
@@ -1196,10 +1390,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                       </div>
                     )}
                     {(previewInv as any).invitation_note && <p className="text-[10px] italic pt-1" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
-                    {(previewInv as any).couple_contact && (
+                    {renderContacts(previewInv, thm) && (
                       <div className="pt-2 border-t" style={{borderColor:`${thm.divider}30`}}>
                         <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
-                        <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
+                        {renderContacts(previewInv, thm)}
                       </div>
                     )}
                   </div>
@@ -1207,10 +1401,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               ) : (
                 /* SINGLE COLUMN — matches uploaded single-column design */
                 <div className="px-10 py-8 text-center font-serif space-y-4 max-w-sm mx-auto">
-                  {(previewInv as any).bible_verse && (
-                    <p className="text-[11px] italic leading-relaxed" style={{color:thm.note}}>&ldquo;{(previewInv as any).bible_verse}&rdquo;</p>
+                  {((previewInv as any).bible_verse_en || (previewInv as any).bible_verse) && (
+                    <p className="text-[11px] italic leading-relaxed" style={{color:thm.note}}>&ldquo;{(previewInv as any).bible_verse_en || (previewInv as any).bible_verse}&rdquo;</p>
                   )}
-                  <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>Together with our families, we joyfully invite you to celebrate the wedding of:</p>
+                  <p className="text-[11px] leading-relaxed italic" style={{color:thm.sub}}>{familyIntro(previewInv, "en")}</p>
                   {previewInv.couple_names && <p className="text-[26px] italic leading-snug" style={{color:thm.text}}>{previewInv.couple_names}</p>}
                   <div className="flex items-center justify-center gap-2">
                     <div className="h-px flex-1" style={{background:`${thm.divider}60`}}/>
@@ -1231,30 +1425,28 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                     </div>
                   )}
                   {(previewInv as any).invitation_note && <p className="text-[11px] italic pt-2" style={{color:thm.note}}>{(previewInv as any).invitation_note}</p>}
-                  {(previewInv as any).couple_contact && (
+                  {renderContacts(previewInv, thm) && (
                     <div className="pt-3 border-t" style={{borderColor:`${thm.divider}30`}}>
                       <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{color:thm.divider}}>Contacts</p>
-                      <p className="text-[10px] whitespace-pre-line leading-relaxed" style={{color:thm.sub}}>{(previewInv as any).couple_contact}</p>
+                      {renderContacts(previewInv, thm)}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* QR code — scan to open the couple's wedding page (Emerald & QR theme) */}
-              {activeTheme === "emerald" && (
-                <div className="flex flex-col items-center gap-1.5 pb-4">
-                  {weddingPublicUrl ? (
-                    <>
-                      <canvas ref={qrCanvasRef} className="rounded"/>
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{color:thm.note}}>Scan me</p>
-                    </>
-                  ) : (
-                    <p className="text-[10px] italic max-w-[220px] text-center" style={{color:thm.note}}>
-                      Publish your wedding website to embed a scannable QR code here.
-                    </p>
-                  )}
-                </div>
-              )}
+              {/* QR code — scan to open the couple's wedding page */}
+              <div className="flex flex-col items-center gap-1.5 pb-4">
+                {weddingPublicUrl ? (
+                  <>
+                    <canvas ref={qrCanvasRef} className="rounded"/>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{color:thm.note}}>Scan me</p>
+                  </>
+                ) : (
+                  <p className="text-[10px] italic max-w-[220px] text-center" style={{color:thm.note}}>
+                    Publish your wedding website to embed a scannable QR code here.
+                  </p>
+                )}
+              </div>
 
               {/* Bottom divider */}
               <div className="flex items-center justify-center gap-2 px-8 mb-6 mt-2">
@@ -1267,6 +1459,16 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           </div>
 
           <div className="flex justify-center gap-3 pt-2">
+            {(previewInv as any).is_selected ? (
+              <>
+                <span className="rounded-full px-6 py-2 gap-2 inline-flex items-center bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold"><CheckCircle className="h-4 w-4"/>Your Wedding Invitation</span>
+                <Button onClick={()=>onGoToGuests?.()} className="rounded-full px-6 gap-2 text-white shadow-lg bg-rose-600 hover:bg-rose-700"><Mail className="h-4 w-4"/>Send to Guests</Button>
+              </>
+            ) : (previewInv as any).id ? (
+              <Button onClick={()=>selectMutation.mutate((previewInv as any).id)} disabled={selectMutation.isPending} className="rounded-full px-6 gap-2 text-white shadow-lg" style={{background:thm.divider}}>
+                {selectMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<CheckCircle className="h-4 w-4"/>}Select as Wedding Invitation
+              </Button>
+            ) : null}
             <Button variant="outline" onClick={()=>handleDownload(previewInv)} className="rounded-full px-6 gap-2 border-[#D4AF6A]/50 text-[#7B6A45] hover:bg-amber-50"><Download className="h-4 w-4"/>Download</Button>
           </div>
         </div>
@@ -1284,7 +1486,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
             <h3 className="text-xl font-serif italic text-slate-800">Preview</h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Style:</span>
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Template:</span>
             {(Object.keys(CARD_THEMES) as CardThemeKey[]).map(k => (
               <button key={k} onClick={()=>setCardTheme(k)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
@@ -1304,11 +1506,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
             {([["top-0 left-0",""],["top-0 right-0","scaleX(-1)"],["bottom-0 left-0","scaleY(-1)"],["bottom-0 right-0","scale(-1,-1)"]] as [string,string][]).map(([pos,tr],ci)=>(
               <div key={ci} className={`absolute ${pos} w-20 h-20 pointer-events-none z-20`} style={tr?{transform:tr}:{}}>
                 <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
-                  <path d="M2 2 L32 2 Q18 18 2 32 Z" fill={thm2.corner} opacity="0.35"/>
-                  <path d="M2 2 Q40 2 70 2 Q40 20 24 36 Q8 50 2 78" stroke={thm2.corner} strokeWidth="0.8" fill="none" opacity="0.6"/>
-                  <path d="M14 14 Q22 14 14 22 Q14 22 14 30" stroke={thm2.corner} strokeWidth="0.6" fill="none" opacity="0.5"/>
-                  <circle cx="16" cy="16" r="1.5" fill={thm2.corner} opacity="0.7"/>
-                  <circle cx="6" cy="6" r="1" fill={thm2.corner} opacity="0.5"/>
+                  {cardCornerMotif(activeTheme, thm2.corner)}
                 </svg>
               </div>
             ))}
@@ -1316,10 +1514,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
             <div className="px-10 py-10 space-y-0 relative z-0">
 
               {/* Bible verse */}
-              {(previewInv as any).bible_verse && (
+              {((previewInv as any).bible_verse_en || (previewInv as any).bible_verse) && (
                 <div className="text-center mb-5">
                   <p className="text-[11px] italic leading-relaxed font-serif" style={{color:thm2.note}}>
-                    &ldquo;{(previewInv as any).bible_verse}&rdquo;
+                    &ldquo;{(previewInv as any).bible_verse_en || (previewInv as any).bible_verse}&rdquo;
                   </p>
                 </div>
               )}
@@ -1398,7 +1596,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               )}
 
               {/* Contacts */}
-              {(previewInv as any).couple_contact && (
+              {renderContacts(previewInv, thm2) && (
                 <>
                   <div className="flex items-center justify-center gap-2 mb-3">
                     <div className="h-px flex-1" style={{background:`linear-gradient(to right,transparent,${thm2.divider}60)`}}/>
@@ -1406,9 +1604,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                     <div className="h-px flex-1" style={{background:`linear-gradient(to left,transparent,${thm2.divider}60)`}}/>
                   </div>
                   <div className="text-center">
-                    <p className="text-[11px] whitespace-pre-line leading-relaxed font-serif" style={{color:thm2.sub}}>
-                      {(previewInv as any).couple_contact}
-                    </p>
+                    {renderContacts(previewInv, thm2)}
                   </div>
                 </>
               )}
@@ -1418,106 +1614,38 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         </div>
 
         <div className="flex justify-center gap-3 pt-2">
+          {(previewInv as any).is_selected ? (
+            <>
+              <span className="rounded-full px-6 py-2 gap-2 inline-flex items-center bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold"><CheckCircle className="h-4 w-4"/>Your Wedding Invitation</span>
+              <Button onClick={()=>onGoToGuests?.()} className="rounded-full px-6 gap-2 text-white shadow-lg bg-rose-600 hover:bg-rose-700"><Mail className="h-4 w-4"/>Send to Guests</Button>
+            </>
+          ) : (previewInv as any).id ? (
+            <Button onClick={()=>selectMutation.mutate((previewInv as any).id)} disabled={selectMutation.isPending} className="rounded-full px-6 gap-2 text-white shadow-lg" style={{background:thm2.divider}}>
+              {selectMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<CheckCircle className="h-4 w-4"/>}Select as Wedding Invitation
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={()=>handleDownload(previewInv)} className="rounded-full px-6 gap-2 hover:bg-amber-50" style={{borderColor:`${thm2.divider}80`, color:thm2.note}}><Download className="h-4 w-4"/>Download</Button>
         </div>
       </div>
     );
   }
 
-  // TEMPLATES GALLERY
-  if (mode === "templates") return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
-          <div>
-            <h3 className="text-xl font-serif italic text-[#668c65]">Invitation Templates</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Pick a style from our curated templates — the AI will generate your invitation in that layout</p>
-          </div>
-        </div>
-      </div>
-
-      {/* CURATED TEMPLATES (provided by the platform) */}
-      {learnedTemplates.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-[#668c65]/40 bg-[#FCFBF9] py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#668c65]/10 border-2 border-[#668c65]/40 flex items-center justify-center mx-auto mb-4">
-            <FileText className="h-7 w-7 text-[#668c65]"/>
-          </div>
-          <p className="text-lg font-serif italic text-slate-600 mb-1">No templates yet</p>
-          <p className="text-[12px] text-slate-400 mb-6">Our team hasn&apos;t added any curated templates yet — check back soon, or use AI Generate for a ready-made style.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-[#668c65]"/>
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Templates</span>
-            <div className="h-px flex-1 bg-slate-100"/>
-            <span className="text-[10px] text-slate-300">{learnedTemplates.length} template{learnedTemplates.length !== 1 ? "s" : ""}</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {learnedTemplates.map((tpl: any) => {
-              const isSelected = selectedTemplate?.id === tpl.id;
-              const accent = "#668c65";
-              return (
-                <div key={tpl.id}
-                  className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all border-2 bg-white hover:shadow-lg ${isSelected ? "shadow-lg scale-[1.01]" : "hover:scale-[1.01]"}`}
-                  style={{borderColor: isSelected ? accent : `${accent}40`}}
-                  onClick={()=>setSelectedTemplate({id:tpl.id, name:tpl.name||"Curated Template", layout:tpl.layout||"single_column", section_order:tpl.section_order||[], language:tpl.language||"english"})}>
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 z-10 rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1" style={{background:accent}}>✓ Selected</div>
-                  )}
-                  <div className="p-5 space-y-2.5">
-                    <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{background:`${accent}18`}}>
-                        <FileText className="h-3.5 w-3.5" style={{color:accent}}/>
-                      </div>
-                      <div className="space-y-1 flex-1">
-                        {(tpl.section_order||["verse","names","date","schedule"]).slice(0,4).map((s:string,i:number)=>(
-                          <div key={i} className="h-1 rounded" style={{background:`${accent}30`, width:`${72-i*14}%`}}/>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="h-0.5 w-full rounded-full" style={{background:`linear-gradient(to right, transparent, ${accent}, transparent)`}}/>
-                  </div>
-                  <div className="px-5 pb-4 space-y-0.5">
-                    <p className="text-[13px] font-serif italic font-semibold" style={{color:"#2C2010"}}>{tpl.name||"Curated Template"}</p>
-                    <p className="text-[10px] text-slate-400">Used {tpl.usage_count||0} times · {(tpl.section_order||[]).length} sections detected</p>
-                    <div className="flex items-center gap-1.5 pt-1">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border" style={{color:accent, borderColor:`${accent}50`, background:`${accent}10`}}>{(tpl.layout||"single_column")==="two_column"?"2-Column":"1-Column"}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border border-slate-200 text-slate-500 bg-slate-50">{tpl.language||"english"}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-        <Button variant="outline" onClick={()=>setMode("list")} className="rounded-full px-6">Cancel</Button>
-        <Button onClick={()=>{prefill();setMode("ai-form");}} disabled={!selectedTemplate} className="rounded-full px-8 gap-2 text-white bg-[#668c65] hover:bg-[#527451] disabled:opacity-40">
-          <Sparkles className="h-4 w-4"/>{selectedTemplate ? `Generate with "${selectedTemplate.name}"` : "Select a template first"}
-        </Button>
-      </div>
-    </div>
-  );
-
   // EDIT
   if (mode === "edit") return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 w-full md:w-3/4 mx-auto">
       <div className="flex items-center gap-3">
         <Button variant="ghost" onClick={()=>{setMode("list");setEditingId(null);}} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
         <h3 className="text-xl font-serif italic text-slate-800">{editingId?"Edit Invitation":"Create Invitation"}</h3>
       </div>
       <div className="space-y-5">
 
-        {/* 1. Opening Verse */}
-        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+        {/* 1. Opening Verse — Kinyarwanda & English */}
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
           <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Opening Verse (Bible, Qur&apos;an or your own words)</span></div>
-          <Textarea value={manualForm.bible_verse} onChange={e=>setManualForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Bismillahir Rahmanir Rahim... — Qur\'an 30:21" or "Therefore what God has joined together, let no one separate. — Mark 10:9"'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="Kinyarwanda"><Textarea value={manualForm.bible_verse_rw} onChange={e=>setManualForm(f=>({...f,bible_verse_rw:e.target.value}))} placeholder={'e.g. "Ndi uw\'umukunzi wanjye... — Indirimbo ya Salomo 6:3"'} rows={2} className="rounded-xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/></Field>
+            <Field label="English"><Textarea value={manualForm.bible_verse_en} onChange={e=>setManualForm(f=>({...f,bible_verse_en:e.target.value}))} placeholder={'e.g. "I am my beloved\'s... — Song of Solomon 6:3"'} rows={2} className="rounded-xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/></Field>
+          </div>
         </div>
 
         {/* 2. Description */}
@@ -1525,13 +1653,28 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           <Textarea value={manualForm.description} onChange={e=>setManualForm(f=>({...f,description:e.target.value}))} placeholder={"Together with our families,\nwe joyfully invite you to celebrate our wedding ceremony..."} rows={3} className="rounded-2xl border-slate-100 bg-slate-50/50 resize-none"/>
         </Field>
 
-        {/* 3. Couple Names & Date */}
+        {/* 3. Family Names — each side with its own "Represented By" */}
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
+          <div className="flex items-center gap-2"><Users2 className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Family Names</span></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Field label="Groom Family Name"><Input value={manualForm.groom_family_name} onChange={e=>setManualForm(f=>({...f,groom_family_name:e.target.value}))} placeholder="e.g. NIYONZIMA Celestin" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+              <Field label="Represented By (optional)"><Input value={manualForm.groom_represented_by} onChange={e=>setManualForm(f=>({...f,groom_represented_by:e.target.value}))} placeholder="e.g. RUTAGARAMA Ildephonse" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+            </div>
+            <div className="space-y-2">
+              <Field label="Bride Family Name"><Input value={manualForm.bride_family_name} onChange={e=>setManualForm(f=>({...f,bride_family_name:e.target.value}))} placeholder="e.g. BUTERA Valens" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+              <Field label="Represented By (optional)"><Input value={manualForm.bride_represented_by} onChange={e=>setManualForm(f=>({...f,bride_represented_by:e.target.value}))} placeholder="e.g. MUKANDAYISENGA Alice" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Couple Names & Date */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Couple Names *"><Input value={manualForm.couple_names} onChange={e=>setManualForm(f=>({...f,couple_names:e.target.value}))} placeholder="e.g. Jean Claude ❤️ Diane Uwase" className="rounded-2xl border-slate-100 bg-slate-50/50 h-11"/></Field>
           <Field label="Date *"><Input value={manualForm.wedding_date} onChange={e=>setManualForm(f=>({...f,wedding_date:e.target.value}))} placeholder="e.g. Saturday, August 15, 2026" className="rounded-2xl border-slate-100 bg-slate-50/50 h-11"/></Field>
         </div>
 
-        {/* 4. Wedding Schedule */}
+        {/* 5. Wedding Schedule */}
         <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Wedding Schedule</span></div>
@@ -1546,7 +1689,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
                   <Clock className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
-                  <Input value={ev.time} onChange={e=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],time:e.target.value};setManualForm(f=>({...f,program_events:arr}));}} placeholder="9:00 AM – 1:00 PM" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
+                  <TimeRangeSelect value={ev.time} onChange={v=>{const arr=[...(manualForm.program_events||[])];arr[idx]={...arr[idx],time:v};setManualForm(f=>({...f,program_events:arr}));}}/>
                 </div>
                 <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
                   <MapPin className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
@@ -1557,16 +1700,19 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
           ))}
         </div>
 
-        {/* 5. Note */}
+        {/* 6. Note */}
         <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
           <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Note</span></div>
           <Textarea value={manualForm.invitation_note} onChange={e=>setManualForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
         </div>
 
-        {/* 6. Couple Contact */}
-        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
-          <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Couple Contact</span></div>
-          <Textarea value={manualForm.couple_contact} onChange={e=>setManualForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+        {/* 7. Contacts */}
+        <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
+          <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Contacts</span></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <ContactsSideEditor label="Bride Side" contacts={manualForm.bride_contacts} onChange={v=>setManualForm(f=>({...f,bride_contacts:v}))}/>
+            <ContactsSideEditor label="Groom Side" contacts={manualForm.groom_contacts} onChange={v=>setManualForm(f=>({...f,groom_contacts:v}))}/>
+          </div>
         </div>
 
       </div>
@@ -1581,27 +1727,22 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
 
   // AI FORM
   if (mode === "ai-form") return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 w-full md:w-3/4 mx-auto">
       <div className="flex items-center gap-3">
         <Button variant="ghost" onClick={()=>setMode("list")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Cancel</Button>
         <div>
           <h3 className="text-xl font-serif italic text-[#668c65] flex items-center gap-2"><Sparkles className="h-5 w-5 text-[#668c65]"/>AI Invitation Generator</h3>
-          <p className="text-xs text-[#668c65]/70 mt-0.5">Fill in your details and we'll generate 3 colour versions: White, Gold &amp; Cream</p>
-          {selectedTemplate ? (
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-[10px] font-semibold text-[#668c65] bg-[#668c65]/10 border border-[#668c65]/20 px-2 py-0.5 rounded-full flex items-center gap-1"><FileText className="h-3 w-3"/>Using: {selectedTemplate.name}</span>
-              <button className="text-[10px] text-slate-400 underline" onClick={()=>setMode("templates")}>Change</button>
-            </div>
-          ) : (
-            <button className="text-[10px] text-[#668c65] underline mt-0.5" onClick={()=>setMode("templates")}>Browse templates →</button>
-          )}
+          <p className="text-xs text-[#668c65]/70 mt-0.5">Fill in your details and we&apos;ll generate 6 templates: Botanical, Sage &amp; Leaf, Indigo Mandala, Noir &amp; Gold, Lavender Bloom and Azure Watercolor</p>
         </div>
       </div>
 
-      {/* 1. Opening Verse */}
-      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
+      {/* 1. Opening Verse — Kinyarwanda & English */}
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
         <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Opening Verse (Bible, Qur&apos;an or your own words)</span></div>
-        <Textarea value={aiForm.bible_verse} onChange={e=>setAiForm(f=>({...f,bible_verse:e.target.value}))} placeholder={'e.g. "Bismillahir Rahmanir Rahim... — Qur\'an 30:21" or "Therefore what God has joined together, let no one separate. — Mark 10:9"'} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Kinyarwanda"><Textarea value={aiForm.bible_verse_rw} onChange={e=>setAiForm(f=>({...f,bible_verse_rw:e.target.value}))} placeholder={'e.g. "Ndi uw\'umukunzi wanjye... — Indirimbo ya Salomo 6:3"'} rows={2} className="rounded-xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/></Field>
+          <Field label="English"><Textarea value={aiForm.bible_verse_en} onChange={e=>setAiForm(f=>({...f,bible_verse_en:e.target.value}))} placeholder={'e.g. "I am my beloved\'s... — Song of Solomon 6:3"'} rows={2} className="rounded-xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/></Field>
+        </div>
       </div>
 
       {/* 2. Description */}
@@ -1609,13 +1750,28 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         <Textarea value={aiForm.description} onChange={e=>setAiForm(f=>({...f,description:e.target.value}))} placeholder={"Together with our families,\nwe joyfully invite you to celebrate our wedding ceremony..."} rows={3} className="rounded-2xl border-slate-100 bg-slate-50/50 resize-none"/>
       </Field>
 
-      {/* 3. Couple Names & Date */}
+      {/* 3. Family Names — each side with its own "Represented By" */}
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
+        <div className="flex items-center gap-2"><Users2 className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Family Names</span></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Field label="Groom Family Name"><Input value={aiForm.groom_family_name} onChange={e=>setAiForm(f=>({...f,groom_family_name:e.target.value}))} placeholder="e.g. NIYONZIMA Celestin" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+            <Field label="Represented By (optional)"><Input value={aiForm.groom_represented_by} onChange={e=>setAiForm(f=>({...f,groom_represented_by:e.target.value}))} placeholder="e.g. RUTAGARAMA Ildephonse" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+          </div>
+          <div className="space-y-2">
+            <Field label="Bride Family Name"><Input value={aiForm.bride_family_name} onChange={e=>setAiForm(f=>({...f,bride_family_name:e.target.value}))} placeholder="e.g. BUTERA Valens" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+            <Field label="Represented By (optional)"><Input value={aiForm.bride_represented_by} onChange={e=>setAiForm(f=>({...f,bride_represented_by:e.target.value}))} placeholder="e.g. MUKANDAYISENGA Alice" className="rounded-xl border-[#668c65]/20 bg-white h-10 text-sm"/></Field>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Couple Names & Date */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Field label="Couple Names *"><Input value={aiForm.couple_names} onChange={e=>setAiForm(f=>({...f,couple_names:e.target.value}))} placeholder="e.g. Jean Claude ❤️ Diane Uwase" className="rounded-2xl border-slate-100 bg-slate-50/50 h-11"/></Field>
         <Field label="Date *"><Input value={aiForm.wedding_date} onChange={e=>setAiForm(f=>({...f,wedding_date:e.target.value}))} placeholder="e.g. Saturday, August 15, 2026" className="rounded-2xl border-slate-100 bg-slate-50/50 h-11"/></Field>
       </div>
 
-      {/* 4. Wedding Schedule */}
+      {/* 5. Wedding Schedule */}
       <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Wedding Schedule</span></div>
@@ -1630,7 +1786,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
                 <Clock className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
-                <Input value={ev.time} onChange={e=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],time:e.target.value};setAiForm(f=>({...f,program_events:arr}));}} placeholder="9:00 AM – 1:00 PM" className="border-0 bg-transparent h-auto p-0 text-sm focus-visible:ring-0"/>
+                <TimeRangeSelect value={ev.time} onChange={v=>{const arr=[...aiForm.program_events];arr[idx]={...arr[idx],time:v};setAiForm(f=>({...f,program_events:arr}));}}/>
               </div>
               <div className="flex items-center gap-2 bg-[#668c65]/5 border border-[#668c65]/20 rounded-xl px-3 h-9">
                 <MapPin className="h-3.5 w-3.5 text-[#668c65] shrink-0"/>
@@ -1641,20 +1797,23 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
         ))}
       </div>
 
-      {/* 5. Note */}
+      {/* 6. Note */}
       <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
         <div className="flex items-center gap-2"><StickyNote className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Note</span></div>
         <Textarea value={aiForm.invitation_note} onChange={e=>setAiForm(f=>({...f,invitation_note:e.target.value}))} placeholder="We will be happy to celebrate this special day with you." rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
       </div>
 
-      {/* 5. Couple Contact */}
-      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-2">
-        <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Couple Contact</span></div>
-        <Textarea value={aiForm.couple_contact} onChange={e=>setAiForm(f=>({...f,couple_contact:e.target.value}))} placeholder={"Jean Claude: +250 788 123 456\nDiane Uwase: +250 788 654 321"} rows={2} className="rounded-2xl border-[#668c65]/20 bg-white/70 resize-none text-sm"/>
+      {/* 7. Contacts */}
+      <div className="rounded-2xl border border-[#668c65]/20 bg-[#668c65]/5 p-4 space-y-3">
+        <div className="flex items-center gap-2"><PhoneCall className="h-4 w-4 text-[#668c65]"/><span className="text-xs font-semibold uppercase tracking-wider text-[#668c65]">Contacts</span></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <ContactsSideEditor label="Bride Side" contacts={aiForm.bride_contacts} onChange={v=>setAiForm(f=>({...f,bride_contacts:v}))}/>
+          <ContactsSideEditor label="Groom Side" contacts={aiForm.groom_contacts} onChange={v=>setAiForm(f=>({...f,groom_contacts:v}))}/>
+        </div>
       </div>
 
-      <Button onClick={()=>aiMutation.mutate({...aiForm, selected_template: selectedTemplate ? {id:selectedTemplate.id, layout:selectedTemplate.layout, section_order:selectedTemplate.section_order, language:selectedTemplate.language} : undefined})} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-[#668c65] hover:bg-[#527451]">
-        {aiMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<Sparkles className="h-4 w-4"/>}Generate 3 Styles (White · Gold · Cream)
+      <Button onClick={()=>aiMutation.mutate(aiForm)} disabled={aiMutation.isPending||!aiForm.couple_names||!aiForm.wedding_date||!weddingId} className="rounded-full px-8 text-white shadow-lg gap-2 bg-[#668c65] hover:bg-[#527451]">
+        {aiMutation.isPending?<Loader2 className="h-4 w-4 animate-spin"/>:<Sparkles className="h-4 w-4"/>}Get Invitation
       </Button>
     </div>
   );
@@ -1665,7 +1824,7 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" onClick={()=>setMode("ai-form")} className="rounded-full gap-2 text-slate-500"><X className="h-4 w-4"/>Back</Button>
-          <h3 className="text-xl font-serif italic text-slate-800">Choose Your Style</h3>
+          <h3 className="text-xl font-serif italic text-slate-800">Choose Your Template</h3>
         </div>
         <Button variant="outline" onClick={()=>aiMutation.mutate(aiForm)} disabled={aiMutation.isPending} className="rounded-full gap-2 text-xs">
           {aiMutation.isPending?<Loader2 className="h-3.5 w-3.5 animate-spin"/>:<Sparkles className="h-3.5 w-3.5"/>}Regenerate
@@ -1673,8 +1832,8 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
       </div>
       <div className="grid md:grid-cols-3 gap-5">
         {aiResults.map((inv, i) => {
-          const ct = ((inv as any).color_theme as CardThemeKey) || "cream";
-          const thm = CARD_THEMES[ct] || CARD_THEMES.cream;
+          const ct = ((inv as any).color_theme as CardThemeKey) || "botanical";
+          const thm = CARD_THEMES[ct] || CARD_THEMES.botanical;
           const events: ProgramEvent[] = ((inv as any).program_events||[]).filter((e:ProgramEvent)=>e.event||e.time);
           return (
             <div key={i} className="relative overflow-hidden rounded-2xl shadow-md cursor-pointer transition-transform hover:scale-[1.02]"
@@ -1682,15 +1841,25 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
               onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setMode("preview");}}>
               {/* Top accent bar */}
               <div className="h-1 w-full" style={{background:`linear-gradient(to right,${thm.divider}60,${thm.divider},${thm.divider}60)`}}/>
+              {/* Corner ornament — distinct motif per template, not just a recolored shape */}
+              <div className="absolute top-2 right-2 w-10 h-10 pointer-events-none opacity-60">
+                <svg viewBox="0 0 80 80" fill="none" className="w-full h-full">
+                  {cardCornerMotif(ct, thm.corner)}
+                </svg>
+              </div>
               <div className="p-4 space-y-3">
                 {/* Theme badge */}
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border" style={{color:thm.divider,borderColor:`${thm.divider}50`,background:`${thm.divider}10`}}>{ct}</span>
-                  <span className="text-[9px] font-bold uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI</span>
+                  {(inv as any).is_selected ? (
+                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-white flex items-center gap-0.5"><CheckCircle className="h-2.5 w-2.5"/>Selected</span>
+                  ) : (
+                    <span className="text-[9px] font-bold uppercase text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-0.5"><Sparkles className="h-2.5 w-2.5"/>AI</span>
+                  )}
                 </div>
                 {/* Mini card */}
                 <div className="rounded-xl p-3 text-center space-y-1" style={{background:`${thm.divider}08`,border:`1px solid ${thm.divider}20`}}>
-                  {(inv as any).bible_verse && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{(inv as any).bible_verse}&rdquo;</p>}
+                  {((inv as any).bible_verse_en || (inv as any).bible_verse) && <p className="text-[9px] italic line-clamp-2" style={{color:thm.note}}>&ldquo;{(inv as any).bible_verse_en || (inv as any).bible_verse}&rdquo;</p>}
                   {inv.couple_names && <p className="text-[14px] font-serif italic" style={{color:thm.text}}>{inv.couple_names}</p>}
                   {inv.wedding_date && <p className="text-[9px] font-bold uppercase tracking-widest" style={{color:thm.date}}>{inv.wedding_date}</p>}
                   {events.slice(0,2).map((ev,ei)=>(
@@ -1704,7 +1873,10 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
                 {/* Actions */}
                 <div className="flex items-center gap-1 pt-1" onClick={e=>e.stopPropagation()}>
                   <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.sub}} onClick={()=>{setCardTheme(ct);setPreviewInv(inv);setMode("preview");}}><Eye className="h-3 w-3"/>Preview</Button>
-                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto ml-auto" style={{color:thm.divider}} onClick={e=>{e.stopPropagation();setManualForm({title:inv.title||"Wedding Invitation",couple_names:inv.couple_names||"",wedding_date:inv.wedding_date||"",wedding_time:inv.wedding_time||"",venue:inv.venue||"",message:inv.message||"",rsvp_details:inv.rsvp_details||"",dress_code:inv.dress_code||"",theme:inv.theme||"",tone:inv.tone||"formal",template_style:"traditional",bible_verse:(inv as any).bible_verse||"",description:(inv as any).description||"",program_events:((inv as any).program_events?.length>0)?(inv as any).program_events:[{...EMPTY_PROGRAM_EVENT}],invitation_note:(inv as any).invitation_note||"",couple_contact:(inv as any).couple_contact||""});setEditingId(null);setMode("edit");}}><Edit className="h-3 w-3"/>Edit</Button>
+                  <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto" style={{color:thm.divider}} onClick={e=>{e.stopPropagation();setManualForm({title:inv.title||"Wedding Invitation",couple_names:inv.couple_names||"",wedding_date:inv.wedding_date||"",wedding_time:inv.wedding_time||"",venue:inv.venue||"",message:inv.message||"",rsvp_details:inv.rsvp_details||"",dress_code:inv.dress_code||"",theme:inv.theme||"",tone:inv.tone||"formal",template_style:"traditional",bible_verse:(inv as any).bible_verse||"",bible_verse_rw:(inv as any).bible_verse_rw||"",bible_verse_en:(inv as any).bible_verse_en||"",description:(inv as any).description||"",program_events:((inv as any).program_events?.length>0)?(inv as any).program_events:[{...EMPTY_PROGRAM_EVENT}],invitation_note:(inv as any).invitation_note||"",couple_contact:(inv as any).couple_contact||"",groom_family_name:(inv as any).groom_family_name||"",bride_family_name:(inv as any).bride_family_name||"",represented_by:(inv as any).represented_by||"",groom_represented_by:(inv as any).groom_represented_by||"",bride_represented_by:(inv as any).bride_represented_by||"",bride_contacts:(inv as any).bride_contacts||[],groom_contacts:(inv as any).groom_contacts||[]});setEditingId(null);setMode("edit");}}><Edit className="h-3 w-3"/>Edit</Button>
+                  {(inv as any).id && !(inv as any).is_selected && (
+                    <Button size="sm" variant="ghost" className="rounded-xl gap-1 text-[11px] px-2 py-1 h-auto ml-auto" style={{color:thm.divider}} onClick={()=>selectMutation.mutate((inv as any).id)} disabled={selectMutation.isPending}><CheckCircle className="h-3 w-3"/>Select</Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1715,6 +1887,66 @@ function InvitationsTab({ weddingId, wedding }: { weddingId?: string; wedding?: 
   );
 
   return null;
+}
+
+// ── Contacts editor (bride / groom side, multiple people & phone numbers) ─────
+// ── Time range picker (dropdowns, no free typing) for wedding-schedule events ──
+function TimeRangeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [fromRaw, toRaw] = (value || "").split(/[–-]/).map(s => s.trim());
+  const from = TIME_OPTIONS.includes(fromRaw) ? fromRaw : undefined;
+  const to = TIME_OPTIONS.includes(toRaw) ? toRaw : undefined;
+  const setFrom = (v: string) => onChange(to ? `${v} – ${to}` : v);
+  const setTo = (v: string) => onChange(from ? `${from} – ${v}` : v);
+  return (
+    <div className="flex items-center gap-1 flex-1 min-w-0">
+      <Select value={from} onValueChange={setFrom}>
+        <SelectTrigger className="border-0 bg-transparent h-auto p-0 text-sm focus:ring-0 w-auto min-w-0 shadow-none"><SelectValue placeholder="From"/></SelectTrigger>
+        <SelectContent className="max-h-64">{TIME_OPTIONS.map(t=><SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+      </Select>
+      <span className="text-slate-300 shrink-0">–</span>
+      <Select value={to} onValueChange={setTo}>
+        <SelectTrigger className="border-0 bg-transparent h-auto p-0 text-sm focus:ring-0 w-auto min-w-0 shadow-none"><SelectValue placeholder="To"/></SelectTrigger>
+        <SelectContent className="max-h-64">{TIME_OPTIONS.map(t=><SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function ContactsSideEditor({ label, contacts, onChange }: { label: string; contacts: ContactPerson[]; onChange: (v: ContactPerson[]) => void }) {
+  const addPerson = () => onChange([...(contacts||[]), { ...EMPTY_CONTACT_PERSON, phones: [""] }]);
+  const removePerson = (idx: number) => { const arr=[...contacts]; arr.splice(idx,1); onChange(arr); };
+  const setName = (idx: number, name: string) => { const arr=[...contacts]; arr[idx]={...arr[idx],name}; onChange(arr); };
+  const addPhone = (idx: number) => { const arr=[...contacts]; arr[idx]={...arr[idx],phones:[...(arr[idx].phones||[]),""]}; onChange(arr); };
+  const setPhone = (idx: number, pidx: number, val: string) => { const arr=[...contacts]; const phones=[...(arr[idx].phones||[])]; phones[pidx]=val; arr[idx]={...arr[idx],phones}; onChange(arr); };
+  const removePhone = (idx: number, pidx: number) => { const arr=[...contacts]; const phones=[...(arr[idx].phones||[])]; phones.splice(pidx,1); arr[idx]={...arr[idx],phones}; onChange(arr); };
+
+  return (
+    <div className="rounded-xl border border-[#668c65]/20 bg-white p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-[#668c65]">{label}</span>
+        <Button type="button" size="sm" variant="outline" className="rounded-full text-[11px] px-2.5 h-7 border-[#668c65]/30 text-[#668c65] hover:bg-[#668c65]/10" onClick={addPerson}>+ Add Person</Button>
+      </div>
+      {(contacts||[]).length === 0 && <p className="text-[11px] text-slate-400 italic">No contacts added yet.</p>}
+      {(contacts||[]).map((person, idx) => (
+        <div key={idx} className="rounded-lg border border-[#668c65]/15 bg-[#668c65]/5 p-2.5 space-y-2">
+          <div className="flex items-center gap-2">
+            <Input value={person.name} onChange={e=>setName(idx, e.target.value)} placeholder="Full name" className="rounded-lg border-[#668c65]/20 bg-white h-8 text-xs flex-1"/>
+            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-500 shrink-0" onClick={()=>removePerson(idx)}><X className="h-3.5 w-3.5"/></Button>
+          </div>
+          <div className="space-y-1.5 pl-1">
+            {(person.phones||[]).map((phone, pidx) => (
+              <div key={pidx} className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400 w-3 shrink-0">{pidx+1}.</span>
+                <Input value={phone} onChange={e=>setPhone(idx, pidx, e.target.value)} placeholder="+250 788 123 456" className="rounded-lg border-[#668c65]/20 bg-white h-8 text-xs flex-1"/>
+                <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-slate-300 hover:text-rose-500 shrink-0" disabled={(person.phones||[]).length<=1} onClick={()=>removePhone(idx, pidx)}><X className="h-3 w-3"/></Button>
+              </div>
+            ))}
+            <Button type="button" size="sm" variant="ghost" className="rounded-lg text-[10px] px-2 h-6 text-[#668c65]" onClick={()=>addPhone(idx)}>+ phone number</Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ── Shared form components ────────────────────────────────────────────────────
