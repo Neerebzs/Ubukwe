@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, ChevronLeft, Home, Package, BookOpen, MessageSquare, FileText, DollarSign, User, LogOut, Clock, XCircle, AlertTriangle } from "lucide-react"
@@ -24,6 +24,7 @@ import { AssetLibrary } from "@/components/provider/asset-library"
 import { ProviderOnboardingForm } from "@/components/provider/onboarding-form"
 import { ProviderOnboardingStatus } from "@/components/provider/onboarding-status"
 import { ProviderReviewsView } from "@/components/provider/reviews-view"
+import { ProviderDisputesView } from "@/components/provider/disputes-view"
 import { ProviderContracts } from "@/components/provider/contracts"
 import { EventsManagement } from "@/components/provider/events-management"
 import { TicketManagementWrapper } from "@/components/provider/ticket-management-wrapper"
@@ -35,7 +36,7 @@ import { TranslatedText } from "@/components/translated-text"
 import { axiosInstance } from "@/lib/api-client"
 
 // Tabs that require approved onboarding
-const PROTECTED_TABS = ["services", "bookings", "events", "tickets", "availability", "gallery", "inquiries", "contracts", "earnings", "workforce"]
+const PROTECTED_TABS = ["services", "bookings", "events", "tickets", "availability", "gallery", "inquiries", "contracts", "earnings", "workforce", "disputes"]
 
 type OnboardingStatus = "pending" | "approved" | "rejected" | "requires_revision" | null
 
@@ -206,6 +207,11 @@ export function ProviderDashboardContent() {
       case "messages": return <MessagesHub />
       case "onboarding": return <ProviderOnboardingStatus />
       case "reviews": return <ProviderReviewsView />
+      case "disputes": return (
+        <Suspense fallback={null}>
+          <ProviderDisputesView />
+        </Suspense>
+      )
       case "earnings": return <ProviderEarnings />
       case "workforce": return <WorkforcePayroll />
       case "profile": return <ProviderProfileSettings />

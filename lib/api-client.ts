@@ -244,19 +244,23 @@ class ApiClient {
     // Customer: file a new dispute (multipart with optional proof image)
     create: async (data: {
       booking_id: string;
-      respondent_id: string;
+      respondent_id?: string;
       title: string;
       description: string;
       category: string;
+      requested_resolution?: string;
+      amount_in_dispute?: string | number;
       priority?: string;
       proof_image?: File | null;
     }) => {
       const formData = new FormData();
       formData.append('booking_id', data.booking_id);
-      formData.append('respondent_id', data.respondent_id);
+      if (data.respondent_id) formData.append('respondent_id', data.respondent_id);
       formData.append('title', data.title);
       formData.append('description', data.description);
       formData.append('category', data.category);
+      if (data.requested_resolution) formData.append('requested_resolution', data.requested_resolution);
+      if (data.amount_in_dispute != null) formData.append('amount_in_dispute', String(data.amount_in_dispute));
       formData.append('priority', data.priority || 'medium');
       if (data.proof_image) {
         formData.append('proof_image', data.proof_image);
@@ -265,7 +269,9 @@ class ApiClient {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
-    // Customer: send message in dispute thread
+    getEligibleBookings: async () => {
+      return axiosInstance.get<any[]>('/api/v1/disputes/eligible-bookings');
+    },
     sendMessage: async (disputeId: string, message: string) => {
       const formData = new FormData();
       formData.append('message', message);
@@ -273,33 +279,96 @@ class ApiClient {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
-    // Admin: get all disputes
-    adminGetAll: async (params?: { status?: string; priority?: string; page?: number; limit?: number }) => {
+    addEvidence: async (disputeId: string, file: File, description?: string) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (description) formData.append('description', description);
+      return axiosInstance.post<any>(`/api/v1/disputes/${disputeId}/evidence`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    appeal: async (disputeId: string, reason: string) => {
+      const formData = new FormData();
+      formData.append('reason', reason);
+      return axiosInstance.post<any>(`/api/v1/disputes/${disputeId}/appeal`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    withdraw: async (disputeId: string, reason?: string) => {
+      const formData = new FormData();
+      if (reason) formData.append('reason', reason);
+      return axiosInstance.post<any>(`/api/v1/disputes/${disputeId}/withdraw`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    adminGetAll: async (params?: {
+      status?: string;
+      priority?: string;
+      category?: string;
+      search?: string;
+      assigned_admin_id?: string;
+      date_from?: string;
+      date_to?: string;
+      page?: number;
+      limit?: number;
+    }) => {
       return axiosInstance.get<any>('/api/v1/admin/disputes', { params });
     },
-    // Admin: get dispute stats
     adminGetStats: async () => {
       return axiosInstance.get<any>('/api/v1/admin/disputes/stats');
     },
-    // Admin: get dispute details
     adminGetDetails: async (disputeId: string) => {
       return axiosInstance.get<any>(`/api/v1/admin/disputes/${disputeId}`);
     },
-    // Admin: start investigation
     adminInvestigate: async (disputeId: string, notes?: string) => {
       return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/investigate`, { notes });
     },
-    // Admin: resolve dispute
-    adminResolve: async (disputeId: string, resolution_type: string, resolution_notes: string) => {
-      return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/resolve`, { resolution_type, resolution_notes });
+    adminResolve: async (
+      disputeId: string,
+      resolution_type: string,
+      resolution_notes: string,
+      resolution_amount?: number,
+      conditions?: string,
+    ) => {
+      return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/resolve`, {
+        resolution_type,
+        resolution_notes,
+        resolution_amount,
+        conditions,
+      });
     },
-    // Admin: reject dispute
     adminReject: async (disputeId: string, reason: string) => {
       return axiosInstance.put<any>(`/api/v1/admin/disputes/${disputeId}/reject`, { reason });
     },
-    // Admin: send message
-    adminSendMessage: async (disputeId: string, message: string) => {
-      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/message`, { message });
+    adminSendMessage: async (disputeId: string, message: string, visibility = 'participant') => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/message`, { message, visibility });
+    },
+    adminAssign: async (disputeId: string, assigneeId?: string, reason?: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/assign`, {
+        assignee_id: assigneeId,
+        reason,
+      });
+    },
+    adminChangeStatus: async (disputeId: string, status: string, reason?: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/status`, { status, reason });
+    },
+    adminRequestInformation: async (disputeId: string, target: string, message: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/request-information`, { target, message });
+    },
+    adminStartMediation: async (disputeId: string, notes?: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/mediation`, { notes });
+    },
+    adminEscalate: async (disputeId: string, reason: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/escalate`, { reason });
+    },
+    adminClose: async (disputeId: string, reason?: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/close`, { reason });
+    },
+    adminReviewEvidence: async (disputeId: string, evidenceId: string, status: string, notes?: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/evidence/${evidenceId}/review`, { status, notes });
+    },
+    adminReviewAppeal: async (disputeId: string, appealId: string, outcome: string, decision: string) => {
+      return axiosInstance.post<any>(`/api/v1/admin/disputes/${disputeId}/appeals/${appealId}/review`, { outcome, decision });
     },
   };
 

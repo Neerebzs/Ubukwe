@@ -20,7 +20,8 @@ import {
   MapPin,
   ClipboardList,
   AlertCircle,
-  FileText
+  FileText,
+  Heart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +47,7 @@ interface Booking {
   customer_email?: string;
   customer_phone?: string;
   event_location?: string;
+  event_name?: string;
   package_name?: string;
   created_at: string;
 }
@@ -442,6 +444,15 @@ export function AdminBookingsMetrics() {
                             <p className="text-lg font-serif italic text-slate-800 leading-tight">{selectedBooking.service_name}</p>
                           </div>
                         </div>
+                        {selectedBooking.event_name && (
+                          <div className="flex items-center gap-5 group/item text-left">
+                            <div className="p-3.5 bg-slate-50 rounded-2xl text-slate-400 group-hover/item:text-[#608d64] group-hover/item:bg-[#608d64]/5 transition-colors"><Heart className="w-5 h-5" /></div>
+                            <div className="space-y-0.5">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Event Name</p>
+                              <p className="text-lg font-medium text-slate-800 leading-tight">{selectedBooking.event_name}</p>
+                            </div>
+                          </div>
+                        )}
                         {selectedBooking.package_name && (
                           <div className="flex items-center gap-5 group/item text-left">
                             <div className="p-3.5 bg-slate-50 rounded-2xl text-slate-400 group-hover/item:text-[#608d64] group-hover/item:bg-[#608d64]/5 transition-colors"><ClipboardList className="w-5 h-5" /></div>

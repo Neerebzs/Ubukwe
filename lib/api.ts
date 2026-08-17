@@ -188,14 +188,15 @@ export const API_ENDPOINTS = {
     MARK_READ: (userId: string) => `/api/${API_VERSION}/messages/conversations/${userId}/read`,
     UNREAD_COUNT: `/api/${API_VERSION}/messages/unread-count`,
   },
-  // Payment endpoints (DPO Pay hosted page)
+  // Payment endpoints (FDI MoMo pull — customer approves on their phone)
   PAYMENTS: {
     CREATE: `/api/${API_VERSION}/payments`,
-    VERIFY_DPO: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify-dpo`,
+    VERIFY: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify`,
+    VERIFY_DPO: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}/verify`,
     GET: (paymentId: string) => `/api/${API_VERSION}/payments/${paymentId}`,
     LIST: `/api/${API_VERSION}/payments`,
   },
-  // Ticket order payments (DPO Pay hosted page; public — anonymous purchases)
+  // Ticket order payments (FDI MoMo; public — anonymous purchases)
   TICKET_ORDERS: {
     INITIATE: `/api/${API_VERSION}/tickets/purchase/initiate`,
     VERIFY: (orderId: string) => `/api/${API_VERSION}/tickets/purchase/${orderId}/verify`,
@@ -1251,7 +1252,7 @@ export const apiClient = {
       const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
       return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS(slug)}${qs}`, data);
     },
-    payOnline<T>(slug: string, data: { gift_id?: string; reference_number?: string }, preview?: string): Promise<ApiResponse<T>> {
+    payOnline<T>(slug: string, data: { gift_id?: string; reference_number?: string; phone_number?: string }, preview?: string): Promise<ApiResponse<T>> {
       const qs = preview ? `?preview=${encodeURIComponent(preview)}` : "";
       return apiClient.post<T>(`${API_ENDPOINTS.PUBLIC.WEDDING_GIFTS_PAY(slug)}${qs}`, data);
     },

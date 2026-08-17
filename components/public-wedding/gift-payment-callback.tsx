@@ -18,16 +18,16 @@ interface VerifyResult {
   gift_reference?: string;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function GiftPaymentCallback({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const contributionId = searchParams.get("contribution_id") || "";
-  const transactionToken =
-    searchParams.get("TransactionToken") ||
-    searchParams.get("transaction_token") ||
-    undefined;
 
   const [status, setStatus] = useState<"loading" | "paid" | "failed" | "pending" | "error">("loading");
-  const [message, setMessage] = useState("Confirming your payment...");
+  const [message, setMessage] = useState("Check your phone and approve the Mobile Money request...");
   const [reference, setReference] = useState<string | undefined>();
 
   useEffect(() => {
@@ -39,18 +39,25 @@ export function GiftPaymentCallback({ slug }: { slug: string }) {
 
     let cancelled = false;
     (async () => {
+      const started = Date.now();
       try {
-        const res = await apiClient.gifts.verifyPayment<VerifyResult>(
-          contributionId,
-          transactionToken,
-        );
-        if (cancelled) return;
-        const data = unwrapData(res);
-        setMessage(data.message || "Payment update received");
-        setReference(data.gift_reference);
-        if (data.payment_status === "paid") setStatus("paid");
-        else if (data.payment_status === "failed") setStatus("failed");
-        else setStatus("pending");
+        while (!cancelled && Date.now() - started < 180_000) {
+          const res = await apiClient.gifts.verifyPayment<VerifyResult>(contributionId);
+          if (cancelled) return;
+          const data = unwrapData(res);
+          setMessage(data.message || "Payment update received");
+          setReference(data.gift_reference);
+          if (data.payment_status === "paid") {
+            setStatus("paid");
+            return;
+          }
+          if (data.payment_status === "failed") {
+            setStatus("failed");
+            return;
+          }
+          await sleep(3000);
+        }
+        if (!cancelled) setStatus("pending");
       } catch (err: unknown) {
         if (cancelled) return;
         setStatus("error");
@@ -61,7 +68,7 @@ export function GiftPaymentCallback({ slug }: { slug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [contributionId, transactionToken]);
+  }, [contributionId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f9fafc]">
@@ -79,26 +86,18 @@ export function GiftPaymentCallback({ slug }: { slug: string }) {
               : status === "pending"
                 ? "Payment Pending"
                 : status === "loading"
-                  ? "Verifying…"
+                  ? "Waiting for your PIN"
                   : "Something went wrong"}
         </h1>
         <p className="text-slate-600">{message}</p>
         {reference && (
-          <div className="p-4 rounded-xl bg-slate-50 border">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Gift Reference</p>
-            <p className="font-mono font-bold mt-1">{reference}</p>
-          </div>
+          <p className="text-sm text-slate-400 font-mono">{reference}</p>
         )}
-        <div className="flex flex-col gap-2">
-          <Button asChild className="bg-[#668c65] hover:bg-[#668c65]/90">
-            <Link href={`/w/${slug}/gifts`}>Back to Gifts</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href={`/w/${slug}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Wedding Site
-            </Link>
-          </Button>
-        </div>
+        <Button asChild variant="outline">
+          <Link href={`/w/${slug}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to wedding site
+          </Link>
+        </Button>
       </div>
     </div>
   );

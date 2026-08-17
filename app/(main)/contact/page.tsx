@@ -130,7 +130,7 @@ export default function ContactPage() {
                                     <>, with its offices at {settings.contactLocationLine1}
                                     {settings.contactLocationLine2 && `, ${settings.contactLocationLine2}`}</>
                                 )}.
-                                {" "}Payments on the platform are processed securely by our payment partner, DPO Pay.
+                                {" "}Payments on the platform are processed securely via FDI Payments (MTN MoMo and Airtel Money).
                             </p>
                             <p className="text-sm text-slate-500 mt-4 font-light">
                                 Helpful links:{" "}

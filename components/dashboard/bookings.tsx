@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Star, Calendar, MapPin, Users, Loader2, AlertCircle, Eye, HandCoins, ExternalLink, ShieldCheck, Clock, CheckCircle } from "lucide-react";
+import { MessageCircle, Star, Calendar, MapPin, Users, Loader2, AlertCircle, Eye, HandCoins, ExternalLink, ShieldCheck, Clock, CheckCircle, Heart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { format } from "date-fns";
@@ -32,6 +32,7 @@ interface Booking {
   customer_email: string;
   customer_phone: string;
   event_location?: string;
+  event_name?: string;
   guest_count?: number;
   special_requests?: string;
   provider_notes?: string;
@@ -166,8 +167,11 @@ export function Bookings() {
                             <span className="text-[10px] font-bold text-slate-400">BK-{booking.id.substring(0, 8).toUpperCase()}</span>
                           </div>
                           <h3 className="text-2xl font-serif italic text-slate-800 leading-tight mb-2 group-hover:text-sage-700 transition-colors">
-                            {booking.service_name || "Bespoke Service Booking"}
+                            {booking.event_name || booking.service_name || "Bespoke Service Booking"}
                           </h3>
+                          {booking.event_name && booking.service_name && (
+                            <p className="text-sm text-slate-500 mb-2">{booking.service_name}</p>
+                          )}
                           {booking.business_name && (
                             <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 flex items-center gap-2">
                               <span>Provider</span>
@@ -185,6 +189,17 @@ export function Bookings() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
+                        {booking.event_name && (
+                          <div className="flex items-center gap-5 group/item">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 transition-all group-hover/item:bg-white group-hover/item:shadow-lg group-hover/item:border-sage-100">
+                              <Heart className="h-5 w-5 text-slate-400 group-hover/item:text-sage-600 transition-colors" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Event Name</span>
+                              <span className="text-sm font-bold text-slate-800">{booking.event_name}</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-center gap-5 group/item">
                           <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 transition-all group-hover/item:bg-white group-hover/item:shadow-lg group-hover/item:border-sage-100">
                             <Calendar className="h-5 w-5 text-slate-400 group-hover/item:text-sage-600 transition-colors" />
@@ -252,6 +267,10 @@ export function Bookings() {
                                   <div className="space-y-6">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-sage-600 px-1">Tactical Timeline</h4>
                                     <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100/50 space-y-5">
+                                      <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Event Name</span>
+                                        <span className="font-bold text-slate-800">{booking.event_name || "—"}</span>
+                                      </div>
                                       <div className="flex flex-col">
                                         <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Strategic Date</span>
                                         <span className="font-bold text-slate-800">{format(new Date(booking.booking_date), "EEEE, MMMM dd, yyyy")}</span>
@@ -321,9 +340,12 @@ export function Bookings() {
                             </ScrollArea>
 
                             <DialogFooter className="p-10 pt-4 bg-slate-50/50 flex flex-col sm:flex-row gap-4 border-t border-slate-100">
-                              <Button variant="ghost" className="rounded-xl h-14 px-8 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
-                                Archive Documentation
-                              </Button>
+                              <Link href={`/customer/dashboard?tab=disputes&bookingId=${booking.id}`}>
+                                <Button variant="outline" className="rounded-xl h-14 px-8 text-[10px] font-bold uppercase tracking-widest">
+                                  <AlertCircle className="h-4 w-4 mr-2" />
+                                  Report an Issue
+                                </Button>
+                              </Link>
                               <div className="flex-1" />
                               {booking.status === "pending" && (
                                 <Button variant="ghost" className="rounded-xl h-14 px-8 text-[10px] font-bold uppercase tracking-widest text-rose-400 hover:text-rose-600 hover:bg-rose-50 border-rose-100 transition-all">

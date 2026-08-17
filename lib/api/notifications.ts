@@ -6,7 +6,7 @@ import { apiClient, API_ENDPOINTS } from '../api';
 
 export interface Notification {
   id: string;
-  notification_type: 'booking_created' | 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'payment_received' | 'payment_failed' | 'review_received' | 'verification_approved' | 'verification_rejected' | 'event_submitted' | 'event_approved' | 'event_rejected' | 'message';
+  notification_type: 'booking_created' | 'booking_confirmed' | 'booking_cancelled' | 'booking_completed' | 'payment_received' | 'payment_failed' | 'review_received' | 'verification_approved' | 'verification_rejected' | 'event_submitted' | 'event_approved' | 'event_rejected' | 'message' | 'dispute_created' | 'dispute_updated' | 'dispute_message' | 'dispute_decision' | 'dispute_appeal';
   title: string;
   message: string;
   is_read: boolean;

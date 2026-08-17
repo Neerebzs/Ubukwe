@@ -14,6 +14,7 @@ import { List, Calendar as CalendarIcon, LayoutGrid } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 interface BookingData {
   id: string;
@@ -33,6 +34,7 @@ interface BookingData {
   total_amount: number;
   package_name?: string;
   event_location?: string;
+  event_name?: string;
   guest_count?: number;
   special_requests?: string;
   provider_notes?: string;
@@ -545,7 +547,13 @@ function BookingCard({
                 <h3 className="text-3xl font-serif italic text-slate-900 tracking-tight leading-none mb-3">
                   {booking.customer_name}
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {booking.event_name && (
+                    <>
+                      <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">{booking.event_name}</p>
+                      <span className="text-slate-300 font-bold">•</span>
+                    </>
+                  )}
                   <p className="text-[10px] font-black text-[#668c65] uppercase tracking-[0.2em]">{booking.service_name}</p>
                   {booking.package_name && (
                     <>
@@ -562,6 +570,15 @@ function BookingCard({
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+              {booking.event_name && (
+                <div className="space-y-1">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Event Name</p>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Package className="h-3.5 w-3.5 text-[#668c65]" />
+                    <span className="truncate">{booking.event_name}</span>
+                  </div>
+                </div>
+              )}
               <div className="space-y-1">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Booking Date</p>
                 <div className="flex items-center gap-4">
@@ -661,11 +678,12 @@ function BookingCard({
                     Contact Customer
                   </Button>
                 )}
-                {booking.status === "completed" && (
-                  <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
-                    <Eye className="h-3.5 w-3.5 mr-2" />
-                    See Details
-                  </Button>
+                {(booking.status === "completed" || booking.status === "confirmed" || booking.status === "cancelled") && (
+                  <Link href={`/provider/dashboard?tab=disputes&bookingId=${booking.id}`}>
+                    <Button variant="outline" size="sm" className="rounded-xl h-12 px-8 border-slate-100 hover:bg-slate-50 transition-all font-bold text-[10px] uppercase text-slate-600">
+                      Report an Issue
+                    </Button>
+                  </Link>
                 )}
               </div>
             </div>

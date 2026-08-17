@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe, Star, Users } from "lucide-react";
+import { Home, Package, BookOpen, DollarSign, User, ChevronLeft, ChevronRight, LogOut, ChevronDown, MessageSquare, FileText, Calendar, Ticket, Globe, Star, Users, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -52,6 +52,7 @@ export function ProviderTabsSidebar({
           title: "My Customers",
           items: [
             { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
+            { id: "disputes", label: "Disputes", icon: <ShieldAlert className="w-4 h-4" /> },
             { id: "inquiries", label: "Customer Feedback", icon: <Star className="w-4 h-4" /> },
             { id: "contracts", label: "Agreements", icon: <FileText className="w-4 h-4" /> },
           ]

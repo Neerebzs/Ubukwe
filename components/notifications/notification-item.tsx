@@ -37,6 +37,11 @@ const notificationIcons = {
   event_approved: CheckCircle,
   event_rejected: XCircle,
   message: MessageCircle,
+  dispute_created: ShieldCheck,
+  dispute_updated: ShieldCheck,
+  dispute_message: MessageCircle,
+  dispute_decision: CheckCircle,
+  dispute_appeal: ShieldX,
 };
 
 const notificationColors = {
@@ -53,6 +58,11 @@ const notificationColors = {
   event_approved: "text-green-600 bg-green-50",
   event_rejected: "text-red-600 bg-red-50",
   message: "text-blue-600 bg-blue-50",
+  dispute_created: "text-amber-700 bg-amber-50",
+  dispute_updated: "text-blue-700 bg-blue-50",
+  dispute_message: "text-[#668c65] bg-emerald-50",
+  dispute_decision: "text-emerald-700 bg-emerald-50",
+  dispute_appeal: "text-rose-700 bg-rose-50",
 };
 
 export function NotificationItem({ notification, showDivider }: NotificationItemProps) {
@@ -90,6 +100,26 @@ export function NotificationItem({ notification, showDivider }: NotificationItem
         router.push(`/customer/dashboard?tab=messages${withUserId ? `&with=${withUserId}` : ''}`);
       }
       return;
+    }
+
+    if (notification.notification_type?.startsWith("dispute_")) {
+      let extra: any = {}
+      try {
+        extra = notification.extra_data
+          ? (typeof notification.extra_data === "string" ? JSON.parse(notification.extra_data) : notification.extra_data)
+          : {}
+      } catch {
+        extra = {}
+      }
+      const disputeId = extra?.dispute_id ? `&disputeId=${extra.dispute_id}` : ""
+      if (currentUser?.role === "service_provider") {
+        router.push(`/provider/dashboard?tab=disputes${disputeId}`)
+      } else if (currentUser?.role === "admin") {
+        router.push(`/admin/dashboard?tab=disputes`)
+      } else {
+        router.push(`/customer/dashboard?tab=disputes${disputeId}`)
+      }
+      return
     }
 
     // Navigate based on notification type

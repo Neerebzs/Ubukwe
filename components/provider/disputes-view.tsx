@@ -2,6 +2,6 @@
 
 import { ParticipantDisputesView } from "@/components/disputes/participant-disputes-view"
 
-export function CustomerDisputesView() {
-  return <ParticipantDisputesView role="customer" />
+export function ProviderDisputesView() {
+  return <ParticipantDisputesView role="provider" />
 }

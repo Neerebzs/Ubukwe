@@ -11,12 +11,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import {
-  MapPin, Star, CreditCard, Shield, CheckCircle,
+  MapPin, Star, Shield, CheckCircle,
   ArrowLeft, Phone, Mail, Heart, Calendar as CalendarIcon,
   ChevronRight, Loader2, AlertTriangle
 } from "lucide-react"
 import { apiClient, ProviderService, API_ENDPOINTS, Wedding } from "@/lib/api"
-import { startDpoPayment } from "@/lib/api/payments"
+import { startFdiPayment } from "@/lib/api/payments"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
@@ -57,13 +57,15 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     date: undefined as Date | undefined,
     time: "",
     location: "",
+    eventName: "",
     guestCount: "",
     specialRequests: "",
     contactName: "",
     contactPhone: "",
     contactEmail: "",
     acceptedContract: false,
-    paymentMethod: "momo" as "card" | "momo",
+    paymentMethod: "momo" as "momo",
+    payerPhone: "",
   })
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false)
 
@@ -126,6 +128,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
         contactName: prev.contactName || user.full_name || user.username || "",
         contactEmail: prev.contactEmail || user.email || "",
         contactPhone: prev.contactPhone || user.phone_number || "",
+        payerPhone: prev.payerPhone || prev.contactPhone || user.phone_number || "",
       }));
     }
   }, [user]);
@@ -134,7 +137,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     if (wedding && wedding.wedding_date) {
       setBookingData(prev => ({
         ...prev,
-        date: prev.date || new Date(wedding.wedding_date)
+        date: prev.date || new Date(wedding.wedding_date),
+        eventName: prev.eventName || (wedding.couple_name ? `${wedding.couple_name}` : ""),
+        location: prev.location || wedding.venue || "",
+        guestCount: prev.guestCount || (wedding.guest_count ? String(wedding.guest_count) : ""),
       }));
     }
   }, [wedding]);
@@ -185,6 +191,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       toast.error('Please fill in all required fields');
       return;
     }
+    if (!bookingData.eventName.trim()) {
+      toast.error('Enter the event name');
+      return;
+    }
 
     // Prepare booking payload
     const bookingPayload = {
@@ -200,6 +210,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       customer_name: bookingData.contactName,
       customer_email: bookingData.contactEmail,
       customer_phone: bookingData.contactPhone,
+      event_name: bookingData.eventName.trim() || null,
       event_location: bookingData.location,
       guest_count: bookingData.guestCount ? parseInt(bookingData.guestCount) : null,
       special_requests: bookingData.specialRequests || null
@@ -208,20 +219,25 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     createBookingMutation.mutate(bookingPayload);
   }
 
-  // Step 3: create the payment on the backend and redirect to the DPO hosted
-  // page. On return, /payment/callback verifies and confirms the booking.
+  // Step 3: start an FDI MoMo pull. The customer approves on their phone;
+  // /payment/callback polls until FDI confirms the booking.
   const handlePaymentConfirmation = async () => {
     if (!bookingId) {
       toast.error('Booking ID not found. Please try again.');
       return;
     }
+    const phone = (bookingData.payerPhone || bookingData.contactPhone || "").trim();
+    if (!phone) {
+      toast.error('Enter the MTN or Airtel number that will pay.');
+      return;
+    }
     setIsRedirectingToPayment(true);
     try {
-      await startDpoPayment({
+      await startFdiPayment({
         bookingId,
-        paymentMethod: bookingData.paymentMethod === "momo" ? "mobile_money" : "card",
+        phoneNumber: phone,
+        paymentMethod: "mobile_money",
       });
-      // The browser is navigating to DPO — nothing more to do here.
     } catch (error: any) {
       setIsRedirectingToPayment(false);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start the payment';
@@ -439,6 +455,16 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">Event Name</Label>
+                  <Input
+                    placeholder="e.g. Marie & Jean Wedding"
+                    className="h-12 border-stone-200 bg-stone-50 rounded-xl"
+                    value={bookingData.eventName}
+                    onChange={(e) => handleInputChange("eventName", e.target.value)}
+                  />
+                </div>
+
                 {/* Hide location input for venue services - they ARE the location */}
                 {!isVenueService(service) && (
                   <div className="space-y-2">
@@ -481,7 +507,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                 <Button
                   onClick={handleNextStep}
                   className="w-full h-12 text-lg font-medium rounded-xl hover:opacity-90 transition-opacity"
-                  disabled={!bookingData.date || !bookingData.time || (!isVenueService(service) && !bookingData.location)}
+                  disabled={!bookingData.date || !bookingData.time || !bookingData.eventName.trim() || (!isVenueService(service) && !bookingData.location)}
                 >
                   Confirm & Continue
                 </Button>
@@ -574,41 +600,32 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="space-y-4">
-                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Select Payment Method</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleInputChange("paymentMethod", "card")}
-                      className={cn(
-                        "h-20 flex-col items-center gap-2 border-2 transition-all text-sm font-semibold",
-                        bookingData.paymentMethod === "card" ? "border-primary bg-primary/5" : "border-gray-100 hover:border-stone-200 bg-stone-50 rounded-xl"
-                      )}
-                    >
-                      <CreditCard className={cn("h-6 w-6", bookingData.paymentMethod === "card" ? "text-primary" : "text-gray-400")} />
-                      Credit / Debit Card
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleInputChange("paymentMethod", "momo")}
-                      className={cn(
-                        "h-20 flex-col items-center gap-2 border-2 transition-all text-sm font-semibold",
-                        bookingData.paymentMethod === "momo" ? "border-primary bg-primary/5" : "border-gray-100 hover:border-stone-200 bg-stone-50 rounded-xl"
-                      )}
-                    >
-                      <Phone className={cn("h-6 w-6", bookingData.paymentMethod === "momo" ? "text-primary" : "text-gray-400")} />
-                      Mobile Money
-                    </Button>
+                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Mobile Money</Label>
+                  <div className="rounded-xl border-2 border-primary bg-primary/5 h-20 flex items-center gap-3 px-5">
+                    <Phone className="h-6 w-6 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold">MTN MoMo &amp; Airtel Money</p>
+                      <p className="text-xs text-muted-foreground">You will approve the payment on your phone</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="payerPhone">Paying phone number</Label>
+                    <Input
+                      id="payerPhone"
+                      type="tel"
+                      placeholder="078xxxxxxx"
+                      value={bookingData.payerPhone || bookingData.contactPhone}
+                      onChange={(e) => handleInputChange("payerPhone", e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Use the MTN (078/079) or Airtel (072/073) number that will receive the PIN prompt.</p>
                   </div>
                 </div>
 
                 <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 flex gap-3 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2 duration-300">
                   <Shield className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
                   <p>
-                    <strong>Secure payment via DPO Pay.</strong> You will be redirected to our payment
-                    partner's secure page to complete the{" "}
-                    {bookingData.paymentMethod === "momo" ? "mobile money" : "card"} payment.
-                    {bookingData.paymentMethod === "momo" && " MTN MoMo and Airtel Money are supported."}{" "}
-                    We never see or store your card or PIN details.
+                    <strong>Secure payment via FDI Payments.</strong> We request the amount from your
+                    mobile-money wallet. Approve it with your PIN on the USSD prompt. We never see or store your PIN.
                   </p>
                 </div>
 
@@ -642,16 +659,17 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                     disabled={
                       !bookingId ||
                       !bookingData.acceptedContract ||
-                      isRedirectingToPayment
+                      isRedirectingToPayment ||
+                      !(bookingData.payerPhone || bookingData.contactPhone)
                     }
                   >
                     {isRedirectingToPayment ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecting to DPO Pay...
+                        Sending payment request…
                       </>
                     ) : (
-                      <>Pay Securely • {pricing.total.toLocaleString()} RWF</>
+                      <>Pay with Mobile Money • {pricing.total.toLocaleString()} RWF</>
                     )}
                   </Button>
                 </div>
@@ -718,6 +736,12 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
                       <span className="font-medium text-xs">{service.business_name}</span>
                     </div>
                   </div>
+                  {bookingData.eventName && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Event:</span>
+                      <span className="font-medium text-right max-w-[60%] truncate">{bookingData.eventName}</span>
+                    </div>
+                  )}
                   {bookingData.date && (
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Date:</span>

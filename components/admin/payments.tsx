@@ -347,7 +347,7 @@ function WithdrawalsTab() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="rounded-2xl p-2 min-w-[180px]">
                   <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 py-3">Filter By Status</DropdownMenuLabel>
-                  {["all", "pending", "approved", "completed", "rejected"].map(s => (
+                  {["all", "pending", "processing", "approved", "completed", "rejected"].map(s => (
                     <DropdownMenuItem key={s} onClick={() => setStatusFilter(s)} className="rounded-xl py-3 capitalize font-medium">
                       {s === "all" ? "All Requests" : s}
                     </DropdownMenuItem>
@@ -419,7 +419,7 @@ function WithdrawalsTab() {
                           {w.status === "pending" && (
                             <>
                               <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: w.id, status: "approved" })} className="rounded-xl py-3 text-emerald-600 font-bold focus:bg-emerald-50">
-                                <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
+                                <CheckCircle2 className="w-4 h-4 mr-2" /> Approve &amp; send MoMo
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: w.id, status: "rejected" })} className="rounded-xl py-3 text-rose-600 font-bold focus:bg-rose-50">
                                 <XCircle className="w-4 h-4 mr-2" /> Reject

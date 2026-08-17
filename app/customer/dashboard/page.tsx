@@ -36,6 +36,8 @@ import { apiClient, API_ENDPOINTS, Wedding } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { queryKeys, dynamicQueryOptions } from "@/lib/cache";
+import { Suspense } from "react";
+
 function CustomerDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -178,7 +180,11 @@ function CustomerDashboardContent() {
         return <MessagesHub />;
 
       case "disputes":
-        return <CustomerDisputesView />;
+        return (
+          <Suspense fallback={null}>
+            <CustomerDisputesView />
+          </Suspense>
+        );
 
       case "reviews":
         return <CustomerReviewsView />;

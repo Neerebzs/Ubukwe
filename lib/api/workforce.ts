@@ -20,7 +20,7 @@ export const workforceApi = {
   updateTeam: (id: string, data: Record<string, unknown>) => axiosInstance.put(`${BASE}/teams/${id}`, data),
   deleteTeam: (id: string) => axiosInstance.delete(`${BASE}/teams/${id}`),
 
-  listEvents: (params?: Record<string, string | number | undefined>) =>
+  listEvents: (params?: Record<string, string | number | boolean | undefined>) =>
     axiosInstance.get(`${BASE}/events`, { params }),
   getEvent: (id: string) => axiosInstance.get(`${BASE}/events/${id}`),
   assignLeader: (eventId: string, data: Record<string, unknown>) =>
@@ -44,12 +44,25 @@ export const workforceApi = {
   listPayroll: (params?: Record<string, string | number | undefined>) =>
     axiosInstance.get(`${BASE}/payroll`, { params }),
   getPayroll: (id: string) => axiosInstance.get(`${BASE}/payroll/${id}`),
+  previewUnpaidPayroll: (params?: Record<string, string | undefined>) =>
+    axiosInstance.get(`${BASE}/payroll/unpaid-preview`, { params }),
+  generatePeriodPayroll: (data?: Record<string, unknown>) =>
+    axiosInstance.post(`${BASE}/payroll/generate`, data || {}),
   generatePayroll: (eventId: string) =>
     axiosInstance.post(`${BASE}/events/${eventId}/payroll/generate`, {}),
+  updatePayrollRun: (id: string, data: Record<string, unknown>) =>
+    axiosInstance.patch(`${BASE}/payroll/${id}`, data),
+  updatePayrollItem: (payrollId: string, itemId: string, data: Record<string, unknown>) =>
+    axiosInstance.patch(`${BASE}/payroll/${payrollId}/items/${itemId}`, data),
   recommendPayroll: (id: string) => axiosInstance.post(`${BASE}/payroll/${id}/recommend`, {}),
   approvePayroll: (id: string) => axiosInstance.post(`${BASE}/payroll/${id}/approve`, {}),
+  payPayroll: (id: string, phone_number: string) =>
+    axiosInstance.post(`${BASE}/payroll/${id}/pay`, { phone_number }),
+  verifyPayrollPayment: (id: string) =>
+    axiosInstance.post(`${BASE}/payroll/${id}/verify-payment`, {}),
   markPayrollPaid: (id: string, payment_refs?: Record<string, string>) =>
     axiosInstance.post(`${BASE}/payroll/${id}/mark-paid`, { payment_refs }),
+  cancelPayroll: (id: string) => axiosInstance.post(`${BASE}/payroll/${id}/cancel`, {}),
 
   listRoleRates: () => axiosInstance.get(`${BASE}/role-rates`),
   upsertRoleRate: (data: Record<string, unknown>) => axiosInstance.post(`${BASE}/role-rates`, data),

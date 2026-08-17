@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TranslatedText } from "@/components/translated-text";
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle, Mail, Ticket, CreditCard, Phone, Shield, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Heart, Share2, ExternalLink, Minus, Plus, Loader2, AlertCircle, Mail, Ticket, Phone, Shield, XCircle } from "lucide-react";
 import { usePublicEvent } from "@/hooks/useCustomerEvents";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TicketGraphic } from "@/components/customer/ticket-graphic";
-import { startTicketDpoPayment, verifyTicketOrder } from "@/lib/api/payments";
+import { startTicketFdiPayment, pollTicketOrderUntilSettled } from "@/lib/api/payments";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { toast } from "sonner";
@@ -57,7 +57,7 @@ export default function EventTicketingPage() {
   const searchParams = useSearchParams();
   const eventId = params.eventId as string;
 
-  // Present when DPO redirects the customer back after payment
+  // Present when we send the customer to the waiting page after starting FDI
   const returnedOrderId = searchParams.get("order_id");
 
   const { data: event, isLoading, error } = usePublicEvent(eventId);
@@ -67,26 +67,23 @@ export default function EventTicketingPage() {
   const [purchaseData, setPurchaseData] = useState<any>(null);
   const [userInfo, setUserInfo] = useState({
     holderEmail: "",
+    holderPhone: "",
   });
   const [userInfoErrors, setUserInfoErrors] = useState<Record<string, string>>({});
   const [purchasedTickets, setPurchasedTickets] = useState<any[]>([]);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile_money">("mobile_money");
   const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
   const [failureMessage, setFailureMessage] = useState("");
   const verifyStartedRef = useRef(false);
 
-  // Back from the DPO hosted page: verify the order, then show the tickets
+  // Waiting page: poll FDI until the customer approves (or the pull fails)
   useEffect(() => {
     if (!returnedOrderId || verifyStartedRef.current) return;
     verifyStartedRef.current = true;
 
     (async () => {
       try {
-        const result = await verifyTicketOrder(
-          returnedOrderId,
-          searchParams.get("TransactionToken") || searchParams.get("TransID") || undefined
-        );
+        const result = await pollTicketOrderUntilSettled(returnedOrderId);
 
         if (result.status === "completed" && result.tickets?.length) {
           const generated = [];
@@ -109,7 +106,7 @@ export default function EventTicketingPage() {
           setCurrentStep("success");
           toast.success(`Successfully purchased ${generated.length} ticket${generated.length > 1 ? "s" : ""}!`);
         } else if (result.status === "pending") {
-          setFailureMessage("The payment was not completed. You can try again below.");
+          setFailureMessage("Still waiting for you to approve the payment on your phone. You can try again below.");
           setCurrentStep("failed");
         } else {
           setFailureMessage(result.reason || "The payment failed. No money was taken for unconfirmed payments.");
@@ -120,7 +117,7 @@ export default function EventTicketingPage() {
         setCurrentStep("failed");
       }
     })();
-  }, [returnedOrderId, searchParams]);
+  }, [returnedOrderId]);
 
   if (isLoading) {
     return (
@@ -214,6 +211,9 @@ export default function EventTicketingPage() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInfo.holderEmail)) {
       errors.holderEmail = "Invalid email format";
     }
+    if (!userInfo.holderPhone.trim()) {
+      errors.holderPhone = "Mobile money number is required";
+    }
     
     setUserInfoErrors(errors);
     return Object.keys(errors).length === 0;
@@ -226,15 +226,20 @@ export default function EventTicketingPage() {
       ...prev,
       holderEmail: userInfo.holderEmail,
       holderName: "Guest", // Default name
-      holderPhone: "", // Optional
+      holderPhone: userInfo.holderPhone,
     }));
     setCurrentStep("payment");
   };
 
-  // Create the order on the backend and redirect to the DPO hosted page.
-  // On return, the order_id query param triggers verification above.
-  const handlePayWithDpo = async () => {
+  // Create the order and start an FDI MoMo pull. The waiting URL comes back
+  // with ?order_id=... and the effect below polls until the PIN is approved.
+  const handlePayWithFdi = async () => {
     if (!purchaseData) return;
+    const phone = (purchaseData.holderPhone || userInfo.holderPhone || "").trim();
+    if (!phone) {
+      toast.error("Enter the MTN or Airtel number that will pay");
+      return;
+    }
 
     setIsRedirectingToPayment(true);
     try {
@@ -243,17 +248,17 @@ export default function EventTicketingPage() {
         tickets: Array(item.quantity).fill(null).map(() => ({
           holder_email: purchaseData.holderEmail,
           holder_name: purchaseData.holderName || "Guest",
-          holder_phone: purchaseData.holderPhone || "",
+          holder_phone: phone,
         })),
       }));
 
-      await startTicketDpoPayment({
+      await startTicketFdiPayment({
         eventId,
         customerEmail: purchaseData.holderEmail,
-        paymentMethod,
+        phoneNumber: phone,
+        paymentMethod: "mobile_money",
         items,
       });
-      // The browser is navigating to DPO — nothing more to do here.
     } catch (error: any) {
       setIsRedirectingToPayment(false);
       toast.error(error?.response?.data?.detail || error?.message || "Failed to start the payment");
@@ -551,7 +556,7 @@ export default function EventTicketingPage() {
                           type="email"
                           value={userInfo.holderEmail}
                           onChange={(e) => {
-                            setUserInfo({ holderEmail: e.target.value });
+                            setUserInfo((prev) => ({ ...prev, holderEmail: e.target.value }));
                             setUserInfoErrors({});
                           }}
                           onKeyDown={(e) => {
@@ -566,6 +571,29 @@ export default function EventTicketingPage() {
                       )}
                       <p className="text-xs text-slate-400 ml-1">
                         Your tickets and confirmation will be sent to this email
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mobile Money Number</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                        <Input
+                          type="tel"
+                          value={userInfo.holderPhone}
+                          onChange={(e) => {
+                            setUserInfo((prev) => ({ ...prev, holderPhone: e.target.value }));
+                            setUserInfoErrors({});
+                          }}
+                          placeholder="078xxxxxxx"
+                          className="h-16 pl-16 pr-6 rounded-2xl border-slate-200 bg-white focus:ring-0 focus:border-[#608d64]/30 transition-all font-serif italic text-lg"
+                        />
+                      </div>
+                      {userInfoErrors.holderPhone && (
+                        <p className="text-xs text-red-500 ml-1">{userInfoErrors.holderPhone}</p>
+                      )}
+                      <p className="text-xs text-slate-400 ml-1">
+                        MTN (078/079) or Airtel (072/073) — you will approve the payment on this phone
                       </p>
                     </div>
                   </div>
@@ -631,51 +659,32 @@ export default function EventTicketingPage() {
                   {/* Payment method */}
                   <div className="space-y-4">
                     <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Method</Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => setPaymentMethod("mobile_money")}
-                        className={`h-24 flex flex-col items-center justify-center gap-2 rounded-3xl border-2 transition-all text-sm font-semibold ${
-                          paymentMethod === "mobile_money"
-                            ? "border-[#608d64] bg-[#608d64]/5 text-slate-900"
-                            : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
-                        }`}
-                      >
-                        <Phone className={`h-6 w-6 ${paymentMethod === "mobile_money" ? "text-[#608d64]" : "text-slate-300"}`} />
-                        Mobile Money
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod("card")}
-                        className={`h-24 flex flex-col items-center justify-center gap-2 rounded-3xl border-2 transition-all text-sm font-semibold ${
-                          paymentMethod === "card"
-                            ? "border-[#608d64] bg-[#608d64]/5 text-slate-900"
-                            : "border-slate-100 bg-white text-slate-400 hover:border-slate-200"
-                        }`}
-                      >
-                        <CreditCard className={`h-6 w-6 ${paymentMethod === "card" ? "text-[#608d64]" : "text-slate-300"}`} />
-                        Credit / Debit Card
-                      </button>
+                    <div className="h-24 flex items-center gap-4 rounded-3xl border-2 border-[#608d64] bg-[#608d64]/5 px-6">
+                      <Phone className="h-6 w-6 text-[#608d64]" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">MTN MoMo &amp; Airtel Money</p>
+                        <p className="text-xs text-slate-500">PIN prompt will be sent to {purchaseData.holderPhone || userInfo.holderPhone}</p>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-500">
                     <Shield className="h-5 w-5 text-[#608d64] shrink-0 mt-0.5" />
                     <p>
-                      <strong className="text-slate-700">Secure payment via DPO Pay.</strong>{" "}
-                      You will be redirected to our payment partner's secure page to complete the{" "}
-                      {paymentMethod === "mobile_money" ? "mobile money" : "card"} payment.
-                      We never see or store your card or PIN details.
+                      <strong className="text-slate-700">Secure payment via FDI Payments.</strong>{" "}
+                      Approve the charge on your phone with your Mobile Money PIN. We never see or store your PIN.
                     </p>
                   </div>
 
                   <Button
-                    onClick={handlePayWithDpo}
+                    onClick={handlePayWithFdi}
                     disabled={isRedirectingToPayment}
                     className="w-full h-20 rounded-full bg-[#608d64] text-white hover:bg-slate-900 text-lg font-black uppercase tracking-[0.3em] transition-all duration-700 shadow-2xl shadow-[#608d64]/20"
                   >
                     {isRedirectingToPayment ? (
                       <>
                         <Loader2 className="mr-4 h-6 w-6 animate-spin" />
-                        Redirecting...
+                        Sending request…
                       </>
                     ) : (
                       <>
@@ -691,10 +700,9 @@ export default function EventTicketingPage() {
             {currentStep === "verifying" && (
               <div className="flex flex-col items-center justify-center py-24 space-y-6 animate-in fade-in duration-700">
                 <Loader2 className="h-14 w-14 text-[#608d64] animate-spin" />
-                <h2 className="font-serif italic text-4xl text-slate-900">Verifying your payment…</h2>
+                <h2 className="font-serif italic text-4xl text-slate-900">Waiting for your PIN…</h2>
                 <p className="text-slate-500 text-sm max-w-md text-center">
-                  Please wait while we confirm your transaction with DPO Pay and issue your tickets.
-                  Do not close this page.
+                  Check your phone and approve the Mobile Money request. Keep this page open until your tickets appear.
                 </p>
               </div>
             )}

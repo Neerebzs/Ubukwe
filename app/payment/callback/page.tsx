@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle, Clock, Loader2, ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { verifyPayment, type Payment } from "@/lib/api/payments";
+import { pollPaymentUntilSettled, type Payment } from "@/lib/api/payments";
 
 type CallbackState = "verifying" | "success" | "pending" | "failed" | "error";
 
@@ -16,8 +16,6 @@ function PaymentCallbackContent() {
   const [message, setMessage] = useState<string>("");
 
   const paymentId = searchParams.get("payment_id");
-  // DPO appends its own parameters to the redirect URL
-  const transactionToken = searchParams.get("TransactionToken") || searchParams.get("TransID") || undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -29,17 +27,17 @@ function PaymentCallbackContent() {
         return;
       }
       try {
-        const result = await verifyPayment(paymentId, transactionToken);
+        const result = await pollPaymentUntilSettled(paymentId);
         if (cancelled) return;
         setPayment(result);
         if (result.status === "completed") {
           setState("success");
         } else if (result.status === "failed" || result.status === "cancelled") {
           setState("failed");
-          setMessage("The payment was not completed.");
+          setMessage("The payment was not completed. If you cancelled the USSD prompt, you can try again from your bookings.");
         } else {
           setState("pending");
-          setMessage("Your payment is still being processed. This page will not update automatically — check your bookings in a few minutes.");
+          setMessage("Still waiting for Mobile Money approval. Check your phone, then open your bookings in a minute.");
         }
       } catch (err: any) {
         if (cancelled) return;
@@ -52,7 +50,7 @@ function PaymentCallbackContent() {
     return () => {
       cancelled = true;
     };
-  }, [paymentId, transactionToken]);
+  }, [paymentId]);
 
   return (
     <div className="min-h-screen bg-[#FCFBF9] flex items-center justify-center px-6 py-20">
@@ -60,9 +58,9 @@ function PaymentCallbackContent() {
         {state === "verifying" && (
           <>
             <Loader2 className="h-14 w-14 text-[#668c65] animate-spin mx-auto mb-6" />
-            <h1 className="font-serif text-3xl text-slate-900 mb-3">Verifying your payment…</h1>
+            <h1 className="font-serif text-3xl text-slate-900 mb-3">Waiting for your PIN…</h1>
             <p className="text-slate-500 font-light">
-              Please wait while we confirm your transaction with DPO Pay. Do not close this page.
+              Check your phone and approve the Mobile Money request. Do not close this page.
             </p>
           </>
         )}

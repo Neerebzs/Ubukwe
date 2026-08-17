@@ -1,36 +1,38 @@
 import { apiClient, API_ENDPOINTS } from "../api";
 
 /**
- * DPO Pay hosted-page payments.
+ * FDI Payments (PAY-X) — MTN MoMo and Airtel Money.
  *
- * Flow (redirect — the customer pays on DPO's hosted payment page):
- *   1. POST /payments                → backend registers the transaction with DPO
- *                                      (createToken) and returns a payment_url
- *   2. window.location = payment_url → customer pays on the DPO page (card / mobile money)
- *   3. DPO redirects back            → /payment/callback?payment_id=...&TransactionToken=...
- *   4. POST /{id}/verify-dpo         → backend verifies with DPO and confirms the booking
- *
- * Usage from your UI:
- *   await startDpoPayment({ bookingId, paymentMethod: "mobile_money" });
- *   // the browser navigates away; the /payment/callback page completes the flow
+ * Flow (USSD PIN on the customer's phone, not a hosted card page):
+ *   1. POST /payments  with phone_number  → backend starts FDI momo/pull
+ *   2. Customer approves on their phone
+ *   3. Redirect to /payment/callback?payment_id=... which polls POST /{id}/verify
+ *   4. FDI webhook can settle the same payment if the customer leaves the page
  */
 
 export type PaymentMethod = "mobile_money" | "card" | "bank_transfer" | "cash";
 
-// Config the backend returns to start the DPO redirect
-export interface DpoPaymentConfig {
+export interface FdiPaymentConfig {
   payment_id: string;
-  payment_url: string;
-  trans_token: string;
+  payment_url?: string | null;
+  trans_token?: string | null;
+  gw_ref?: string | null;
   tx_ref: string;
   amount: number;
   currency: string;
+  status?: string;
+  channel_id?: string | null;
+  msisdn?: string | null;
+  message?: string;
 }
+
+/** @deprecated Use FdiPaymentConfig */
+export type DpoPaymentConfig = FdiPaymentConfig;
 
 export interface Payment {
   id: string;
   booking_id: string;
-  status: string; // "pending" | "completed" | "failed" | ...
+  status: string; // "pending" | "processing" | "completed" | "failed" | ...
   amount: string | number;
   currency: string;
   payment_method: PaymentMethod;
@@ -39,60 +41,98 @@ export interface Payment {
   paid_at?: string | null;
 }
 
-/** Create the payment on the backend and get the DPO hosted page URL. */
+/** Create the payment on the backend and start the FDI MoMo pull. */
 export async function createPayment(params: {
   bookingId: string;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
+  phoneNumber: string;
   notes?: string;
-}): Promise<DpoPaymentConfig> {
-  const response = await apiClient.post<DpoPaymentConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
+}): Promise<FdiPaymentConfig> {
+  const response = await apiClient.post<FdiPaymentConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
     booking_id: params.bookingId,
-    payment_method: params.paymentMethod,
+    payment_method: params.paymentMethod || "mobile_money",
+    phone_number: params.phoneNumber,
     notes: params.notes,
   });
-  return response.data as DpoPaymentConfig;
+  return response.data as FdiPaymentConfig;
 }
 
 /**
- * Confirm a DPO transaction on the backend after the redirect back.
- * The token is optional — the backend falls back to the one stored at creation.
+ * Confirm an FDI collection. Safe to poll — pending stays pending until
+ * the customer approves (or FDI reports failure).
  */
 export async function verifyPayment(paymentId: string, transactionToken?: string): Promise<Payment> {
-  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY_DPO(paymentId), {
+  const response = await apiClient.post<Payment>(API_ENDPOINTS.PAYMENTS.VERIFY(paymentId), {
     transaction_token: transactionToken || undefined,
   });
   return response.data as Payment;
 }
 
-/** Fetch a payment's current state (used by the callback page to poll pending payments). */
 export async function getPayment(paymentId: string): Promise<Payment> {
   const response = await apiClient.get<Payment>(API_ENDPOINTS.PAYMENTS.GET(paymentId));
   return response.data as Payment;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Poll verify until completed/failed or timeout (default 3 minutes). */
+export async function pollPaymentUntilSettled(
+  paymentId: string,
+  options?: { intervalMs?: number; timeoutMs?: number; token?: string },
+): Promise<Payment> {
+  const intervalMs = options?.intervalMs ?? 3000;
+  const timeoutMs = options?.timeoutMs ?? 180_000;
+  const started = Date.now();
+  let last: Payment | null = null;
+  while (Date.now() - started < timeoutMs) {
+    last = await verifyPayment(paymentId, options?.token);
+    if (last.status === "completed" || last.status === "failed" || last.status === "cancelled" || last.status === "refunded") {
+      return last;
+    }
+    await sleep(intervalMs);
+  }
+  return last || (await getPayment(paymentId));
+}
+
 /**
- * End-to-end hosted-page payment: create → redirect to DPO.
- * This navigates the browser away; on return, /payment/callback verifies and
- * shows the result. Resolves with the created config just before redirecting
- * (useful for storing context), so callers should not expect to keep running.
+ * Start a booking collection and send the customer to the waiting page.
  */
-export async function startDpoPayment(params: {
+export async function startFdiPayment(params: {
   bookingId: string;
-  paymentMethod: PaymentMethod;
+  phoneNumber: string;
+  paymentMethod?: PaymentMethod;
   notes?: string;
-}): Promise<DpoPaymentConfig> {
+}): Promise<FdiPaymentConfig> {
   if (typeof window === "undefined") {
-    throw new Error("DPO payments can only be started in the browser");
+    throw new Error("Payments can only be started in the browser");
+  }
+  if (!params.phoneNumber?.trim()) {
+    throw new Error("Enter the Mobile Money number that will pay");
   }
   const config = await createPayment(params);
-  if (!config?.payment_url) {
-    throw new Error("The server did not return a DPO payment URL");
-  }
-  window.location.assign(config.payment_url);
+  const waitUrl = config.payment_url || `/payment/callback?payment_id=${config.payment_id}`;
+  window.location.assign(waitUrl);
   return config;
 }
 
-// ── Ticket orders (event tickets, public endpoints) ─────────────────────────
+/** @deprecated Use startFdiPayment */
+export async function startDpoPayment(params: {
+  bookingId: string;
+  paymentMethod?: PaymentMethod;
+  phoneNumber?: string;
+  notes?: string;
+}): Promise<FdiPaymentConfig> {
+  return startFdiPayment({
+    bookingId: params.bookingId,
+    phoneNumber: params.phoneNumber || "",
+    paymentMethod: params.paymentMethod,
+    notes: params.notes,
+  });
+}
+
+// ── Ticket orders ───────────────────────────────────────────────────────────
 
 export interface TicketOrderItemInput {
   ticket_type_id: string;
@@ -105,11 +145,13 @@ export interface TicketOrderItemInput {
 
 export interface TicketOrderConfig {
   order_id: string;
-  payment_url: string;
-  trans_token: string;
+  payment_url?: string | null;
+  trans_token?: string | null;
   tx_ref: string;
   amount: number;
   currency: string;
+  status?: string;
+  message?: string;
 }
 
 export interface SettledTicketOrder {
@@ -137,26 +179,23 @@ export interface SettledTicketOrder {
   }>;
 }
 
-/** Create a pending ticket order (one DPO charge for the whole checkout). */
 export async function initiateTicketOrder(params: {
   eventId: string;
   customerEmail: string;
-  paymentMethod: "card" | "mobile_money";
+  phoneNumber: string;
+  paymentMethod?: "card" | "mobile_money";
   items: TicketOrderItemInput[];
 }): Promise<TicketOrderConfig> {
   const response = await apiClient.post<TicketOrderConfig>(API_ENDPOINTS.TICKET_ORDERS.INITIATE, {
     event_id: params.eventId,
     customer_email: params.customerEmail,
-    payment_method: params.paymentMethod,
+    payment_method: params.paymentMethod || "mobile_money",
+    phone_number: params.phoneNumber,
     items: params.items,
   });
   return response.data as TicketOrderConfig;
 }
 
-/**
- * Verify a ticket order after the redirect back from DPO. Issues the tickets
- * on success (idempotent — safe to call again).
- */
 export async function verifyTicketOrder(orderId: string, transactionToken?: string): Promise<SettledTicketOrder> {
   const response = await apiClient.post<SettledTicketOrder>(API_ENDPOINTS.TICKET_ORDERS.VERIFY(orderId), {
     transaction_token: transactionToken || undefined,
@@ -164,20 +203,50 @@ export async function verifyTicketOrder(orderId: string, transactionToken?: stri
   return response.data as SettledTicketOrder;
 }
 
-/** End-to-end ticket payment: create the order → redirect to the DPO page. */
-export async function startTicketDpoPayment(params: {
+export async function pollTicketOrderUntilSettled(
+  orderId: string,
+  options?: { intervalMs?: number; timeoutMs?: number; token?: string },
+): Promise<SettledTicketOrder> {
+  const intervalMs = options?.intervalMs ?? 3000;
+  const timeoutMs = options?.timeoutMs ?? 180_000;
+  const started = Date.now();
+  let last: SettledTicketOrder | null = null;
+  while (Date.now() - started < timeoutMs) {
+    last = await verifyTicketOrder(orderId, options?.token);
+    if (last.status === "completed" || last.status === "failed") {
+      return last;
+    }
+    await sleep(intervalMs);
+  }
+  return last || { order_id: orderId, status: "pending", reason: "Timed out waiting for Mobile Money approval" };
+}
+
+export async function startTicketFdiPayment(params: {
   eventId: string;
   customerEmail: string;
-  paymentMethod: "card" | "mobile_money";
+  phoneNumber: string;
+  paymentMethod?: "card" | "mobile_money";
   items: TicketOrderItemInput[];
 }): Promise<TicketOrderConfig> {
   if (typeof window === "undefined") {
-    throw new Error("DPO payments can only be started in the browser");
+    throw new Error("Payments can only be started in the browser");
   }
   const config = await initiateTicketOrder(params);
-  if (!config?.payment_url) {
-    throw new Error("The server did not return a DPO payment URL");
-  }
-  window.location.assign(config.payment_url);
+  const waitUrl = config.payment_url || `/events/${params.eventId}/tickets?order_id=${config.order_id}`;
+  window.location.assign(waitUrl);
   return config;
+}
+
+/** @deprecated Use startTicketFdiPayment */
+export async function startTicketDpoPayment(params: {
+  eventId: string;
+  customerEmail: string;
+  paymentMethod?: "card" | "mobile_money";
+  phoneNumber?: string;
+  items: TicketOrderItemInput[];
+}): Promise<TicketOrderConfig> {
+  return startTicketFdiPayment({
+    ...params,
+    phoneNumber: params.phoneNumber || "",
+  });
 }

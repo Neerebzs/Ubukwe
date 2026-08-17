@@ -116,7 +116,7 @@ export const customerEventAPI = {
   },
 
   // NOTE: the old purchaseTicket helper was removed — tickets are now paid via
-  // DPO Pay; see initiateTicketOrder/verifyTicketOrder in lib/api/payments.ts.
+  // FDI MoMo; see initiateTicketOrder/verifyTicketOrder in lib/api/payments.ts.
 
   // Get customer's tickets
   getMyTickets: async () => {

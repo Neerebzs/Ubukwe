@@ -19,6 +19,7 @@ import {
   Globe,
   Star,
   Users,
+  ShieldAlert,
 } from "lucide-react";
 import { TranslatedText } from "@/components/translated-text";
 import { cn } from "@/lib/utils";
@@ -91,6 +92,7 @@ export function ProviderMobileMenuDrawer({
           icon: <MessageSquare className="w-4 h-4" />,
           items: [
             { id: "messages", label: "Messages", icon: MessageSquare },
+            { id: "disputes", label: "Disputes", icon: ShieldAlert },
             { id: "inquiries", label: "Customer Feedback", icon: Star },
             { id: "contracts", label: "Contracts", icon: FileText },
           ]
