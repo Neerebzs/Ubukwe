@@ -22,7 +22,7 @@ import { AdminEvents } from "@/components/admin/events"
 import { AdminInvitationTemplates } from "@/components/admin/invitation-templates"
 import { AdminProfileSettings } from "@/components/admin/profile-settings"
 import { AdminPreferencesSettings } from "@/components/admin/preferences-settings"
-import { AdminSupportTickets } from "@/components/admin/support-tickets"
+import { AdminSupportHub } from "@/components/admin/support-hub"
 import { AdminPayments } from "@/components/admin/payments"
 import { AdminSystemSettings } from "@/components/admin/system-settings"
 
@@ -67,7 +67,7 @@ export function AdminDashboardContent() {
         )
       case "bookings":    return <AdminBookingsMetrics />
       case "disputes":    return <AdminDisputes disputes={[]} />
-      case "support":     return <AdminSupportTickets />
+      case "support":     return <AdminSupportHub />
       case "analytics":   return <AdminAnalytics />
       case "security":    return <AdminSecurity />
       case "events":      return <AdminEvents />

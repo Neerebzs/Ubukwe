@@ -337,6 +337,7 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
     qc.invalidateQueries({ queryKey: ["workforce-payroll-detail", selectedId] })
     qc.invalidateQueries({ queryKey: ["workforce-payroll-unpaid"] })
     qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
+    qc.invalidateQueries({ queryKey: ["workforce-workers"] })
   }
 
   const action = async (fn: () => Promise<any>, ok: string) => {
@@ -527,7 +528,7 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                           {i.payout_status === "failed" ? <span className="ml-2 text-xs font-normal text-red-600">Payout failed</span> : null}
                           {i.payout_status === "processing" ? <span className="ml-2 text-xs font-normal text-slate-500">Sending…</span> : null}
                         </Td>
-                        <Td className="tabular-nums text-slate-600">{workerPhone(i)}</Td>
+                        <Td className={cn("tabular-nums", i.payout_issue ? "text-red-600" : "text-slate-600")}>{workerPhone(i)}</Td>
                         <Td className="tabular-nums">{workerEventCount(i)}</Td>
                         <Td className="text-slate-600">
                           {events.length ? (
@@ -669,6 +670,7 @@ function EditPayrollItemDialog({
   onSave: (payload: Record<string, unknown>) => Promise<void>
 }) {
   const [form, setForm] = useState({
+    phone: item.worker_phone || item.payout_msisdn || "",
     event_pay: String(item.event_pay ?? 0),
     overtime_pay: String(item.overtime_pay ?? 0),
     bonus: String(item.bonus ?? 0),
@@ -697,6 +699,7 @@ function EditPayrollItemDialog({
         await onSave({ exclude: true, exclude_reason: form.exclude_reason || form.adjustment_reason || "Removed before approval" })
       } else {
         await onSave({
+          phone: form.phone.trim(),
           event_pay: num(form.event_pay),
           overtime_pay: num(form.overtime_pay),
           bonus: num(form.bonus),
@@ -740,6 +743,22 @@ function EditPayrollItemDialog({
 
         {!excludeMode ? (
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Worker phone</Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                placeholder="078xxxxxxx or 072xxxxxxx"
+                value={form.phone}
+                onChange={(e) => set("phone", e.target.value)}
+                className="rounded-xl border-0 bg-slate-50 dark:bg-slate-900"
+              />
+              <p className={cn("text-xs", item.payout_issue ? "text-red-600" : "text-slate-500")}>
+                {item.payout_issue
+                  ? item.payout_issue
+                  : "Used for Mobile Money payout. MTN 078/079 or Airtel 072/073."}
+              </p>
+            </div>
             <DataTable minWidth="360px">
               <THead>
                 <Th>Line</Th>
@@ -828,15 +847,18 @@ function PayrollPaymentReport({
 }) {
   const eventTotal = items.reduce((sum, item) => sum + workerEventCount(item), 0)
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 text-sm">
         <p className="text-slate-500">
           {items.length} worker{items.length === 1 ? "" : "s"} · {eventTotal} unpaid event{eventTotal === 1 ? "" : "s"}
         </p>
         <p className="font-semibold tabular-nums">{money(total, currency)}</p>
       </div>
-      <DataTable minWidth="640px" maxHeight="280px">
-        <THead>
+      <DataTable
+        minWidth="640px"
+        className="min-h-[7.5rem] flex-1 overflow-y-auto overscroll-contain rounded-xl border border-[#e6e1d6] dark:border-border"
+      >
+        <THead className="bg-background">
           <Th>Worker</Th>
           <Th>Phone</Th>
           <Th>Events attended</Th>
@@ -1010,8 +1032,8 @@ function PayPayrollDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next) }}>
-      <DialogContent className="rounded-2xl sm:max-w-3xl shadow-none max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden rounded-2xl shadow-none sm:max-w-3xl">
+        <DialogHeader className="shrink-0 pr-8">
           <DialogTitle>Pay this payroll</DialogTitle>
           <DialogDescription>
             {phase === "waiting"
@@ -1025,7 +1047,7 @@ function PayPayrollDialog({
         )}
 
         {phase === "review" && (
-          <div className="space-y-4">
+          <div className="shrink-0 space-y-4">
             {blockers.length > 0 && (
               <div className="rounded-xl bg-red-50 dark:bg-red-950/30 px-3 py-2 space-y-1">
                 {blockers.map((item: any) => (
@@ -1053,27 +1075,27 @@ function PayPayrollDialog({
         )}
 
         {phase === "waiting" && (
-          <div className="py-6 text-center space-y-3">
+          <div className="shrink-0 py-4 text-center space-y-3">
             <Loader2 className="h-10 w-10 animate-spin text-[#668c65] mx-auto" />
             <p className="text-sm text-slate-600">{message || "Waiting for Mobile Money approval on your phone."}</p>
           </div>
         )}
 
         {phase === "success" && (
-          <div className="py-6 text-center space-y-2">
+          <div className="shrink-0 py-4 text-center space-y-2">
             <Check className="h-10 w-10 text-[#668c65] mx-auto" />
             <p className="text-sm text-slate-600">{message || "Payroll paid."}</p>
           </div>
         )}
 
         {phase === "failed" && (
-          <div className="py-4 space-y-3">
+          <div className="shrink-0 py-2 space-y-3">
             <p className="text-sm text-red-600">{message || "Payment failed."}</p>
             <p className="text-xs text-slate-500">You can retry Mobile Money, or record this list as paid in cash if you already paid outside the app.</p>
           </div>
         )}
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="shrink-0 flex-col sm:flex-row gap-2">
           {phase === "review" && (
             <Button type="button" variant="outline" className="rounded-xl sm:mr-auto" disabled={busy} onClick={payCash}>
               Paid in cash

@@ -115,7 +115,7 @@ export function NotificationItem({ notification, showDivider }: NotificationItem
       if (currentUser?.role === "service_provider") {
         router.push(`/provider/dashboard?tab=disputes${disputeId}`)
       } else if (currentUser?.role === "admin") {
-        router.push(`/admin/dashboard?tab=disputes`)
+        router.push(`/admin/dashboard?tab=disputes${disputeId}`)
       } else {
         router.push(`/customer/dashboard?tab=disputes${disputeId}`)
       }

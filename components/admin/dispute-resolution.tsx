@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { invalidateDisputes } from "@/lib/cache/invalidation"
@@ -288,10 +289,17 @@ function SeparatorSoft() {
 }
 
 export function AdminDisputeResolution() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const disputeIdFromUrl = searchParams.get("disputeId")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [search, setSearch] = useState("")
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(disputeIdFromUrl)
+
+  useEffect(() => {
+    if (disputeIdFromUrl) setSelectedId(disputeIdFromUrl)
+  }, [disputeIdFromUrl])
 
   const { data: disputesData, isLoading } = useQuery({
     queryKey: queryKeys.disputes.adminList({ status: statusFilter, priority: priorityFilter }),
@@ -323,7 +331,15 @@ export function AdminDisputeResolution() {
   }), [disputes, search])
 
   if (selectedId) {
-    return <Workspace disputeId={selectedId} onBack={() => setSelectedId(null)} />
+    return (
+      <Workspace
+        disputeId={selectedId}
+        onBack={() => {
+          setSelectedId(null)
+          router.replace("/admin/dashboard?tab=disputes", { scroll: false })
+        }}
+      />
+    )
   }
 
   return (

@@ -49,14 +49,16 @@ export function DataTable({
   children,
   minWidth = "640px",
   maxHeight,
+  className,
 }: {
   children: React.ReactNode
   minWidth?: string
   maxHeight?: string
+  className?: string
 }) {
   return (
     <div
-      className={cn("overflow-x-auto overscroll-x-contain", maxHeight && "overflow-y-auto")}
+      className={cn("overflow-x-auto overscroll-x-contain", maxHeight && "overflow-y-auto", className)}
       style={maxHeight ? { maxHeight } : undefined}
     >
       <table className="w-full text-sm" style={{ minWidth }}>
@@ -113,9 +115,9 @@ export function Td({
   )
 }
 
-export function THead({ children }: { children: React.ReactNode }) {
+export function THead({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <thead className="sticky top-0 z-10 bg-[#fcfbf9] dark:bg-background">
+    <thead className={cn("sticky top-0 z-10 bg-[#fcfbf9] dark:bg-background", className)}>
       <tr className="border-b border-[#e6e1d6] dark:border-border">{children}</tr>
     </thead>
   )

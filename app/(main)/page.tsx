@@ -14,6 +14,7 @@ import { useOffers } from "@/hooks/useOffers";
 import { SupportWidget } from "@/components/SupportWidget";
 import { useSystemSettings } from "@/contexts/system-settings-context";
 import { PopularServicesSection } from "@/components/home/PopularServicesSection";
+import { HomeTestimonials } from "@/components/home/HomeTestimonials";
 
 export default function HomePage() {
   const { settings, isLoading: isLoadingSettings } = useSystemSettings();
@@ -416,84 +417,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-14 md:py-20 relative bg-[#f7f9fa] overflow-hidden">
-        {/* Background Leaf Motif */}
-        <div className="leaf-bg opacity-20" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-
-            {/* Left Column: Circular Wreath Image */}
-            <div className="relative flex justify-center lg:justify-end animate-in fade-in slide-in-from-left duration-1000">
-              <div className="wreath-container w-[350px] h-[350px] md:w-[450px] md:h-[450px]">
-                {/* Wreath Border */}
-                <div className="wreath-border" />
-
-                {/* Image Container */}
-                <div className="absolute inset-8 rounded-full overflow-hidden shadow-2xl">
-                  <img
-                    src="/beautiful-garden-wedding-venue-rwanda.jpg"
-                    className="w-full h-full object-cover"
-                    alt="Success Story Couple"
-                  />
-                </div>
-
-                {/* Decorative Watercolor Leaf Overlays */}
-                <div className="absolute -top-4 -right-4 w-32 h-32 animate-float">
-                  <img src="/leaf-motif.png" className="w-full h-full object-contain -rotate-45" alt="Leaf Decor" />
-                </div>
-                <div className="absolute -bottom-8 -left-8 w-40 h-40 animate-float" style={{ animationDelay: '1s' }}>
-                  <img src="/leaf-motif.png" className="w-full h-full object-contain rotate-12" alt="Leaf Decor" />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Testimonial Content */}
-            <div className="space-y-8 animate-in fade-in slide-in-from-right duration-1000">
-              <div className="space-y-4">
-                <h2 className="text-primary font-outfit font-medium tracking-[0.2em] uppercase text-sm">
-                  <TranslatedText text="What Our Client Say" />
-                </h2>
-
-                <div className="flex items-center gap-6">
-                  <div className="text-primary/20">
-                    <svg width="60" height="40" viewBox="0 0 60 40" fill="currentColor">
-                      <path d="M0 40h20l10-20V0H0v20h10L0 40zM30 40h20l10-20V0H30v20h10L30 40z" />
-                    </svg>
-                  </div>
-                  <div className="h-[1px] w-24 bg-primary/20" />
-                </div>
-
-                <p className="font-outfit text-slate-800 text-2xl md:text-3xl leading-relaxed font-light italic">
-                  "This is not only a wedding planning agency but also a dreamy friend. I am very glad to work with them. They make my dream come true. In my wedding I found them as my best friends."
-                </p>
-              </div>
-
-              {/* Author Block */}
-              <div className="flex items-center gap-4 py-6">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-4 border-white shadow-md">
-                  <img src="/grom.jpg" className="w-full h-full object-cover" alt="Jenifer Marvella" />
-                </div>
-                <div>
-                  <h4 className="font-serif italic text-2xl text-slate-900">
-                    Jenifer Marvella
-                  </h4>
-                  <p className="text-slate-400 text-sm font-outfit uppercase tracking-wider">
-                    Wedding 12/12/24
-                  </p>
-                </div>
-              </div>
-
-              {/* Navigation Dots */}
-              <div className="flex gap-3 pt-4">
-                <div className="w-2.5 h-2.5 rounded-full bg-primary/40" />
-                <div className="w-2.5 h-2.5 rounded-full bg-primary/10 hover:bg-primary/20 cursor-pointer transition-colors" />
-                <div className="w-2.5 h-2.5 rounded-full bg-primary/10 hover:bg-primary/20 cursor-pointer transition-colors" />
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
+      <HomeTestimonials />
 
       {/* Modernized FAQ Section */}
       <section className="py-14 md:py-20 relative bg-white border-t border-slate-50">

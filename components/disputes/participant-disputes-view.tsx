@@ -306,6 +306,7 @@ function DisputeDetail({
 export function ParticipantDisputesView({ role }: { role: Role }) {
   const searchParams = useSearchParams()
   const preselectedBooking = searchParams.get("bookingId") || ""
+  const disputeIdFromUrl = searchParams.get("disputeId") || ""
   const queryClient = useQueryClient()
   const [tab, setTab] = useState(preselectedBooking ? "new" : "active")
   const [selected, setSelected] = useState<any>(null)
@@ -344,6 +345,15 @@ export function ParticipantDisputesView({ role }: { role: Role }) {
       setTab("new")
     }
   }, [preselectedBooking])
+
+  useEffect(() => {
+    if (!disputeIdFromUrl || selected) return
+    const match = (disputes as any[]).find((item) => item.id === disputeIdFromUrl)
+    if (match) {
+      setSelected(match)
+      setTab(CLOSED_STATUSES.has(match.status) ? "closed" : "active")
+    }
+  }, [disputeIdFromUrl, disputes, selected])
 
   const selectedBooking = useMemo(
     () => (bookings as any[]).find((b) => b.id === form.booking_id),
