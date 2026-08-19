@@ -1,0 +1,102 @@
+# Ubukwe production — Nginx (vownests.com) + Next.js
+# Nyurwa API must be reachable as backend:4000 on the shared ubukwe-edge network
+# (start Nyurwa with docker-compose.prod.yml first, or on the same host).
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# TLS: mount Let's Encrypt at LETSENCRYPT_DIR (default ./certs/letsencrypt).
+# When live/vownests.com/{fullchain,privkey}.pem exist, HTTP redirects to HTTPS.
+
+name: ubukwe
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-https://vownests.com}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://vownests.com}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://vownests.com}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_GTM_ID: ${NEXT_PUBLIC_GTM_ID:-}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+        NEXT_PUBLIC_PLATFORM_HOSTS: ${NEXT_PUBLIC_PLATFORM_HOSTS:-localhost,127.0.0.1,vownests.com,www.vownests.com}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      NODE_ENV: production
+    networks:
+      edge:
+        aliases:
+          - frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    stop_grace_period: 20s
+    logging: *default-logging
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-vownests.com}
+      CERT_NAME: ${CERT_NAME:-vownests.com}
+      BACKEND_HOST: ${BACKEND_HOST:-backend:4000}
+      FRONTEND_HOST: ${FRONTEND_HOST:-frontend:3000}
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./nginx/templates:/etc/nginx/template-src:ro
+      - ./nginx/conf.d/production.conf:/etc/nginx/site-available/production.conf:ro
+      - ./nginx/configure-nginx.sh:/configure-nginx.sh:ro
+      - ${LETSENCRYPT_DIR:-./certs/letsencrypt}:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    entrypoint: ["/bin/sh", "/configure-nginx.sh"]
+    depends_on:
+      frontend:
+        condition: service_healthy
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+      - DAC_OVERRIDE
+
+networks:
+  edge:
+    name: ubukwe-edge
+    driver: bridge
+
+volumes:
+  certbot_www:

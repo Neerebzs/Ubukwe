@@ -18,6 +18,10 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+
+# TLS material mounted into Nginx
+certs/
 
 # vercel
 .vercel
