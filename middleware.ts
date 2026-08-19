@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const publicRoutes = ['/', '/auth/signin', '/auth/signup', '/about', '/contact', '/services'];
-const publicPrefixes = ['/auth/', '/events', '/w/', '/weddings/', '/workforce/', '/_next', '/static', '/api/'];
+const publicPrefixes = ['/auth/', '/events', '/w/', '/weddings/', '/workforce/', '/invite/', '/_next', '/static', '/api/'];
 
 const PLATFORM_HOSTS = (
   process.env.NEXT_PUBLIC_PLATFORM_HOSTS ||

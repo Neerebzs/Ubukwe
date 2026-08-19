@@ -1,0 +1,30 @@
+@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap");
+
+.inv-root {
+  --inv-script: "Great Vibes", "Cormorant Garamond", cursive;
+  --inv-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  --inv-body: "Libre Baskerville", "Cormorant Garamond", Georgia, serif;
+}
+
+.inv-root .inv-script {
+  font-family: var(--inv-script);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.inv-root .inv-serif {
+  font-family: var(--inv-serif);
+}
+
+.inv-root .inv-body {
+  font-family: var(--inv-body);
+}
+
+.inv-root .inv-sans {
+  font-family: Outfit, "Segoe UI", sans-serif;
+}
+
+.inv-root .inv-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

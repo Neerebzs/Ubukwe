@@ -107,7 +107,7 @@ export function WorkforcePayroll() {
           <TranslatedText text="Workforce & Payroll" />
         </h1>
         <p className="text-sm text-[#6b7368] dark:text-slate-400 mt-2.5 max-w-xl leading-relaxed">
-          <TranslatedText text="Staff events as they happen. Pay workers later by summing all unpaid attendance into one list you can edit before approval." />
+          <TranslatedText text="Staff events as they happen. Pay workers later by summing unpaid attendance into one list you can edit until payment is done." />
         </p>
       </div>
 

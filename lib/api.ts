@@ -170,6 +170,7 @@ export const API_ENDPOINTS = {
     WEDDING_GALLERY: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/gallery`,
     WEDDING_EVENTS: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/events`,
     WEDDING_TIMELINE: (slug: string) => `/api/${API_VERSION}/public/w/${slug}/timeline`,
+    INVITATION: (id: string) => `/api/${API_VERSION}/public/invitations/${id}`,
     CAPTCHA_STATUS: `/api/${API_VERSION}/public/captcha-status`,
     RESOLVE_DOMAIN: `/api/${API_VERSION}/public/resolve-domain`,
   },
@@ -1120,9 +1121,22 @@ export const apiClient = {
         body: form,
       }).then(r => r.json());
     },
-    sendInvitations(weddingId: string, guestIds: string[], invitation: any): Promise<any> {
-      // Longer timeout (2 min) for bulk email sending
-      return apiClient.post(`/api/v1/wedding/${weddingId}/guests/send-invitations`, { guest_ids: guestIds, invitation }, { timeout: 120000 });
+    sendInvitations(
+      weddingId: string,
+      guestIds: string[],
+      invitation: any,
+      options?: { channels?: Array<"email" | "whatsapp">; resend?: boolean }
+    ): Promise<any> {
+      return apiClient.post(
+        `/api/v1/wedding/${weddingId}/guests/send-invitations`,
+        {
+          guest_ids: guestIds,
+          invitation,
+          channels: options?.channels,
+          resend: options?.resend ?? false,
+        },
+        { timeout: 120000 }
+      );
     },
   },
 

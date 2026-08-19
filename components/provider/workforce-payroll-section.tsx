@@ -43,6 +43,127 @@ function formatEventName(ev: any): string {
   return ev?.event_date ? `${title} · ${ev.event_date}` : title
 }
 
+function isPreApproval(status?: string) {
+  return ["draft", "under_review", "recommended"].includes(status || "")
+}
+
+function eventPayForNet(item: any, nextNet: number) {
+  const currentNet = Number(item?.net_pay || 0)
+  const currentEventPay = Number(item?.event_pay ?? 0)
+  return Math.max(0, currentEventPay + (Number(nextNet) - currentNet))
+}
+
+function EditableAmount({
+  value,
+  currency,
+  disabled,
+  onSave,
+}: {
+  value?: number | null
+  currency: string
+  disabled?: boolean
+  onSave: (n: number) => Promise<void>
+}) {
+  const [draft, setDraft] = useState(String(value ?? 0))
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setDraft(String(value ?? 0))
+  }, [value])
+
+  if (disabled) {
+    return <span className="tabular-nums font-semibold">{money(value, currency)}</span>
+  }
+
+  const commit = async () => {
+    const n = Number(draft)
+    if (!Number.isFinite(n) || n < 0) {
+      setDraft(String(value ?? 0))
+      return
+    }
+    if (n === Number(value || 0)) return
+    setSaving(true)
+    try {
+      await onSave(n)
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Could not save amount")
+      setDraft(String(value ?? 0))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="inline-flex items-center justify-end gap-1">
+      <Input
+        type="number"
+        min="0"
+        step="1"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+        className="h-8 w-[7.5rem] rounded-lg border-0 bg-white dark:bg-slate-950 text-right tabular-nums font-semibold"
+        aria-label="Amount to pay"
+      />
+      <span className="text-xs text-slate-500">{currency}</span>
+      {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+    </div>
+  )
+}
+
+function EditablePhone({
+  value,
+  disabled,
+  onSave,
+}: {
+  value?: string | null
+  disabled?: boolean
+  onSave: (phone: string) => Promise<void>
+}) {
+  const [draft, setDraft] = useState(value || "")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setDraft(value || "")
+  }, [value])
+
+  if (disabled) {
+    return <span className="tabular-nums text-slate-600">{value || "—"}</span>
+  }
+
+  const commit = async () => {
+    const next = draft.trim()
+    if (next === (value || "").trim()) return
+    setSaving(true)
+    try {
+      await onSave(next)
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Could not save phone")
+      setDraft(value || "")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="inline-flex items-center gap-1">
+      <Input
+        type="tel"
+        inputMode="tel"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur() }}
+        placeholder="078xxxxxxx"
+        className="h-8 w-[9.5rem] rounded-lg border-0 bg-white dark:bg-slate-950 tabular-nums"
+        aria-label="Worker phone"
+      />
+      {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
+    </div>
+  )
+}
+
 export function PayrollSection() {
   const [tab, setTab] = useState<PayrollTab>("ready")
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
@@ -126,7 +247,7 @@ function ReadyToPayPanel({ onGenerated }: { onGenerated: (id: string) => void })
       notes: notes || undefined,
     }),
     onSuccess: (res) => {
-      toast.success("Payroll list created — review and edit before approving")
+      toast.success("Payroll list created — review and edit until you pay")
       qc.invalidateQueries({ queryKey: ["workforce-payroll-unpaid"] })
       qc.invalidateQueries({ queryKey: ["workforce-payroll"] })
       qc.invalidateQueries({ queryKey: ["workforce-dashboard"] })
@@ -265,7 +386,7 @@ function ReadyToPayPanel({ onGenerated }: { onGenerated: (id: string) => void })
       {workers.length > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <p className="text-sm text-slate-500 flex-1">
-            {selectedSet.size} worker{selectedSet.size === 1 ? "" : "s"} · {selectedAttendanceIds.length} attendance. Create one payroll list, then edit amounts before you approve.
+            {selectedSet.size} worker{selectedSet.size === 1 ? "" : "s"} · {selectedAttendanceIds.length} attendance. Create one payroll list, then edit amounts until you pay.
           </p>
           <Button
             className="bg-[#668c65] hover:bg-[#557554] text-white rounded-xl w-full sm:w-auto"
@@ -282,7 +403,7 @@ function ReadyToPayPanel({ onGenerated }: { onGenerated: (id: string) => void })
           <DialogHeader>
             <DialogTitle>Confirm payroll list</DialogTitle>
             <DialogDescription>
-              This locks the selected unpaid attendance into one list. You can still edit amounts, remove workers, or drop events until you approve.
+              This locks the selected unpaid attendance into one list. You can still edit amounts, remove workers, or drop events until payment is done.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -444,7 +565,7 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
               </TBody>
             </DataTable>
             <div className="mt-4 flex flex-wrap gap-2">
-              {detail.editable && (
+              {isPreApproval(detail.status) && (
                 <>
                   <Button size="sm" variant="outline" className="rounded-xl border-0 bg-white dark:bg-slate-950" onClick={() => action(() => workforceApi.recommendPayroll(detail.id), "Recommended")}>
                     Recommend
@@ -470,7 +591,7 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
             </div>
             {detail.editable && (
               <p className="text-xs text-slate-500 mt-3">
-                Edit any line before approval — rate corrections, cash advances, missed events, or workers who should not be paid this cycle. Approve opens Mobile Money so you can pay this list.
+                This list is unpaid — change phones, amounts, or drop events here. Edits lock only after Mobile Money is collected or the list is marked paid in cash.
               </p>
             )}
             {detail.status === "processing" && (
@@ -486,7 +607,9 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
           <div>
             <SectionHead
               title="Payroll lines"
-              hint="Each worker shows their phone, how many events they attended, the unpaid event names, and the amount to pay."
+              hint={detail.editable
+                ? "Unpaid list — edit phone or amount in the row, expand a worker to change or drop events, or open Edit for bonuses and deductions."
+                : "Each worker shows their phone, how many events they attended, the unpaid event names, and the amount to pay."}
               actions={
                 (detail.items || []).length > 8 ? (
                   <div className="relative w-full sm:w-64">
@@ -517,6 +640,7 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                   .map((i: any) => {
                   const open = expanded.has(i.id)
                   const events = workerEvents(i)
+                  const canEdit = Boolean(detail.editable && !i.is_excluded)
                   return (
                     <Fragment key={i.id}>
                       <tr className={cn(i.is_excluded && "opacity-50")}>
@@ -528,7 +652,18 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                           {i.payout_status === "failed" ? <span className="ml-2 text-xs font-normal text-red-600">Payout failed</span> : null}
                           {i.payout_status === "processing" ? <span className="ml-2 text-xs font-normal text-slate-500">Sending…</span> : null}
                         </Td>
-                        <Td className={cn("tabular-nums", i.payout_issue ? "text-red-600" : "text-slate-600")}>{workerPhone(i)}</Td>
+                        <Td className={cn(i.payout_issue && "text-red-600")}>
+                          <EditablePhone
+                            value={i.worker_phone || i.payout_msisdn || ""}
+                            disabled={!canEdit}
+                            onSave={async (phone) => {
+                              await workforceApi.updatePayrollItem(detail.id, i.id, { phone })
+                              toast.success("Phone updated")
+                              invalidate()
+                            }}
+                          />
+                          {i.payout_issue ? <p className="text-[11px] text-red-600 mt-1 max-w-[10rem]">{i.payout_issue}</p> : null}
+                        </Td>
                         <Td className="tabular-nums">{workerEventCount(i)}</Td>
                         <Td className="text-slate-600">
                           {events.length ? (
@@ -539,9 +674,23 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                             </ul>
                           ) : "—"}
                         </Td>
-                        <Td align="right" className="tabular-nums font-semibold">{money(i.net_pay, detail.currency)}</Td>
                         <Td align="right">
-                          <div className="inline-flex items-center gap-1">
+                          <EditableAmount
+                            value={i.net_pay}
+                            currency={detail.currency}
+                            disabled={!canEdit}
+                            onSave={async (n) => {
+                              await workforceApi.updatePayrollItem(detail.id, i.id, {
+                                event_pay: eventPayForNet(i, n),
+                                adjustment_reason: i.adjustment_reason || "Amount adjusted before payment",
+                              })
+                              toast.success("Amount updated")
+                              invalidate()
+                            }}
+                          />
+                        </Td>
+                        <Td align="right">
+                          <div className="inline-flex items-center gap-2">
                             <button type="button" className="inline-flex items-center text-xs text-slate-500" onClick={() => {
                               const next = new Set(expanded)
                               if (next.has(i.id)) next.delete(i.id)
@@ -551,10 +700,11 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                               {open ? "Hide" : "Details"}
                               <ChevronDown className={cn("h-4 w-4 ml-1 transition-transform", open && "rotate-180")} />
                             </button>
-                            {detail.editable && !i.is_excluded && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingItem(i)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                            {canEdit && (
+                              <button type="button" className="inline-flex items-center text-xs text-[#668c65]" onClick={() => setEditingItem(i)}>
+                                <Pencil className="h-3.5 w-3.5 mr-1" />
+                                Edit
+                              </button>
                             )}
                           </div>
                         </Td>
@@ -564,9 +714,23 @@ function PayrollRunsPanel({ selectedId, onSelect }: { selectedId: string | null;
                           <Td className="text-slate-500 pl-8" colSpan={2}>{formatEventName(ev)}</Td>
                           <Td className="text-slate-500 whitespace-nowrap">{ev.role_label || "Worker"}{ev.status ? ` · ${ev.status}` : ""}</Td>
                           <Td className="text-slate-500">{ev.hours_worked ? `${ev.hours_worked} hrs` : ""}</Td>
-                          <Td align="right" className="tabular-nums text-slate-500">{money(ev.net ?? ev.gross, detail.currency)}</Td>
                           <Td align="right">
-                            {detail.editable && !i.is_excluded && events.length > 1 && (
+                            <EditableAmount
+                              value={ev.net ?? ev.gross ?? ev.event_pay}
+                              currency={detail.currency}
+                              disabled={!canEdit}
+                              onSave={async (n) => {
+                                await workforceApi.updatePayrollItem(detail.id, i.id, {
+                                  event_amounts: [{ attendance_id: ev.attendance_id, net: n }],
+                                  adjustment_reason: i.adjustment_reason || "Event amount adjusted before payment",
+                                })
+                                toast.success("Event amount updated")
+                                invalidate()
+                              }}
+                            />
+                          </Td>
+                          <Td align="right">
+                            {canEdit && events.length > 1 && (
                               <button
                                 type="button"
                                 className="text-xs text-red-600"
@@ -737,7 +901,7 @@ function EditPayrollItemDialog({
         <DialogHeader>
           <DialogTitle>Edit {item.worker_name}</DialogTitle>
           <DialogDescription>
-            Adjust this worker before approval. Use exclude if they should not be paid in this cycle — their unpaid events return to Ready to pay.
+            Adjust this worker until payment is done. Use exclude if they should not be paid in this cycle — their unpaid events return to Ready to pay.
           </DialogDescription>
         </DialogHeader>
 
