@@ -46,12 +46,14 @@ export async function createPayment(params: {
   bookingId: string;
   paymentMethod?: PaymentMethod;
   phoneNumber: string;
+  amount?: number;
   notes?: string;
 }): Promise<FdiPaymentConfig> {
   const response = await apiClient.post<FdiPaymentConfig>(API_ENDPOINTS.PAYMENTS.CREATE, {
     booking_id: params.bookingId,
     payment_method: params.paymentMethod || "mobile_money",
     phone_number: params.phoneNumber,
+    amount: params.amount,
     notes: params.notes,
   });
   return response.data as FdiPaymentConfig;
@@ -103,6 +105,7 @@ export async function startFdiPayment(params: {
   bookingId: string;
   phoneNumber: string;
   paymentMethod?: PaymentMethod;
+  amount?: number;
   notes?: string;
 }): Promise<FdiPaymentConfig> {
   if (typeof window === "undefined") {
@@ -184,6 +187,7 @@ export async function initiateTicketOrder(params: {
   customerEmail: string;
   phoneNumber: string;
   paymentMethod?: "card" | "mobile_money";
+  amount?: number;
   items: TicketOrderItemInput[];
 }): Promise<TicketOrderConfig> {
   const response = await apiClient.post<TicketOrderConfig>(API_ENDPOINTS.TICKET_ORDERS.INITIATE, {
@@ -191,6 +195,7 @@ export async function initiateTicketOrder(params: {
     customer_email: params.customerEmail,
     payment_method: params.paymentMethod || "mobile_money",
     phone_number: params.phoneNumber,
+    amount: params.amount,
     items: params.items,
   });
   return response.data as TicketOrderConfig;
@@ -226,6 +231,7 @@ export async function startTicketFdiPayment(params: {
   customerEmail: string;
   phoneNumber: string;
   paymentMethod?: "card" | "mobile_money";
+  amount?: number;
   items: TicketOrderItemInput[];
 }): Promise<TicketOrderConfig> {
   if (typeof window === "undefined") {

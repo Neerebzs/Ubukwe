@@ -70,7 +70,7 @@ function PaymentCallbackContent() {
             <CheckCircle2 className="h-14 w-14 text-[#668c65] mx-auto mb-6" />
             <h1 className="font-serif text-3xl text-slate-900 mb-3">Payment successful</h1>
             <p className="text-slate-500 font-light mb-2">
-              Your booking is confirmed. A confirmation email is on its way.
+              Your booking is approved. A confirmation email is on its way.
             </p>
             {payment && (
               <p className="text-sm text-slate-400 mb-8">

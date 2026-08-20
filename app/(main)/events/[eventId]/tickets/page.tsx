@@ -257,6 +257,7 @@ export default function EventTicketingPage() {
         customerEmail: purchaseData.holderEmail,
         phoneNumber: phone,
         paymentMethod: "mobile_money",
+        amount: Number(purchaseData.totalAmount),
         items,
       });
     } catch (error: any) {
@@ -672,7 +673,8 @@ export default function EventTicketingPage() {
                     <Shield className="h-5 w-5 text-[#608d64] shrink-0 mt-0.5" />
                     <p>
                       <strong className="text-slate-700">Secure payment via FDI Payments.</strong>{" "}
-                      Approve the charge on your phone with your Mobile Money PIN. We never see or store your PIN.
+                      Approve {purchaseData.totalAmount.toLocaleString()} RWF on your phone with your Mobile Money PIN.
+                      Tickets are issued only after FDI confirms this exact amount. If payment fails, nothing is purchased.
                     </p>
                   </div>
 

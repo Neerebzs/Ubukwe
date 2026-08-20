@@ -71,13 +71,16 @@ export default function MyTicketsPage() {
       }
 
       const data = await response.json();
-      setTickets(data);
+      const purchased = (Array.isArray(data) ? data : []).filter(
+        (ticket: TicketData) => String(ticket.status || "").toLowerCase() === "sold"
+      );
+      setTickets(purchased);
       setHasSearched(true);
 
-      if (data.length === 0) {
-        toast.info("No tickets found for this email address");
+      if (purchased.length === 0) {
+        toast.info("No purchased tickets found for this email address");
       } else {
-        toast.success(`Found ${data.length} ticket(s)`);
+        toast.success(`Found ${purchased.length} ticket(s)`);
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to retrieve tickets");

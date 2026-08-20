@@ -100,6 +100,16 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     ...dynamicQueryOptions,
   })
 
+  const { data: existingBooking, isLoading: isBookingLoading } = useQuery({
+    queryKey: ["booking-payment", bookingId],
+    queryFn: async () => {
+      const response = await apiClient.get<any>(`/api/v1/bookings/${bookingId}`)
+      return (response as any).data || response
+    },
+    enabled: !!bookingId && isAuthenticated,
+    ...dynamicQueryOptions,
+  })
+
   // Fetch booked dates for venue services so we can disable them in the calendar
   const { data: venueBookedDatesData } = useQuery({
     queryKey: ['venue-booked-dates', params.serviceId],
@@ -132,6 +142,22 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!existingBooking) return
+    setBookingData((prev) => ({
+      ...prev,
+      date: prev.date || (existingBooking.booking_date ? new Date(existingBooking.booking_date) : undefined),
+      time: prev.time || existingBooking.preferred_time || "",
+      location: prev.location || existingBooking.event_location || "",
+      eventName: prev.eventName || existingBooking.event_name || "",
+      guestCount: prev.guestCount || (existingBooking.guest_count ? String(existingBooking.guest_count) : ""),
+      contactName: prev.contactName || existingBooking.customer_name || "",
+      contactEmail: prev.contactEmail || existingBooking.customer_email || "",
+      contactPhone: prev.contactPhone || existingBooking.customer_phone || "",
+      payerPhone: prev.payerPhone || existingBooking.customer_phone || "",
+    }))
+  }, [existingBooking])
 
   useEffect(() => {
     if (wedding && wedding.wedding_date) {
@@ -231,12 +257,26 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
       toast.error('Enter the MTN or Airtel number that will pay.');
       return;
     }
+    if (existingBooking && existingBooking.status !== "in_progress") {
+      toast.error(
+        existingBooking.status === "confirmed"
+          ? "This booking is already paid."
+          : "The provider must accept this booking before you can pay."
+      );
+      return;
+    }
+    const due = Number(existingBooking?.total_amount ?? existingBooking?.booking_amount ?? pricing.total)
+    if (!due || due <= 0) {
+      toast.error('This booking has no amount due.');
+      return;
+    }
     setIsRedirectingToPayment(true);
     try {
       await startFdiPayment({
         bookingId,
         phoneNumber: phone,
         paymentMethod: "mobile_money",
+        amount: due,
       });
     } catch (error: any) {
       setIsRedirectingToPayment(false);
@@ -254,9 +294,13 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     const selectedPkg = pkgArray.find((p: any) =>
       String(p.id) === String(packageId) || p.name === packageName
     )
-    const basePrice = selectedPkg?.price ?? service?.price_range_min ?? 0
+    const basePrice = existingBooking?.total_amount
+      ?? existingBooking?.booking_amount
+      ?? selectedPkg?.price
+      ?? service?.price_range_min
+      ?? 0
     return { basePrice, total: basePrice }
-  }, [service, packageId, packageName])
+  }, [service, packageId, packageName, existingBooking])
 
   if (isAuthLoading || (isAuthLoading && !user)) {
     return (
@@ -267,7 +311,7 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
     )
   }
 
-  if (isServiceLoading) {
+  if (isServiceLoading || (bookingId && isBookingLoading && currentStep === 3)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f9fafc]">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -315,6 +359,10 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               
               <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 2 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>2</div>
               <span className={cn("hidden sm:inline-block text-sm font-medium", currentStep >= 2 ? "text-stone-900" : "text-stone-400")}>Contact</span>
+              <div className={cn("h-px w-8 mx-2", currentStep >= 3 ? "bg-primary" : "bg-stone-200")} />
+
+              <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 3 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>3</div>
+              <span className={cn("hidden sm:inline-block text-sm font-medium", currentStep >= 3 ? "text-stone-900" : "text-stone-400")}>Payment</span>
               <div className={cn("h-px w-8 mx-2", currentStep >= 4 ? "bg-primary" : "bg-stone-200")} />
 
               <div className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors", currentStep >= 4 ? "bg-primary text-white" : "bg-stone-100 text-stone-400")}>
@@ -596,83 +644,115 @@ export default function BookingPage({ params }: { params: { serviceId: string } 
               <div className="h-2 bg-primary" />
               <CardHeader>
                 <CardTitle className="text-2xl">Payment & Confirmation</CardTitle>
-                <p className="text-muted-foreground">Select your preferred payment method.</p>
+                <p className="text-muted-foreground">Pay the exact booking amount with Mobile Money.</p>
               </CardHeader>
               <CardContent className="space-y-8">
-                <div className="space-y-4">
-                  <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Mobile Money</Label>
-                  <div className="rounded-xl border-2 border-primary bg-primary/5 h-20 flex items-center gap-3 px-5">
-                    <Phone className="h-6 w-6 text-primary" />
-                    <div>
-                      <p className="text-sm font-semibold">MTN MoMo &amp; Airtel Money</p>
-                      <p className="text-xs text-muted-foreground">You will approve the payment on your phone</p>
+                {existingBooking?.status === "confirmed" ? (
+                  <div className="rounded-xl border border-green-200 bg-green-50 p-5 text-green-900">
+                    <p className="font-semibold">This booking is already paid and approved.</p>
+                    <p className="text-sm mt-1">You can view it from your bookings dashboard.</p>
+                    <Button className="mt-4" onClick={() => router.push("/customer/dashboard?tab=bookings")}>
+                      View my bookings
+                    </Button>
+                  </div>
+                ) : existingBooking && existingBooking.status !== "in_progress" ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+                    <p className="font-semibold">Payment is available after the provider accepts this booking.</p>
+                    <p className="text-sm mt-1">Current status: {existingBooking.status}. You will get a Pay Now button once it is accepted.</p>
+                    <Button className="mt-4" variant="outline" onClick={() => router.push("/customer/dashboard?tab=bookings")}>
+                      Back to bookings
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-stone-400 font-bold">Amount due</p>
+                        <p className="text-2xl font-extrabold text-primary">{pricing.total.toLocaleString()} RWF</p>
+                      </div>
+                      <p className="text-xs text-stone-500 max-w-[45%] text-right">
+                        This is the booking total. The Mobile Money charge must match this amount.
+                      </p>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="payerPhone">Paying phone number</Label>
-                    <Input
-                      id="payerPhone"
-                      type="tel"
-                      placeholder="078xxxxxxx"
-                      value={bookingData.payerPhone || bookingData.contactPhone}
-                      onChange={(e) => handleInputChange("payerPhone", e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">Use the MTN (078/079) or Airtel (072/073) number that will receive the PIN prompt.</p>
-                  </div>
-                </div>
 
-                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 flex gap-3 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Shield className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-                  <p>
-                    <strong>Secure payment via FDI Payments.</strong> We request the amount from your
-                    mobile-money wallet. Approve it with your PIN on the USSD prompt. We never see or store your PIN.
-                  </p>
-                </div>
+                    <div className="space-y-4">
+                      <Label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Mobile Money</Label>
+                      <div className="rounded-xl border-2 border-primary bg-primary/5 h-20 flex items-center gap-3 px-5">
+                        <Phone className="h-6 w-6 text-primary" />
+                        <div>
+                          <p className="text-sm font-semibold">MTN MoMo &amp; Airtel Money</p>
+                          <p className="text-xs text-muted-foreground">You will approve the payment on your phone</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="payerPhone">Paying phone number</Label>
+                        <Input
+                          id="payerPhone"
+                          type="tel"
+                          placeholder="078xxxxxxx"
+                          value={bookingData.payerPhone || bookingData.contactPhone}
+                          onChange={(e) => handleInputChange("payerPhone", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">Use the MTN (078/079) or Airtel (072/073) number that will receive the PIN prompt.</p>
+                      </div>
+                    </div>
 
-                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="relative flex h-5 w-5 items-center justify-center">
-                    <input
-                      id="acceptContract"
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      checked={bookingData.acceptedContract}
-                      onChange={(e) => handleInputChange("acceptedContract", e.target.checked)}
-                    />
-                  </div>
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="acceptContract"
-                      className="text-sm font-medium leading-normal cursor-pointer"
-                    >
-                      I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terms & Conditions</a>, <a href="/refund-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Refund Policy</a> and <a href="/cancellation-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Cancellation Policy</a>.
-                    </label>
-                  </div>
-                </div>
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 flex gap-3 text-sm text-blue-900 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <Shield className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                      <p>
+                        <strong>Secure payment via FDI Payments.</strong> We request {pricing.total.toLocaleString()} RWF from your
+                        mobile-money wallet. Approve it with your PIN on the USSD prompt. We never see or store your PIN.
+                        Your booking is approved only after FDI confirms this exact amount.
+                      </p>
+                    </div>
 
-                <div className="flex gap-4">
-                  <Button variant="outline" onClick={handlePrevStep} className="h-12 px-8">
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handlePaymentConfirmation}
-                    className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity"
-                    disabled={
-                      !bookingId ||
-                      !bookingData.acceptedContract ||
-                      isRedirectingToPayment ||
-                      !(bookingData.payerPhone || bookingData.contactPhone)
-                    }
-                  >
-                    {isRedirectingToPayment ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending payment request…
-                      </>
-                    ) : (
-                      <>Pay with Mobile Money • {pricing.total.toLocaleString()} RWF</>
-                    )}
-                  </Button>
-                </div>
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="relative flex h-5 w-5 items-center justify-center">
+                        <input
+                          id="acceptContract"
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={bookingData.acceptedContract}
+                          onChange={(e) => handleInputChange("acceptedContract", e.target.checked)}
+                        />
+                      </div>
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="acceptContract"
+                          className="text-sm font-medium leading-normal cursor-pointer"
+                        >
+                          I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terms & Conditions</a>, <a href="/refund-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Refund Policy</a> and <a href="/cancellation-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Cancellation Policy</a>.
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <Button variant="outline" onClick={() => router.push("/customer/dashboard?tab=bookings")} className="h-12 px-8">
+                        Back
+                      </Button>
+                      <Button
+                        onClick={handlePaymentConfirmation}
+                        className="flex-1 h-12 text-lg font-bold rounded-xl hover:opacity-90 transition-opacity"
+                        disabled={
+                          !bookingId ||
+                          !bookingData.acceptedContract ||
+                          isRedirectingToPayment ||
+                          !(bookingData.payerPhone || bookingData.contactPhone) ||
+                          existingBooking?.status === "confirmed"
+                        }
+                      >
+                        {isRedirectingToPayment ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending payment request…
+                          </>
+                        ) : (
+                          <>Pay with Mobile Money • {pricing.total.toLocaleString()} RWF</>
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
